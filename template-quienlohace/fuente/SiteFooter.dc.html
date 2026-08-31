@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:ital,wght@0,800;1,800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+</helmet>
+<div style="font-family:Inter,system-ui,sans-serif;background:#1D1815;color:#FFFFFF">
+  <div style="max-width:1240px;margin:0 auto;padding:{{ pad }};display:grid;grid-template-columns:{{ cols }};gap:34px 28px">
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:320px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <img src="./logo-mark.svg" alt="QuienLoHace" style="height:52px;width:auto;display:block;flex:0 0 auto" />
+        <div style="width:1.5px;height:42px;background:rgba(221,222,225,.3);border-radius:999px;flex:0 0 auto"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+          <img src="./logo-word.svg" alt="QuienLoHace" style="height:44px;width:auto;display:block" />
+          <div style="font-size:10.5px;font-weight:400;letter-spacing:.2px;color:#B8B1AC;white-space:nowrap;text-align:center">Conectamos clientes y profesionales</div>
+        </div>
+      </div>
+      <div style="font-size:14px;line-height:1.6;color:#B8B1AC">Conectamos personas y profesionales. El directorio de servicios de Uruguay: buscá, compará y contactá directo, sin intermediarios.</div>
+      <div style="display:flex;gap:8px">
+        <sc-for list="{{ socials }}" as="s" hint-placeholder-count="3">
+          <div style="width:36px;height:36px;border-radius:9px;border:1px solid #3A322D;display:flex;align-items:center;justify-content:center;cursor:pointer" style-hover="background:#2A2320;border-color:#4A413B">
+            <span style="font-family:'Material Symbols Outlined';font-size:19px;color:#B8B1AC">{{ s }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <sc-for list="{{ columns }}" as="col" hint-placeholder-count="4">
+      <div style="display:flex;flex-direction:column;gap:11px">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:#F4C542">{{ col.title }}</div>
+        <sc-for list="{{ col.items }}" as="it" hint-placeholder-count="4">
+          <div onClick="{{ it.go }}" style="font-size:14px;color:#D6D0CB;cursor:pointer;transition:color .15s ease" style-hover="color:#FFFFFF">{{ it.label }}</div>
+        </sc-for>
+      </div>
+    </sc-for>
+  </div>
+  <div style="border-top:1px solid #322A26">
+    <div style="max-width:1240px;margin:0 auto;padding:16px 24px;display:flex;flex-wrap:wrap;gap:10px 22px;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;color:#8E8681">© 2026 QuienLoHace · Hecho en Uruguay</div>
+      <div style="display:flex;gap:20px">
+        <div onClick="{{ goPriv }}" style="font-size:13px;color:#B8B1AC;cursor:pointer" style-hover="color:#FFFFFF">Privacidad</div>
+        <div onClick="{{ goTerms }}" style="font-size:13px;color:#B8B1AC;cursor:pointer" style-hover="color:#FFFFFF">Términos</div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;isMobile&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(route: string) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const nav = (r) => () => this.props.onNav && this.props.onNav(r);
+    const isMobile = !!this.props.isMobile;
+    return {
+      pad: isMobile ? "34px 18px 30px" : "48px 24px 40px",
+      cols: isMobile ? "1fr 1fr" : "1.4fr 1fr 1fr 1fr 1fr",
+      socials: ["public", "photo_camera", "chat"],
+      columns: [
+        { title: "Explorar", items: [
+          { label: "Todas las categorías", go: nav("resultados") },
+          { label: "Destacados", go: nav("destacados") },
+          { label: "Hogar y mantenimiento", go: nav("categoria") },
+          { label: "Salud", go: nav("categoria") },
+          { label: "Tecnología", go: nav("categoria") }
+        ] },
+        { title: "Información", items: [
+          { label: "Cómo funciona", go: nav("como") },
+          { label: "Sobre nosotros", go: nav("sobre") },
+          { label: "Preguntas frecuentes", go: nav("faq") },
+          { label: "Contacto", go: nav("contacto") }
+        ] },
+        { title: "Profesionales", items: [
+          { label: "Entrar", go: nav("login") },
+          { label: "Crear mi perfil", go: nav("login") },
+          { label: "Planes (pronto)", go: nav("faq") }
+        ] },
+        { title: "Contacto", items: [
+          { label: "hola@quienlohace.uy", go: nav("contacto") },
+          { label: "+598 2600 0000", go: nav("contacto") },
+          { label: "WhatsApp", go: nav("contacto") }
+        ] }
+      ],
+      goPriv: nav("faq"),
+      goTerms: nav("faq")
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:ital,wght@0,700;0,800;1,800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+</helmet>
+<div style="font-family:Inter,system-ui,sans-serif;position:sticky;top:0;z-index:60;background:linear-gradient(90deg,#101F3C 0%,#1B3055 42%,#3A5081 100%);border-bottom:1px solid #16294B">
+  <div style="max-width:1240px;margin:0 auto;padding:0 24px;height:{{ barH }};display:flex;align-items:center;gap:28px">
+    <div onClick="{{ goHome }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;flex:0 0 auto">
+      <div style="display:flex;align-items:center;gap:12px">
+        <img src="./logo-mark.svg" alt="QuienLoHace" style="height:{{ markH }};width:auto;display:block;flex:0 0 auto" />
+        <div style="width:1.5px;height:{{ dividerH }};background:rgba(221,222,225,.55);border-radius:999px;flex:0 0 auto"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+          <img src="./logo-word.svg" alt="QuienLoHace" style="height:{{ wordH }};width:auto;display:block;margin-top:2px" />
+          <div style="margin-top:-2px;font-size:{{ tagSize }};font-weight:400;letter-spacing:.2px;color:#CBD6E8;white-space:nowrap;text-align:center">Conectamos clientes y profesionales</div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;gap:2px;flex:1 1 auto">
+        <button type="button" onClick="{{ toggleMega }}" style="display:flex;align-items:center;gap:5px;height:38px;padding:0 12px;border:0;border-radius:8px;background:{{ megaBg }};color:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">
+Categorías
+          <span style="font-family:'Material Symbols Outlined';font-size:18px;color:#9FB1CE">expand_more</span>
+        </button>
+        <sc-for list="{{ navLinks }}" as="l" hint-placeholder-count="2">
+          <button type="button" onClick="{{ l.go }}" style="height:38px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:{{ l.color }};font-family:inherit;font-size:14.5px;font-weight:{{ l.weight }};cursor:pointer;white-space:nowrap" style-hover="background:rgba(255,255,255,.12)">{{ l.label }}</button>
+        </sc-for>
+        <div style="position:relative">
+          <button type="button" onClick="{{ toggleMore }}" style="display:flex;align-items:center;gap:4px;height:38px;padding:0 12px;border:0;border-radius:8px;background:{{ moreBg }};color:#D9E1EF;font-family:inherit;font-size:14.5px;font-weight:500;cursor:pointer;white-space:nowrap" style-hover="background:rgba(255,255,255,.12)">Más
+            <span style="font-family:'Material Symbols Outlined';font-size:18px;color:#9FB1CE">expand_more</span>
+          </button>
+          <sc-if value="{{ moreOpen }}" hint-placeholder-val="{{ false }}">
+            <div style="position:absolute;top:44px;left:0;min-width:216px;background:#FFFFFF;border:1px solid #E4E7EC;border-radius:12px;box-shadow:0 18px 40px -18px rgba(23,32,51,.3);padding:6px;z-index:70">
+              <sc-for list="{{ moreLinks }}" as="m" hint-placeholder-count="3">
+                <div onClick="{{ m.go }}" style="display:flex;align-items:center;gap:9px;padding:10px;border-radius:8px;font-size:14px;font-weight:{{ m.weight }};color:#344054;cursor:pointer;white-space:nowrap" style-hover="background:#F5F6F8">
+                  <span style="font-family:'Material Symbols Outlined';font-size:19px;color:#20375F">{{ m.icon }}</span>{{ m.label }}
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex:0 0 auto">
+        <button type="button" onClick="{{ goLogin }}" style="height:40px;padding:0 16px;border:1px solid rgba(255,255,255,.32);border-radius:10px;background:transparent;color:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">Entrar</button>
+        <button type="button" onClick="{{ goLogin }}" style="height:40px;padding:0 16px;border:0;border-radius:10px;background:#F4C542;color:#172033;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer" style-hover="background:#E9B92F">Publicar mi perfil</button>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ isMobileView }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+        <button type="button" onClick="{{ goLogin }}" style="height:38px;padding:0 13px;border:1px solid rgba(255,255,255,.32);border-radius:9px;background:transparent;color:#FFFFFF;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer">Entrar</button>
+        <button type="button" onClick="{{ openDrawer }}" style="width:40px;height:40px;border:1px solid rgba(255,255,255,.32);border-radius:9px;background:transparent;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <span style="font-family:'Material Symbols Outlined';font-size:22px;color:#FFFFFF">menu</span>
+        </button>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ megaOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;left:0;right:0;top:{{ barH }};background:#FFFFFF;border-bottom:1px solid #E4E7EC;box-shadow:0 18px 40px -20px rgba(23,32,51,.25)">
+      <div style="max-width:1240px;margin:0 auto;padding:18px 24px 22px;display:grid;grid-template-columns:340px 1fr;gap:24px">
+        <div style="display:flex;flex-direction:column;gap:2px;max-height:430px;overflow:auto;padding-right:8px;border-right:1px solid #EFF1F5">
+          <div style="display:flex;gap:8px;padding:0 4px 10px">
+            <button type="button" onClick="{{ goAll }}" style="flex:1 1 auto;height:34px;border:1px solid #D8DDE6;border-radius:8px;background:#FFFFFF;color:#172033;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#F7F8FA">Todas</button>
+            <button type="button" onClick="{{ goDestacados }}" style="flex:1 1 auto;height:34px;border:1px solid #F4C542;border-radius:8px;background:#FEF8E7;color:#7A5A05;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px" style-hover="background:#FDF1CE">
+              <span style="font-family:'Material Symbols Outlined';font-size:16px;color:#E0A800;font-variation-settings:'FILL' 1">star</span>Destacados
+            </button>
+          </div>
+          <sc-for list="{{ cats }}" as="c" hint-placeholder-count="10">
+            <div onMouseEnter="{{ c.hover }}" onClick="{{ c.go }}" style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:9px;cursor:pointer;background:{{ c.bg }}">
+              <div style="width:32px;height:32px;border-radius:9px;background:{{ c.iconBg }};display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                <span style="font-family:'Material Symbols Outlined';font-size:19px;color:{{ c.iconColor }}">{{ c.icon }}</span>
+              </div>
+              <div style="font-size:14px;font-weight:{{ c.weight }};color:#172033;line-height:1.3">{{ c.short }}</div>
+              <span style="font-family:'Material Symbols Outlined';font-size:18px;color:#98A2B3;margin-left:auto">chevron_right</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px;padding-top:2px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:40px;height:40px;border-radius:11px;background:#182D53;display:flex;align-items:center;justify-content:center">
+              <span style="font-family:'Material Symbols Outlined';font-size:22px;color:#F4C542">{{ activeIcon }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:2px">
+              <div style="font-size:17px;font-weight:700;color:#172033;letter-spacing:-.2px">{{ activeName }}</div>
+              <div style="font-size:13px;color:#667085">{{ activeCount }} profesionales · {{ subCount }} subcategorías</div>
+            </div>
+            <button type="button" onClick="{{ goActive }}" style="margin-left:auto;height:36px;padding:0 14px;border:0;border-radius:9px;background:#EEF1F7;color:#20375F;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer" style-hover="background:#E3E8F1">Ver categoría →</button>
+          </div>
+          <div style="column-width:220px;column-gap:24px;column-fill:auto;height:330px">
+            <sc-for list="{{ subs }}" as="s" hint-placeholder-count="9">
+              <div onClick="{{ s.go }}" style="font-size:14px;color:#475467;padding:7px 8px;border-radius:7px;cursor:pointer;break-inside:avoid" style-hover="background:#F5F6F8;color:#20375F">{{ s.name }}</div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div onClick="{{ closeMega }}" style="position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(23,32,51,.28);z-index:-1"></div>
+  </sc-if>
+
+  <sc-if value="{{ drawerOpen }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed;inset:0;z-index:90;background:rgba(23,32,51,.4)" onClick="{{ closeDrawer }}"></div>
+    <div style="position:fixed;top:0;right:0;bottom:0;width:min(360px,88vw);z-index:91;background:#FFFFFF;display:flex;flex-direction:column">
+      <div style="height:60px;padding:0 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E4E7EC">
+        <div style="font-size:15px;font-weight:700;color:#172033">{{ drawerTitle }}</div>
+        <button type="button" onClick="{{ closeDrawer }}" style="width:36px;height:36px;border:0;border-radius:8px;background:#F2F4F7;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#172033">close</span>
+        </button>
+      </div>
+      <div style="flex:1 1 auto;overflow:auto;padding:12px 12px 24px">
+        <sc-if value="{{ drawerRoot }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ drawerLinks }}" as="l" hint-placeholder-count="5">
+              <div onClick="{{ l.go }}" style="display:flex;align-items:center;gap:10px;padding:13px 12px;border-radius:10px;font-size:15px;font-weight:600;color:#172033;cursor:pointer" style-hover="background:#F5F6F8">
+                <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#20375F">{{ l.icon }}</span>{{ l.label }}
+                <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#98A2B3;margin-left:auto">{{ l.chev }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ drawerCats }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div onClick="{{ drawerBack }}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:14px;font-weight:600;color:#667085;cursor:pointer">
+              <span style="font-family:'Material Symbols Outlined';font-size:20px">arrow_back</span>Menú
+            </div>
+            <sc-for list="{{ cats }}" as="c" hint-placeholder-count="10">
+              <div onClick="{{ c.drill }}" style="display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;cursor:pointer" style-hover="background:#F5F6F8">
+                <div style="width:32px;height:32px;border-radius:9px;background:{{ c.iconBg }};display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                  <span style="font-family:'Material Symbols Outlined';font-size:19px;color:{{ c.iconColor }}">{{ c.icon }}</span>
+                </div>
+                <div style="font-size:14.5px;font-weight:600;color:#172033;line-height:1.3">{{ c.short }}</div>
+                <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#98A2B3;margin-left:auto">chevron_right</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ drawerSubs }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <div onClick="{{ drawerBackCats }}" style="display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:14px;font-weight:600;color:#667085;cursor:pointer">
+              <span style="font-family:'Material Symbols Outlined';font-size:20px">arrow_back</span>Categorías
+            </div>
+            <div onClick="{{ goActive }}" style="display:flex;align-items:center;gap:10px;padding:12px;border-radius:10px;background:#F5F6F8;cursor:pointer">
+              <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#20375F">{{ activeIcon }}</span>
+              <div style="font-size:14.5px;font-weight:700;color:#172033">Todas · {{ activeName }}</div>
+            </div>
+            <sc-for list="{{ subs }}" as="s" hint-placeholder-count="8">
+              <div onClick="{{ s.go }}" style="padding:12px;border-radius:10px;font-size:14.5px;color:#475467;cursor:pointer" style-hover="background:#F5F6F8">{{ s.name }}</div>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;categories&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Category[]&quot;},&quot;route&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;isMobile&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;onNav&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(route: string, payload?: any) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  state = { mega: false, hoverCat: 0, drawer: false, level: "root", drillCat: 0, more: false };
+
+  nav(route, payload) {
+    this.setState({ mega: false, drawer: false, level: "root", more: false });
+    if (this.props.onNav) this.props.onNav(route, payload);
+  }
+
+  renderVals() {
+    const cats = this.props.categories || [];
+    const isMobile = !!this.props.isMobile;
+    const route = this.props.route;
+    const hi = this.state.mega ? this.state.hoverCat : this.state.drillCat;
+    const active = cats[hi] || { name: "", subs: [], icon: "work", count: 0 };
+    const tints = [
+      ["#EEF1F7", "#20375F"], ["#FEF8E7", "#B98A05"], ["#EDF2F7", "#30466F"], ["#FDF4E3", "#A97F0A"]
+    ];
+
+    const linkDefs = [
+      { label: "Destacados", route: "destacados" },
+      { label: "Cómo funciona", route: "como" }
+    ];
+    const moreDefs = [
+      { label: "Sobre nosotros", route: "sobre", icon: "info" },
+      { label: "Contacto", route: "contacto", icon: "mail" },
+      { label: "Preguntas frecuentes", route: "faq", icon: "quiz" }
+    ];
+
+    return {
+      barH: isMobile ? "68px" : "88px",
+      markH: isMobile ? "40px" : "50px",
+      dividerH: isMobile ? "32px" : "42px",
+      wordH: isMobile ? "32px" : "40px",
+      tagSize: isMobile ? "8px" : "9.5px",
+      isDesktop: !isMobile,
+      isMobileView: isMobile,
+      megaOpen: this.state.mega,
+      megaBg: this.state.mega ? "rgba(255,255,255,.14)" : "transparent",
+      drawerOpen: this.state.drawer,
+      drawerRoot: this.state.drawer && this.state.level === "root",
+      drawerCats: this.state.drawer && this.state.level === "cats",
+      drawerSubs: this.state.drawer && this.state.level === "subs",
+      drawerTitle: this.state.level === "root" ? "Menú" : this.state.level === "cats" ? "Categorías" : active.name,
+      navLinks: linkDefs.map(l => ({
+        label: l.label,
+        color: route === l.route ? "#F4C542" : "#D9E1EF",
+        weight: route === l.route ? 700 : 500,
+        go: () => this.nav(l.route)
+      })),
+      moreOpen: this.state.more,
+      moreBg: this.state.more ? "rgba(255,255,255,.14)" : "transparent",
+      toggleMore: () => this.setState(s => ({ more: !s.more, mega: false })),
+      moreLinks: moreDefs.map(m => ({
+        label: m.label, icon: m.icon,
+        weight: route === m.route ? 700 : 500,
+        go: () => this.nav(m.route)
+      })),
+      drawerLinks: [
+        { label: "Categorías", icon: "category", chev: "chevron_right", go: () => this.setState({ level: "cats" }) },
+        { label: "Destacados", icon: "star", chev: "", go: () => this.nav("destacados") },
+        { label: "Cómo funciona", icon: "help_outline", chev: "", go: () => this.nav("como") },
+        { label: "Sobre nosotros", icon: "info", chev: "", go: () => this.nav("sobre") },
+        { label: "Contacto", icon: "mail", chev: "", go: () => this.nav("contacto") },
+        { label: "Preguntas frecuentes", icon: "quiz", chev: "", go: () => this.nav("faq") },
+        { label: "Publicar mi perfil", icon: "add_business", chev: "", go: () => this.nav("login") }
+      ],
+      cats: cats.map((c, i) => ({
+        short: c.short || c.name,
+        icon: c.icon,
+        bg: i === hi && this.state.mega ? "#F5F6F8" : "transparent",
+        weight: i === hi && this.state.mega ? 700 : 500,
+        iconBg: tints[i % 4][0],
+        iconColor: tints[i % 4][1],
+        hover: () => this.setState({ hoverCat: i }),
+        go: () => this.nav("categoria", c),
+        drill: () => this.setState({ level: "subs", drillCat: i })
+      })),
+      activeName: active.name,
+      activeIcon: active.icon,
+      activeCount: active.count || 0,
+      subCount: (active.subs || []).length,
+      subs: (active.subs || []).map(s => ({ name: s, go: () => this.nav("subcategoria", { cat: active, sub: s }) })),
+      goActive: () => this.nav("categoria", active),
+      goHome: () => this.nav("home"),
+      goLogin: () => this.nav("login"),
+      goAll: () => this.nav("resultados"),
+      goDestacados: () => this.nav("destacados"),
+      toggleMega: () => this.setState(s => ({ mega: !s.mega })),
+      closeMega: () => this.setState({ mega: false }),
+      openDrawer: () => this.setState({ drawer: true, level: "root" }),
+      closeDrawer: () => this.setState({ drawer: false, level: "root" }),
+      drawerBack: () => this.setState({ level: "root" }),
+      drawerBackCats: () => this.setState({ level: "cats" })
+    };
+  }
+}
+</script>
+</body>
+</html>

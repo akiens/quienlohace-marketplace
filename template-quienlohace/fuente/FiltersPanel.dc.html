@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+</helmet>
+<div style="font-family:Inter,system-ui,sans-serif">
+  <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+    <div onClick="{{ close }}" style="position:fixed;inset:0;z-index:80;background:rgba(23,32,51,.42)"></div>
+    <div style="position:fixed;z-index:81;background:#FFFFFF;display:flex;flex-direction:column;top:{{ top }};right:0;bottom:0;left:{{ left }};width:{{ width }};max-height:{{ maxH }};border-radius:{{ radius }};box-shadow:-12px 0 40px -16px rgba(10,20,40,.35)">
+      <div style="height:60px;flex:0 0 auto;padding:0 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #E4E7EC">
+        <div style="display:flex;align-items:center;gap:9px">
+          <span style="font-family:'Material Symbols Outlined';font-size:21px;color:#20375F">tune</span>
+          <div style="font-size:16px;font-weight:700;color:#172033">Filtros</div>
+          <sc-if value="{{ hasCount }}" hint-placeholder-val="{{ false }}">
+            <span style="min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:#F4C542;color:#172033;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ count }}</span>
+          </sc-if>
+        </div>
+        <button type="button" onClick="{{ close }}" style="width:36px;height:36px;border:0;border-radius:8px;background:#F2F4F7;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#172033">close</span>
+        </button>
+      </div>
+
+      <div style="flex:1 1 auto;overflow:auto;padding:18px 18px 24px;display:flex;flex-direction:column;gap:22px">
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:13.5px;font-weight:700;color:#172033;display:flex;align-items:center;justify-content:space-between">Ubicación
+            <span style="font-size:12px;font-weight:500;color:#98A2B3">máx. 5</span>
+          </div>
+          <div onClick="{{ toggleGeo }}" style="display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid {{ geoBorder }};background:{{ geoBg }};border-radius:10px;cursor:pointer">
+            <span style="font-family:'Material Symbols Outlined';font-size:20px;color:{{ geoIconColor }}">my_location</span>
+            <div style="font-size:14px;font-weight:600;color:#172033">Usar mi ubicación</div>
+            <div style="margin-left:auto;width:38px;height:22px;border-radius:999px;background:{{ switchBg }};padding:2px;display:flex;justify-content:{{ switchJustify }};transition:all .15s ease">
+              <div style="width:18px;height:18px;border-radius:999px;background:#FFFFFF;box-shadow:0 1px 3px rgba(0,0,0,.2)"></div>
+            </div>
+          </div>
+          <sc-if value="{{ hasZonas }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;opacity:{{ manualOpacity }}">
+              <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="2">
+                <span style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#20375F;background:#EEF1F7;border-radius:999px;padding:5px 6px 5px 10px">{{ ch.label }}
+                  <span onClick="{{ ch.remove }}" style="font-family:'Material Symbols Outlined';font-size:15px;color:#5B6B87;cursor:pointer">close</span>
+                </span>
+              </sc-for>
+            </div>
+          </sc-if>
+          <div style="border:1px solid #E4E7EC;border-radius:10px;overflow:hidden;opacity:{{ manualOpacity }};pointer-events:{{ manualEvents }}">
+            <div style="display:flex;border-bottom:1px solid #EFF1F5;background:#FBFCFD">
+              <sc-for list="{{ geoTabs }}" as="t" hint-placeholder-count="3">
+                <div onClick="{{ t.pick }}" style="flex:1 1 auto;text-align:center;padding:9px 6px;font-size:12.5px;font-weight:{{ t.weight }};color:{{ t.color }};border-bottom:2px solid {{ t.line }};cursor:pointer">{{ t.label }}</div>
+              </sc-for>
+            </div>
+            <div style="max-height:170px;overflow:auto;padding:6px">
+              <sc-for list="{{ geoItems }}" as="g" hint-placeholder-count="6">
+                <div onClick="{{ g.pick }}" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:7px;font-size:13.5px;color:#344054;cursor:pointer;background:{{ g.bg }}" style-hover="background:#F5F6F8">
+                  <span style="width:16px;height:16px;border-radius:4px;border:1.5px solid {{ g.boxBorder }};background:{{ g.boxBg }};display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                    <span style="font-family:'Material Symbols Outlined';font-size:13px;color:#FFFFFF">{{ g.check }}</span>
+                  </span>{{ g.name }}
+                  <span style="font-family:'Material Symbols Outlined';font-size:17px;color:#98A2B3;margin-left:auto">{{ g.chev }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#EFF1F5"></div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:13.5px;font-weight:700;color:#172033;display:flex;align-items:center;justify-content:space-between">Categoría y subcategoría
+            <span style="font-size:12px;font-weight:500;color:#98A2B3">máx. 5</span>
+          </div>
+          <select onChange="{{ onCatSelect }}" value="{{ catValue }}" style="height:42px;border:1px solid #D8DDE6;border-radius:10px;padding:0 10px;font-family:inherit;font-size:14px;color:#172033;background:#FFFFFF">
+            <sc-for list="{{ catOptions }}" as="o" hint-placeholder-count="6">
+              <option value="{{ o.value }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+          <div style="max-height:180px;overflow:auto;border:1px solid #E4E7EC;border-radius:10px;padding:6px">
+            <sc-for list="{{ subs }}" as="s" hint-placeholder-count="7">
+              <div onClick="{{ s.pick }}" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:7px;font-size:13.5px;color:#344054;cursor:pointer;background:{{ s.bg }}" style-hover="background:#F5F6F8">
+                <span style="width:16px;height:16px;border-radius:4px;border:1.5px solid {{ s.boxBorder }};background:{{ s.boxBg }};display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                  <span style="font-family:'Material Symbols Outlined';font-size:13px;color:#FFFFFF">{{ s.check }}</span>
+                </span>{{ s.name }}
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#EFF1F5"></div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:13.5px;font-weight:700;color:#172033">Calificación mínima</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <sc-for list="{{ ratings }}" as="r" hint-placeholder-count="4">
+              <div onClick="{{ r.pick }}" style="display:flex;align-items:center;gap:4px;padding:8px 12px;border:1px solid {{ r.border }};background:{{ r.bg }};border-radius:999px;font-size:13.5px;font-weight:600;color:{{ r.color }};cursor:pointer">{{ r.label }}
+                <span style="font-family:'Material Symbols Outlined';font-size:15px;color:#F4C542;font-variation-settings:'FILL' 1">{{ r.star }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#EFF1F5"></div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:13.5px;font-weight:700;color:#172033">Métodos de pago</div>
+          <div style="display:flex;flex-direction:column;gap:2px">
+            <sc-for list="{{ pagos }}" as="p" hint-placeholder-count="5">
+              <div onClick="{{ p.pick }}" style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:7px;font-size:14px;color:#344054;cursor:pointer" style-hover="background:#F5F6F8">
+                <span style="width:16px;height:16px;border-radius:4px;border:1.5px solid {{ p.boxBorder }};background:{{ p.boxBg }};display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                  <span style="font-family:'Material Symbols Outlined';font-size:13px;color:#FFFFFF">{{ p.check }}</span>
+                </span>{{ p.name }}
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#EFF1F5"></div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:13.5px;font-weight:700;color:#172033;display:flex;align-items:center;justify-content:space-between">Servicios
+            <span style="font-size:12px;font-weight:500;color:#98A2B3">máx. 5</span>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ servicios }}" as="s" hint-placeholder-count="6">
+              <div onClick="{{ s.pick }}" style="padding:7px 12px;border:1px solid {{ s.border }};background:{{ s.bg }};border-radius:999px;font-size:13px;font-weight:600;color:{{ s.color }};cursor:pointer">{{ s.name }}</div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="height:1px;background:#EFF1F5"></div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="font-size:13.5px;font-weight:700;color:#172033">Precio</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <sc-for list="{{ precios }}" as="p" hint-placeholder-count="5">
+              <div onClick="{{ p.pick }}" style="padding:8px 12px;border:1px solid {{ p.border }};background:{{ p.bg }};border-radius:999px;font-size:13.5px;font-weight:600;color:{{ p.color }};cursor:pointer">{{ p.label }}</div>
+            </sc-for>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="flex:1 1 auto;display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;border:1px solid #D8DDE6;border-radius:9px;background:#FFFFFF">
+              <span style="font-size:13px;color:#98A2B3">$</span>
+              <input type="text" placeholder="Mínimo" style="border:0;outline:0;background:transparent;font-family:inherit;font-size:13.5px;width:100%;min-width:0;color:#172033" />
+            </div>
+            <span style="color:#98A2B3">—</span>
+            <div style="flex:1 1 auto;display:flex;align-items:center;gap:6px;height:40px;padding:0 10px;border:1px solid #D8DDE6;border-radius:9px;background:#FFFFFF">
+              <span style="font-size:13px;color:#98A2B3">$</span>
+              <input type="text" placeholder="Máximo" style="border:0;outline:0;background:transparent;font-family:inherit;font-size:13.5px;width:100%;min-width:0;color:#172033" />
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:#98A2B3;line-height:1.5">Muchos profesionales trabajan con presupuesto o precio a consultar; el filtro los incluye igual.</div>
+        </div>
+      </div>
+
+      <div style="flex:0 0 auto;padding:14px 18px;border-top:1px solid #E4E7EC;display:flex;gap:10px;align-items:center;background:#FFFFFF">
+        <button type="button" onClick="{{ clearAll }}" style="height:44px;padding:0 16px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;color:#344054;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer">Limpiar todo</button>
+        <button type="button" onClick="{{ apply }}" style="flex:1 1 auto;height:44px;border:0;border-radius:10px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">Ver {{ resultCount }} profesionales</button>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;open&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;},&quot;isMobile&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;count&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;},&quot;resultCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:124,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  state = { level: "dept", dept: "Montevideo", city: "Montevideo", catIdx: 0 };
+
+  set(key, value) { if (this.props.onChange) this.props.onChange(key, value); }
+
+  toggleIn(key, value, max) {
+    const arr = (this.props.filters && this.props.filters[key]) || [];
+    const i = arr.indexOf(value);
+    if (i >= 0) this.set(key, arr.filter(x => x !== value));
+    else if (!max || arr.length < max) this.set(key, arr.concat([value]));
+  }
+
+  renderVals() {
+    const p = this.props;
+    const f = p.filters || {};
+    const geo = p.geo || {};
+    const cats = p.categories || [];
+    const isMobile = !!p.isMobile;
+    const zonas = f.zonas || [];
+    const selCats = f.cats || [];
+    const geoOn = !!f.geoOn;
+    const dept = geo[this.state.dept] || {};
+    const activeCat = cats[this.state.catIdx] || { subs: [] };
+
+    const box = (on) => ({
+      boxBorder: on ? "#20375F" : "#CDD4E0",
+      boxBg: on ? "#20375F" : "#FFFFFF",
+      check: on ? "check" : ""
+    });
+    const pill = (on) => ({
+      border: on ? "#20375F" : "#D8DDE6",
+      bg: on ? "#EEF1F7" : "#FFFFFF",
+      color: on ? "#20375F" : "#475467"
+    });
+
+    let geoItems = [];
+    if (this.state.level === "dept") {
+      geoItems = Object.keys(geo).map(d => Object.assign({
+        name: d, bg: "transparent", chev: "chevron_right",
+        pick: () => { this.setState({ level: "city", dept: d, city: Object.keys(geo[d])[0] }); }
+      }, box(zonas.indexOf(d) >= 0)));
+    } else if (this.state.level === "city") {
+      geoItems = Object.keys(dept).map(c => Object.assign({
+        name: c, bg: "transparent", chev: (dept[c] || []).length ? "chevron_right" : "",
+        pick: () => {
+          if ((dept[c] || []).length) this.setState({ level: "hood", city: c });
+          else this.toggleIn("zonas", c + ", " + this.state.dept, 5);
+        }
+      }, box(zonas.indexOf(c + ", " + this.state.dept) >= 0)));
+    } else {
+      geoItems = (dept[this.state.city] || []).map(h => Object.assign({
+        name: h, bg: "transparent", chev: "",
+        pick: () => this.toggleIn("zonas", h + ", " + this.state.city, 5)
+      }, box(zonas.indexOf(h + ", " + this.state.city) >= 0)));
+    }
+
+    const tabDefs = [
+      { key: "dept", label: this.state.dept === "" ? "Departamento" : "Departamento" },
+      { key: "city", label: "Localidad" },
+      { key: "hood", label: "Barrio / zona" }
+    ];
+
+    return {
+      open: !!p.open,
+      top: isMobile ? "auto" : "0",
+      left: isMobile ? "0" : "auto",
+      width: isMobile ? "auto" : "min(420px,92vw)",
+      maxH: isMobile ? "86vh" : "100%",
+      radius: isMobile ? "18px 18px 0 0" : "0",
+      count: p.count || 0,
+      hasCount: (p.count || 0) > 0,
+      resultCount: p.resultCount == null ? 124 : p.resultCount,
+      hasZonas: zonas.length > 0,
+      chips: zonas.map(z => ({ label: z, remove: () => this.toggleIn("zonas", z, 5) })),
+      geoBorder: geoOn ? "#20375F" : "#E4E7EC",
+      geoBg: geoOn ? "#F7F9FC" : "#FFFFFF",
+      geoIconColor: geoOn ? "#20375F" : "#98A2B3",
+      switchBg: geoOn ? "#20375F" : "#D8DDE6",
+      switchJustify: geoOn ? "flex-end" : "flex-start",
+      manualOpacity: geoOn ? ".45" : "1",
+      manualEvents: geoOn ? "none" : "auto",
+      geoTabs: tabDefs.map(t => ({
+        label: t.label,
+        weight: this.state.level === t.key ? 700 : 500,
+        color: this.state.level === t.key ? "#20375F" : "#667085",
+        line: this.state.level === t.key ? "#20375F" : "transparent",
+        pick: () => this.setState({ level: t.key })
+      })),
+      geoItems,
+      catValue: String(this.state.catIdx),
+      catOptions: cats.map((c, i) => ({ value: String(i), label: c.name })),
+      onCatSelect: (e) => this.setState({ catIdx: parseInt(e.target.value, 10) }),
+      subs: (activeCat.subs || []).map(s => Object.assign({
+        name: s, bg: selCats.indexOf(s) >= 0 ? "#F7F8FA" : "transparent",
+        pick: () => this.toggleIn("cats", s, 5)
+      }, box(selCats.indexOf(s) >= 0))),
+      ratings: [
+        { label: "Cualquiera", star: "" }, { label: "3+", star: "star" },
+        { label: "4+", star: "star" }, { label: "4.5+", star: "star" }
+      ].map(r => Object.assign({ label: r.label, star: r.star, pick: () => this.set("rating", r.label) }, pill((f.rating || "Cualquiera") === r.label))),
+      pagos: ["Efectivo", "Transferencia", "Débito", "Crédito", "Otros"].map(n => Object.assign({
+        name: n, pick: () => this.toggleIn("pagos", n)
+      }, box(((f.pagos) || []).indexOf(n) >= 0))),
+      servicios: (p.services || []).map(n => Object.assign({
+        name: n, pick: () => this.toggleIn("servicios", n, 5)
+      }, pill(((f.servicios) || []).indexOf(n) >= 0))),
+      precios: ["Cualquiera", "Precio fijo", "Desde $X", "Por hora", "A consultar", "Presupuesto"].map(l => Object.assign({
+        label: l, pick: () => this.set("precio", l)
+      }, pill((f.precio || "Cualquiera") === l))),
+      toggleGeo: () => this.set("geoOn", !geoOn),
+      clearAll: () => p.onClear && p.onClear(),
+      apply: () => p.onClose && p.onClose(),
+      close: () => p.onClose && p.onClose()
+    };
+  }
+}
+</script>
+</body>
+</html>

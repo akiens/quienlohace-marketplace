@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+</helmet>
+<div style="font-family:Inter,system-ui,sans-serif;height:100%;background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 2px rgba(23,32,51,.04);transition:box-shadow .18s ease,border-color .18s ease,transform .18s ease" style-hover="border-color:#C6CEDC;box-shadow:0 10px 24px -8px rgba(23,32,51,.16);transform:translateY(-2px)">
+  <div style="position:relative;height:132px;background:linear-gradient(180deg,#455D88 0%,#20375F 100%);overflow:hidden;flex:0 0 auto">
+    <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.07) 0 1px,transparent 1px 9px)"></div>
+    <div style="position:absolute;right:10px;bottom:-14px;font-family:'Material Symbols Outlined';font-size:104px;line-height:1;color:rgba(255,255,255,.14);user-select:none">{{ icon }}</div>
+    <sc-if value="{{ destacado }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;top:10px;left:10px;display:flex;align-items:center;gap:5px;background:#F4C542;color:#172033;font-size:11.5px;font-weight:700;letter-spacing:.2px;padding:5px 9px 5px 7px;border-radius:999px">
+        <span style="font-family:'Material Symbols Outlined';font-size:14px;font-variation-settings:'FILL' 1">star</span>Destacado
+      </div>
+    </sc-if>
+    <sc-if value="{{ verificado }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;top:10px;right:10px;display:flex;align-items:center;gap:4px;background:#FFFFFF;border:1px solid #D6EFE0;color:#1E8C56;font-size:11px;font-weight:700;padding:4px 9px 4px 6px;border-radius:999px">
+        <span style="font-family:'Material Symbols Outlined';font-size:14px;color:#25A366;font-variation-settings:'FILL' 1">verified</span>Verificado
+      </div>
+    </sc-if>
+  </div>
+  <div style="position:relative;z-index:2;padding:0 18px 18px;display:flex;flex-direction:column;gap:12px;flex:1 1 auto">
+    <div style="display:flex;align-items:flex-end;gap:12px;margin-top:-26px;position:relative;z-index:2">
+      <div style="width:54px;height:54px;border-radius:14px;background:#FFFFFF;border:1px solid #E4E7EC;box-shadow:0 2px 6px rgba(23,32,51,.08);display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+        <div style="width:42px;height:42px;border-radius:10px;background:#EEF1F7;color:#20375F;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;letter-spacing:-.3px">{{ initials }}</div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+        <div style="font-size:17px;font-weight:700;color:#172033;letter-spacing:-.2px">{{ name }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:#667085">
+        <span style="display:flex;align-items:center;gap:4px;color:#172033;font-weight:600">
+          <span style="font-family:'Material Symbols Outlined';font-size:16px;color:#F4C542;font-variation-settings:'FILL' 1">star</span>{{ rating }}
+        </span>
+        <span>· {{ reviewsLabel }}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:13.5px;color:#667085">
+        <span style="font-family:'Material Symbols Outlined';font-size:16px;color:#98A2B3">location_on</span>{{ location }}
+      </div>
+    </div>
+    <div style="height:1px;background:#EFF1F5"></div>
+    <sc-if value="{{ match }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:5px">
+        <div style="font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#98A2B3">Coincide con</div>
+        <div style="font-size:14px;font-weight:600;color:#20375F">{{ match }}</div>
+      </div>
+    </sc-if>
+    <div style="display:flex;flex-wrap:wrap;gap:6px">
+      <sc-for list="{{ services }}" as="s" hint-placeholder-count="3">
+        <span style="font-size:12.5px;color:#475467;background:#F5F6F8;border:1px solid #ECEEF2;padding:4px 9px;border-radius:999px">{{ s }}</span>
+      </sc-for>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:auto;padding-top:4px">
+      <button type="button" onClick="{{ onOpen }}" style="flex:1 1 auto;height:40px;border:0;border-radius:10px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .15s ease" style-hover="background:#182D53">Ver perfil</button>
+      <button type="button" style="flex:0 0 auto;height:40px;padding:0 14px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;color:#172033;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:background .15s ease,border-color .15s ease" style-hover="background:#F7F8FA;border-color:#C6CEDC">
+        <span style="font-family:'Material Symbols Outlined';font-size:18px;color:#25A366">chat</span>WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:380,&quot;height&quot;:430},&quot;provider&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;Provider&quot;},&quot;match&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;onOpen&quot;:{&quot;editor&quot;:null,&quot;tsType&quot;:&quot;(p: Provider) =&gt; void&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props.provider || {};
+    const name = p.name || "";
+    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
+    const reviews = p.reviews == null ? 0 : p.reviews;
+    return {
+      name,
+      initials,
+      icon: p.icon || "work",
+      rating: p.rating ? p.rating.toFixed(1) : "Nuevo",
+      reviewsLabel: reviews ? reviews + " opiniones" : "Sin opiniones aún",
+      location: p.location || "",
+      destacado: !!p.destacado,
+      verificado: !!p.verificado && !p.destacado,
+      match: this.props.match || p.match || "",
+      services: (p.services || []).slice(0, 3),
+      onOpen: () => { if (this.props.onOpen) this.props.onOpen(p); }
+    };
+  }
+}
+</script>
+</body>
+</html>

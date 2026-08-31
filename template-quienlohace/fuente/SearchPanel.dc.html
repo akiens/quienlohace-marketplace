@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+</helmet>
+<div style="font-family:Inter,system-ui,sans-serif;background:linear-gradient(180deg,#455D88 0%,#182D53 100%);position:relative;overflow:visible">
+  <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 1px,transparent 1px 10px);pointer-events:none"></div>
+  <div style="max-width:1240px;margin:0 auto;padding:{{ pad }};position:relative">
+    <sc-if value="{{ showTitle }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+        <div style="font-size:{{ titleSize }};font-weight:800;letter-spacing:-.8px;color:#FFFFFF;line-height:1.1">{{ title }}</div>
+        <div style="font-size:15px;color:#C3CEE2">{{ subtitle }}</div>
+      </div>
+    </sc-if>
+    <div style="background:#FFFFFF;border-radius:14px;padding:10px;display:flex;flex-direction:{{ rowDir }};gap:8px;box-shadow:0 12px 30px -12px rgba(10,20,40,.45)">
+      <div style="flex:1 1 auto;display:flex;align-items:center;gap:9px;padding:0 12px;height:48px;background:#F7F8FA;border:1px solid #EAECF0;border-radius:10px">
+        <span style="font-family:'Material Symbols Outlined';font-size:21px;color:#667085">search</span>
+        <input type="text" value="{{ query }}" onChange="{{ onQuery }}" placeholder="Buscar profesionales, empresas o servicios..." style="flex:1 1 auto;border:0;outline:0;background:transparent;font-family:inherit;font-size:15px;color:#172033;min-width:0" />
+      </div>
+      <div style="display:flex;gap:8px;flex:{{ ctrlFlex }}">
+        <button type="button" onClick="{{ toggleZona }}" style="flex:1 1 auto;min-width:0;height:48px;padding:0 12px;border:1px solid {{ zonaBorder }};border-radius:10px;background:#FFFFFF;display:flex;align-items:center;gap:7px;cursor:pointer;font-family:inherit">
+          <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#20375F">location_on</span>
+          <span style="font-size:14.5px;font-weight:600;color:{{ zonaColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ zonaLabel }}</span>
+          <span style="font-family:'Material Symbols Outlined';font-size:18px;color:#98A2B3;margin-left:auto">expand_more</span>
+        </button>
+        <button type="button" onClick="{{ toggleCat }}" style="flex:1 1 auto;min-width:0;height:48px;padding:0 12px;border:1px solid {{ catBorder }};border-radius:10px;background:#FFFFFF;display:flex;align-items:center;gap:7px;cursor:pointer;font-family:inherit">
+          <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#20375F">{{ catIcon }}</span>
+          <span style="font-size:14.5px;font-weight:600;color:{{ catColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ catLabel }}</span>
+          <span style="font-family:'Material Symbols Outlined';font-size:18px;color:#98A2B3;margin-left:auto">expand_more</span>
+        </button>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button type="button" onClick="{{ onFilters }}" style="flex:0 0 auto;height:48px;padding:0 14px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;display:flex;align-items:center;gap:7px;cursor:pointer;font-family:inherit;font-size:14.5px;font-weight:600;color:#172033" style-hover="background:#F7F8FA">
+          <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#20375F">tune</span>Filtros
+          <sc-if value="{{ hasFilters }}" hint-placeholder-val="{{ false }}">
+            <span style="min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#F4C542;color:#172033;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">{{ filterCount }}</span>
+          </sc-if>
+        </button>
+        <button type="button" onClick="{{ onSearchClick }}" style="flex:1 1 auto;height:48px;padding:0 26px;border:0;border-radius:10px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;white-space:nowrap" style-hover="background:#101F3C">Buscar</button>
+      </div>
+    </div>
+
+    <sc-if value="{{ zonaOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;z-index:40;left:{{ popLeft }};right:{{ popRight }};margin-top:8px;background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;box-shadow:0 24px 48px -20px rgba(10,20,40,.4);overflow:hidden">
+        <div style="padding:12px 14px;border-bottom:1px solid #EFF1F5;display:flex;align-items:center;justify-content:space-between">
+          <div style="font-size:13.5px;font-weight:700;color:#172033">Ubicación · máximo 5</div>
+          <div onClick="{{ useMyLocation }}" style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:{{ geoColor }};cursor:pointer">
+            <span style="font-family:'Material Symbols Outlined';font-size:18px">my_location</span>Usar mi ubicación
+          </div>
+        </div>
+        <sc-if value="{{ zonaChips }}" hint-placeholder-val="{{ true }}">
+          <div style="padding:10px 14px;display:flex;flex-wrap:wrap;gap:6px;border-bottom:1px solid #EFF1F5;background:#FBFCFD">
+            <sc-for list="{{ chips }}" as="ch" hint-placeholder-count="2">
+              <span style="display:flex;align-items:center;gap:5px;font-size:12.5px;font-weight:600;color:#20375F;background:#EEF1F7;border-radius:999px;padding:5px 6px 5px 10px">{{ ch.label }}
+                <span onClick="{{ ch.remove }}" style="font-family:'Material Symbols Outlined';font-size:15px;color:#5B6B87;cursor:pointer">close</span>
+              </span>
+            </sc-for>
+          </div>
+        </sc-if>
+        <div style="display:grid;grid-template-columns:repeat({{ geoCols }},1fr);max-height:300px">
+          <div style="border-right:1px solid #EFF1F5;overflow:auto;padding:6px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.5px;color:#98A2B3;padding:6px 8px">DEPARTAMENTO</div>
+            <sc-for list="{{ depts }}" as="d" hint-placeholder-count="8">
+              <div onClick="{{ d.pick }}" style="display:flex;align-items:center;gap:6px;padding:8px;border-radius:7px;font-size:13.5px;font-weight:{{ d.weight }};color:#344054;cursor:pointer;background:{{ d.bg }}" style-hover="background:#F5F6F8">{{ d.name }}
+                <span style="font-family:'Material Symbols Outlined';font-size:17px;color:#98A2B3;margin-left:auto">chevron_right</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="border-right:1px solid #EFF1F5;overflow:auto;padding:6px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.5px;color:#98A2B3;padding:6px 8px">CIUDAD / LOCALIDAD</div>
+            <sc-for list="{{ cities }}" as="c" hint-placeholder-count="6">
+              <div onClick="{{ c.pick }}" style="display:flex;align-items:center;gap:6px;padding:8px;border-radius:7px;font-size:13.5px;font-weight:{{ c.weight }};color:#344054;cursor:pointer;background:{{ c.bg }}" style-hover="background:#F5F6F8">{{ c.name }}
+                <span style="font-family:'Material Symbols Outlined';font-size:17px;color:{{ c.chevColor }};margin-left:auto">{{ c.chev }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="overflow:auto;padding:6px">
+            <div style="font-size:11px;font-weight:700;letter-spacing:.5px;color:#98A2B3;padding:6px 8px">BARRIO / ZONA</div>
+            <sc-for list="{{ hoods }}" as="h" hint-placeholder-count="6">
+              <div onClick="{{ h.pick }}" style="padding:8px;border-radius:7px;font-size:13.5px;color:#344054;cursor:pointer;background:{{ h.bg }}" style-hover="background:#F5F6F8">{{ h.name }}</div>
+            </sc-for>
+            <sc-if value="{{ noHoods }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:10px 8px;font-size:13px;color:#98A2B3;line-height:1.5">Elegí una localidad para ver sus zonas. También podés quedarte en el nivel anterior.</div>
+            </sc-if>
+          </div>
+        </div>
+        <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #EFF1F5">
+          <div onClick="{{ clearZonas }}" style="font-size:13px;font-weight:600;color:#667085;cursor:pointer">Limpiar</div>
+          <button type="button" onClick="{{ closeZona }}" style="height:34px;padding:0 16px;border:0;border-radius:8px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer">Aplicar</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ catOpen }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;z-index:40;left:{{ popLeft }};right:{{ popRight }};margin-top:8px;background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;box-shadow:0 24px 48px -20px rgba(10,20,40,.4);overflow:hidden">
+        <div style="padding:12px 14px;border-bottom:1px solid #EFF1F5;font-size:13.5px;font-weight:700;color:#172033">Categoría · máximo 5</div>
+        <div style="display:grid;grid-template-columns:repeat({{ catCols }},1fr);max-height:320px">
+          <div style="border-right:1px solid #EFF1F5;overflow:auto;padding:6px">
+            <sc-for list="{{ catList }}" as="c" hint-placeholder-count="10">
+              <div onClick="{{ c.pick }}" style="display:flex;align-items:center;gap:9px;padding:8px;border-radius:7px;cursor:pointer;background:{{ c.bg }}" style-hover="background:#F5F6F8">
+                <span style="font-family:'Material Symbols Outlined';font-size:19px;color:#20375F">{{ c.icon }}</span>
+                <div style="font-size:13.5px;font-weight:{{ c.weight }};color:#344054;line-height:1.3">{{ c.short }}</div>
+                <span style="font-family:'Material Symbols Outlined';font-size:17px;color:#98A2B3;margin-left:auto">chevron_right</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="overflow:auto;padding:6px">
+            <sc-for list="{{ subList }}" as="s" hint-placeholder-count="8">
+              <div onClick="{{ s.pick }}" style="display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:7px;font-size:13.5px;color:#344054;cursor:pointer;background:{{ s.bg }}" style-hover="background:#F5F6F8">
+                <span style="width:16px;height:16px;border-radius:4px;border:1.5px solid {{ s.boxBorder }};background:{{ s.boxBg }};display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                  <span style="font-family:'Material Symbols Outlined';font-size:13px;color:#FFFFFF">{{ s.check }}</span>
+                </span>{{ s.name }}
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #EFF1F5">
+          <div onClick="{{ clearCats }}" style="font-size:13px;font-weight:600;color:#667085;cursor:pointer">Limpiar</div>
+          <button type="button" onClick="{{ closeCat }}" style="height:34px;padding:0 16px;border:0;border-radius:8px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer">Aplicar</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ showQuick }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <span style="font-size:13px;color:#AFBDD6;font-weight:500">Búsquedas frecuentes:</span>
+        <sc-for list="{{ quick }}" as="q" hint-placeholder-count="5">
+          <span onClick="{{ q.go }}" style="font-size:13px;font-weight:600;color:#FFFFFF;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.22);padding:5px 11px;border-radius:999px;cursor:pointer" style-hover="background:rgba(255,255,255,.24)">{{ q.label }}</span>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;variant&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;hero&quot;,&quot;compact&quot;],&quot;default&quot;:&quot;hero&quot;,&quot;tsType&quot;:&quot;'hero'|'compact'&quot;},&quot;title&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;¿Qué servicio necesitás?&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;subtitle&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Encontrá profesionales y empresas verificadas en todo Uruguay.&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;isMobile&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;query&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;filterCount&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:0,&quot;tsType&quot;:&quot;number&quot;}}">
+class Component extends DCLogic {
+  state = { zona: false, cat: false, dept: "Montevideo", city: "Montevideo", catIdx: 0 };
+
+  renderVals() {
+    const p = this.props;
+    const geo = p.geo || {};
+    const cats = p.categories || [];
+    const zonas = p.zonas || [];
+    const selCats = p.selCats || [];
+    const isMobile = !!p.isMobile;
+    const hero = p.variant !== "compact";
+    const dept = geo[this.state.dept] || {};
+    const cities = Object.keys(dept);
+    const hoods = dept[this.state.city] || [];
+    const activeCat = cats[this.state.catIdx] || { subs: [] };
+    const zonaLabel = zonas.length === 0 ? "Todo el país" : zonas.length === 1 ? zonas[0] : zonas[0] + " +" + (zonas.length - 1);
+    const catLabel = selCats.length === 0 ? "Todas las categorías" : selCats.length === 1 ? selCats[0] : selCats[0] + " +" + (selCats.length - 1);
+
+    const addZona = (label) => {
+      if (zonas.indexOf(label) >= 0 || zonas.length >= 5) return;
+      p.onZonas && p.onZonas(zonas.concat([label]));
+    };
+    const toggleSub = (name) => {
+      const i = selCats.indexOf(name);
+      if (i >= 0) p.onCats && p.onCats(selCats.filter(x => x !== name));
+      else if (selCats.length < 5) p.onCats && p.onCats(selCats.concat([name]));
+    };
+
+    return {
+      pad: hero ? (isMobile ? "18px 18px 20px" : "22px 24px 24px") : (isMobile ? "3px 10px" : "3px 14px"),
+      showTitle: hero,
+      titleSize: isMobile ? "26px" : "34px",
+      title: p.title || "¿Qué servicio necesitás?",
+      subtitle: p.subtitle || "Encontrá profesionales y empresas verificadas en todo Uruguay.",
+      rowDir: isMobile ? "column" : "row",
+      ctrlFlex: isMobile ? "1 1 auto" : "0 0 400px",
+      geoCols: isMobile ? 1 : 3,
+      catCols: isMobile ? 1 : 2,
+      popLeft: hero ? (isMobile ? "18px" : "24px") : (isMobile ? "10px" : "14px"),
+      popRight: hero ? (isMobile ? "18px" : "24px") : (isMobile ? "10px" : "14px"),
+      showQuick: hero,
+      query: p.query || "",
+      onQuery: (e) => p.onQuery && p.onQuery(e.target.value),
+      zonaLabel, catLabel,
+      zonaColor: zonas.length ? "#172033" : "#667085",
+      catColor: selCats.length ? "#172033" : "#667085",
+      zonaBorder: this.state.zona ? "#20375F" : "#D8DDE6",
+      catBorder: this.state.cat ? "#20375F" : "#D8DDE6",
+      catIcon: selCats.length ? "check_circle" : "category",
+      hasFilters: (p.filterCount || 0) > 0,
+      filterCount: p.filterCount || 0,
+      zonaOpen: this.state.zona,
+      catOpen: this.state.cat,
+      zonaChips: zonas.length > 0,
+      chips: zonas.map(z => ({ label: z, remove: () => p.onZonas && p.onZonas(zonas.filter(x => x !== z)) })),
+      geoColor: p.geoActive ? "#20375F" : "#667085",
+      depts: Object.keys(geo).map(d => ({
+        name: d,
+        weight: d === this.state.dept ? 700 : 500,
+        bg: d === this.state.dept ? "#F5F6F8" : "transparent",
+        pick: () => { this.setState({ dept: d, city: Object.keys(geo[d])[0] }); addZona(d); }
+      })),
+      cities: cities.map(c => ({
+        name: c,
+        weight: c === this.state.city ? 700 : 500,
+        bg: c === this.state.city ? "#F5F6F8" : "transparent",
+        chev: (dept[c] || []).length ? "chevron_right" : "",
+        chevColor: "#98A2B3",
+        pick: () => { this.setState({ city: c }); addZona(c + ", " + this.state.dept); }
+      })),
+      hoods: hoods.map(h => ({
+        name: h,
+        bg: zonas.indexOf(h + ", " + this.state.city) >= 0 ? "#EEF1F7" : "transparent",
+        pick: () => addZona(h + ", " + this.state.city)
+      })),
+      noHoods: hoods.length === 0,
+      catList: cats.map((c, i) => ({
+        short: c.short || c.name, icon: c.icon,
+        weight: i === this.state.catIdx ? 700 : 500,
+        bg: i === this.state.catIdx ? "#F5F6F8" : "transparent",
+        pick: () => this.setState({ catIdx: i })
+      })),
+      subList: (activeCat.subs || []).map(s => {
+        const on = selCats.indexOf(s) >= 0;
+        return {
+          name: s, bg: on ? "#F7F8FA" : "transparent",
+          boxBorder: on ? "#20375F" : "#CDD4E0",
+          boxBg: on ? "#20375F" : "#FFFFFF",
+          check: on ? "check" : "",
+          pick: () => toggleSub(s)
+        };
+      }),
+      quick: (p.quick || []).map(q => ({ label: q, go: () => p.onQuick && p.onQuick(q) })),
+      toggleZona: () => this.setState(s => ({ zona: !s.zona, cat: false })),
+      toggleCat: () => this.setState(s => ({ cat: !s.cat, zona: false })),
+      closeZona: () => this.setState({ zona: false }),
+      closeCat: () => this.setState({ cat: false }),
+      clearZonas: () => p.onZonas && p.onZonas([]),
+      clearCats: () => p.onCats && p.onCats([]),
+      useMyLocation: () => p.onGeo && p.onGeo(),
+      onFilters: () => p.onOpenFilters && p.onOpenFilters(),
+      onSearchClick: () => { this.setState({ zona: false, cat: false }); p.onSearch && p.onSearch(); }
+    };
+  }
+}
+</script>
+</body>
+</html>

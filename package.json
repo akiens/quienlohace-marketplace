@@ -1,0 +1,44 @@
+{
+  "name": "quienlohace-marketplace",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint src scripts",
+    "typecheck": "tsc --noEmit",
+    "check:data": "tsx scripts/check-data.ts",
+    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
+    "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
+    "db:migrate:local": "wrangler d1 migrations apply quienlohace --local",
+    "db:migrate:remote": "wrangler d1 migrations apply quienlohace --remote",
+    "db:seed:local": "wrangler d1 execute quienlohace --local --file=./seeds/dev-seed.sql",
+    "check:backend": "tsx --conditions=react-server scripts/check-backend.ts",
+    "seed:generate": "tsx --conditions=react-server scripts/generate-seed.ts"
+  },
+  "dependencies": {
+    "next": "^16.3.3",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "server-only": "^0.0.1",
+    "zod": "^4.5.4"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260831.1",
+    "@faker-js/faker": "^10.6.0",
+    "@opennextjs/cloudflare": "^1.20.4",
+    "@types/node": "22.10.7",
+    "@types/react": "19.0.7",
+    "@types/react-dom": "19.0.3",
+    "autoprefixer": "10.4.20",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.3",
+    "postcss": "^8.5.26",
+    "tailwindcss": "3.4.17",
+    "tsx": "^4.20.6",
+    "typescript": "5.7.3",
+    "wrangler": "^4.127.1"
+  }
+}

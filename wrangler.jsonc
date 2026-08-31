@@ -1,0 +1,37 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "quienlohace-marketplace",
+	"main": ".open-next/worker.js",
+	"compatibility_date": "2025-08-01",
+	// nodejs_compat es requerido por el adaptador de Next.js sobre Workers.
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"assets": {
+		"directory": ".open-next/assets",
+		"binding": "ASSETS"
+	},
+	"observability": {
+		"enabled": true
+	},
+	// Un único binding por recurso: el código usa `env.DB` y `env.MEDIA`.
+	// Sin `remote: true`, `wrangler dev` trabaja contra la D1 local; sólo los
+	// comandos con `--remote` tocan la base de producción.
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "quienlohace",
+			"database_id": "be93c0ea-e93a-45a8-95cb-08ff9933ed28",
+			"migrations_dir": "migrations"
+		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "MEDIA",
+			"bucket_name": "quienlohace-media"
+		}
+	],
+	"vars": {
+		"APP_URL": "https://quienlohace-marketplace.akiens-dev.workers.dev"
+	}
+}

@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+.env*.local
+.DS_Store
+
+# Cloudflare
+.open-next/
+.wrangler/
+
+# Seed generado (regenerar con npm run seed:generate)
+seeds/dev-seed.sql
+seeds/providers.json

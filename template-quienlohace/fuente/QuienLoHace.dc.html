@@ -1,0 +1,1139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:ital,wght@0,700;0,800;1,800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&display=swap" rel="stylesheet" />
+<style>
+  html, body { margin: 0; padding: 0; background: #F7F8FA; -webkit-font-smoothing: antialiased; }
+  * { box-sizing: border-box; }
+  a { color: #20375F; text-decoration: none; }
+  a:hover { color: #182D53; text-decoration: underline; }
+  ::placeholder { color: #98A2B3; }
+  @keyframes qlhPulse { 0%,100% { opacity: .55 } 50% { opacity: 1 } }
+  ::-webkit-scrollbar { width: 10px; height: 10px }
+  ::-webkit-scrollbar-thumb { background: #D8DDE6; border-radius: 999px; border: 3px solid #F7F8FA }
+</style>
+</helmet>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="#182D53"/><circle cx="200" cy="150" r="72" fill="none" stroke="#E6E6E6" stroke-width="7"/><text x="200" y="176" text-anchor="middle" font-family="Inter, Helvetica, Arial, sans-serif" font-size="72" font-weight="800"><tspan fill="#FFFFFF">Q</tspan><tspan fill="#F4C542">H</tspan></text></svg></template>
+<div style="font-family:Inter,system-ui,sans-serif;background:#F7F8FA;color:#172033;min-height:100vh">
+<div style="max-width:{{ frameW }};margin:0 auto;background:#F7F8FA;box-shadow:{{ frameShadow }};min-height:100vh">
+
+  <dc-import name="SiteHeader" categories="{{ cats }}" route="{{ route }}" is-mobile="{{ isMobile }}" on-nav="{{ nav }}" style="position:sticky;top:0;z-index:60" hint-size="100%,88px"></dc-import>
+
+  <!-- ══════════ 01 INICIO ══════════ -->
+  <sc-if value="{{ isHome }}" hint-placeholder-val="{{ true }}">
+    <div>
+      <dc-import name="SearchPanel" variant="hero" is-mobile="{{ isMobile }}" geo="{{ geo }}" categories="{{ cats }}" zonas="{{ zonas }}" sel-cats="{{ selCats }}" query="{{ query }}" quick="{{ quickSearches }}" filter-count="{{ filterCount }}" on-query="{{ setQuery }}" on-zonas="{{ setZonas }}" on-cats="{{ setSelCats }}" on-geo="{{ toggleGeo }}" on-quick="{{ runQuick }}" on-open-filters="{{ openFilters }}" on-search="{{ goResults }}" hint-size="100%,260px"></dc-import>
+
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(22px,3vw,30px) clamp(18px,3vw,24px) 0">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px">
+          <div style="font-size:clamp(17px,2vw,20px);font-weight:700;letter-spacing:-.3px">Categorías populares</div>
+          <div onClick="{{ goAllCats }}" style="font-size:14px;font-weight:600;color:#20375F;cursor:pointer;white-space:nowrap">Ver todas →</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(178px,1fr));gap:10px">
+          <sc-for list="{{ popular }}" as="pop" hint-placeholder-count="8">
+            <div onClick="{{ pop.go }}" style="display:flex;align-items:center;gap:10px;background:#FFFFFF;border:1px solid #E4E7EC;border-radius:12px;padding:11px 13px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease" style-hover="border-color:#C6CEDC;box-shadow:0 4px 12px -6px rgba(23,32,51,.18)">
+              <div style="width:34px;height:34px;border-radius:10px;background:#EEF1F7;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#20375F">{{ pop.icon }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:1px;min-width:0">
+                <div style="font-size:14px;font-weight:600;letter-spacing:-.1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ pop.label }}</div>
+                <div style="font-size:12px;color:#98A2B3">{{ pop.count }} profesionales</div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(28px,4vw,44px) clamp(18px,3vw,24px) 0">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:'Material Symbols Outlined';font-size:22px;color:#F4C542;font-variation-settings:'FILL' 1">star</span>
+              <div style="font-size:clamp(19px,2.4vw,23px);font-weight:700;letter-spacing:-.4px">Profesionales destacados</div>
+            </div>
+            <div style="font-size:14px;color:#667085">Perfiles con posicionamiento destacado en su categoría.</div>
+          </div>
+          <div onClick="{{ goDestacados }}" style="font-size:14px;font-weight:600;color:#20375F;cursor:pointer;white-space:nowrap">Ver todos →</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+          <sc-for list="{{ homeDestacados }}" as="p" hint-placeholder-count="6">
+            <dc-import name="ProviderCard" provider="{{ p }}" on-open="{{ openProfile }}" hint-size="100%,420px"></dc-import>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(26px,3.5vw,38px) clamp(18px,3vw,24px) 0">
+        <div style="border:1px solid #E4E7EC;border-radius:14px;background:#FFFFFF;overflow:hidden">
+          <div style="padding:7px 14px;background:#F7F8FA;border-bottom:1px solid #EFF1F5;font-size:11px;font-weight:700;letter-spacing:.7px;color:#98A2B3;text-transform:uppercase">Publicidad · Espacio patrocinado</div>
+          <div style="padding:clamp(16px,2.5vw,22px);display:flex;flex-wrap:wrap;align-items:center;gap:18px">
+            <div style="width:56px;height:56px;border-radius:14px;background:#FDF4E3;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+              <span style="font-family:'Material Symbols Outlined';font-size:28px;color:#B98A05">storefront</span>
+            </div>
+            <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:3px">
+              <div style="font-size:16.5px;font-weight:700;letter-spacing:-.2px">Ferretería Industrial Rivera</div>
+              <div style="font-size:14px;color:#667085;line-height:1.5">Materiales eléctricos y sanitarios con envío a todo Montevideo. 15% off para profesionales registrados.</div>
+            </div>
+            <button type="button" style="height:42px;padding:0 18px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;color:#172033;cursor:pointer" style-hover="background:#F7F8FA">Conocer más</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(28px,4vw,44px) clamp(18px,3vw,24px) 0">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-family:'Material Symbols Outlined';font-size:22px;color:#20375F">near_me</span>
+              <div style="font-size:clamp(19px,2.4vw,23px);font-weight:700;letter-spacing:-.4px">Profesionales cerca de ti</div>
+            </div>
+            <div style="font-size:14px;color:#667085">Mostrando resultados para <strong style="color:#20375F">Montevideo</strong> · <span onClick="{{ toggleGeo }}" style="color:#20375F;font-weight:600;cursor:pointer">cambiar ubicación</span></div>
+          </div>
+          <div onClick="{{ goResults }}" style="font-size:14px;font-weight:600;color:#20375F;cursor:pointer;white-space:nowrap">Ver más profesionales →</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+          <sc-for list="{{ homeCerca }}" as="p" hint-placeholder-count="6">
+            <dc-import name="ProviderCard" provider="{{ p }}" on-open="{{ openProfile }}" hint-size="100%,420px"></dc-import>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(28px,4vw,44px) clamp(18px,3vw,24px) 0">
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px">
+          <div style="font-size:clamp(19px,2.4vw,23px);font-weight:700;letter-spacing:-.4px">Explorar por categoría</div>
+          <div onClick="{{ goAllCats }}" style="font-size:14px;font-weight:600;color:#20375F;cursor:pointer;white-space:nowrap">Ver todas las categorías →</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px">
+          <sc-for list="{{ exploreCats }}" as="c" hint-placeholder-count="6">
+            <div onClick="{{ c.go }}" style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease" style-hover="border-color:#C6CEDC;box-shadow:0 8px 20px -10px rgba(23,32,51,.2)">
+              <div style="width:46px;height:46px;border-radius:13px;background:linear-gradient(180deg,#455D88 0%,#20375F 100%);display:flex;align-items:center;justify-content:center">
+                <span style="font-family:'Material Symbols Outlined';font-size:24px;color:#F4C542">{{ c.icon }}</span>
+              </div>
+              <div style="display:flex flex-direction:column">
+                <div style="font-size:15.5px;font-weight:700;line-height:1.3;letter-spacing:-.2px">{{ c.short }}</div>
+              </div>
+              <div style="font-size:13px;color:#667085;margin-top:-6px">{{ c.count }} profesionales · {{ c.subCount }} subcategorías</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(28px,4vw,44px) clamp(18px,3vw,24px) 0">
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:16px;padding:clamp(20px,3vw,30px)">
+          <div style="font-size:clamp(18px,2.2vw,21px);font-weight:700;letter-spacing:-.3px;margin-bottom:18px">¿Cómo funciona?</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+              <div style="display:flex;gap:13px;align-items:flex-start">
+                <div style="width:40px;height:40px;border-radius:11px;background:#EEF1F7;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                  <span style="font-family:'Material Symbols Outlined';font-size:21px;color:#20375F">{{ s.icon }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:3px">
+                  <div style="font-size:15px;font-weight:700">{{ s.n }}. {{ s.title }}</div>
+                  <div style="font-size:14px;color:#667085;line-height:1.5">{{ s.text }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(28px,4vw,44px) clamp(18px,3vw,24px) clamp(34px,5vw,56px)">
+        <div style="border-radius:16px;background:linear-gradient(180deg,#455D88 0%,#182D53 100%);padding:clamp(24px,3.4vw,36px);display:flex;flex-wrap:wrap;align-items:center;gap:20px;position:relative;overflow:hidden">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 1px,transparent 1px 10px)"></div>
+          <div style="flex:1 1 320px;display:flex;flex-direction:column;gap:8px;position:relative">
+            <div style="font-size:clamp(20px,2.6vw,26px);font-weight:800;color:#FFFFFF;letter-spacing:-.5px">¿Ofrecés un servicio?</div>
+            <div style="font-size:15px;color:#C3CEE2;line-height:1.55;max-width:520px">Creá tu perfil gratis y empezá a aparecer en QuienLoHace. Sumá tus servicios, tus zonas de trabajo y recibí contactos directos por WhatsApp.</div>
+          </div>
+          <button type="button" onClick="{{ goLogin }}" style="position:relative;height:48px;padding:0 24px;border:0;border-radius:11px;background:#F4C542;color:#172033;font-family:inherit;font-size:15.5px;font-weight:700;cursor:pointer" style-hover="background:#E9B92F">Crear perfil</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 02 DESTACADOS ══════════ -->
+  <sc-if value="{{ isDestacados }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <dc-import name="SearchPanel" variant="compact" is-mobile="{{ isMobile }}" geo="{{ geo }}" categories="{{ cats }}" zonas="{{ zonas }}" sel-cats="{{ selCats }}" query="{{ query }}" filter-count="{{ filterCount }}" on-query="{{ setQuery }}" on-zonas="{{ setZonas }}" on-cats="{{ setSelCats }}" on-geo="{{ toggleGeo }}" on-open-filters="{{ openFilters }}" on-search="{{ goResults }}" hint-size="100%,100px"></dc-import>
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(20px,3vw,28px) clamp(18px,3vw,24px) clamp(34px,5vw,56px)">
+        <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px">
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font-family:'Material Symbols Outlined';font-size:26px;color:#F4C542;font-variation-settings:'FILL' 1">star</span>
+            <div style="font-size:clamp(23px,3vw,30px);font-weight:800;letter-spacing:-.7px">Profesionales destacados</div>
+          </div>
+          <div style="font-size:15px;color:#667085;max-width:640px;line-height:1.55">Perfiles con posicionamiento destacado. Aparecen primero en su categoría y en los resultados de búsqueda.</div>
+        </div>
+        <div style="display:flex;gap:8px;overflow:auto;padding-bottom:4px;margin-bottom:20px">
+          <sc-for list="{{ destTabs }}" as="t" hint-placeholder-count="7">
+            <div onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:7px;padding:9px 14px;border:1px solid {{ t.border }};background:{{ t.bg }};border-radius:999px;font-size:13.5px;font-weight:600;color:{{ t.color }};cursor:pointer;white-space:nowrap;flex:0 0 auto">
+              <span style="font-family:'Material Symbols Outlined';font-size:17px;color:{{ t.iconColor }}">{{ t.icon }}</span>{{ t.label }}
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+          <sc-for list="{{ destList }}" as="p" hint-placeholder-count="12">
+            <dc-import name="ProviderCard" provider="{{ p }}" on-open="{{ openProfile }}" hint-size="100%,420px"></dc-import>
+          </sc-for>
+        </div>
+        <div style="display:flex;justify-content:center;margin-top:28px">
+          <button type="button" onClick="{{ showMore }}" style="height:46px;padding:0 24px;border:1px solid #D8DDE6;border-radius:11px;background:#FFFFFF;font-family:inherit;font-size:15px;font-weight:600;color:#172033;cursor:pointer" style-hover="background:#FFFFFF;border-color:#20375F">Mostrar 12 más</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 03 RESULTADOS ══════════ -->
+  <sc-if value="{{ isResultados }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <dc-import name="SearchPanel" variant="compact" is-mobile="{{ isMobile }}" geo="{{ geo }}" categories="{{ cats }}" zonas="{{ zonas }}" sel-cats="{{ selCats }}" query="{{ query }}" filter-count="{{ filterCount }}" on-query="{{ setQuery }}" on-zonas="{{ setZonas }}" on-cats="{{ setSelCats }}" on-geo="{{ toggleGeo }}" on-open-filters="{{ openFilters }}" on-search="{{ goResults }}" hint-size="100%,100px"></dc-import>
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(16px,2.4vw,22px) clamp(18px,3vw,24px) clamp(34px,5vw,56px)">
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#667085;margin-bottom:12px">
+          <span onClick="{{ goHome }}" style="cursor:pointer;color:#20375F;font-weight:500">Inicio</span>
+          <span style="font-family:'Material Symbols Outlined';font-size:16px;color:#C6CEDC">chevron_right</span>
+          <span>Búsqueda</span>
+        </div>
+        <sc-if value="{{ hasChips }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:16px">
+            <span style="font-size:13.5px;color:#667085;margin-right:4px">{{ resultCountLabel }} ·</span>
+            <sc-for list="{{ activeChips }}" as="ch" hint-placeholder-count="3">
+              <span style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:#20375F;background:#FFFFFF;border:1px solid #C6CEDC;border-radius:999px;padding:6px 8px 6px 12px">{{ ch.label }}
+                <span onClick="{{ ch.remove }}" style="font-family:'Material Symbols Outlined';font-size:16px;color:#5B6B87;cursor:pointer">close</span>
+              </span>
+            </sc-for>
+            <span onClick="{{ clearFilters }}" style="font-size:13px;font-weight:600;color:#667085;cursor:pointer;padding:0 6px">Limpiar todo</span>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noChips }}" hint-placeholder-val="{{ false }}">
+          <div style="font-size:13.5px;color:#667085;margin-bottom:16px">{{ resultCountLabel }}</div>
+        </sc-if>
+
+        <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+            <sc-for list="{{ skeletons }}" as="sk" hint-placeholder-count="6">
+              <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;overflow:hidden;animation:qlhPulse 1.4s ease-in-out infinite">
+                <div style="height:132px;background:#EDEFF3"></div>
+                <div style="padding:18px;display:flex;flex-direction:column;gap:10px">
+                  <div style="width:54px;height:54px;border-radius:14px;background:#E7EAEF;margin-top:-40px;border:3px solid #FFFFFF"></div>
+                  <div style="height:16px;width:62%;border-radius:6px;background:#E7EAEF"></div>
+                  <div style="height:12px;width:44%;border-radius:6px;background:#EDEFF3"></div>
+                  <div style="height:12px;width:52%;border-radius:6px;background:#EDEFF3"></div>
+                  <div style="display:flex;gap:8px;margin-top:6px">
+                    <div style="height:40px;flex:1 1 auto;border-radius:10px;background:#E7EAEF"></div>
+                    <div style="height:40px;width:110px;border-radius:10px;background:#EDEFF3"></div>
+                  </div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:16px;padding:clamp(28px,5vw,54px);display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px">
+            <div style="width:60px;height:60px;border-radius:16px;background:#F2F4F7;display:flex;align-items:center;justify-content:center">
+              <span style="font-family:'Material Symbols Outlined';font-size:30px;color:#98A2B3">search_off</span>
+            </div>
+            <div style="font-size:19px;font-weight:700">No encontramos profesionales para esta búsqueda</div>
+            <div style="font-size:14.5px;color:#667085;max-width:460px;line-height:1.55">Probá con menos filtros, ampliá la zona o buscá por la categoría en lugar del servicio exacto.</div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:6px">
+              <button type="button" onClick="{{ clearFilters }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer">Limpiar filtros</button>
+              <button type="button" onClick="{{ goAllCats }}" style="height:44px;padding:0 18px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;color:#172033;cursor:pointer">Explorar categorías</button>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ showResults }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:22px">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <div style="font-size:16px;font-weight:700">Todos los profesionales</div>
+                <sc-if value="{{ hasSponsored }}" hint-placeholder-val="{{ true }}">
+                  <span style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#7A5A05;background:#FEF8E7;border:1px solid #F6E2A6;padding:4px 9px 4px 7px;border-radius:999px">
+                    <span style="font-family:'Material Symbols Outlined';font-size:14px;color:#E0A800;font-variation-settings:'FILL' 1">star</span>Los destacados aparecen primero
+                  </span>
+                </sc-if>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+                <sc-for list="{{ resultList }}" as="p" hint-placeholder-count="12">
+                  <dc-import name="ProviderCard" provider="{{ p }}" on-open="{{ openProfile }}" hint-size="100%,420px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;justify-content:center">
+              <button type="button" onClick="{{ showMore }}" style="height:46px;padding:0 24px;border:1px solid #D8DDE6;border-radius:11px;background:#FFFFFF;font-family:inherit;font-size:15px;font-weight:600;color:#172033;cursor:pointer" style-hover="border-color:#20375F">Mostrar 12 más</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 04 CATEGORÍA / 05 SUBCATEGORÍA ══════════ -->
+  <sc-if value="{{ isCatPage }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <dc-import name="SearchPanel" variant="compact" is-mobile="{{ isMobile }}" geo="{{ geo }}" categories="{{ cats }}" zonas="{{ zonas }}" sel-cats="{{ selCats }}" query="{{ query }}" filter-count="{{ filterCount }}" on-query="{{ setQuery }}" on-zonas="{{ setZonas }}" on-cats="{{ setSelCats }}" on-geo="{{ toggleGeo }}" on-open-filters="{{ openFilters }}" on-search="{{ goResults }}" hint-size="100%,100px"></dc-import>
+      <div style="max-width:1240px;margin:0 auto;padding:clamp(16px,2.4vw,22px) clamp(18px,3vw,24px) clamp(34px,5vw,56px)">
+        <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#667085;margin-bottom:14px;flex-wrap:wrap">
+          <sc-for list="{{ crumbs }}" as="b" hint-placeholder-count="3">
+            <span onClick="{{ b.go }}" style="cursor:{{ b.cursor }};color:{{ b.color }};font-weight:{{ b.weight }}">{{ b.label }}</span>
+            <span style="font-family:'Material Symbols Outlined';font-size:16px;color:#C6CEDC">{{ b.sep }}</span>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px">
+          <div style="width:100%;font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#98A2B3;margin-bottom:2px">{{ chipsTitle }}</div>
+          <sc-for list="{{ catChips }}" as="ch" hint-placeholder-count="8">
+            <div onClick="{{ ch.go }}" style="padding:9px 14px;border:1px solid {{ ch.border }};background:{{ ch.bg }};border-radius:999px;font-size:13.5px;font-weight:600;color:{{ ch.color }};cursor:pointer" style-hover="border-color:#20375F">{{ ch.label }}</div>
+          </sc-for>
+        </div>
+        <div style="font-size:13.5px;color:#667085;margin-bottom:16px">{{ catCountLabel }}</div>
+        <div style="display:flex;flex-direction:column;gap:26px">
+          <sc-if value="{{ hasCatDest }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#F4C542;font-variation-settings:'FILL' 1">star</span>
+                <div style="font-size:16px;font-weight:700">Destacados en {{ catShort }}</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+                <sc-for list="{{ catDest }}" as="p" hint-placeholder-count="3">
+                  <dc-import name="ProviderCard" provider="{{ p }}" on-open="{{ openProfile }}" hint-size="100%,420px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasCatList }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:16px;font-weight:700">Todos los profesionales</div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+                <sc-for list="{{ catList }}" as="p" hint-placeholder-count="6">
+                  <dc-import name="ProviderCard" provider="{{ p }}" on-open="{{ openProfile }}" hint-size="100%,420px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ hasCatOthers }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+                <div style="font-size:16px;font-weight:700">{{ othersTitle }}</div>
+                <div style="font-size:13px;color:#98A2B3">Sugeridos por cercanía de rubro</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px">
+                <sc-for list="{{ catOthers }}" as="p" hint-placeholder-count="3">
+                  <dc-import name="ProviderCard" provider="{{ p }}" on-open="{{ openProfile }}" hint-size="100%,420px"></dc-import>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+          <div style="display:flex;justify-content:center">
+            <button type="button" onClick="{{ showMore }}" style="height:46px;padding:0 24px;border:1px solid #D8DDE6;border-radius:11px;background:#FFFFFF;font-family:inherit;font-size:15px;font-weight:600;color:#172033;cursor:pointer" style-hover="border-color:#20375F">Mostrar 12 más</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 06 PERFIL ══════════ -->
+  <sc-if value="{{ isPerfil }}" hint-placeholder-val="{{ false }}">
+    <div>
+      <div style="position:relative;height:clamp(150px,22vw,230px);background:linear-gradient(180deg,#455D88 0%,#182D53 100%);overflow:hidden">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 1px,transparent 1px 11px)"></div>
+        <div style="position:absolute;right:clamp(10px,4vw,60px);bottom:-30px;font-family:'Material Symbols Outlined';font-size:clamp(140px,20vw,230px);line-height:1;color:rgba(255,255,255,.12)">{{ profIcon }}</div>
+      </div>
+      <div style="max-width:1240px;margin:0 auto;padding:0 clamp(18px,3vw,24px)">
+        <div style="display:flex;flex-wrap:wrap;align-items:flex-end;gap:18px;padding-top:14px;position:relative">
+          <div style="width:104px;height:104px;margin-top:-60px;margin-bottom:-4px;border-radius:22px;background:#FFFFFF;border:1px solid #E4E7EC;box-shadow:0 6px 18px -8px rgba(23,32,51,.28);display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+            <div style="width:84px;height:84px;border-radius:17px;background:#EEF1F7;color:#20375F;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;letter-spacing:-1px">{{ profInitials }}</div>
+          </div>
+          <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:7px;padding-bottom:4px">
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px">
+              <div style="font-size:clamp(22px,3vw,30px);font-weight:800;letter-spacing:-.7px">{{ profName }}</div>
+              <div style="display:flex;align-items:center;gap:5px;background:#F4C542;color:#172033;font-size:12px;font-weight:700;padding:5px 10px 5px 7px;border-radius:999px">
+                <span style="font-family:'Material Symbols Outlined';font-size:15px;font-variation-settings:'FILL' 1">star</span>Destacado
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;background:#EEF1F7;color:#20375F;font-size:12px;font-weight:700;padding:5px 10px 5px 7px;border-radius:999px">
+                <span style="font-family:'Material Symbols Outlined';font-size:15px;font-variation-settings:'FILL' 1">verified</span>Verificado
+              </div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;gap:14px;font-size:14.5px;color:#667085">
+              <span style="display:flex;align-items:center;gap:5px"><span style="font-family:'Material Symbols Outlined';font-size:18px;color:#20375F">{{ profIcon }}</span>{{ profCat }}</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="font-family:'Material Symbols Outlined';font-size:18px;color:#98A2B3">location_on</span>{{ profLocation }}</span>
+              <span style="display:flex;align-items:center;gap:5px;color:#172033;font-weight:600"><span style="font-family:'Material Symbols Outlined';font-size:18px;color:#F4C542;font-variation-settings:'FILL' 1">star</span>{{ profRating }} <span style="color:#667085;font-weight:400">· {{ profReviews }} opiniones</span></span>
+            </div>
+          </div>
+          <sc-if value="{{ isDesktopView }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:9px;padding-bottom:6px">
+              <button type="button" style="height:46px;padding:0 18px;border:0;border-radius:11px;background:#25A366;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="background:#1E8C56">
+                <span style="font-family:'Material Symbols Outlined';font-size:20px">chat</span>WhatsApp
+              </button>
+              <button type="button" style="height:46px;padding:0 18px;border:1px solid #D8DDE6;border-radius:11px;background:#FFFFFF;color:#172033;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="background:#F7F8FA">
+                <span style="font-family:'Material Symbols Outlined';font-size:20px;color:#20375F">call</span>Llamar
+              </button>
+              <button type="button" onClick="{{ goContacto }}" style="height:46px;padding:0 16px;border:1px solid #D8DDE6;border-radius:11px;background:#FFFFFF;color:#172033;font-family:inherit;font-size:15px;font-weight:600;cursor:pointer">Contactar</button>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:22px;padding:clamp(22px,3vw,32px) 0 clamp(34px,5vw,56px);align-items:start">
+          <div style="display:flex;flex-direction:column;gap:18px;grid-column:{{ mainSpan }}">
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:10px">
+              <div style="font-size:16px;font-weight:700">Sobre {{ profName }}</div>
+              <div style="font-size:14.5px;color:#475467;line-height:1.65">{{ profDesc }}</div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px">
+              <div style="font-size:16px;font-weight:700">Servicios</div>
+              <div style="display:flex;flex-wrap:wrap;gap:8px">
+                <sc-for list="{{ profServices }}" as="s" hint-placeholder-count="5">
+                  <div style="display:flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid #E4E7EC;background:#FBFCFD;border-radius:10px;font-size:14px;font-weight:500;color:#344054">
+                    <span style="font-family:'Material Symbols Outlined';font-size:17px;color:#20375F">check_circle</span>{{ s }}
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:16px;font-weight:700">Galería</div>
+                <div style="font-size:12.5px;color:#98A2B3">4 imágenes · plan gratuito</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+                <sc-for list="{{ gallery }}" as="g" hint-placeholder-count="4">
+                  <div style="aspect-ratio:4/3;border-radius:11px;border:1px solid #E7EAEF;background:repeating-linear-gradient(135deg,#F1F3F7 0 6px,#E9ECF2 6px 12px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
+                    <span style="font-family:'Material Symbols Outlined';font-size:22px;color:#A9B2C3">image</span>
+                    <span style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;color:#98A2B3;letter-spacing:.3px">{{ g }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:18px">
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <div style="font-size:32px;font-weight:800;letter-spacing:-1px;line-height:1">{{ profRating }}</div>
+                  <div style="display:flex;gap:1px">
+                    <sc-for list="{{ starRow }}" as="st" hint-placeholder-count="5">
+                      <span style="font-family:'Material Symbols Outlined';font-size:16px;color:#F4C542;font-variation-settings:'FILL' 1">star</span>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:12.5px;color:#667085">{{ profReviews }} opiniones</div>
+                </div>
+                <div style="flex:1 1 200px;display:flex;flex-direction:column;gap:5px">
+                  <sc-for list="{{ ratingBars }}" as="b" hint-placeholder-count="5">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <div style="font-size:11.5px;color:#98A2B3;width:12px">{{ b.n }}</div>
+                      <div style="flex:1 1 auto;height:6px;border-radius:999px;background:#F1F3F7;overflow:hidden">
+                        <div style="height:100%;border-radius:999px;background:#F4C542;width:{{ b.w }}"></div>
+                      </div>
+                      <div style="font-size:11.5px;color:#98A2B3;width:22px;text-align:right">{{ b.c }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="height:1px;background:#EFF1F5"></div>
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <sc-for list="{{ reviews }}" as="r" hint-placeholder-count="5">
+                  <div style="display:flex;gap:12px">
+                    <div style="width:38px;height:38px;border-radius:999px;background:#EEF1F7;color:#20375F;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:0 0 auto">{{ r.ini }}</div>
+                    <div style="display:flex;flex-direction:column;gap:4px">
+                      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:9px">
+                        <div style="font-size:14.5px;font-weight:600">{{ r.name }}</div>
+                        <div style="display:flex;align-items:center;gap:3px;font-size:12.5px;font-weight:600;color:#172033">
+                          <span style="font-family:'Material Symbols Outlined';font-size:14px;color:#F4C542;font-variation-settings:'FILL' 1">star</span>{{ r.rating }}
+                        </div>
+                        <div style="font-size:12.5px;color:#98A2B3">{{ r.date }}</div>
+                      </div>
+                      <div style="font-size:14px;color:#475467;line-height:1.6">{{ r.text }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </div>
+              <button type="button" style="height:44px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;color:#172033;cursor:pointer" style-hover="border-color:#20375F">Ver más opiniones</button>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:14px">
+              <div style="font-size:16px;font-weight:700">Información</div>
+              <sc-for list="{{ infoRows }}" as="i" hint-placeholder-count="6">
+                <div style="display:flex;gap:11px;align-items:flex-start">
+                  <span style="font-family:'Material Symbols Outlined';font-size:19px;color:#98A2B3;flex:0 0 auto">{{ i.icon }}</span>
+                  <div style="display:flex;flex-direction:column;gap:2px">
+                    <div style="font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:#98A2B3">{{ i.label }}</div>
+                    <div style="font-size:14px;color:#344054;line-height:1.5">{{ i.value }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:11px">
+              <div style="font-size:16px;font-weight:700">Zonas donde trabaja</div>
+              <div style="font-size:13px;color:#98A2B3;margin-top:-6px">Distinto de su ubicación física.</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px">
+                <sc-for list="{{ profZonas }}" as="z" hint-placeholder-count="6">
+                  <span style="font-size:12.5px;color:#475467;background:#F5F6F8;border:1px solid #ECEEF2;padding:5px 10px;border-radius:999px">{{ z }}</span>
+                </sc-for>
+              </div>
+            </div>
+            <div style="background:linear-gradient(180deg,#455D88 0%,#182D53 100%);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden">
+              <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 1px,transparent 1px 10px)"></div>
+              <div style="position:relative;font-size:16px;font-weight:700;color:#FFFFFF">Contactar a {{ profName }}</div>
+              <div style="position:relative;font-size:13.5px;color:#C3CEE2;line-height:1.55">Respondé en minutos. QuienLoHace no cobra comisión por el contacto.</div>
+              <button type="button" style="position:relative;height:44px;border:0;border-radius:10px;background:#25A366;color:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+                <span style="font-family:'Material Symbols Outlined';font-size:19px">chat</span>WhatsApp
+              </button>
+              <button type="button" style="position:relative;height:44px;border:1px solid rgba(255,255,255,.3);border-radius:10px;background:rgba(255,255,255,.12);color:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+                <span style="font-family:'Material Symbols Outlined';font-size:19px">call</span>{{ profPhone }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+        <div style="position:sticky;bottom:0;z-index:50;background:#FFFFFF;border-top:1px solid #E4E7EC;padding:10px 16px;display:flex;gap:9px;box-shadow:0 -6px 18px -10px rgba(23,32,51,.2)">
+          <button type="button" style="flex:1 1 auto;height:48px;border:0;border-radius:11px;background:#25A366;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer">
+            <span style="font-family:'Material Symbols Outlined';font-size:20px">chat</span>WhatsApp
+          </button>
+          <button type="button" style="flex:0 0 auto;width:56px;height:48px;border:1px solid #D8DDE6;border-radius:11px;background:#FFFFFF;display:flex;align-items:center;justify-content:center;cursor:pointer">
+            <span style="font-family:'Material Symbols Outlined';font-size:21px;color:#20375F">call</span>
+          </button>
+        </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 07 CÓMO FUNCIONA ══════════ -->
+  <sc-if value="{{ isComo }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:1000px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(18px,3vw,24px) clamp(34px,5vw,56px);display:flex;flex-direction:column;gap:clamp(26px,4vw,40px)">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:clamp(26px,3.6vw,36px);font-weight:800;letter-spacing:-1px">Cómo funciona QuienLoHace</div>
+        <div style="font-size:16px;color:#667085;line-height:1.65;max-width:680px;text-wrap:pretty">Somos un directorio de servicios: te ayudamos a encontrar al profesional o empresa adecuada y te ponemos en contacto directo. No cobramos comisión ni intermediamos el trabajo.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#20375F">Si buscás un servicio</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
+          <sc-for list="{{ stepsClientes }}" as="s" hint-placeholder-count="3">
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:11px">
+              <div style="width:46px;height:46px;border-radius:13px;background:#EEF1F7;display:flex;align-items:center;justify-content:center">
+                <span style="font-family:'Material Symbols Outlined';font-size:24px;color:#20375F">{{ s.icon }}</span>
+              </div>
+              <div style="font-size:16.5px;font-weight:700">{{ s.n }}. {{ s.title }}</div>
+              <div style="font-size:14.5px;color:#667085;line-height:1.6">{{ s.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#B98A05">Si ofrecés un servicio</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px">
+          <sc-for list="{{ stepsPros }}" as="s" hint-placeholder-count="3">
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:11px">
+              <div style="width:46px;height:46px;border-radius:13px;background:#FDF4E3;display:flex;align-items:center;justify-content:center">
+                <span style="font-family:'Material Symbols Outlined';font-size:24px;color:#B98A05">{{ s.icon }}</span>
+              </div>
+              <div style="font-size:16.5px;font-weight:700">{{ s.n }}. {{ s.title }}</div>
+              <div style="font-size:14.5px;color:#667085;line-height:1.6">{{ s.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:clamp(20px,3vw,28px);display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+        <div style="flex:1 1 280px;display:flex;flex-direction:column;gap:5px">
+          <div style="font-size:18px;font-weight:700">¿Te quedó alguna duda?</div>
+          <div style="font-size:14.5px;color:#667085">Mirá las preguntas frecuentes o escribinos directamente.</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button type="button" onClick="{{ goFaq }}" style="height:44px;padding:0 18px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;color:#172033;cursor:pointer">Preguntas frecuentes</button>
+          <button type="button" onClick="{{ goContacto }}" style="height:44px;padding:0 18px;border:0;border-radius:10px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer">Contacto</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 08 SOBRE NOSOTROS ══════════ -->
+  <sc-if value="{{ isSobre }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:1000px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(18px,3vw,24px) clamp(34px,5vw,56px);display:flex;flex-direction:column;gap:clamp(24px,3.5vw,36px)">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:clamp(26px,3.6vw,36px);font-weight:800;letter-spacing:-1px">Sobre nosotros</div>
+        <div style="font-size:16px;color:#667085;line-height:1.65;max-width:700px;text-wrap:pretty">QuienLoHace es un directorio uruguayo de profesionales, empresas de servicios y negocios especializados. Nacimos de un problema simple: encontrar a alguien de confianza para un trabajo concreto sigue dependiendo del boca a boca y de grupos dispersos.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:9px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#98A2B3">El problema</div>
+          <div style="font-size:15px;color:#475467;line-height:1.65">La oferta de servicios está fragmentada: recomendaciones en redes, avisos sueltos, teléfonos que no contestan. Del otro lado, miles de profesionales buenos sin una vitrina propia.</div>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:9px">
+          <div style="font-size:12px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:#98A2B3">Nuestra misión</div>
+          <div style="font-size:15px;color:#475467;line-height:1.65">Que cualquier persona en Uruguay pueda encontrar, comparar y contactar al profesional adecuado en menos de dos minutos, con información clara y verificable.</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="font-size:19px;font-weight:700;letter-spacing:-.3px">Principios de la plataforma</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px">
+          <sc-for list="{{ principios }}" as="p" hint-placeholder-count="4">
+            <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:9px">
+              <span style="font-family:'Material Symbols Outlined';font-size:24px;color:#20375F">{{ p.icon }}</span>
+              <div style="font-size:15.5px;font-weight:700">{{ p.title }}</div>
+              <div style="font-size:14px;color:#667085;line-height:1.6">{{ p.text }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border-radius:16px;background:linear-gradient(180deg,#455D88 0%,#182D53 100%);padding:clamp(22px,3.2vw,32px);display:flex;flex-wrap:wrap;align-items:center;gap:18px;position:relative;overflow:hidden">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 1px,transparent 1px 10px)"></div>
+        <div style="position:relative;flex:1 1 300px;display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:21px;font-weight:800;color:#FFFFFF;letter-spacing:-.5px">Estamos sumando profesionales de todo el país</div>
+          <div style="font-size:14.5px;color:#C3CEE2;line-height:1.55">Si trabajás por cuenta propia o tenés una empresa de servicios, tu perfil es gratis.</div>
+        </div>
+        <button type="button" onClick="{{ goLogin }}" style="position:relative;height:46px;padding:0 22px;border:0;border-radius:11px;background:#F4C542;color:#172033;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer">Crear perfil</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 09 CONTACTO ══════════ -->
+  <sc-if value="{{ isContacto }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:1000px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(18px,3vw,24px) clamp(34px,5vw,56px)">
+      <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:26px">
+        <div style="font-size:clamp(26px,3.6vw,36px);font-weight:800;letter-spacing:-1px">Contacto</div>
+        <div style="font-size:16px;color:#667085;line-height:1.6;max-width:620px">Escribinos por dudas, sugerencias, reportes de perfiles o consultas comerciales. Respondemos de lunes a viernes.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:20px;align-items:start">
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:16px;padding:clamp(20px,3vw,26px);grid-column:{{ mainSpan }}">
+          <sc-if value="{{ formSent }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;padding:clamp(18px,4vw,36px) 0">
+              <div style="width:58px;height:58px;border-radius:16px;background:#E9F7EF;display:flex;align-items:center;justify-content:center">
+                <span style="font-family:'Material Symbols Outlined';font-size:30px;color:#25A366;font-variation-settings:'FILL' 1">check_circle</span>
+              </div>
+              <div style="font-size:19px;font-weight:700">Mensaje enviado</div>
+              <div style="font-size:14.5px;color:#667085;max-width:380px;line-height:1.6">Gracias por escribirnos. Te vamos a responder al correo que indicaste dentro de las próximas 48 horas hábiles.</div>
+              <button type="button" onClick="{{ resetForm }}" style="height:42px;padding:0 18px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;color:#172033;cursor:pointer;margin-top:6px">Enviar otro mensaje</button>
+            </div>
+          </sc-if>
+          <sc-if value="{{ formOpen }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="font-size:13.5px;font-weight:600;color:#344054">Nombre</div>
+                <input type="text" value="{{ fNombre }}" onChange="{{ setNombre }}" placeholder="Tu nombre y apellido" style="height:46px;border:1px solid #D8DDE6;border-radius:10px;padding:0 13px;font-family:inherit;font-size:15px;color:#172033;outline:0;background:#FFFFFF" style-focus="border-color:#20375F;box-shadow:0 0 0 3px rgba(32,55,95,.12)" />
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="font-size:13.5px;font-weight:600;color:#344054">Email</div>
+                <input type="text" value="{{ fEmail }}" onChange="{{ setEmail }}" placeholder="tu@email.com" style="height:46px;border:1px solid {{ emailBorder }};border-radius:10px;padding:0 13px;font-family:inherit;font-size:15px;color:#172033;outline:0;background:{{ emailBg }}" style-focus="box-shadow:0 0 0 3px rgba(32,55,95,.12)" />
+                <sc-if value="{{ emailError }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:#D0342C">
+                    <span style="font-family:'Material Symbols Outlined';font-size:16px">error</span>Ingresá un email válido para que podamos responderte.
+                  </div>
+                </sc-if>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="font-size:13.5px;font-weight:600;color:#344054">Motivo</div>
+                <select value="{{ fMotivo }}" onChange="{{ setMotivo }}" style="height:46px;border:1px solid #D8DDE6;border-radius:10px;padding:0 11px;font-family:inherit;font-size:15px;color:#172033;background:#FFFFFF;cursor:pointer">
+                  <option value="consulta">Consulta general</option>
+                  <option value="perfil">Soy profesional y quiero mi perfil</option>
+                  <option value="reporte">Reportar un perfil</option>
+                  <option value="comercial">Publicidad / patrocinio</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px">
+                <div style="font-size:13.5px;font-weight:600;color:#344054">Mensaje</div>
+                <textarea value="{{ fMensaje }}" onChange="{{ setMensaje }}" placeholder="Contanos en qué podemos ayudarte" style="min-height:130px;border:1px solid #D8DDE6;border-radius:10px;padding:12px 13px;font-family:inherit;font-size:15px;color:#172033;outline:0;resize:vertical;background:#FFFFFF" style-focus="border-color:#20375F;box-shadow:0 0 0 3px rgba(32,55,95,.12)"></textarea>
+              </div>
+              <button type="button" onClick="{{ submitForm }}" style="height:48px;border:0;border-radius:11px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:15.5px;font-weight:700;cursor:pointer" style-hover="background:#182D53">Enviar mensaje</button>
+              <div style="font-size:12.5px;color:#98A2B3;line-height:1.5">Al enviar aceptás nuestra política de privacidad. No compartimos tus datos con los profesionales del directorio.</div>
+            </div>
+          </sc-if>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:16px">
+            <div style="font-size:16px;font-weight:700">Otros canales</div>
+            <sc-for list="{{ contactRows }}" as="c" hint-placeholder-count="3">
+              <div style="display:flex;gap:12px;align-items:flex-start">
+                <div style="width:38px;height:38px;border-radius:10px;background:#EEF1F7;display:flex;align-items:center;justify-content:center;flex:0 0 auto">
+                  <span style="font-family:'Material Symbols Outlined';font-size:19px;color:#20375F">{{ c.icon }}</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                  <div style="font-size:12px;font-weight:600;letter-spacing:.3px;text-transform:uppercase;color:#98A2B3">{{ c.label }}</div>
+                  <div style="font-size:14.5px;font-weight:600;color:#172033">{{ c.value }}</div>
+                  <div style="font-size:13px;color:#667085">{{ c.note }}</div>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:15.5px;font-weight:700">¿Buscás un profesional?</div>
+            <div style="font-size:14px;color:#667085;line-height:1.6">No hace falta escribirnos: buscá el servicio y contactá directo al profesional.</div>
+            <button type="button" onClick="{{ goHome }}" style="height:42px;border:1px solid #D8DDE6;border-radius:10px;background:#FFFFFF;font-family:inherit;font-size:14px;font-weight:600;color:#172033;cursor:pointer;margin-top:4px">Ir al buscador</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 10 FAQ ══════════ -->
+  <sc-if value="{{ isFaq }}" hint-placeholder-val="{{ false }}">
+    <div style="max-width:900px;margin:0 auto;padding:clamp(28px,4vw,52px) clamp(18px,3vw,24px) clamp(34px,5vw,56px);display:flex;flex-direction:column;gap:22px">
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <div style="font-size:clamp(26px,3.6vw,36px);font-weight:800;letter-spacing:-1px">Preguntas frecuentes</div>
+        <div style="font-size:16px;color:#667085;line-height:1.6">Todo lo que suelen preguntarnos clientes y profesionales.</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:9px;height:48px;padding:0 14px;background:#FFFFFF;border:1px solid #D8DDE6;border-radius:11px">
+        <span style="font-family:'Material Symbols Outlined';font-size:21px;color:#667085">search</span>
+        <input type="text" value="{{ faqQuery }}" onChange="{{ setFaqQuery }}" placeholder="Buscar una pregunta..." style="flex:1 1 auto;border:0;outline:0;background:transparent;font-family:inherit;font-size:15px;color:#172033;min-width:0" />
+      </div>
+      <div style="display:flex;gap:8px;overflow:auto;padding-bottom:4px">
+        <sc-for list="{{ faqTabs }}" as="t" hint-placeholder-count="6">
+          <div onClick="{{ t.pick }}" style="padding:9px 14px;border:1px solid {{ t.border }};background:{{ t.bg }};border-radius:999px;font-size:13.5px;font-weight:600;color:{{ t.color }};cursor:pointer;white-space:nowrap;flex:0 0 auto">{{ t.label }}</div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <sc-for list="{{ faqList }}" as="f" hint-placeholder-count="6">
+          <div style="background:#FFFFFF;border:1px solid {{ f.border }};border-radius:12px;overflow:hidden">
+            <div onClick="{{ f.toggle }}" style="padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer">
+              <div style="flex:1 1 auto;font-size:15.5px;font-weight:600;color:#172033;line-height:1.45">{{ f.q }}</div>
+              <span style="font-family:'Material Symbols Outlined';font-size:22px;color:#667085;flex:0 0 auto">{{ f.chev }}</span>
+            </div>
+            <sc-if value="{{ f.open }}" hint-placeholder-val="{{ false }}">
+              <div style="padding:0 18px 18px;font-size:14.5px;color:#475467;line-height:1.7;max-width:680px">{{ f.a }}</div>
+            </sc-if>
+          </div>
+        </sc-for>
+        <sc-if value="{{ faqEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:12px;padding:30px;text-align:center;font-size:14.5px;color:#667085">No hay preguntas que coincidan con «{{ faqQuery }}». Probá con otra palabra o escribinos.</div>
+        </sc-if>
+      </div>
+      <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:22px;display:flex;flex-wrap:wrap;align-items:center;gap:16px">
+        <div style="flex:1 1 260px;display:flex;flex-direction:column;gap:4px">
+          <div style="font-size:16.5px;font-weight:700">¿No encontrás tu respuesta?</div>
+          <div style="font-size:14px;color:#667085">Escribinos y te contestamos por correo.</div>
+        </div>
+        <button type="button" onClick="{{ goContacto }}" style="height:44px;padding:0 20px;border:0;border-radius:10px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:14.5px;font-weight:600;cursor:pointer">Ir a contacto</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ══════════ 11 LOGIN ══════════ -->
+  <sc-if value="{{ isLogin }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;justify-content:center;padding:clamp(30px,6vw,72px) clamp(18px,3vw,24px)">
+      <div style="width:100%;max-width:420px;display:flex;flex-direction:column;gap:18px">
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:18px;padding:clamp(24px,4vw,34px);display:flex;flex-direction:column;gap:18px;align-items:center;text-align:center">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:42px;height:42px;border-radius:999px;background:transparent;border:2.5px solid #20375F;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif;font-size:16px;font-weight:800;letter-spacing:-.6px;flex:0 0 auto">
+              <span style="color:#182D53">Q</span><span style="color:#E0A800">H</span>
+            </div>
+            <div style="width:1.5px;height:34px;background:#E4E7EC;border-radius:999px;flex:0 0 auto"></div>
+            <div style="display:flex;flex-direction:column;gap:9px;line-height:1;text-align:left">
+              <div style="font-family:Inter,sans-serif;font-size:21px;font-weight:800;letter-spacing:-.6px;color:#182D53">QuienLo<span style="position:relative;color:#E0A800;font-style:italic">Hace<span style="position:absolute;left:1px;right:-1px;bottom:-2px;height:2px;background:#E0A800;border-radius:999px"></span></span></div>
+              <div style="font-size:12px;font-weight:400;letter-spacing:.2px;color:#667085">Conectamos clientes y profesionales</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px">
+            <div style="font-size:21px;font-weight:700;letter-spacing:-.4px">Entrar a QuienLoHace</div>
+            <div style="font-size:14.5px;color:#667085;line-height:1.6">Navegar el directorio es libre. Necesitás cuenta solo para publicar o administrar tu perfil profesional.</div>
+          </div>
+          <button type="button" style="width:100%;height:50px;border:1px solid #D8DDE6;border-radius:11px;background:#FFFFFF;font-family:inherit;font-size:15px;font-weight:600;color:#172033;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px" style-hover="background:#F7F8FA;border-color:#C6CEDC">
+            <span style="width:20px;height:20px;border-radius:999px;background:conic-gradient(from -45deg,#EA4335 0deg 90deg,#FBBC05 90deg 180deg,#34A853 180deg 270deg,#4285F4 270deg 360deg);display:block"></span>
+            Continuar con Google
+          </button>
+          <div style="display:flex;align-items:center;gap:12px;width:100%">
+            <div style="flex:1 1 auto;height:1px;background:#EFF1F5"></div>
+            <div style="font-size:12.5px;color:#98A2B3">o</div>
+            <div style="flex:1 1 auto;height:1px;background:#EFF1F5"></div>
+          </div>
+          <div style="width:100%;display:flex;flex-direction:column;gap:10px">
+            <input type="text" placeholder="tu@email.com" style="height:48px;border:1px solid #D8DDE6;border-radius:11px;padding:0 13px;font-family:inherit;font-size:15px;color:#172033;outline:0" style-focus="border-color:#20375F;box-shadow:0 0 0 3px rgba(32,55,95,.12)" />
+            <button type="button" style="height:48px;border:0;border-radius:11px;background:#20375F;color:#FFFFFF;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer" style-hover="background:#182D53">Continuar con email</button>
+          </div>
+        </div>
+        <div style="background:#FFFFFF;border:1px solid #E4E7EC;border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:8px;text-align:center">
+          <div style="font-size:15.5px;font-weight:700">¿Sos profesional y todavía no tenés perfil?</div>
+          <div style="font-size:14px;color:#667085;line-height:1.6">Creá tu perfil gratis: hasta 4 imágenes, tus servicios y tus zonas de trabajo.</div>
+          <button type="button" style="height:44px;border:1px solid #F4C542;border-radius:10px;background:#FEF8E7;color:#7A5A05;font-family:inherit;font-size:14.5px;font-weight:700;cursor:pointer;margin-top:4px" style-hover="background:#FDF1CE">Crear mi perfil profesional</button>
+        </div>
+        <div style="display:flex;justify-content:center;gap:18px">
+          <span onClick="{{ goFaq }}" style="font-size:13px;color:#667085;cursor:pointer">Ayuda</span>
+          <span onClick="{{ goFaq }}" style="font-size:13px;color:#667085;cursor:pointer">Privacidad</span>
+          <span onClick="{{ goFaq }}" style="font-size:13px;color:#667085;cursor:pointer">Términos</span>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <dc-import name="SiteFooter" is-mobile="{{ isMobile }}" on-nav="{{ nav }}" hint-size="100%,300px"></dc-import>
+</div>
+
+<dc-import name="FiltersPanel" open="{{ filtersOpen }}" is-mobile="{{ isMobile }}" filters="{{ filters }}" geo="{{ geo }}" categories="{{ cats }}" services="{{ servicesList }}" count="{{ filterCount }}" result-count="{{ filteredCount }}" on-change="{{ setFilter }}" on-clear="{{ clearFilters }}" on-close="{{ closeFilters }}" hint-size="0px,0px"></dc-import>
+
+<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:18px;z-index:95;display:flex;gap:4px;padding:5px;background:rgba(23,32,51,.92);border-radius:999px;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);backdrop-filter:blur(6px)">
+  <sc-for list="{{ deviceModes }}" as="d" hint-placeholder-count="2">
+    <div onClick="{{ d.pick }}" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:999px;background:{{ d.bg }};color:{{ d.color }};font-size:12.5px;font-weight:600;cursor:pointer">
+      <span style="font-family:'Material Symbols Outlined';font-size:16px">{{ d.icon }}</span>{{ d.label }}
+    </div>
+  </sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{}}">
+class Component extends DCLogic {
+  state = {
+    route: "home", query: "", sort: "relevantes", device: "desktop", width: 1400,
+    filters: { zonas: [], cats: [], rating: "Cualquiera", pagos: [], servicios: [], precio: "Cualquiera", geoOn: false },
+    filtersOpen: false, catIdx: 0, sub: null, provider: null, loading: false,
+    destTab: "Todos", faqTab: "General", faqQuery: "", faqOpen: 0,
+    form: { nombre: "", email: "", motivo: "consulta", mensaje: "" }, formTouched: false, formSent: false
+  };
+
+  componentDidMount() {
+    this.onResize = () => this.setState({ width: window.innerWidth });
+    window.addEventListener("resize", this.onResize);
+    this.onResize();
+  }
+  componentWillUnmount() { window.removeEventListener("resize", this.onResize); }
+
+  cats = [
+    { name: "Hogar, Construcción y Mantenimiento", short: "Hogar y mantenimiento", icon: "home_repair_service", count: 486, subs: ["Plomería y sanitaria", "Electricidad", "Construcción", "Pintura", "Carpintería", "Herrería y metal", "Aberturas", "Climatización", "Jardinería", "Piscinas", "Control de plagas"] },
+    { name: "Reparaciones y Servicio Técnico", short: "Reparaciones y servicio técnico", icon: "handyman", count: 214, subs: ["Electrodomésticos", "Computación", "Celulares y tablets", "Televisión y audio", "Otros equipos"] },
+    { name: "Limpieza y Servicios para el Hogar", short: "Limpieza", icon: "cleaning_services", count: 168, subs: ["Limpieza doméstica", "Limpieza profunda", "Limpieza comercial", "Servicios domésticos"] },
+    { name: "Mudanzas, Transporte y Logística", short: "Mudanzas y transporte", icon: "local_shipping", count: 97, subs: ["Mudanzas", "Fletes", "Logística", "Transporte de personas"] },
+    { name: "Automotor", short: "Automotor", icon: "directions_car", count: 152, subs: ["Mecánica", "Electricidad automotriz", "Neumáticos", "Carrocería", "Estética automotriz", "Accesorios"] },
+    { name: "Salud", short: "Salud", icon: "medical_services", count: 331, subs: ["Medicina", "Odontología", "Salud mental", "Rehabilitación", "Nutrición", "Fonoaudiología", "Podología", "Enfermería", "Centros de salud"] },
+    { name: "Belleza, Estética y Bienestar", short: "Belleza y bienestar", icon: "content_cut", count: 289, subs: ["Peluquería", "Barbería", "Uñas", "Estética", "Masajes", "Tatuajes y piercing", "Centros"] },
+    { name: "Fitness y Deportes", short: "Fitness y deportes", icon: "fitness_center", count: 118, subs: ["Entrenamiento", "Gimnasios", "Yoga y pilates", "Deportes", "Clases deportivas"] },
+    { name: "Servicios Profesionales y Empresariales", short: "Servicios profesionales", icon: "business_center", count: 243, subs: ["Contabilidad", "Legal", "Administración", "Recursos humanos", "Consultoría", "Seguros"] },
+    { name: "Tecnología", short: "Tecnología", icon: "computer", count: 176, subs: ["Desarrollo", "Diseño web", "Soporte IT", "Datos", "Servicios digitales"] },
+    { name: "Marketing, Diseño y Comunicación", short: "Marketing y diseño", icon: "campaign", count: 141, subs: ["Marketing", "Social media", "Publicidad digital", "Diseño", "Audiovisual", "Comunicación"] },
+    { name: "Educación y Clases", short: "Educación y clases", icon: "school", count: 205, subs: ["Apoyo académico", "Idiomas", "Tecnología", "Música", "Arte", "Clases profesionales", "Academias"] },
+    { name: "Eventos y Celebraciones", short: "Eventos", icon: "celebration", count: 132, subs: ["Organización", "Fotografía y video", "Música", "Gastronomía", "Decoración", "Entretenimiento"] },
+    { name: "Inmuebles y Propiedades", short: "Inmuebles", icon: "apartment", count: 164, subs: ["Inmobiliarias", "Agentes inmobiliarios", "Administración", "Tasaciones", "Arquitectura", "Ingeniería", "Agrimensura", "Inspecciones"] },
+    { name: "Mascotas", short: "Mascotas", icon: "pets", count: 88, subs: ["Veterinaria", "Estética animal", "Cuidado", "Entrenamiento"] },
+    { name: "Cuidado Personal y Asistencia", short: "Cuidado y asistencia", icon: "volunteer_activism", count: 76, subs: ["Cuidado de niños", "Adultos mayores", "Personas con dependencia"] },
+    { name: "Gastronomía y Alimentación", short: "Gastronomía", icon: "restaurant", count: 121, subs: ["Catering", "Chef", "Repostería", "Viandas", "Bebidas y eventos", "Servicios móviles"] },
+    { name: "Turismo y Experiencias", short: "Turismo", icon: "travel_explore", count: 64, subs: ["Guías", "Tours", "Traslados", "Excursiones", "Experiencias"] },
+    { name: "Servicios Rurales", short: "Servicios rurales", icon: "agriculture", count: 52, subs: ["Servicios agrícolas", "Servicios ganaderos", "Veterinaria rural", "Infraestructura rural", "Maquinaria agrícola", "Apicultura"] },
+    { name: "Seguridad", short: "Seguridad", icon: "shield", count: 71, subs: ["Seguridad privada", "Alarmas", "Cámaras", "Control de acceso", "Cercos eléctricos", "Cerrajería", "Porteros y videoporteros"] }
+  ];
+
+  geo = {
+    Montevideo: { Montevideo: ["Aguada", "Bella Vista", "Buceo", "Carrasco", "Centro", "Ciudad Vieja", "Cordón", "La Blanqueada", "Malvín", "Palermo", "Parque Batlle", "Parque Rodó", "Paso Molino", "Pocitos", "Prado", "Punta Carretas", "Punta Gorda", "Reducto", "Sayago", "Tres Cruces", "Unión"] },
+    Canelones: { "Ciudad de la Costa": ["Shangrilá", "San José de Carrasco", "Lagomar", "Solymar", "Lomas de Solymar", "El Pinar"], "Las Piedras": [], Pando: [], Atlántida: [], "La Paz": [], Canelones: [], Toledo: [], Salinas: [] },
+    Maldonado: { Maldonado: [], "Punta del Este": ["Península", "Aidy Grill", "Roosevelt", "Cantegril", "Beverly Hills"], "San Carlos": [], Piriápolis: [], "La Barra": [] },
+    Colonia: { "Colonia del Sacramento": [], Carmelo: [], "Nueva Helvecia": [], Rosario: [] },
+    "San José": { "San José de Mayo": [], "Ciudad del Plata": ["Delta del Tigre", "Playa Pascual", "Safici"], Libertad: [] },
+    Rocha: { Rocha: [], "La Paloma": [], Chuy: [], Castillos: [] },
+    Salto: { Salto: [] }, Paysandú: { Paysandú: [], Guichón: [] },
+    Rivera: { Rivera: [], Tranqueras: [] }, Soriano: { Mercedes: [], Dolores: [] },
+    Flores: { Trinidad: [] }, Florida: { Florida: [], "Sarandí Grande": [] },
+    Durazno: { Durazno: [] }, Lavalleja: { Minas: [] }, Artigas: { Artigas: [], "Bella Unión": [] },
+    "Cerro Largo": { Melo: [], "Río Branco": [] }, "Río Negro": { "Fray Bentos": [], Young: [] },
+    Tacuarembó: { Tacuarembó: [], "Paso de los Toros": [] }, "Treinta y Tres": { "Treinta y Tres": [] }
+  };
+
+  providers = [
+    { name: "Juan Electricidad", icon: "bolt", rating: 4.9, reviews: 58, location: "Pocitos, Montevideo", cat: 0, sub: "Electricidad", destacado: true, verificado: true, match: "Instalaciones eléctricas", services: ["Instalaciones eléctricas", "Reparaciones", "Emergencias 24 h"], phone: "099 123 456" },
+    { name: "ClimaSur", icon: "ac_unit", rating: 4.8, reviews: 32, location: "Solymar, Ciudad de la Costa", cat: 0, sub: "Climatización", destacado: true, verificado: true, match: "Instalación de aire acondicionado", services: ["Instalación de aire", "Reparación", "Mantenimiento"], phone: "094 887 220" },
+    { name: "Estudio Contable Rivera", icon: "calculate", rating: 4.9, reviews: 27, location: "Centro, Montevideo", cat: 8, sub: "Contabilidad", destacado: true, verificado: true, match: "Liquidación de sueldos", services: ["Impuestos", "Liquidación de sueldos", "Balances"], phone: "2903 4455" },
+    { name: "Verde Jardín", icon: "yard", rating: 4.9, reviews: 22, location: "Carrasco, Montevideo", cat: 0, sub: "Jardinería", destacado: true, verificado: false, match: "Mantenimiento de jardines", services: ["Poda", "Mantenimiento de jardines", "Riego"], phone: "091 555 010" },
+    { name: "Pixel Studio", icon: "devices", rating: 4.8, reviews: 12, location: "Punta del Este, Maldonado", cat: 9, sub: "Diseño web", destacado: true, verificado: true, match: "Diseño de sitios web", services: ["Diseño de sitios web", "Landing pages", "UX/UI"], phone: "098 340 771" },
+    { name: "Dental Centro", icon: "dentistry", rating: 4.7, reviews: 86, location: "Punta Carretas, Montevideo", cat: 5, sub: "Odontología", destacado: true, verificado: true, match: "Ortodoncia", services: ["Odontología general", "Ortodoncia", "Implantes"], phone: "2711 8899" },
+    { name: "Sanitaria Del Sur", icon: "plumbing", rating: 4.6, reviews: 41, location: "Cordón, Montevideo", cat: 0, sub: "Plomería y sanitaria", destacado: false, verificado: true, match: "Destapaciones", services: ["Destapaciones", "Reparación de pérdidas", "Sanitaria"], phone: "092 118 004" },
+    { name: "Limpieza Total", icon: "cleaning_services", rating: 4.5, reviews: 63, location: "Buceo, Montevideo", cat: 2, sub: "Limpieza doméstica", destacado: false, verificado: true, match: "Limpieza de apartamentos", services: ["Limpieza de casas", "Limpieza por horas", "Post obra"], phone: "099 704 118" },
+    { name: "TecnoFix", icon: "smartphone", rating: 4.4, reviews: 112, location: "Centro, Montevideo", cat: 1, sub: "Celulares y tablets", destacado: false, verificado: true, match: "Cambio de pantalla", services: ["Reparación de celulares", "Cambio de pantalla", "Notebooks"], phone: "091 002 776" },
+    { name: "Pintura Uy", icon: "format_paint", rating: 4.8, reviews: 19, location: "Malvín, Montevideo", cat: 0, sub: "Pintura", destacado: false, verificado: false, match: "Pintura de interiores", services: ["Pintura de interiores", "Exteriores", "Impermeabilización"], phone: "094 220 331" },
+    { name: "Mudanzas Aguirre", icon: "local_shipping", rating: 4.3, reviews: 45, location: "Las Piedras, Canelones", cat: 3, sub: "Mudanzas", destacado: false, verificado: false, match: "Mudanzas domésticas", services: ["Mudanzas domésticas", "Fletes", "Embalaje"], phone: "098 611 245" },
+    { name: "Taller Ferreira", icon: "car_repair", rating: 4.6, reviews: 74, location: "Sayago, Montevideo", cat: 4, sub: "Mecánica", destacado: false, verificado: true, match: "Diagnóstico", services: ["Mecánica general", "Diagnóstico", "Frenos"], phone: "2359 7712" },
+    { name: "Lic. Lucía Méndez", icon: "psychology", rating: 5.0, reviews: 16, location: "Pocitos, Montevideo", cat: 5, sub: "Salud mental", destacado: false, verificado: true, match: "Psicoterapia", services: ["Psicoterapia", "Consulta online", "Adolescentes"], phone: "099 880 512" },
+    { name: "Studio Nara", icon: "content_cut", rating: 4.7, reviews: 91, location: "Cordón, Montevideo", cat: 6, sub: "Peluquería", destacado: false, verificado: true, match: "Coloración", services: ["Coloración", "Corte", "Tratamientos"], phone: "092 445 118" },
+    { name: "Cerrajería Express", icon: "key", rating: 4.5, reviews: 38, location: "Tres Cruces, Montevideo", cat: 19, sub: "Cerrajería", destacado: false, verificado: false, match: "Aperturas", services: ["Aperturas", "Cambio de cerraduras", "Urgencias"], phone: "091 313 313" },
+    { name: "Seguridad Norte", icon: "videocam", rating: 4.4, reviews: 29, location: "Maldonado, Maldonado", cat: 19, sub: "Cámaras", destacado: false, verificado: true, match: "CCTV", services: ["CCTV", "Alarmas", "Control de acceso"], phone: "094 776 231" },
+    { name: "Vet Huellitas", icon: "pets", rating: 4.9, reviews: 54, location: "Solymar, Ciudad de la Costa", cat: 14, sub: "Veterinaria", destacado: false, verificado: true, match: "Veterinario a domicilio", services: ["Consultas", "Veterinario a domicilio", "Vacunas"], phone: "098 210 447" },
+    { name: "Mesa Uruguaya Catering", icon: "restaurant", rating: null, reviews: 0, location: "Parque Batlle, Montevideo", cat: 16, sub: "Catering", destacado: false, verificado: false, match: "Catering para eventos", services: ["Catering para eventos", "Mesas dulces", "Bartender"], phone: "099 004 552" },
+    { name: "Herrería Delgado", icon: "construction", rating: 4.2, reviews: 9, location: "Paso Molino, Montevideo", cat: 0, sub: "Herrería y metal", destacado: false, verificado: false, match: "Soldadura", services: ["Rejas", "Soldadura", "Portones"], phone: "092 667 190" }
+  ];
+
+  faqs = [
+    { cat: "General", q: "¿Qué es QuienLoHace?", a: "Es un directorio uruguayo de profesionales, empresas de servicios y negocios especializados. Buscás lo que necesitás, comparás perfiles y contactás directo al profesional. No intermediamos el trabajo ni cobramos comisión." },
+    { cat: "General", q: "¿Tiene costo usar el sitio?", a: "Para quien busca un servicio es gratis y no requiere cuenta. Para los profesionales, el perfil básico también es gratuito; más adelante habrá planes con posicionamiento destacado y landing propia." },
+    { cat: "Para clientes", q: "¿Necesito crear una cuenta para contactar a alguien?", a: "No. Podés buscar, filtrar, abrir perfiles y contactar por WhatsApp o teléfono sin registrarte." },
+    { cat: "Para clientes", q: "¿Cómo elijo bien entre varios profesionales?", a: "Mirá la calificación y la cantidad de opiniones, los servicios que ofrece, las zonas donde trabaja y los métodos de pago. Consultar a dos o tres es lo habitual antes de decidir." },
+    { cat: "Para clientes", q: "¿Los profesionales están verificados?", a: "El badge Verificado indica que validamos identidad o datos de la empresa. No es una garantía del resultado del trabajo: la responsabilidad del servicio es del profesional." },
+    { cat: "Para profesionales", q: "¿Cómo publico mi perfil?", a: "Entrás con Google o email, completás nombre, categoría, subcategorías, servicios, zonas de trabajo y hasta 4 imágenes. La publicación es inmediata." },
+    { cat: "Para profesionales", q: "¿Puedo aparecer en más de una categoría?", a: "Sí. Podés elegir hasta cinco subcategorías, idealmente las que realmente trabajás: eso mejora la coincidencia con las búsquedas." },
+    { cat: "Perfiles", q: "¿Qué incluye el perfil gratuito?", a: "Portada, logo o avatar, descripción corta, servicios, hasta 4 imágenes, información de contacto, zonas de trabajo, horarios, métodos de pago y opiniones." },
+    { cat: "Perfiles", q: "¿Qué diferencia hay con un perfil destacado?", a: "El destacado aparece primero en su categoría y en resultados, con badge amarillo. Más adelante sumará una landing premium con galerías, video y bloques propios." },
+    { cat: "Reviews", q: "¿Quién puede dejar una opinión?", a: "Personas que contactaron al profesional a través de la plataforma. Moderamos reseñas con lenguaje ofensivo o sin relación con el servicio." },
+    { cat: "Reviews", q: "¿Se pueden borrar opiniones negativas?", a: "No se borran por pedido del profesional. Sí se eliminan si incumplen las normas o si se comprueba que son falsas." },
+    { cat: "Pagos / planes futuros", q: "¿Cuándo van a estar los planes de pago?", a: "Estamos trabajando en planes con posicionamiento destacado, estadísticas y landing premium. Si te interesa, escribinos y te avisamos primero." }
+  ];
+
+  nav = (route, payload) => {
+    const st = { route: route, filtersOpen: false };
+    if (route === "categoria" && payload) {
+      const i = this.cats.indexOf(payload);
+      st.catIdx = i >= 0 ? i : this.state.catIdx;
+      st.sub = null;
+    }
+    if (route === "subcategoria" && payload) {
+      const i = this.cats.indexOf(payload.cat);
+      st.catIdx = i >= 0 ? i : this.state.catIdx;
+      st.sub = payload.sub;
+      st.route = "categoria";
+    }
+    this.setState(st);
+    if (route === "resultados" || route === "categoria" || route === "subcategoria" || route === "destacados") this.fakeLoad();
+    if (typeof window !== "undefined") window.scrollTo(0, 0);
+  };
+
+  fakeLoad() {
+    this.setState({ loading: true });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ loading: false }), 650);
+  }
+
+  setFilter = (key, value) => {
+    this.setState(s => {
+      const f = Object.assign({}, s.filters);
+      f[key] = value;
+      return { filters: f };
+    });
+  };
+
+  filtered() {
+    const f = this.state.filters;
+    const q = (this.state.query || "").trim().toLowerCase();
+    let list = this.providers.slice();
+    if (q) {
+      list = list.filter(p => (p.name + " " + p.sub + " " + p.services.join(" ") + " " + p.location + " " + this.cats[p.cat].name).toLowerCase().indexOf(q) >= 0);
+    }
+    if (f.zonas.length) {
+      list = list.filter(p => f.zonas.some(z => {
+        const head = z.split(",")[0].trim();
+        return p.location.indexOf(head) >= 0 || head === "Montevideo" && p.location.indexOf("Montevideo") >= 0;
+      }));
+    }
+    if (f.cats.length) list = list.filter(p => f.cats.indexOf(p.sub) >= 0);
+    if (f.rating !== "Cualquiera") {
+      const min = parseFloat(f.rating);
+      list = list.filter(p => (p.rating || 0) >= min);
+    }
+    if (this.state.sort === "calificados") list.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (this.state.sort === "destacados") list.sort((a, b) => (b.destacado ? 1 : 0) - (a.destacado ? 1 : 0));
+    return list;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const isMobile = s.device === "mobile" || s.width < 1120;
+    const cat = this.cats[s.catIdx];
+    const f = s.filters;
+    const filterCount = f.zonas.length + f.cats.length + f.pagos.length + f.servicios.length +
+      (f.rating !== "Cualquiera" ? 1 : 0) + (f.precio !== "Cualquiera" ? 1 : 0) + (f.geoOn ? 1 : 0);
+    const results = this.filtered();
+    const prov = s.provider || this.providers[0];
+    const provCat = this.cats[prov.cat];
+    const destacados = this.providers.filter(p => p.destacado);
+    const inCat = this.providers.filter(p => p.cat === s.catIdx);
+    const subList = s.sub ? this.providers.filter(p => p.sub === s.sub) : inCat;
+
+    const chip = (on) => ({ border: on ? "#20375F" : "#D8DDE6", bg: on ? "#EEF1F7" : "#FFFFFF", color: on ? "#20375F" : "#475467" });
+
+    const activeChips = []
+      .concat(f.zonas.map(z => ({ label: z, remove: () => this.setFilter("zonas", f.zonas.filter(x => x !== z)) })))
+      .concat(f.cats.map(c => ({ label: c, remove: () => this.setFilter("cats", f.cats.filter(x => x !== c)) })))
+      .concat(f.rating !== "Cualquiera" ? [{ label: f.rating + " estrellas", remove: () => this.setFilter("rating", "Cualquiera") }] : [])
+      .concat(f.pagos.map(p => ({ label: p, remove: () => this.setFilter("pagos", f.pagos.filter(x => x !== p)) })))
+      .concat(f.servicios.map(p => ({ label: p, remove: () => this.setFilter("servicios", f.servicios.filter(x => x !== p)) })))
+      .concat(f.precio !== "Cualquiera" ? [{ label: f.precio, remove: () => this.setFilter("precio", "Cualquiera") }] : []);
+
+    const faqTabs = ["General", "Para clientes", "Para profesionales", "Perfiles", "Reviews", "Pagos / planes futuros"];
+    const fq = s.faqQuery.trim().toLowerCase();
+    const faqList = this.faqs.filter(x => fq ? (x.q + " " + x.a).toLowerCase().indexOf(fq) >= 0 : x.cat === s.faqTab);
+
+    const email = s.form.email;
+    const emailBad = s.formTouched && !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(email);
+
+    const destTabs = ["Todos", "Hogar y mantenimiento", "Salud", "Belleza y bienestar", "Tecnología", "Servicios profesionales", "Automotor"];
+    const destFiltered = s.destTab === "Todos" ? destacados.concat(this.providers.filter(p => !p.destacado)) :
+      destacados.concat(this.providers.filter(p => !p.destacado)).filter(p => this.cats[p.cat].short === s.destTab);
+
+    const resultTitle = s.query ? "«" + s.query + "»" + (f.zonas.length ? " en " + f.zonas[0] : "") :
+      (f.cats.length ? f.cats[0] : "Electricistas") + " en " + (f.zonas.length ? f.zonas[0] : "Montevideo");
+
+    return {
+      frameW: isMobile && s.device === "mobile" ? "430px" : "100%",
+      frameShadow: s.device === "mobile" ? "0 0 0 1px #E4E7EC, 0 20px 60px -30px rgba(23,32,51,.5)" : "none",
+      cats: this.cats, geo: this.geo, isMobile, isDesktopView: !isMobile,
+      route: s.route, nav: this.nav,
+      isHome: s.route === "home", isDestacados: s.route === "destacados", isResultados: s.route === "resultados",
+      isCatPage: s.route === "categoria", isPerfil: s.route === "perfil", isComo: s.route === "como",
+      isSobre: s.route === "sobre", isContacto: s.route === "contacto", isFaq: s.route === "faq", isLogin: s.route === "login",
+      mainSpan: isMobile ? "auto" : "span 1",
+
+      query: s.query, setQuery: (v) => this.setState({ query: v }),
+      zonas: f.zonas, selCats: f.cats,
+      setZonas: (v) => this.setFilter("zonas", v),
+      setSelCats: (v) => this.setFilter("cats", v),
+      toggleGeo: () => this.setFilter("geoOn", !f.geoOn),
+      filters: f, filterCount, filteredCount: results.length,
+      filtersOpen: s.filtersOpen,
+      openFilters: () => this.setState({ filtersOpen: true }),
+      closeFilters: () => this.setState({ filtersOpen: false }),
+      setFilter: this.setFilter,
+      clearFilters: () => this.setState({ filters: { zonas: [], cats: [], rating: "Cualquiera", pagos: [], servicios: [], precio: "Cualquiera", geoOn: false }, query: "" }),
+      servicesList: ["Instalaciones eléctricas", "Reparaciones", "Emergencias 24 h", "Instalación de luminarias", "Tableros", "Destapaciones", "Aire acondicionado", "Pintura de interiores"],
+      quickSearches: ["Electricista en Pocitos", "Plomero en Cordón", "Aire acondicionado en Maldonado", "Dentista en Punta Carretas", "Mudanzas en Montevideo"],
+      runQuick: (q) => { this.setState({ query: q, route: "resultados" }); this.fakeLoad(); },
+      goResults: () => { this.setState({ route: "resultados" }); this.fakeLoad(); if (typeof window !== "undefined") window.scrollTo(0, 0); },
+      goHome: () => this.nav("home"), goLogin: () => this.nav("login"), goFaq: () => this.nav("faq"),
+      goContacto: () => this.nav("contacto"), goDestacados: () => this.nav("destacados"),
+      goAllCats: () => this.nav("resultados"),
+      openProfile: (p) => { this.setState({ provider: p, route: "perfil" }); if (typeof window !== "undefined") window.scrollTo(0, 0); },
+      showMore: () => {},
+      sort: s.sort, setSort: (e) => this.setState({ sort: e.target.value }),
+      loading: s.loading,
+      showEmpty: !s.loading && results.length === 0,
+      showResults: !s.loading && results.length > 0,
+      skeletons: [1, 2, 3, 4, 5, 6],
+      hasSponsored: results.filter(p => p.destacado).length > 0,
+      resultList: results.filter(p => p.destacado).concat(results.filter(p => !p.destacado)).slice(0, 12),
+      resultTitle,
+      resultCountLabel: results.length + " profesionales encontrados",
+      hasChips: activeChips.length > 0, noChips: activeChips.length === 0, activeChips,
+
+      popular: [
+        { label: "Electricidad", icon: "bolt", count: 86, sub: "Electricidad" },
+        { label: "Sanitaria", icon: "plumbing", count: 74, sub: "Plomería y sanitaria" },
+        { label: "Limpieza", icon: "cleaning_services", count: 92, sub: "Limpieza doméstica" },
+        { label: "Aire acondicionado", icon: "ac_unit", count: 48, sub: "Climatización" },
+        { label: "Odontología", icon: "dentistry", count: 63, sub: "Odontología" },
+        { label: "Contabilidad", icon: "calculate", count: 57, sub: "Contabilidad" },
+        { label: "Peluquería", icon: "content_cut", count: 110, sub: "Peluquería" },
+        { label: "Celulares", icon: "smartphone", count: 41, sub: "Celulares y tablets" }
+      ].map(p => Object.assign({}, p, { go: () => { this.setFilter("cats", [p.sub]); this.setState({ route: "resultados", query: "" }); this.fakeLoad(); } })),
+      homeDestacados: destacados.slice(0, 6),
+      homeCerca: this.providers.filter(p => !p.destacado).slice(0, 6),
+      exploreCats: [0, 5, 6, 9, 4, 8].map(i => ({
+        short: this.cats[i].short, icon: this.cats[i].icon, count: this.cats[i].count,
+        subCount: this.cats[i].subs.length, go: () => this.nav("categoria", this.cats[i])
+      })),
+      steps: [
+        { n: 1, title: "Buscá", icon: "search", text: "Escribí el servicio que necesitás y elegí tu zona." },
+        { n: 2, title: "Compará", icon: "compare_arrows", text: "Revisá perfiles, servicios y opiniones reales." },
+        { n: 3, title: "Contactá", icon: "chat", text: "Hablá directo con el profesional por WhatsApp." }
+      ],
+
+      destTabs: destTabs.map(t => Object.assign({
+        label: t, icon: t === "Todos" ? "apps" : "category",
+        iconColor: s.destTab === t ? "#20375F" : "#98A2B3",
+        pick: () => this.setState({ destTab: t })
+      }, chip(s.destTab === t))),
+      destList: destFiltered.slice(0, 12),
+
+      crumbs: (s.sub ? [
+        { label: "Inicio", go: () => this.nav("home"), color: "#20375F", weight: 500, cursor: "pointer", sep: "chevron_right" },
+        { label: cat.name, go: () => this.setState({ sub: null }), color: "#20375F", weight: 500, cursor: "pointer", sep: "chevron_right" },
+        { label: s.sub, go: () => {}, color: "#667085", weight: 600, cursor: "default", sep: "" }
+      ] : [
+        { label: "Inicio", go: () => this.nav("home"), color: "#20375F", weight: 500, cursor: "pointer", sep: "chevron_right" },
+        { label: cat.name, go: () => {}, color: "#667085", weight: 600, cursor: "default", sep: "" }
+      ]),
+      catIcon: cat.icon,
+      catShort: s.sub || cat.short,
+      catTitle: s.sub ? s.sub + (f.zonas.length ? " en " + f.zonas[0] : " en Montevideo") : cat.name,
+      catDesc: s.sub
+        ? "Profesionales especializados en " + s.sub.toLowerCase() + ". Compará calificaciones, servicios y zonas de trabajo antes de contactar."
+        : "Explorá " + cat.subs.length + " subcategorías y " + cat.count + " profesionales de " + cat.short.toLowerCase() + " en todo el país.",
+      chipsTitle: s.sub ? "Servicios relacionados" : "Subcategorías",
+      catChips: (s.sub
+        ? (this.providers.filter(p => p.sub === s.sub)[0] || { services: [] }).services.concat(["Emergencias", "Presupuestos"]).map(x => Object.assign({ label: x, go: () => {} }, chip(false)))
+        : cat.subs.map(x => Object.assign({ label: x, go: () => this.setState({ sub: x }) }, chip(s.sub === x)))),
+      catCountLabel: (s.sub ? subList.length : inCat.length) + (s.sub ? " profesionales en " + s.sub.toLowerCase() : " profesionales") + " · actualizado hoy",
+      catDest: subList.filter(p => p.destacado).slice(0, 3),
+      hasCatDest: subList.filter(p => p.destacado).length > 0,
+      catList: subList.filter(p => !p.destacado).slice(0, 12),
+      hasCatList: subList.filter(p => !p.destacado).length > 0,
+      othersTitle: s.sub ? "Otros profesionales de " + cat.short.toLowerCase() : "Destacados de otras subcategorías",
+      catOthers: (s.sub ? inCat.filter(p => p.sub !== s.sub) : []).slice(0, 6),
+      hasCatOthers: s.sub ? inCat.filter(p => p.sub !== s.sub).length > 0 : false,
+
+      profName: prov.name, profIcon: prov.icon, profCat: provCat.short + " · " + prov.sub,
+      profLocation: prov.location, profRating: prov.rating ? prov.rating.toFixed(1) : "Nuevo",
+      profReviews: prov.reviews, profPhone: prov.phone,
+      profInitials: prov.name.split(/\s+/).slice(0, 2).map(w => w[0]).join("").toUpperCase(),
+      profDesc: prov.name + " trabaja en " + prov.sub.toLowerCase() + " desde hace más de diez años, con base en " + prov.location + ". Atiende domicilios particulares, comercios y consorcios, con presupuesto sin cargo y trabajos garantizados por escrito.",
+      profServices: prov.services.concat(["Presupuesto sin cargo", "Trabajos garantizados"]),
+      gallery: ["trabajo terminado", "equipo en obra", "detalle instalación", "local / taller"],
+      starRow: [1, 2, 3, 4, 5],
+      ratingBars: [
+        { n: 5, w: "82%", c: 47 }, { n: 4, w: "12%", c: 7 }, { n: 3, w: "4%", c: 2 }, { n: 2, w: "2%", c: 1 }, { n: 1, w: "0%", c: 0 }
+      ],
+      reviews: [
+        { ini: "MG", name: "Martín G.", rating: "5.0", date: "hace 3 días", text: "Vino el mismo día por una urgencia en el tablero. Muy prolijo, explicó todo y dejó el trabajo impecable." },
+        { ini: "CS", name: "Carolina S.", rating: "5.0", date: "hace 2 semanas", text: "Puntual y muy claro con el presupuesto. Cambió toda la instalación del apartamento sin sorpresas de precio." },
+        { ini: "RF", name: "Rodrigo F.", rating: "4.0", date: "hace 1 mes", text: "Buen trabajo en general. Tardó un día más de lo previsto por un material, pero avisó a tiempo." },
+        { ini: "AL", name: "Ana L.", rating: "5.0", date: "hace 1 mes", text: "Recomendable. Instaló luminarias en toda la casa y dejó todo limpio." },
+        { ini: "JP", name: "Javier P.", rating: "5.0", date: "hace 2 meses", text: "Lo llamé por una emergencia un domingo y respondió. Precio razonable para el horario." }
+      ],
+      infoRows: [
+        { icon: "category", label: "Categoría", value: provCat.name + " · " + prov.sub },
+        { icon: "storefront", label: "Modalidad", value: "A domicilio y en taller · atiende consultas por WhatsApp" },
+        { icon: "location_on", label: "Ubicación", value: prov.location },
+        { icon: "schedule", label: "Horarios", value: "Lun a vie 8:00–19:00 · Sáb 9:00–13:00 · urgencias 24 h" },
+        { icon: "payments", label: "Métodos de pago", value: "Efectivo · Transferencia · Débito · Crédito" },
+        { icon: "verified_user", label: "En QuienLoHace desde", value: "Marzo 2024" }
+      ],
+      profZonas: ["Pocitos", "Punta Carretas", "Cordón", "Centro", "Buceo", "Parque Batlle", "Malvín"],
+
+      stepsClientes: [
+        { n: 1, title: "Buscá lo que necesitás", icon: "search", text: "Escribí el servicio o elegí la categoría, y ajustá la zona: departamento, localidad o barrio." },
+        { n: 2, title: "Compará profesionales", icon: "compare_arrows", text: "Calificaciones, opiniones, servicios, zonas de trabajo y métodos de pago, todo en la misma card." },
+        { n: 3, title: "Contactá directamente", icon: "chat", text: "WhatsApp o teléfono, sin intermediarios y sin comisiones sobre el trabajo." }
+      ],
+      stepsPros: [
+        { n: 1, title: "Creá tu perfil", icon: "person_add", text: "Con Google o email, en pocos minutos y sin costo." },
+        { n: 2, title: "Publicá tus servicios", icon: "checklist", text: "Hasta cinco subcategorías, tus servicios, tus zonas y hasta 4 imágenes." },
+        { n: 3, title: "Recibí contactos", icon: "call_received", text: "Las consultas llegan directo a tu WhatsApp o teléfono." }
+      ],
+      principios: [
+        { icon: "visibility", title: "Información clara", text: "Servicios, zonas y precios explicados sin letra chica." },
+        { icon: "handshake", title: "Contacto directo", text: "No intermediamos ni cobramos comisión por el trabajo." },
+        { icon: "reviews", title: "Opiniones reales", text: "Reseñas de personas que contactaron al profesional." },
+        { icon: "public", title: "Todo el país", text: "Los 19 departamentos, no solo Montevideo." }
+      ],
+
+      formSent: s.formSent, formOpen: !s.formSent,
+      fNombre: s.form.nombre, fEmail: s.form.email, fMotivo: s.form.motivo, fMensaje: s.form.mensaje,
+      setNombre: (e) => this.setState({ form: Object.assign({}, s.form, { nombre: e.target.value }) }),
+      setEmail: (e) => this.setState({ form: Object.assign({}, s.form, { email: e.target.value }) }),
+      setMotivo: (e) => this.setState({ form: Object.assign({}, s.form, { motivo: e.target.value }) }),
+      setMensaje: (e) => this.setState({ form: Object.assign({}, s.form, { mensaje: e.target.value }) }),
+      emailError: emailBad, emailBorder: emailBad ? "#E5A3A0" : "#D8DDE6", emailBg: emailBad ? "#FEF6F5" : "#FFFFFF",
+      submitForm: () => {
+        const ok = /^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(s.form.email);
+        this.setState({ formTouched: true, formSent: ok });
+      },
+      resetForm: () => this.setState({ formSent: false, formTouched: false, form: { nombre: "", email: "", motivo: "consulta", mensaje: "" } }),
+      contactRows: [
+        { icon: "mail", label: "Email", value: "hola@quienlohace.uy", note: "Respuesta en 48 h hábiles" },
+        { icon: "call", label: "Teléfono", value: "+598 2600 0000", note: "Lun a vie 9:00–18:00" },
+        { icon: "chat", label: "WhatsApp", value: "+598 99 000 000", note: "Solo consultas de la plataforma" }
+      ],
+
+      faqQuery: s.faqQuery, setFaqQuery: (e) => this.setState({ faqQuery: e.target.value }),
+      faqTabs: faqTabs.map(t => Object.assign({ label: t, pick: () => this.setState({ faqTab: t, faqQuery: "", faqOpen: 0 }) }, chip(s.faqTab === t && !fq))),
+      faqList: faqList.map((x, i) => ({
+        q: x.q, a: x.a, open: s.faqOpen === i,
+        chev: s.faqOpen === i ? "remove" : "add",
+        border: s.faqOpen === i ? "#C6CEDC" : "#E4E7EC",
+        toggle: () => this.setState({ faqOpen: s.faqOpen === i ? -1 : i })
+      })),
+      faqEmpty: faqList.length === 0,
+
+      deviceModes: [
+        { label: "Desktop", icon: "desktop_windows", bg: s.device === "desktop" ? "#FFFFFF" : "transparent", color: s.device === "desktop" ? "#172033" : "#C3CEE2", pick: () => this.setState({ device: "desktop" }) },
+        { label: "Mobile", icon: "smartphone", bg: s.device === "mobile" ? "#FFFFFF" : "transparent", color: s.device === "mobile" ? "#172033" : "#C3CEE2", pick: () => this.setState({ device: "mobile" }) }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
