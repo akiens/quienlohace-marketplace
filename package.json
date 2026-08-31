@@ -16,7 +16,9 @@
     "db:migrate:remote": "wrangler d1 migrations apply quienlohace --remote",
     "db:seed:local": "wrangler d1 execute quienlohace --local --file=./seeds/dev-seed.sql",
     "check:backend": "tsx --conditions=react-server scripts/check-backend.ts",
-    "seed:generate": "tsx --conditions=react-server scripts/generate-seed.ts"
+    "seed:generate": "tsx --conditions=react-server scripts/generate-seed.ts",
+    "db:seed:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/dev-seed.sql",
+    "db:reset:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/truncate.sql"
   },
   "dependencies": {
     "next": "^16.3.3",

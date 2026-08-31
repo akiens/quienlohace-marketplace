@@ -34,6 +34,11 @@ npm run preview            # build + Workers en local, con D1 y R2 reales
 | `npm run db:migrate:local` / `:remote` | Aplica migraciones |
 | `npm run seed:generate` | Genera los datos de prueba |
 | `npm run db:seed:local` | Los carga en la D1 local |
+| `npm run db:seed:remote` | Los carga en la D1 de producción ⚠️ |
+| `npm run db:reset:remote` | Vacía la D1 de producción ⚠️ |
+
+⚠️ Los dos últimos **borran** el contenido de las tablas. Ver
+[Poblar la base remota](#poblar-la-base-remota).
 
 ### Datos de prueba
 
@@ -55,8 +60,50 @@ El generador es determinista (semilla fija): dos corridas producen archivos
 idénticos. Los dos archivos están en `.gitignore` porque pesan varios MB y se
 regeneran en un comando.
 
-`db:seed:local` **borra** el contenido de las tablas antes de insertar: es
-sólo para desarrollo, nunca para producción.
+`db:seed:local` **borra** el contenido de las tablas antes de insertar, así
+que cada corrida deja la base en un estado conocido.
+
+### Poblar la base remota
+
+Mientras el sitio esté en pruebas puede tener sentido cargar el seed en la
+base de Cloudflare para verla con volumen real:
+
+```bash
+npm run seed:generate     # genera seeds/dev-seed.sql si no existe
+npm run db:seed:remote    # lo carga en la D1 de producción
+```
+
+Verificar que entró:
+
+```bash
+npx wrangler d1 execute quienlohace --remote \
+  --command "SELECT COUNT(*) AS total, SUM(status='active') AS publicados FROM providers"
+```
+
+Para volver a dejarla vacía:
+
+```bash
+npm run db:reset:remote   # ejecuta seeds/truncate.sql
+```
+
+**Antes de correr `db:seed:remote`, tener en cuenta:**
+
+1. **Borra lo que haya.** El seed empieza con `DELETE FROM`, así que se lleva
+   puestos usuarios, perfiles y opiniones reales. Si ya creaste tu cuenta en
+   el sitio, la vas a perder.
+2. **Son datos inventados.** ~910 perfiles con nombres de Faker y teléfonos
+   que no existen. Aceptable mientras `robots.txt` bloquee la indexación en
+   `*.workers.dev`; **hay que vaciar la base antes de apuntar al dominio
+   definitivo**, o quedan perfiles falsos publicados y indexables.
+3. **Consume cupo.** Son ~12.000 sentencias. El plan gratuito de D1 permite
+   100.000 filas escritas por día: entra, pero no conviene repetirlo muchas
+   veces en el mismo día.
+4. **Se puede recuperar.** D1 guarda Time Travel (7 días en plan gratuito,
+   30 en pago), así que un borrado accidental tiene vuelta atrás:
+   `npx wrangler d1 time-travel restore quienlohace --timestamp=<ISO>`.
+
+Para desarrollo normal no hace falta nada de esto: `npm run preview` levanta
+el sitio con la base local y los mismos datos.
 
 ## Despliegue
 
