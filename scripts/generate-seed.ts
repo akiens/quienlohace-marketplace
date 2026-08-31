@@ -1,9 +1,10 @@
 /**
  * Genera los datos de prueba de desarrollo.
  *
- * Produce dos archivos:
- *   seeds/providers.json  — los datos, legibles y reutilizables
- *   seeds/dev-seed.sql    — el mismo contenido listo para D1
+ * Produce tres archivos:
+ *   seeds/providers.json        — los datos, legibles y reutilizables
+ *   seeds/dev-seed.sql          — el mismo contenido listo para D1
+ *   seeds/set-dev-password.sql  — sólo la contraseña, para una base ya cargada
  *
  * El JSON es la fuente: el SQL se deriva de él. Así los datos se pueden
  * inspeccionar, versionar o cargar desde otro lado sin volver a generarlos.
@@ -23,10 +24,31 @@ import { Faker, base, en, es } from "@faker-js/faker";
 
 import { CATEGORIES } from "../src/data/categories";
 import { LOCATIONS, listAreas, locationLabel } from "../src/data/locations";
+import { hashPasswordWithSalt } from "../src/lib/password";
 import { slugify } from "../src/lib/slug";
 import type { PaymentMethod, ProviderKind, ProviderStatus } from "../src/types";
 
 const SEED = 20260831;
+
+/**
+ * Contraseña única para todas las cuentas de prueba, para poder entrar con
+ * cualquiera de ellas desde el login.
+ *
+ * SÓLO para datos de prueba: es pública y está en el repositorio. Estos
+ * usuarios no deben existir en producción — el seed empieza borrando las
+ * tablas justamente porque no está pensado para correr allí.
+ */
+const SEED_PASSWORD = "admin.123";
+
+/**
+ * Sal fija: el generador es determinista y una sal al azar cambiaría las 910
+ * líneas de `users` en cada corrida. Reusar la sal es inaceptable en
+ * producción, pero aquí la contraseña ya es pública de todos modos.
+ */
+const SEED_PASSWORD_SALT = new Uint8Array(
+  Array.from({ length: 16 }, (_, i) => (i * 17 + 3) % 256),
+);
+
 const MIN_PER_SUBCATEGORY = 5;
 const MAX_PER_SUBCATEGORY = 10;
 /** Proporción de perfiles que son empresas; el resto, independientes. */
@@ -252,12 +274,15 @@ function sql(value: string): string {
 const businesses = providers.filter((p) => p.kind === "business").length;
 const NOW = "2026-08-31T12:00:00.000Z";
 
+function buildSql(passwordHash: string): string {
 const lines: string[] = [
   "-- Datos de prueba para desarrollo local. GENERADO: no editar a mano.",
   "-- Regenerar con: npm run seed:generate",
   "--",
   `-- ${providers.length} proveedores sobre ${CATEGORIES.flatMap((c) => c.subcategories).length} subcategorías`,
   `-- ${businesses} empresas · ${providers.length - businesses} independientes`,
+  "--",
+  `-- Todas las cuentas usan la contraseña ${SEED_PASSWORD} (sólo para pruebas).`,
   "--",
   "-- NO debe ejecutarse en producción: borra el contenido de las tablas.",
   "",
@@ -274,7 +299,7 @@ const lines: string[] = [
 
 for (const provider of providers) {
   lines.push(
-    `INSERT INTO users (id, email, password_hash, name, role, email_verified, created_at, updated_at) VALUES (${sql(provider.userId)}, ${sql(provider.email)}, NULL, ${sql(provider.name)}, 'provider', 1, ${sql(NOW)}, ${sql(NOW)});`,
+    `INSERT INTO users (id, email, password_hash, name, role, email_verified, created_at, updated_at) VALUES (${sql(provider.userId)}, ${sql(provider.email)}, ${sql(passwordHash)}, ${sql(provider.name)}, 'provider', 1, ${sql(NOW)}, ${sql(NOW)});`,
   );
 
   const ratingSum = provider.reviews.reduce((total, r) => total + r.rating, 0);
@@ -308,18 +333,61 @@ for (const provider of providers) {
   });
 }
 
-writeFileSync("seeds/dev-seed.sql", `${lines.join("\n")}\n`, "utf8");
+  return `${lines.join("\n")}\n`;
+}
 
-console.log("Generado:");
-console.log("  seeds/providers.json");
-console.log("  seeds/dev-seed.sql");
-console.log();
-console.log(`  proveedores:     ${providers.length}`);
-console.log(`  empresas:        ${businesses}`);
-console.log(`  independientes:  ${providers.length - businesses}`);
-console.log(`  publicados:      ${providers.filter((p) => p.status === "active").length}`);
-console.log(`  destacados:      ${providers.filter((p) => p.featured).length}`);
-console.log(`  verificados:     ${providers.filter((p) => p.verified).length}`);
-console.log(`  sin opiniones:   ${providers.filter((p) => p.reviews.length === 0).length}`);
-console.log(`  opiniones:       ${providers.reduce((t, p) => t + p.reviews.length, 0)}`);
-console.log(`  sentencias SQL:  ${lines.filter((l) => l.startsWith("INSERT")).length}`);
+async function main(): Promise<void> {
+  // El hash se calcula con la misma función que usa el login, así el seed no
+  // puede quedar desalineado con el formato que espera `verifyPassword`.
+  const passwordHash = await hashPasswordWithSalt(
+    SEED_PASSWORD,
+    SEED_PASSWORD_SALT,
+  );
+
+  const seedSql = buildSql(passwordHash);
+  writeFileSync("seeds/dev-seed.sql", seedSql, "utf8");
+
+  // Un archivo aparte para poner al día una base ya cargada (por ejemplo la
+  // remota) sin volver a insertar todo.
+  writeFileSync(
+    "seeds/set-dev-password.sql",
+    [
+      "-- Pone la contraseña de prueba a todas las cuentas del seed.",
+      "-- GENERADO: no editar a mano. Regenerar con: npm run seed:generate",
+      "--",
+      `-- Contraseña: ${SEED_PASSWORD}`,
+      "--",
+      "-- Sirve para una base ya cargada, sin volver a insertar los datos.",
+      "-- Sólo toca los usuarios del seed (id LIKE 'seed-user-%').",
+      "--",
+      "-- Remoto: npm run db:password:remote",
+      "",
+      `UPDATE users SET password_hash = ${sql(passwordHash)}, updated_at = ${sql(NOW)} WHERE id LIKE 'seed-user-%';`,
+      "",
+    ].join("\n"),
+    "utf8",
+  );
+
+  console.log("Generado:");
+  console.log("  seeds/providers.json");
+  console.log("  seeds/dev-seed.sql");
+  console.log("  seeds/set-dev-password.sql");
+  console.log();
+  console.log(`  proveedores:     ${providers.length}`);
+  console.log(`  empresas:        ${businesses}`);
+  console.log(`  independientes:  ${providers.length - businesses}`);
+  console.log(`  publicados:      ${providers.filter((p) => p.status === "active").length}`);
+  console.log(`  destacados:      ${providers.filter((p) => p.featured).length}`);
+  console.log(`  verificados:     ${providers.filter((p) => p.verified).length}`);
+  console.log(`  sin opiniones:   ${providers.filter((p) => p.reviews.length === 0).length}`);
+  console.log(`  opiniones:       ${providers.reduce((t, p) => t + p.reviews.length, 0)}`);
+  console.log(
+    `  sentencias SQL:  ${seedSql.split("\n").filter((l) => l.startsWith("INSERT")).length}`,
+  );
+  console.log(`  contraseña:      ${SEED_PASSWORD}`);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});

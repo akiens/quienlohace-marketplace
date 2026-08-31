@@ -47,11 +47,25 @@ async function derive(
   );
 }
 
-/** Devuelve "pbkdf2:iteraciones:salt:hash" — el formato lleva sus parámetros. */
-export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+/**
+ * Igual que `hashPassword`, pero con la sal dada en vez de una al azar.
+ *
+ * Sólo para los datos de prueba: el generador del seed necesita ser
+ * determinista (misma semilla, mismos archivos) y una sal aleatoria ensuciaría
+ * el diff en cada corrida. Para contraseñas reales usá `hashPassword`, que
+ * sortea una sal nueva por cuenta.
+ */
+export async function hashPasswordWithSalt(
+  password: string,
+  salt: Uint8Array,
+): Promise<string> {
   const bits = await derive(password, salt, ITERATIONS);
   return `${FORMAT}:${ITERATIONS}:${toHex(salt.buffer as ArrayBuffer)}:${toHex(bits)}`;
+}
+
+/** Devuelve "pbkdf2:iteraciones:salt:hash" — el formato lleva sus parámetros. */
+export async function hashPassword(password: string): Promise<string> {
+  return hashPasswordWithSalt(password, crypto.getRandomValues(new Uint8Array(16)));
 }
 
 /** Comparación en tiempo constante: no filtra información por el tiempo de respuesta. */

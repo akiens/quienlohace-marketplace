@@ -15,7 +15,7 @@
 CREATE TABLE users (
   id            TEXT PRIMARY KEY,
   email         TEXT NOT NULL,
-  -- Scrypt: "salt:hash" en hex. NULL cuando la cuenta es sólo OAuth.
+  -- PBKDF2: "pbkdf2:iteraciones:salt:hash". NULL cuando la cuenta es sólo OAuth.
   password_hash TEXT,
   name          TEXT NOT NULL,
   role          TEXT NOT NULL DEFAULT 'provider'
