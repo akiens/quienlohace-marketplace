@@ -35,13 +35,93 @@ const locationId = z
   .string()
   .refine((id) => getLocation(id) !== undefined, "Ubicación desconocida.");
 
+/**
+ * Nombre de una persona: nombre, nombre compuesto, apellido paterno y
+ * apellido materno.
+ *
+ * Sólo letras y espacios. Se aceptan acentos y ñ (`\p{L}` con el flag `u`,
+ * más `\p{M}` para los acentos que llegan descompuestos desde algunos
+ * teclados). Quedan fuera dígitos, signos y emoji.
+ *
+ * El tope es de 4 partes, pero las partículas de los apellidos compuestos
+ * ("de", "del", "los", "la"…) no cuentan como parte propia: si contaran,
+ * nombres reales del padrón como "María de los Ángeles Carrillo Rangel" o
+ * "Felipe Espinosa de los Monteros Cedillo" quedarían rechazados. Son ~1%
+ * de los nombres de personas en `seeds/providers.json`.
+ */
+const NAME_ALLOWED = /^[\p{L}\p{M}]+(?: [\p{L}\p{M}]+)*$/u;
+
+/** Partículas que acompañan a un apellido en vez de ser una parte aparte. */
+const NAME_PARTICLES = new Set([
+  "de",
+  "del",
+  "la",
+  "las",
+  "los",
+  "y",
+  "da",
+  "das",
+  "do",
+  "dos",
+  "van",
+  "von",
+  "di",
+  "san",
+  "santa",
+]);
+
+const MAX_NAME_PARTS = 4;
+
+/** Partes reales del nombre: se descartan las partículas. */
+function nameParts(value: string): string[] {
+  return value
+    .split(" ")
+    .filter((word) => word.length > 0 && !NAME_PARTICLES.has(word.toLowerCase()));
+}
+
+export const nameSchema = z
+  .string({ error: "Debe entrar un nombre." })
+  .trim()
+  .min(1, "Debe entrar un nombre.")
+  .min(2, "El nombre entrado no es válido.")
+  .max(80, "El nombre entrado es demasiado largo.")
+  .refine(
+    (value) => NAME_ALLOWED.test(value),
+    "El nombre sólo puede tener letras y espacios.",
+  )
+  .refine(
+    (value) => nameParts(value).length <= MAX_NAME_PARTS,
+    "Escribí sólo tu nombre y tus apellidos.",
+  );
+
+/**
+ * Contraseña. El único requisito de negocio es el mínimo de 8 caracteres.
+ *
+ * El máximo no es cosmético: bcrypt/scrypt trabajan sobre la entrada
+ * completa, así que sin tope una contraseña enorme es trabajo de hash
+ * gratis para quien la envía.
+ */
+export const passwordSchema = z
+  .string({ error: "Debe entrar una contraseña." })
+  .min(1, "Debe entrar una contraseña.")
+  .min(8, "La contraseña no cumple con el mínimo de caracteres requeridos.")
+  .max(200, "La contraseña es demasiado larga.");
+
+export const emailSchema = z
+  .string({ error: "Debe entrar un correo." })
+  .trim()
+  .toLowerCase()
+  .min(1, "Debe entrar un correo.")
+  .email("El correo entrado no es válido.")
+  .max(254, "El correo entrado es demasiado largo.");
+
 export const credentialsSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Revisá el correo."),
-  password: z.string().min(8, "La contraseña debe tener al menos 8 caracteres."),
+  email: emailSchema,
+  password: passwordSchema,
 });
 
 export const signupSchema = credentialsSchema.extend({
-  name: z.string().trim().min(2, "Escribí tu nombre.").max(80),
+  name: nameSchema,
 });
 
 export const providerProfileSchema = z
