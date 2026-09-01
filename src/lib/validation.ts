@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { CATEGORIES } from "@/data/categories";
 import { getLocation } from "@/data/locations";
+import { toE164 } from "@/domain/phone";
 
 
 /**
@@ -120,9 +121,14 @@ export const credentialsSchema = z.object({
   password: passwordSchema,
 });
 
-export const signupSchema = credentialsSchema.extend({
-  name: nameSchema,
-});
+/**
+ * Alta de cuenta: sólo correo y contraseña.
+ *
+ * El nombre se pide en la creación del perfil y no acá: en el registro es
+ * fricción para un dato que todavía no se usa, y el perfil lo vuelve a pedir
+ * igual. `nameSchema` sigue exportado porque lo usa ese formulario.
+ */
+export const signupSchema = credentialsSchema;
 
 export const providerProfileSchema = z
   .object({
@@ -141,14 +147,21 @@ export const providerProfileSchema = z
       .string()
       .refine((id) => SUBCATEGORY_IDS.has(id), "Elegí una subcategoría válida."),
     locationId,
-    phone: z.string().trim().max(40).default(""),
-    // Sólo dígitos: es lo que espera el enlace wa.me.
-    whatsapp: z
+    /*
+     * Un solo teléfono (RF-013). De acá se derivan el enlace `tel:` y el de
+     * `wa.me`: se valida que sea un número marcable, no su formato exacto,
+     * porque cada quien lo escribe a su manera y `toE164` lo normaliza.
+     */
+    phone: z
       .string()
       .trim()
-      .regex(/^[0-9]*$/, "Usá sólo números, con código de país.")
-      .max(20)
-      .default(""),
+      .min(1, "Dejá un teléfono para que puedan contactarte.")
+      .max(40, "El teléfono es demasiado largo.")
+      .refine(
+        (value) => toE164(value) !== "",
+        "El teléfono entrado no es válido.",
+      ),
+    whatsappEnabled: z.coerce.boolean().default(false),
     schedule: z.string().trim().max(160).default(""),
     // El tope real lo pone el plan contratado, que se comprueba en la acción
     // (RF-053). Acá sólo queda un techo defensivo, común a todos los planes,
@@ -162,11 +175,6 @@ export const providerProfileSchema = z
       .min(1, "Elegí al menos una zona donde trabajás.")
       .max(ABSOLUTE_MAX_ITEMS, "Demasiadas zonas."),
     paymentMethods: z.array(z.enum(PAYMENT_METHODS)).default([]),
-  })
-  // Sin al menos una vía de contacto el perfil no cumple su función.
-  .refine((value) => value.phone.length > 0 || value.whatsapp.length > 0, {
-    message: "Dejá al menos un teléfono o WhatsApp para que puedan contactarte.",
-    path: ["whatsapp"],
   });
 
 export const reviewSchema = z.object({

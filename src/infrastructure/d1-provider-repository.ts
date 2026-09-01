@@ -3,6 +3,7 @@ import "server-only";
 import type { ProviderDraft, ProviderRepository } from "@/domain/ports";
 import type {
   PaymentMethod,
+  PlanId,
   Provider,
   ProviderKind,
   ProviderStatus,
@@ -325,7 +326,12 @@ export class D1ProviderRepository implements ProviderRepository {
     return results.map((row) => row.slug);
   }
 
-  async create(userId: string, draft: ProviderDraft): Promise<Provider> {
+  /** `planId` es el plan elegido en el registro; por defecto, Cobre. */
+  async create(
+    userId: string,
+    draft: ProviderDraft,
+    planId: PlanId = "cobre",
+  ): Promise<Provider> {
     const db = getDb();
     const id = newId();
     const slug = await uniqueSlug(draft.name);
@@ -337,13 +343,14 @@ export class D1ProviderRepository implements ProviderRepository {
           `INSERT INTO providers (
              id, user_id, slug, name, kind, description, category_id,
              subcategory_id, location_id, phone, whatsapp, schedule,
-             status, created_at, updated_at
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
+             phone_e164, whatsapp_enabled, plan_id, status, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
         )
         .bind(
           id, userId, slug, draft.name, draft.kind, draft.description,
           draft.categoryId, draft.subcategoryId, draft.locationId,
-          draft.phone, draft.whatsapp, draft.schedule, now, now,
+          draft.phone, draft.whatsapp, draft.schedule,
+          draft.phoneE164, draft.whatsappEnabled ? 1 : 0, planId, now, now,
         ),
       ...statements,
     ]);
@@ -364,13 +371,14 @@ export class D1ProviderRepository implements ProviderRepository {
           `UPDATE providers SET
              slug = ?, name = ?, kind = ?, description = ?, category_id = ?,
              subcategory_id = ?, location_id = ?, phone = ?, whatsapp = ?,
-             schedule = ?, updated_at = ?
+             schedule = ?, phone_e164 = ?, whatsapp_enabled = ?, updated_at = ?
            WHERE id = ?`,
         )
         .bind(
           slug, draft.name, draft.kind, draft.description, draft.categoryId,
           draft.subcategoryId, draft.locationId, draft.phone, draft.whatsapp,
-          draft.schedule, now, providerId,
+          draft.schedule, draft.phoneE164, draft.whatsappEnabled ? 1 : 0,
+          now, providerId,
         ),
       ...statements,
     ]);

@@ -133,6 +133,14 @@ export type PlanRibbon = {
   /** Pliegue del banderín: la cara en sombra de la cinta. */
   fold: string;
   /**
+   * Color sólido del metal, para bordes sobre fondo claro.
+   *
+   * Los degradados de arriba están pensados para fondos oscuros; sobre la
+   * tarjeta blanca del formulario se necesita un color plano y con cuerpo,
+   * que se lea como borde y no como una sombra.
+   */
+  edge: string;
+  /**
    * Fila del adelanto en `/entrar` y `/registro`, sobre el panel azul.
    *
    * Es otra rampa y no la misma de `face`: aquélla arranca casi negra para
@@ -165,16 +173,19 @@ export const PLAN_RIBBONS: Record<PlanId, PlanRibbon> = {
   cobre: {
     face: "linear-gradient(90deg,#4A2410 0%,#8A4E24 45%,#C87941 100%)",
     fold: "#31170A",
+    edge: "#A65E2E",
     row: "linear-gradient(90deg,rgba(200,121,65,.55) 0%,rgba(200,121,65,.18) 55%,rgba(200,121,65,0) 85%)",
   },
   gold: {
     face: "linear-gradient(90deg,#5A3D0C 0%,#A2721B 45%,#E3B23C 100%)",
     fold: "#3C2707",
+    edge: "#C8912A",
     row: "linear-gradient(90deg,rgba(227,178,60,.50) 0%,rgba(227,178,60,.16) 55%,rgba(227,178,60,0) 85%)",
   },
   platinum: {
     face: "linear-gradient(90deg,#2E3849 0%,#55637A 45%,#8E9AAE 100%)",
     fold: "#1E2530",
+    edge: "#7C8AA0",
     row: "linear-gradient(90deg,rgba(190,205,228,.45) 0%,rgba(190,205,228,.14) 55%,rgba(190,205,228,0) 85%)",
   },
 };

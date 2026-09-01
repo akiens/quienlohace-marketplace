@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { getCategoryOfSubcategory } from "@/data/categories";
-import { limitFor, limitMessage } from "@/domain/plans";
+import { toE164, toWhatsapp } from "@/domain/phone";
+import { PLAN_IDS, limitFor, limitMessage } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { requireUser } from "@/lib/session";
 import { fieldErrors, providerProfileSchema } from "@/lib/validation";
-import type { PlanLimits, ProviderStatus } from "@/types";
+import type { PlanId, PlanLimits, ProviderStatus } from "@/types";
 import type { FormState } from "@/app/actions/auth";
 
 /**
@@ -53,7 +54,7 @@ function parseProfile(formData: FormData) {
     subcategoryId: formData.get("subcategoryId"),
     locationId: formData.get("locationId"),
     phone: formData.get("phone") ?? "",
-    whatsapp: formData.get("whatsapp") ?? "",
+    whatsappEnabled: formData.get("whatsappEnabled") === "on",
     schedule: formData.get("schedule") ?? "",
     services: formData
       .getAll("services")
@@ -82,18 +83,36 @@ export async function saveProfile(
     return { errors: { subcategoryId: "Elegí una subcategoría válida." } };
   }
 
+  /*
+   * `whatsapp` y `phoneE164` no se piden: se derivan del único teléfono que
+   * se escribió (RF-013/169). Si la casilla de WhatsApp está desmarcada, el
+   * número de wa.me queda vacío y el perfil no ofrece ese canal.
+   */
   const draft = {
     ...parsed.data,
     categoryId: category.id,
+    whatsapp: parsed.data.whatsappEnabled ? toWhatsapp(parsed.data.phone) : "",
+    phoneE164: toE164(parsed.data.phone),
   };
 
   const existing = await providers.findByUserId(user.id);
 
+  /*
+   * Plan con el que se guarda. En un perfil que ya existe manda el suyo: el
+   * cambio de plan es otra acción. En uno nuevo vale el que se eligió en el
+   * registro, que llega en el formulario.
+   */
+  const requestedPlan = formData.get("planId");
+  const planId: PlanId =
+    existing?.planId ??
+    (PLAN_IDS.includes(requestedPlan as PlanId)
+      ? (requestedPlan as PlanId)
+      : "cobre");
+
   // Los límites se comprueban en el servidor: que la UI deshabilite el botón
   // "agregar" no es una restricción, sólo una ayuda (RF-053, RF-163).
   const plan =
-    (await plans.findById(existing?.planId ?? "cobre")) ??
-    (await plans.findById("cobre"));
+    (await plans.findById(planId)) ?? (await plans.findById("cobre"));
 
   if (plan) {
     const overLimit = checkLimits(plan, {
@@ -107,7 +126,7 @@ export async function saveProfile(
     await providers.update(existing.id, draft);
     revalidatePath(`/profesionales/${existing.slug}`);
   } else {
-    await providers.create(user.id, draft);
+    await providers.create(user.id, draft, planId);
   }
 
   revalidatePath("/dashboard");

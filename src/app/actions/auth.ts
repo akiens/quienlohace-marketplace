@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { D1UserRepository } from "@/infrastructure/d1-repositories";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { createSession, destroySession } from "@/lib/session";
+import { PLAN_IDS } from "@/domain/plans";
+import type { PlanId } from "@/types";
 import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
 
 /**
@@ -43,10 +45,17 @@ export async function signup(
   formData: FormData,
 ): Promise<FormState> {
   const parsed = signupSchema.safeParse({
-    name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
   });
+
+  // El plan elegido en el panel lateral. No pasa por el schema porque no es
+  // algo que se escriba: es una opción cerrada, y si viniera cualquier otra
+  // cosa se cae a Cobre en vez de rechazar el alta.
+  const requestedPlan = formData.get("planId");
+  const planId: PlanId = PLAN_IDS.includes(requestedPlan as PlanId)
+    ? (requestedPlan as PlanId)
+    : "cobre";
 
   if (!parsed.success) {
     return { errors: fieldErrors(parsed.error) };
@@ -65,8 +74,10 @@ export async function signup(
 
   try {
     const user = await users.create({
+      // `users.name` es NOT NULL y todavía no se pregunta: queda vacío hasta
+      // que la creación del perfil lo complete.
       email: parsed.data.email,
-      name: parsed.data.name,
+      name: "",
       passwordHash: await hashPassword(parsed.data.password),
     });
     await createSession(user.id);
@@ -87,7 +98,11 @@ export async function signup(
 
   // Fuera del `try`: `redirect` corta el flujo lanzando una excepción y el
   // catch de arriba la tomaría por un fallo del registro.
-  redirect("/dashboard");
+  //
+  // El plan viaja en la URL y no en la base: todavía no hay fila de
+  // proveedor donde guardarlo — se crea al guardar el perfil — y así el
+  // panel arranca con el plan que se eligió en el registro.
+  redirect(`/dashboard?plan=${planId}`);
 }
 
 export async function login(

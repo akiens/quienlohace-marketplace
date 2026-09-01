@@ -1,4 +1,5 @@
 import { PlanTeaser } from "@/components/plan-teaser";
+import type { PlanId } from "@/types";
 import { Icon } from "@/components/ui";
 
 /**
@@ -8,7 +9,16 @@ import { Icon } from "@/components/ui";
  * Tenerlo acá evita que las páginas se desincronicen cuando se edite el
  * copy de una sola.
  */
-export function AuthLayout({ children }: { children: React.ReactNode }) {
+export function AuthLayout({
+  children,
+  selectable = false,
+  selectedPlan,
+}: {
+  children: React.ReactNode;
+  /** En `/registro` las filas de plan eligen; en `/entrar` sólo informan. */
+  selectable?: boolean;
+  selectedPlan?: PlanId;
+}) {
   return (
     <div className="shell grid grid-cols-1 gap-8 py-12 lg:grid-cols-2 lg:gap-14 lg:py-16">
       {children}
@@ -35,7 +45,7 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
             ))}
           </ul>
 
-          <PlanTeaser />
+          <PlanTeaser selectable={selectable} selected={selectedPlan} />
         </div>
       </aside>
     </div>

@@ -1,5 +1,6 @@
 import type {
   PaymentMethod,
+  PlanId,
   Provider,
   ProviderKind,
   ProviderStatus,
@@ -26,6 +27,9 @@ export type ProviderDraft = {
   locationId: string;
   phone: string;
   whatsapp: string;
+  /** Derivado de `phone`; lo usan `tel:` y el orden de búsqueda. */
+  phoneE164: string;
+  whatsappEnabled: boolean;
   schedule: string;
   services: string[];
   serviceAreaIds: string[];
@@ -41,7 +45,11 @@ export interface ProviderRepository {
   listBySubcategory(subcategoryId: string): Promise<Provider[]>;
   listFeatured(): Promise<Provider[]>;
   listPublishedSlugs(): Promise<string[]>;
-  create(userId: string, draft: ProviderDraft): Promise<Provider>;
+  create(
+    userId: string,
+    draft: ProviderDraft,
+    planId?: PlanId,
+  ): Promise<Provider>;
   update(providerId: string, draft: ProviderDraft): Promise<Provider>;
   setStatus(providerId: string, status: ProviderStatus): Promise<void>;
 }

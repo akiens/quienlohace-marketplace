@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AuthLayout } from "@/components/auth-layout";
+import { getCurrentUser } from "@/lib/session";
+import { PLAN_IDS } from "@/domain/plans";
+import type { PlanId } from "@/types";
 import { LoginPanel } from "@/components/login-panel";
 
 export const metadata: Metadata = {
@@ -12,16 +16,30 @@ export const metadata: Metadata = {
 };
 
 /**
- * El panel lateral adelanta los precios de los planes, que salen de la base y
- * pueden cambiar sin desplegar (RF-096). Sin esto la página se congelaría con
- * los precios del build.
+ * Quien ya inició sesión no tiene nada que hacer acá: se lo manda al panel,
+ * que es donde crea o edita su perfil.
+ *
+ * `force-dynamic` porque la decisión depende de la sesión; sin esto la
+ * página se serviría desde el cache estático y el redirect no correría.
  */
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
-export default function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
+  if (await getCurrentUser()) redirect("/dashboard");
+
+  // Cobre por defecto: es el plan gratuito y el que menos compromete.
+  const requested = (await searchParams).plan;
+  const selectedPlan: PlanId = PLAN_IDS.includes(requested as PlanId)
+    ? (requested as PlanId)
+    : "cobre";
+
   return (
-    <AuthLayout>
-      <LoginPanel mode="signup" />
+    <AuthLayout selectable selectedPlan={selectedPlan}>
+      <LoginPanel mode="signup" planId={selectedPlan} />
     </AuthLayout>
   );
 }

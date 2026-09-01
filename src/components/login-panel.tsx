@@ -1,11 +1,14 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useActionState, useState } from "react";
 
 import { login, signup, type FormState } from "@/app/actions/auth";
 import { Button, Icon } from "@/components/ui";
 import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
+import { PLAN_BADGES, PLAN_RIBBONS } from "@/domain/plans";
+import type { PlanId } from "@/types";
 
 /**
  * Acceso de proveedores. Envía a Server Actions: la validación y la
@@ -17,7 +20,14 @@ import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
  * formulario. Con una ruta por intención, cada página monta su propio panel y
  * el problema no puede volver.
  */
-export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
+export function LoginPanel({
+  mode,
+  planId,
+}: {
+  mode: "login" | "signup";
+  /** Plan elegido en el panel lateral; viaja con el alta. */
+  planId?: PlanId;
+}) {
   const isSignup = mode === "signup";
   const [state, action, pending] = useActionState<FormState, FormData>(
     isSignup ? signup : login,
@@ -54,7 +64,6 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
     const values = {
       email: formData.get("email"),
       password: formData.get("password"),
-      ...(isSignup ? { name: formData.get("name") } : {}),
     };
     const parsed = schema.safeParse(values);
     return parsed.success ? {} : fieldErrors(parsed.error);
@@ -103,7 +112,7 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
     if (Object.keys(found).length > 0) {
       event.preventDefault();
       setClientErrors(found);
-      setTouched({ name: true, email: true, password: true });
+      setTouched({ email: true, password: true });
       return;
     }
 
@@ -136,7 +145,28 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
         </p>
       </header>
 
-      <div className="flex flex-col gap-4 rounded-card border border-line bg-white p-6">
+      {/*
+        Con un plan elegido la tarjeta se viste con su color y su insignia:
+        así se ve con cuál se está por crear la cuenta sin tener que mirar el
+        panel de al lado. `relative` es para que la insignia pueda salirse de
+        la esquina, y el borde va en `style` porque el color sale del plan.
+      */}
+      <div
+        style={planId ? { borderColor: PLAN_RIBBONS[planId].edge } : undefined}
+        className={`relative flex flex-col gap-4 rounded-card bg-white p-6 ${
+          planId ? "border-2 pt-7" : "border border-line"
+        }`}
+      >
+        {planId ? (
+          <Image
+            src={PLAN_BADGES[planId]}
+            alt=""
+            width={112}
+            height={112}
+            className="pointer-events-none absolute -right-2 -top-5 z-10 h-16 w-16 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] sm:-top-6 sm:h-20 sm:w-20"
+          />
+        ) : null}
+
         {/*
           `key` reinicia el formulario al alternar entre entrar y registrarse.
 
@@ -154,19 +184,8 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
           onSubmit={handleSubmit}
           className="flex flex-col gap-4"
         >
-          {isSignup ? (
-            <Field label="Nombre" htmlFor="name" error={errors.name}>
-              <input
-                id="name"
-                name="name"
-                required
-                maxLength={80}
-                autoComplete="name"
-                aria-invalid={errors.name ? true : undefined}
-                aria-describedby={errors.name ? "name-error" : undefined}
-                className={inputClass(errors.name)}
-              />
-            </Field>
+          {isSignup && planId ? (
+            <input type="hidden" name="planId" value={planId} />
           ) : null}
 
           <Field label="Correo" htmlFor="email" error={errors.email}>

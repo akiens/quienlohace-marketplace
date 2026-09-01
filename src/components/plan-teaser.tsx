@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { PLAN_BADGES, PLAN_RIBBONS, formatPrice } from "@/domain/plans";
+import { Icon } from "@/components/ui";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import type { PlanId, PlanLimits } from "@/types";
@@ -32,7 +33,19 @@ const FALLBACK: Array<Pick<PlanLimits, "id" | "name" | "priceCents">> = [
   { id: "platinum", name: "Platino", priceCents: 2000 },
 ];
 
-export async function PlanTeaser() {
+/**
+ * @param selectable en `/registro` cada fila elige el plan con el que se
+ *   arranca (`?plan=`) en vez de llevar a `/planes`; en `/entrar` no hay nada
+ *   que elegir y siguen siendo enlaces informativos.
+ * @param selected id del plan elegido, para marcarlo.
+ */
+export async function PlanTeaser({
+  selectable = false,
+  selected,
+}: {
+  selectable?: boolean;
+  selected?: PlanId;
+} = {}) {
   const plans = hasCloudflareRuntime()
     ? await new D1PlanRepository().list()
     : FALLBACK;
@@ -44,7 +57,9 @@ export async function PlanTeaser() {
       </p>
 
       <ul className="flex flex-col gap-2">
-        {plans.map((plan) => (
+        {plans.map((plan) => {
+          const isSelected = selectable && plan.id === selected;
+          return (
           <li key={plan.id}>
             {/*
               El degradado del metal reemplaza al gris parejo de antes: es lo
@@ -59,9 +74,13 @@ export async function PlanTeaser() {
               dónde corta.
             */}
             <Link
-              href={`/planes#${plan.id}`}
+              href={selectable ? `/registro?plan=${plan.id}` : `/planes#${plan.id}`}
+              scroll={false}
+              aria-current={isSelected ? "true" : undefined}
               style={{ backgroundImage: PLAN_RIBBONS[plan.id].row }}
-              className="group relative flex items-center gap-3 rounded-l-input py-2.5 pl-3 pr-1 transition-[filter] hover:brightness-125"
+              className={`group relative flex items-center gap-3 rounded-l-input py-2.5 pl-3 pr-1 transition-[filter] hover:brightness-125 ${
+                isSelected ? "brightness-125" : ""
+              }`}
             >
               {/*
                 El borde va en una capa aparte, con `mask` que lo apaga hacia
@@ -70,7 +89,9 @@ export async function PlanTeaser() {
               */}
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0 rounded-l-input border-y border-l border-white/10 transition-colors group-hover:border-white/25"
+                className={`pointer-events-none absolute inset-0 rounded-l-input border-y border-l transition-colors group-hover:border-white/25 ${
+                  isSelected ? "border-white/60" : "border-white/10"
+                }`}
                 style={{
                   maskImage:
                     "linear-gradient(90deg,#000 0%,#000 55%,transparent 85%)",
@@ -99,12 +120,20 @@ export async function PlanTeaser() {
                   {HOOKS[plan.id]}
                 </span>
               </span>
-              <span className="ml-auto shrink-0 pr-3 text-[13px] font-semibold text-accent">
+              <span className="ml-auto flex shrink-0 items-center gap-1.5 pr-3 text-[13px] font-semibold text-accent">
+                {isSelected ? (
+                  <Icon
+                    name="check_circle"
+                    filled
+                    className="text-[16px] text-white"
+                  />
+                ) : null}
                 {formatPrice(plan)}
               </span>
             </Link>
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <Link

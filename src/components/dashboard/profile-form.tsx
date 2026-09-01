@@ -74,8 +74,11 @@ export function ProfileForm({
   );
   const [name, setName] = useState(provider?.name ?? "");
   const [description, setDescription] = useState(provider?.description ?? "");
-  const [whatsapp, setWhatsapp] = useState(provider?.whatsapp ?? "");
   const [phone, setPhone] = useState(provider?.phone ?? "");
+  // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
+  const [whatsappEnabled, setWhatsappEnabled] = useState(
+    provider?.whatsappEnabled ?? true,
+  );
 
   const errors = state.errors ?? {};
   const maxServices = limitFor(plan, "services");
@@ -92,7 +95,7 @@ export function ProfileForm({
       identidad: name.trim().length >= 2 && description.trim().length >= 20,
       rubro: subcategoryId !== "" && filledServices.length > 0,
       zonas: locationId !== "" && serviceAreaIds.length > 0,
-      contacto: whatsapp.trim().length > 0 || phone.trim().length > 0,
+      contacto: phone.trim().length > 0,
     } satisfies Record<StepId, boolean>;
   }, [
     name,
@@ -101,7 +104,6 @@ export function ProfileForm({
     services,
     locationId,
     serviceAreaIds,
-    whatsapp,
     phone,
   ]);
 
@@ -120,6 +122,12 @@ export function ProfileForm({
 
   return (
     <form action={action} className="flex flex-col gap-5">
+      {/*
+        El plan con el que se crea el perfil. Sólo cuenta la primera vez: si
+        el perfil ya existe, el servidor usa el suyo y descarta este valor.
+      */}
+      <input type="hidden" name="planId" value={plan.id} />
+
       {state.message ? (
         <p
           role="status"
@@ -348,35 +356,38 @@ export function ProfileForm({
         </Panel>
 
         <Panel active={step === "contacto"}>
-          <Row>
-            <Field
-              label="WhatsApp"
-              error={errors.whatsapp}
-              hint="Sólo números, con código de país."
-              half
-            >
-              <input
-                name="whatsapp"
-                value={whatsapp}
-                onChange={(event) => setWhatsapp(event.target.value)}
-                inputMode="numeric"
-                maxLength={20}
-                className={inputClass(errors.whatsapp)}
-                placeholder="59899123456"
-              />
-            </Field>
+          {/*
+            Un solo número: de él salen el enlace de llamada y el de WhatsApp
+            (RF-013). Antes se pedía dos veces el mismo dato y podían quedar
+            distintos.
+          */}
+          <Field
+            label="Teléfono"
+            error={errors.phone}
+            hint="Con característica. Ej: 099 123 456"
+          >
+            <input
+              name="phone"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={40}
+              className={inputClass(errors.phone)}
+              placeholder="099 123 456"
+            />
+          </Field>
 
-            <Field label="Teléfono" error={errors.phone} half>
-              <input
-                name="phone"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                maxLength={40}
-                className={inputClass(errors.phone)}
-                placeholder="099 123 456"
-              />
-            </Field>
-          </Row>
+          <label className="flex items-center gap-2.5 text-[14px] text-ink-muted">
+            <input
+              type="checkbox"
+              name="whatsappEnabled"
+              checked={whatsappEnabled}
+              onChange={(event) => setWhatsappEnabled(event.target.checked)}
+              className="h-4 w-4 accent-brand-800"
+            />
+            Este número recibe WhatsApp
+          </label>
 
           <Field label="Horarios" error={errors.schedule}>
             <input

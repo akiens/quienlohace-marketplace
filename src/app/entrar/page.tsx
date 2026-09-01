@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 import { AuthLayout } from "@/components/auth-layout";
+import { getCurrentUser } from "@/lib/session";
 import { LoginPanel } from "@/components/login-panel";
 
 export const metadata: Metadata = {
@@ -11,13 +13,17 @@ export const metadata: Metadata = {
 };
 
 /**
- * El panel lateral adelanta los precios de los planes, que salen de la base y
- * pueden cambiar sin desplegar (RF-096). Sin esto la página se congelaría con
- * los precios del build.
+ * Quien ya inició sesión no tiene nada que hacer acá: se lo manda al panel,
+ * que es donde crea o edita su perfil.
+ *
+ * `force-dynamic` porque la decisión depende de la sesión; sin esto la
+ * página se serviría desde el cache estático y el redirect no correría.
  */
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  if (await getCurrentUser()) redirect("/dashboard");
+
   return (
     <AuthLayout>
       <LoginPanel mode="login" />

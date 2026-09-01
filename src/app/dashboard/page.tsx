@@ -9,8 +9,8 @@ import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { getCurrentUser } from "@/lib/session";
-import { formatPrice } from "@/domain/plans";
-import type { PlanLimits } from "@/types";
+import { PLAN_IDS, formatPrice } from "@/domain/plans";
+import type { PlanId, PlanLimits } from "@/types";
 
 export const metadata: Metadata = {
   title: "Mi perfil",
@@ -20,7 +20,11 @@ export const metadata: Metadata = {
 // El panel depende de la sesión: nunca se pregenera ni se cachea.
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ plan?: string }>;
+}) {
   if (!hasCloudflareRuntime()) {
     return <SetupNotice />;
   }
@@ -30,12 +34,22 @@ export default async function DashboardPage() {
 
   const provider = await new D1ProviderRepository().findByUserId(user.id);
 
+  /*
+   * Qué plan manda: el del perfil si ya existe, y si todavía no hay perfil,
+   * el que se eligió en el registro y viene en la URL. El parámetro se
+   * ignora cuando ya hay perfil, para que no se pueda cambiar de plan
+   * escribiendo en la barra de direcciones.
+   */
+  const requested = (await searchParams).plan;
+  const planId: PlanId =
+    provider?.planId ??
+    (PLAN_IDS.includes(requested as PlanId) ? (requested as PlanId) : "cobre");
+
   // El plan define los topes del formulario. Si faltara la fila, se cae a
   // Cobre: es preferible el plan más restrictivo que un panel roto.
   const planRepo = new D1PlanRepository();
   const plan =
-    (await planRepo.findById(provider?.planId ?? "cobre")) ??
-    (await planRepo.findById("cobre"));
+    (await planRepo.findById(planId)) ?? (await planRepo.findById("cobre"));
 
   if (!plan) return <SetupNotice />;
 
