@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Icon } from "@/components/ui";
-import { formatPrice } from "@/domain/plans";
+import { PLAN_BADGES, formatPrice } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import type { PlanLimits } from "@/types";
@@ -83,14 +84,33 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
 
   return (
     <article
-      className={`flex flex-col gap-5 rounded-card border p-6 ${
+      // El adelanto de planes en `/registro` enlaza a cada plan por su id.
+      id={plan.id}
+      className={`relative scroll-mt-24 flex flex-col gap-5 rounded-card border p-6 ${
         highlighted
           ? "border-brand-800 bg-white shadow-[0_1px_3px_rgba(16,24,40,.08)]"
           : "border-line bg-white"
       }`}
     >
-      <header className="flex flex-col gap-1.5">
-        <span className="flex items-center gap-2">
+      {/*
+        La insignia desborda la esquina para que se lea como un sello sobre la
+        tarjeta y no como un icono más del encabezado.
+
+        El desborde hacia la derecha se apoya en el padding de `.shell`, que en
+        la última tarjeta de la grilla es lo único que queda antes del borde de
+        la pantalla. Por eso el corrimiento lateral es de 2 unidades y no más:
+        con `-right-4` la insignia de Platinum se recortaba contra el viewport.
+      */}
+      <Image
+        src={PLAN_BADGES[plan.id]}
+        alt=""
+        width={112}
+        height={112}
+        className="pointer-events-none absolute -right-2 -top-4 h-20 w-20 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] sm:-top-6 sm:h-28 sm:w-28"
+      />
+      {/* `pr-24` reserva el ancho del sello para que no tape el nombre. */}
+      <header className="flex flex-col gap-1.5 pr-20 sm:pr-24">
+        <span className="flex flex-wrap items-center gap-2">
           <h2 className="text-[19px] font-bold text-ink">{plan.name}</h2>
           {highlighted ? (
             <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-800">

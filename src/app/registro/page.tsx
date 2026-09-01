@@ -11,6 +11,13 @@ export const metadata: Metadata = {
   robots: { index: false, follow: true },
 };
 
+/**
+ * El panel lateral adelanta los precios de los planes, que salen de la base y
+ * pueden cambiar sin desplegar (RF-096). Sin esto la página se congelaría con
+ * los precios del build.
+ */
+export const revalidate = 3600;
+
 export default function SignupPage() {
   return (
     <AuthLayout>

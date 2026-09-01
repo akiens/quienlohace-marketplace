@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { PlanTeaser } from "@/components/plan-teaser";
 import { Icon } from "@/components/ui";
 
 /**
@@ -15,24 +14,6 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
       {children}
 
       <aside className="order-first flex flex-col gap-5 lg:order-last">
-        <div className="flex flex-col gap-3 rounded-card border border-line bg-white p-6">
-          <h2 className="text-[18px] font-bold text-ink">
-            Buscar no requiere cuenta
-          </h2>
-          <p className="text-[14.5px] leading-relaxed text-ink-soft">
-            Podés buscar, comparar y contactar profesionales sin registrarte. La
-            cuenta es sólo para quienes ofrecen un servicio, o para dejar una
-            opinión.
-          </p>
-          <Link
-            href="/buscar"
-            className="flex items-center gap-1.5 text-[14px] font-semibold text-brand-800 hover:underline"
-          >
-            Ir al buscador
-            <Icon name="arrow_forward" className="text-[17px]" />
-          </Link>
-        </div>
-
         <div className="flex flex-col gap-3 rounded-card bg-brand-gradient p-6">
           <h2 className="text-[18px] font-bold text-white">
             Con tu perfil profesional podés
@@ -53,6 +34,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               </li>
             ))}
           </ul>
+
+          <PlanTeaser />
         </div>
       </aside>
     </div>

@@ -80,8 +80,13 @@ export function limitMessage(
   return `Tu plan ${plan.name} permite hasta ${limit} ${label}.`;
 }
 
-/** Precio legible: los importes se guardan en centavos. */
-export function formatPrice(plan: PlanLimits): string {
+/**
+ * Precio legible: los importes se guardan en centavos.
+ *
+ * Toma sólo el importe y no un `PlanLimits` entero para que también sirva
+ * donde se muestra un adelanto del plan sin sus límites.
+ */
+export function formatPrice(plan: Pick<PlanLimits, "priceCents">): string {
   if (plan.priceCents === 0) return "Gratis";
   const amount = plan.priceCents / 100;
   const shown = Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
@@ -94,3 +99,17 @@ export function isUpgrade(from: PlanLimits, to: PlanLimits): boolean {
 }
 
 export const PLAN_IDS: PlanId[] = ["cobre", "gold", "platinum"];
+
+/**
+ * Insignia de cada plan. Vive acá y no en un componente porque la usan tanto
+ * `/planes` como el adelanto del panel de acceso, y una sola copia evita que
+ * un plan quede con la imagen de otro.
+ *
+ * El archivo es la insignia dibujada (COBRE/ORO/PLATINO); el nombre visible
+ * sigue saliendo de la base, que es la que manda (RF-096).
+ */
+export const PLAN_BADGES: Record<PlanId, string> = {
+  cobre: "/brand/plans/cobre.png",
+  gold: "/brand/plans/oro.png",
+  platinum: "/brand/plans/platino.png",
+};
