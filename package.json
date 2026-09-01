@@ -18,6 +18,7 @@
     "check:backend": "tsx --conditions=react-server scripts/check-backend.ts",
     "seed:generate": "tsx --conditions=react-server scripts/generate-seed.ts",
     "db:seed:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/dev-seed.sql",
+    "db:query": "node scripts/db-query.mjs",
     "db:password:local": "wrangler d1 execute quienlohace --local --file=./seeds/set-dev-password.sql",
     "db:password:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/set-dev-password.sql",
     "db:reset:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/truncate.sql"
