@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
-import { PLAN_BADGES, formatPrice } from "@/domain/plans";
+import { PLAN_BADGES, PLAN_RIBBONS, formatPrice } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import type { PlanId, PlanLimits } from "@/types";
@@ -28,8 +28,8 @@ const HOOKS: Record<PlanId, string> = {
  */
 const FALLBACK: Array<Pick<PlanLimits, "id" | "name" | "priceCents">> = [
   { id: "cobre", name: "Cobre", priceCents: 0 },
-  { id: "gold", name: "Gold", priceCents: 500 },
-  { id: "platinum", name: "Platinum", priceCents: 2000 },
+  { id: "gold", name: "Oro", priceCents: 500 },
+  { id: "platinum", name: "Platino", priceCents: 2000 },
 ];
 
 export async function PlanTeaser() {
@@ -46,10 +46,39 @@ export async function PlanTeaser() {
       <ul className="flex flex-col gap-2">
         {plans.map((plan) => (
           <li key={plan.id}>
+            {/*
+              El degradado del metal reemplaza al gris parejo de antes: es lo
+              que distingue una fila de otra de un vistazo. Va en el `style`
+              porque cada plan tiene el suyo; el realce del hover queda en
+              clases.
+
+              La fila se cierra sólo por izquierda (borde y esquinas
+              redondeadas en tres lados). Por derecha no lleva ni borde ni
+              radio: el degradado se apaga contra el panel y la fila se
+              desvanece en él, en vez de terminar en un canto que delataría
+              dónde corta.
+            */}
             <Link
               href={`/planes#${plan.id}`}
-              className="flex items-center gap-3 rounded-input bg-white/10 px-3 py-2.5 transition-colors hover:bg-white/[.18]"
+              style={{ backgroundImage: PLAN_RIBBONS[plan.id].row }}
+              className="group relative flex items-center gap-3 rounded-l-input py-2.5 pl-3 pr-1 transition-[filter] hover:brightness-125"
             >
+              {/*
+                El borde va en una capa aparte, con `mask` que lo apaga hacia
+                la derecha: si fuera un `border` normal cortaría en seco justo
+                donde la fila tiene que estar desvaneciéndose.
+              */}
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0 rounded-l-input border-y border-l border-white/10 transition-colors group-hover:border-white/25"
+                style={{
+                  maskImage:
+                    "linear-gradient(90deg,#000 0%,#000 55%,transparent 85%)",
+                  WebkitMaskImage:
+                    "linear-gradient(90deg,#000 0%,#000 55%,transparent 85%)",
+                }}
+              />
+
               <Image
                 src={PLAN_BADGES[plan.id]}
                 alt=""
@@ -58,14 +87,19 @@ export async function PlanTeaser() {
                 className="h-[34px] w-[34px] shrink-0 object-contain"
               />
               <span className="flex min-w-0 flex-col">
-                <span className="text-[14.5px] font-semibold text-white">
+                {/*
+                  La sombra sostiene el blanco sobre la parte cargada del
+                  degradado: ahí el contraste plano se queda corto (Oro medía
+                  3.4:1) y el texto es lo único que no puede perder legibilidad.
+                */}
+                <span className="text-[14.5px] font-semibold text-white [text-shadow:0_1px_2px_rgba(11,20,38,.75)]">
                   {plan.name}
                 </span>
-                <span className="truncate text-[12.5px] text-[#C3CEE2]">
+                <span className="truncate text-[12.5px] text-[#D5DEEC] [text-shadow:0_1px_2px_rgba(11,20,38,.7)]">
                   {HOOKS[plan.id]}
                 </span>
               </span>
-              <span className="ml-auto shrink-0 text-[13px] font-semibold text-accent">
+              <span className="ml-auto shrink-0 pr-3 text-[13px] font-semibold text-accent">
                 {formatPrice(plan)}
               </span>
             </Link>

@@ -93,7 +93,7 @@ export function formatPrice(plan: Pick<PlanLimits, "priceCents">): string {
   return `USD ${shown}/mes`;
 }
 
-/** Orden de presentación y comparación: Cobre < Gold < Platinum. */
+/** Orden de presentación y comparación: Cobre < Oro < Platino. */
 export function isUpgrade(from: PlanLimits, to: PlanLimits): boolean {
   return to.rank > from.rank;
 }
@@ -112,4 +112,69 @@ export const PLAN_BADGES: Record<PlanId, string> = {
   cobre: "/brand/plans/cobre.png",
   gold: "/brand/plans/oro.png",
   platinum: "/brand/plans/platino.png",
+};
+
+/**
+ * Paleta del banderín que lleva el nombre del plan.
+ *
+ * Son colores de metal (cobre, oro, platino) y no del sistema de marca: la
+ * idea es que el banderín y la insignia se lean como la misma pieza. Por eso
+ * viven acá junto a `PLAN_BADGES` y no en los tokens de Tailwind, que
+ * describen la identidad de QuienLoHace.
+ *
+ * El degradado va de izquierda a derecha y arranca oscuro, para que el texto
+ * blanco tenga contraste suficiente en los tres planes sin cambiar de color
+ * según el metal. `fold` es el pliegue que cae por izquierda: más oscuro aún
+ * que el arranque, porque representa la cara en sombra de la cinta.
+ */
+export type PlanRibbon = {
+  /** Banderín de `/planes`, sobre la tarjeta blanca. */
+  face: string;
+  /** Pliegue del banderín: la cara en sombra de la cinta. */
+  fold: string;
+  /**
+   * Fila del adelanto en `/entrar` y `/registro`, sobre el panel azul.
+   *
+   * Es otra rampa y no la misma de `face`: aquélla arranca casi negra para
+   * sostener el texto blanco sobre una tarjeta clara, y sobre el panel azul
+   * (#455D88 → #182D53) quedaría más oscura que el fondo, como un hueco. Acá
+   * el metal entra con cuerpo por izquierda y se desvanece hacia la derecha,
+   * que es donde va el precio.
+   *
+   * Termina en alfa 0 antes del borde (85%) y no en un resto de color: la
+   * fila no lleva borde de ese lado, así que cualquier tinte remanente se
+   * vería como un canto vertical en vez de un desvanecido.
+   */
+  row: string;
+};
+
+/**
+ * Etiqueta de nivel que acompaña al nombre en el banderín de `/planes`.
+ *
+ * Resume en una palabra qué es cada plan, para que la comparación se entienda
+ * antes de leer la lista de límites. No sale de la base porque no es un dato
+ * configurable como el precio (RF-096): es la manera de nombrar los niveles.
+ */
+export const PLAN_TIERS: Record<PlanId, string> = {
+  cobre: "Básico",
+  gold: "Avanzado",
+  platinum: "Completo",
+};
+
+export const PLAN_RIBBONS: Record<PlanId, PlanRibbon> = {
+  cobre: {
+    face: "linear-gradient(90deg,#4A2410 0%,#8A4E24 45%,#C87941 100%)",
+    fold: "#31170A",
+    row: "linear-gradient(90deg,rgba(200,121,65,.55) 0%,rgba(200,121,65,.18) 55%,rgba(200,121,65,0) 85%)",
+  },
+  gold: {
+    face: "linear-gradient(90deg,#5A3D0C 0%,#A2721B 45%,#E3B23C 100%)",
+    fold: "#3C2707",
+    row: "linear-gradient(90deg,rgba(227,178,60,.50) 0%,rgba(227,178,60,.16) 55%,rgba(227,178,60,0) 85%)",
+  },
+  platinum: {
+    face: "linear-gradient(90deg,#2E3849 0%,#55637A 45%,#8E9AAE 100%)",
+    fold: "#1E2530",
+    row: "linear-gradient(90deg,rgba(190,205,228,.45) 0%,rgba(190,205,228,.14) 55%,rgba(190,205,228,0) 85%)",
+  },
 };

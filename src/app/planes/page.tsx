@@ -3,7 +3,12 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { Icon } from "@/components/ui";
-import { PLAN_BADGES, formatPrice } from "@/domain/plans";
+import {
+  PLAN_BADGES,
+  PLAN_RIBBONS,
+  PLAN_TIERS,
+  formatPrice,
+} from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import type { PlanLimits } from "@/types";
@@ -11,7 +16,7 @@ import type { PlanLimits } from "@/types";
 export const metadata: Metadata = {
   title: "Planes y precios",
   description:
-    "Compará los planes Cobre, Gold y Platinum de QuienLoHace: límites, funcionalidades y precios.",
+    "Compará los planes Cobre, Oro y Platino de QuienLoHace: límites, funcionalidades y precios.",
   alternates: { canonical: "/planes" },
 };
 
@@ -61,11 +66,11 @@ export default async function PlansPage() {
             qué queda publicado.
           </Rule>
           <Rule>
-            El distintivo de verificación no se compra. Gold y Platinum pueden
+            El distintivo de verificación no se compra. Oro y Platino pueden
             solicitarlo, y lo otorgamos después de validar los datos.
           </Rule>
           <Rule>
-            Los destacados rotan entre los perfiles Platinum compatibles: la
+            Los destacados rotan entre los perfiles Platino compatibles: la
             posición no es fija ni permanente.
           </Rule>
           <Rule>
@@ -79,14 +84,14 @@ export default async function PlansPage() {
 }
 
 function PlanCard({ plan }: { plan: PlanLimits }) {
-  // Platinum es el plan que se quiere destacar comercialmente.
+  // Platino es el plan que se quiere destacar comercialmente.
   const highlighted = plan.id === "platinum";
 
   return (
     <article
       // El adelanto de planes en `/registro` enlaza a cada plan por su id.
       id={plan.id}
-      className={`relative scroll-mt-24 flex flex-col gap-5 rounded-card border p-6 ${
+      className={`relative scroll-mt-24 flex flex-col gap-5 rounded-card border p-6 pt-[68px] ${
         highlighted
           ? "border-brand-800 bg-white shadow-[0_1px_3px_rgba(16,24,40,.08)]"
           : "border-line bg-white"
@@ -99,25 +104,24 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         El desborde hacia la derecha se apoya en el padding de `.shell`, que en
         la última tarjeta de la grilla es lo único que queda antes del borde de
         la pantalla. Por eso el corrimiento lateral es de 2 unidades y no más:
-        con `-right-4` la insignia de Platinum se recortaba contra el viewport.
+        con `-right-4` la insignia de Platino se recortaba contra el viewport.
       */}
       <Image
         src={PLAN_BADGES[plan.id]}
         alt=""
         width={112}
         height={112}
-        className="pointer-events-none absolute -right-2 -top-4 h-20 w-20 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] sm:-top-6 sm:h-28 sm:w-28"
+        className={`pointer-events-none absolute -top-4 z-20 h-20 w-20 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] sm:-top-6 sm:h-28 sm:w-28 ${
+          // El dibujo de Cobre es más angosto que el de Oro y Platino y dentro
+          // del mismo cuadro queda visualmente corrido hacia la izquierda. Se
+          // lo acerca al borde para que los tres sellos se vean alineados.
+          plan.id === "cobre" ? "-right-3.5" : "-right-2"
+        }`}
       />
-      {/* `pr-24` reserva el ancho del sello para que no tape el nombre. */}
-      <header className="flex flex-col gap-1.5 pr-20 sm:pr-24">
-        <span className="flex flex-wrap items-center gap-2">
-          <h2 className="text-[19px] font-bold text-ink">{plan.name}</h2>
-          {highlighted ? (
-            <span className="rounded-full bg-brand-100 px-2.5 py-0.5 text-[11.5px] font-bold uppercase tracking-wide text-brand-800">
-              Completo
-            </span>
-          ) : null}
-        </span>
+      <PlanRibbonName plan={plan} />
+
+      {/* `pr-24` reserva el ancho del sello para que no tape el precio. */}
+      <header className="pr-20 sm:pr-24">
         <p className="text-[24px] font-bold tracking-[-.5px] text-ink">
           {formatPrice(plan)}
         </p>
@@ -178,6 +182,61 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         </p>
       ) : null}
     </article>
+  );
+}
+
+/**
+ * Banderín con el nombre del plan.
+ *
+ * Sale del borde izquierdo de la tarjeta y baja un pliegue por detrás, para
+ * que se lea como una cinta que envuelve la tarjeta. Por la derecha termina
+ * al ras: la última tarjeta de la grilla queda contra el padding de `.shell`
+ * y un desborde de ese lado se recortaría contra el viewport.
+ */
+function PlanRibbonName({ plan }: { plan: PlanLimits }) {
+  const ribbon = PLAN_RIBBONS[plan.id];
+
+  return (
+    // `-left-3` es el desborde, que el contenedor no recorta. Por la derecha
+    // llega al ras del borde (`right-0`): ahí no desborda, porque la última
+    // tarjeta de la grilla ya está contra el padding de `.shell`. El sello
+    // tiene un z-index mayor, así que le pasa por encima al banderín.
+    <div className="pointer-events-none absolute -left-3 right-0 top-5 z-10">
+      {/*
+        El pliegue: un triángulo bajo el extremo izquierdo que simula la cara
+        posterior de la cinta doblada. Va detrás del frente (`-z-10`) y pegado
+        a su base para que parezca el mismo trozo de tela.
+      */}
+      <span
+        aria-hidden="true"
+        className="absolute left-0 top-full -z-10 h-3 w-3"
+        style={{
+          background: ribbon.fold,
+          clipPath: "polygon(0 0, 100% 0, 100% 100%)",
+        }}
+      />
+
+      {/*
+        El texto es blanco en los tres planes: el degradado arranca oscuro por
+        izquierda justamente para que así sea. La sombra combina una línea
+        oscura abajo y una clara arriba, que es lo que da el efecto de letra
+        grabada en la cinta.
+      */}
+      <h2
+        className="flex min-h-[34px] items-center gap-2.5 rounded-r-sm py-1.5 pl-4 pr-5 text-[17px] font-bold tracking-[.2px] text-white shadow-[0_2px_6px_rgba(16,24,40,.18)] [text-shadow:0_1px_1px_rgba(0,0,0,.55),0_-1px_0_rgba(255,255,255,.18)]"
+        style={{ background: ribbon.face }}
+      >
+        {plan.name}
+        {/*
+          La pastilla oscurece en vez de aclarar: sobre el degradado de Oro,
+          que es el más claro de los tres, un velo blanco dejaba el texto en
+          4.3:1. Con el velo oscuro los tres superan 4.5:1.
+        */}
+        <span className="rounded-full bg-black/25 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white [text-shadow:none]">
+          {PLAN_TIERS[plan.id]}
+        </span>
+      </h2>
+    </div>
   );
 }
 
