@@ -15,6 +15,24 @@ initOpenNextCloudflareForDev();
 const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+
+  async redirects() {
+    return [
+      {
+        // El registro vivía en `/entrar?perfil=1`. Se mantiene la redirección
+        // para no romper enlaces ya compartidos; es permanente porque la ruta
+        // nueva es la definitiva.
+        //
+        // Next arrastra los query params al destino, así que el enlace viejo
+        // termina en `/registro?perfil=1`. El parámetro sobra pero es inocuo:
+        // `/registro` ya no lo lee, y la página se sirve igual.
+        source: "/entrar",
+        has: [{ type: "query", key: "perfil", value: "1" }],
+        destination: "/registro",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

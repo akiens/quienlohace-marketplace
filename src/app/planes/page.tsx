@@ -142,7 +142,7 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
       </ul>
 
       <Link
-        href="/entrar?perfil=1"
+        href="/registro"
         className={`mt-auto flex h-11 items-center justify-center rounded-input text-[14.5px] font-semibold transition-colors ${
           highlighted
             ? "bg-brand-800 text-white hover:bg-brand-900"

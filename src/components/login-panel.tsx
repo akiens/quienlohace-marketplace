@@ -1,7 +1,7 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useActionState, useState } from "react";
+import Link from "next/link";
+import { useActionState } from "react";
 
 import { login, signup, type FormState } from "@/app/actions/auth";
 import { Button, Icon } from "@/components/ui";
@@ -9,14 +9,14 @@ import { Button, Icon } from "@/components/ui";
 /**
  * Acceso de proveedores. Envía a Server Actions: la validación y la
  * verificación de credenciales ocurren en el servidor.
+ *
+ * El modo lo fija la ruta que renderiza el panel: `/entrar` o `/registro`.
+ * Antes vivía en un query param (`?perfil=1`) que el componente leía al
+ * montar, así que navegar entre los dos modos desde el header no cambiaba el
+ * formulario. Con una ruta por intención, cada página monta su propio panel y
+ * el problema no puede volver.
  */
-export function LoginPanel() {
-  const searchParams = useSearchParams();
-  // ?perfil=1 llega desde los CTA de "Publicar mi perfil".
-  const [mode, setMode] = useState<"login" | "signup">(
-    searchParams.get("perfil") === "1" ? "signup" : "login",
-  );
-
+export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
   const [state, action, pending] = useActionState<FormState, FormData>(
     isSignup ? signup : login,
@@ -100,13 +100,15 @@ export function LoginPanel() {
 
         <p className="border-t border-line-soft pt-4 text-[14px] text-ink-soft">
           {isSignup ? "¿Ya tenés cuenta?" : "¿Todavía no tenés cuenta?"}{" "}
-          <button
-            type="button"
-            onClick={() => setMode(isSignup ? "login" : "signup")}
+          {/* Un enlace real y no un botón: cambiar de modo ahora es cambiar
+              de página, así que tiene que poder abrirse en otra pestaña y
+              quedar en el historial. */}
+          <Link
+            href={isSignup ? "/entrar" : "/registro"}
             className="font-semibold text-brand-800 underline underline-offset-2"
           >
             {isSignup ? "Entrar" : "Publicá tu perfil"}
-          </button>
+          </Link>
         </p>
       </div>
     </div>

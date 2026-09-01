@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
+import { logout } from "@/app/actions/auth";
 import { CATEGORIES } from "@/data/categories";
 import { Icon } from "@/components/ui";
 
@@ -183,6 +184,20 @@ function Header({ signedIn }: { signedIn: boolean }) {
               <Icon name="account_circle" className="text-[18px]" />
               Mi perfil
             </Link>
+          ) : null}
+
+          {signedIn ? (
+            // La sesión se cierra en el servidor: un form contra la Server
+            // Action, que borra la cookie y la fila de `sessions`.
+            <form action={logout}>
+              <button
+                type="submit"
+                className="flex h-10 items-center gap-1.5 rounded-input border border-white/30 px-3.5 text-[14.5px] font-semibold text-white transition-colors hover:bg-white/10"
+              >
+                <Icon name="logout" className="text-[18px]" />
+                Salir
+              </button>
+            </form>
           ) : (
             <>
               <Link
@@ -192,7 +207,7 @@ function Header({ signedIn }: { signedIn: boolean }) {
                 Entrar
               </Link>
               <Link
-                href="/entrar?perfil=1"
+                href="/registro"
                 className="flex h-10 items-center rounded-input bg-accent px-4 text-[14.5px] font-bold text-ink transition-colors hover:bg-accent-hover"
               >
                 Publicar mi perfil
@@ -413,7 +428,7 @@ function MobileDrawer({
                 ...MORE_LINKS,
                 signedIn
                   ? { label: "Mi perfil", href: "/dashboard", icon: "account_circle" }
-                  : { label: "Publicar mi perfil", href: "/entrar?perfil=1", icon: "add_business" },
+                  : { label: "Publicar mi perfil", href: "/registro", icon: "add_business" },
               ].map((link) => (
                 <Link
                   key={link.href}
@@ -424,6 +439,18 @@ function MobileDrawer({
                   {link.label}
                 </Link>
               ))}
+
+              {signedIn ? (
+                <form action={logout}>
+                  <button
+                    type="submit"
+                    className="flex w-full items-center gap-2.5 rounded-[10px] p-3 text-left text-[15px] font-semibold text-ink hover:bg-surface-sunken"
+                  >
+                    <Icon name="logout" className="text-[20px] text-brand-800" />
+                    Cerrar sesión
+                  </button>
+                </form>
+              ) : null}
             </nav>
           ) : null}
 

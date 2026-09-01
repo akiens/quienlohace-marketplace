@@ -16,8 +16,9 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      // El acceso a cuentas no aporta nada a la indexación.
-      disallow: ["/entrar"],
+      // Los formularios de cuenta no aportan nada a la indexación (RF-073).
+      // `/dashboard` es privado y además redirige sin sesión.
+      disallow: ["/entrar", "/registro", "/dashboard"],
     },
     sitemap: `${base}/sitemap.xml`,
   };

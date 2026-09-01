@@ -30,6 +30,20 @@
     user-select: none;
   }
 
+  /*
+   * Mientras la fuente no cargó, el nombre de la ligadura ("search", "star")
+   * se vería como texto suelto. Se oculta con `visibility` y no con `color`,
+   * porque muchos iconos fijan su propio color con clases utilitarias y
+   * pisarlo acá los rompería. El hueco queda reservado, así que tampoco hay
+   * salto de layout cuando aparecen.
+   *
+   * El marcador es un atributo `data-` y no una clase: `className` lo maneja
+   * React y modificarlo desde un script rompe la hidratación.
+   */
+  html:not([data-fonts-ready]) .icon {
+    visibility: hidden;
+  }
+
   .icon-filled {
     font-variation-settings: "FILL" 1;
   }

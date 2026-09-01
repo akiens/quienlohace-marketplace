@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { SiteHeader } from "@/components/site-header";
@@ -17,6 +18,7 @@ import { SiteHeader } from "@/components/site-header";
  */
 export function HeaderWithAuth() {
   const [signedIn, setSignedIn] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     // `ignore` evita aplicar una respuesta tardía tras desmontar.
@@ -26,7 +28,10 @@ export function HeaderWithAuth() {
       .then((response) => (response.ok ? response.json() : null))
       .then((data) => {
         const session = data as { signedIn?: boolean } | null;
-        if (!ignore && session?.signedIn) setSignedIn(true);
+        // Se aplica el valor recibido, también cuando es `false`: al cerrar
+        // sesión el header debe volver a mostrar «Entrar» en vez de quedarse
+        // con el estado anterior.
+        if (!ignore) setSignedIn(Boolean(session?.signedIn));
       })
       .catch(() => {
         // Si falla, queda el header de visitante: nunca bloquea la navegación.
@@ -35,7 +40,9 @@ export function HeaderWithAuth() {
     return () => {
       ignore = true;
     };
-  }, []);
+    // Se vuelve a consultar en cada navegación: entrar y salir terminan en un
+    // `redirect`, y así el header refleja el estado nuevo sin recargar.
+  }, [pathname]);
 
   return <SiteHeader signedIn={signedIn} />;
 }

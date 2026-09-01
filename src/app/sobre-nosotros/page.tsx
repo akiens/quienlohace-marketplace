@@ -81,7 +81,7 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="relative flex flex-wrap gap-2.5">
-            <ButtonLink href="/entrar?perfil=1" variant="accent">
+            <ButtonLink href="/registro" variant="accent">
               Publicar mi perfil
             </ButtonLink>
             <ButtonLink

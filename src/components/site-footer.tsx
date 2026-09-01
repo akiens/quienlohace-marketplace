@@ -27,7 +27,7 @@ const COLUMNS = [
     title: "Profesionales",
     items: [
       { label: "Entrar", href: "/entrar" },
-      { label: "Crear mi perfil", href: "/entrar?perfil=1" },
+      { label: "Crear mi perfil", href: "/registro" },
       { label: "Planes (pronto)", href: "/faq" },
     ],
   },

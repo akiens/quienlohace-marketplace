@@ -74,7 +74,7 @@ export default function HowItWorksPage() {
         subtitle="El perfil básico es gratuito."
         steps={PRO_STEPS}
         action={
-          <ButtonLink href="/entrar?perfil=1" variant="accent">
+          <ButtonLink href="/registro" variant="accent">
             Publicar mi perfil
             <Icon name="arrow_forward" className="text-[18px]" />
           </ButtonLink>

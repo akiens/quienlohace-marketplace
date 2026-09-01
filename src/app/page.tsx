@@ -141,7 +141,7 @@ export default async function HomePage() {
                 Recibí contactos por WhatsApp directo, sin comisiones por trabajo.
               </p>
             </div>
-            <ButtonLink href="/entrar?perfil=1" variant="accent" className="relative">
+            <ButtonLink href="/registro" variant="accent" className="relative">
               Publicar mi perfil
               <Icon name="arrow_forward" className="text-[18px]" />
             </ButtonLink>

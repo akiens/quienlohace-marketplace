@@ -15,6 +15,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "", priority: 1 },
     { path: "/buscar", priority: 0.8 },
     { path: "/destacados", priority: 0.7 },
+    // Precios y límites: contenido que se busca, y es la puerta de entrada
+    // de los proveedores que evalúan publicar.
+    { path: "/planes", priority: 0.7 },
     { path: "/como-funciona", priority: 0.6 },
     { path: "/sobre-nosotros", priority: 0.5 },
     { path: "/contacto", priority: 0.5 },
