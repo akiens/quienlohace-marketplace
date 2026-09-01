@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { Button, Icon, Stars } from "@/components/ui";
+import { Button, Stars } from "@/components/ui";
 import type { Review } from "@/types";
 
 const VISIBLE_REVIEWS = 5;
@@ -39,7 +39,6 @@ export function ReviewList({
             ? "Las opiniones de este profesional todavía no están disponibles."
             : "Este profesional todavía no tiene opiniones. Si trabajaste con él, tu reseña ayuda a los demás."}
         </p>
-        <ReviewCta />
       </div>
     );
   }
@@ -55,13 +54,41 @@ export function ReviewList({
           className="flex flex-col gap-2 border-b border-line-soft pb-4 last:border-b-0 last:pb-0"
         >
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            {review.authorAvatarUrl ? (
+              /* Avatar externo de Google. Va con <img> a propósito: pasarlo
+                 por el optimizador de Next lo haría transitar por el Worker
+                 y gastar CPU por cada opinión, sin ganancia real en un
+                 avatar de 28px. */
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={review.authorAvatarUrl}
+                alt=""
+                width={28}
+                height={28}
+                referrerPolicy="no-referrer"
+                className="h-7 w-7 rounded-full object-cover"
+              />
+            ) : null}
             <span className="text-[14.5px] font-semibold text-ink">
               {review.authorName}
             </span>
             <Stars rating={review.rating} />
             <span className="text-[13px] text-ink-faint">
               {formatDate(review.createdAt)}
+              {review.updatedAt && review.updatedAt !== review.createdAt
+                ? " · editada"
+                : ""}
             </span>
+            {review.isMine ? (
+              <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11.5px] font-semibold text-brand-800">
+                Tu opinión
+              </span>
+            ) : review.identified ? (
+              // RF-178: se afirma que hay identidad, no que hubo contratación.
+              <span className="text-[11.5px] font-medium text-ink-faint">
+                Publicado con Google
+              </span>
+            ) : null}
           </div>
           <p className="text-[14.5px] leading-relaxed text-ink-muted">
             {review.comment}
@@ -79,22 +106,7 @@ export function ReviewList({
           Ver {hidden} {hidden === 1 ? "opinión más" : "opiniones más"}
         </Button>
       ) : null}
-
-      <ReviewCta />
     </div>
   );
 }
 
-function ReviewCta() {
-  return (
-    <div className="flex flex-wrap items-center gap-3 rounded-input bg-surface-muted p-3.5">
-      <p className="flex-1 text-[13.5px] text-ink-soft">
-        ¿Trabajaste con este profesional? Contá tu experiencia.
-      </p>
-      <Button variant="secondary" size="sm">
-        <Icon name="rate_review" className="text-[17px] text-brand-800" />
-        Dejar una opinión
-      </Button>
-    </div>
-  );
-}

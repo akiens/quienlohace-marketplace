@@ -26,7 +26,13 @@ import { CATEGORIES } from "../src/data/categories";
 import { LOCATIONS, listAreas, locationLabel } from "../src/data/locations";
 import { hashPasswordWithSalt } from "../src/lib/password";
 import { slugify } from "../src/lib/slug";
-import type { PaymentMethod, ProviderKind, ProviderStatus } from "../src/types";
+import type {
+  PaymentMethod,
+  PlanId,
+  ProviderKind,
+  ProviderStatus,
+  ServiceMode,
+} from "../src/types";
 
 const SEED = 20260831;
 
@@ -48,6 +54,32 @@ const SEED_PASSWORD = "admin.123";
 const SEED_PASSWORD_SALT = new Uint8Array(
   Array.from({ length: 16 }, (_, i) => (i * 17 + 3) % 256),
 );
+
+/**
+ * Reparto de planes en los datos de prueba.
+ *
+ * Se mezclan los tres para poder ver el comportamiento de los límites y del
+ * upsell; sin variedad no habría forma de probar la degradación de RF-053.
+ * Los topes coinciden con los de la migración 0002.
+ */
+const PLAN_WEIGHTS: { weight: number; value: PlanId }[] = [
+  { weight: 60, value: "cobre" },
+  { weight: 28, value: "gold" },
+  { weight: 12, value: "platinum" },
+];
+
+const PLAN_CAPS: Record<PlanId, { services: number; areas: number }> = {
+  cobre: { services: 5, areas: 5 },
+  gold: { services: 15, areas: 15 },
+  platinum: { services: 30, areas: 30 },
+};
+
+const SERVICE_MODES: ServiceMode[] = [
+  "on_site",
+  "at_business",
+  "remote",
+  "hybrid",
+];
 
 const MIN_PER_SUBCATEGORY = 5;
 const MAX_PER_SUBCATEGORY = 10;
@@ -121,6 +153,8 @@ type SeedProvider = {
   status: ProviderStatus;
   featured: boolean;
   verified: boolean;
+  planId: PlanId;
+  serviceMode: ServiceMode;
   reviews: SeedReview[];
 };
 
@@ -182,6 +216,8 @@ function buildProvider(
 
   const slug = uniqueSlug(name);
   const location = faker.helpers.arrayElement(LOCATION_POOL);
+  const planId = faker.helpers.weightedArrayElement(PLAN_WEIGHTS);
+  const caps = PLAN_CAPS[planId];
 
   const services = [
     subcategory.name,
@@ -226,8 +262,10 @@ function buildProvider(
     categoryId: category.id,
     subcategoryId: subcategory.id,
     locationId: location.id,
-    serviceAreaIds: serviceAreasFor(location.id),
-    services,
+    // Se recortan al tope del plan: el seed no debe generar perfiles que
+    // el propio formulario rechazaría al guardar.
+    serviceAreaIds: serviceAreasFor(location.id).slice(0, caps.areas),
+    services: services.slice(0, caps.services),
     paymentMethods: faker.helpers.arrayElements(PAYMENTS, { min: 1, max: 4 }),
     phone: mobile,
     whatsapp: `598${mobile.slice(1)}`,
@@ -238,8 +276,13 @@ function buildProvider(
       index === 0 || !faker.datatype.boolean({ probability: 0.08 })
         ? "active"
         : "draft",
-    featured: faker.datatype.boolean({ probability: 0.12 }),
-    verified: faker.datatype.boolean({ probability: 0.45 }),
+    // Sólo Platinum participa de los destacados (RF-061).
+    featured:
+      planId === "platinum" && faker.datatype.boolean({ probability: 0.35 }),
+    verified:
+      planId !== "cobre" && faker.datatype.boolean({ probability: 0.5 }),
+    planId,
+    serviceMode: faker.helpers.arrayElement(SERVICE_MODES),
     reviews,
   };
 }
@@ -305,7 +348,7 @@ for (const provider of providers) {
   const ratingSum = provider.reviews.reduce((total, r) => total + r.rating, 0);
 
   lines.push(
-    `INSERT INTO providers (id, user_id, slug, name, kind, description, icon, category_id, subcategory_id, location_id, phone, whatsapp, schedule, status, featured, verified, rating_sum, review_count, created_at, updated_at) VALUES (${sql(provider.providerId)}, ${sql(provider.userId)}, ${sql(provider.slug)}, ${sql(provider.name)}, ${sql(provider.kind)}, ${sql(provider.description)}, ${sql(provider.icon)}, ${sql(provider.categoryId)}, ${sql(provider.subcategoryId)}, ${sql(provider.locationId)}, ${sql(provider.phone)}, ${sql(provider.whatsapp)}, ${sql(provider.schedule)}, ${sql(provider.status)}, ${provider.featured ? 1 : 0}, ${provider.verified ? 1 : 0}, ${ratingSum}, ${provider.reviews.length}, ${sql(NOW)}, ${sql(NOW)});`,
+    `INSERT INTO providers (id, user_id, slug, name, kind, description, icon, category_id, subcategory_id, location_id, phone, whatsapp, schedule, status, featured, verified, rating_sum, review_count, created_at, updated_at, plan_id, service_mode, phone_e164, whatsapp_enabled, verification_status) VALUES (${sql(provider.providerId)}, ${sql(provider.userId)}, ${sql(provider.slug)}, ${sql(provider.name)}, ${sql(provider.kind)}, ${sql(provider.description)}, ${sql(provider.icon)}, ${sql(provider.categoryId)}, ${sql(provider.subcategoryId)}, ${sql(provider.locationId)}, ${sql(provider.phone)}, ${sql(provider.whatsapp)}, ${sql(provider.schedule)}, ${sql(provider.status)}, ${provider.featured ? 1 : 0}, ${provider.verified ? 1 : 0}, ${ratingSum}, ${provider.reviews.length}, ${sql(NOW)}, ${sql(NOW)}, ${sql(provider.planId)}, ${sql(provider.serviceMode)}, ${sql(`+${provider.whatsapp}`)}, 1, ${sql(provider.verified ? "verified" : "unverified")});`,
   );
 
   provider.services.forEach((service, position) => {
@@ -384,6 +427,10 @@ async function main(): Promise<void> {
   console.log(
     `  sentencias SQL:  ${seedSql.split("\n").filter((l) => l.startsWith("INSERT")).length}`,
   );
+  for (const id of ["cobre", "gold", "platinum"] as PlanId[]) {
+    const total = providers.filter((p) => p.planId === id).length;
+    console.log(`  plan ${id.padEnd(11)} ${total}`);
+  }
   console.log(`  contraseña:      ${SEED_PASSWORD}`);
 }
 

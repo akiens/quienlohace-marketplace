@@ -5,9 +5,12 @@ import { redirect } from "next/navigation";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
 import { Icon } from "@/components/ui";
+import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { getCurrentUser } from "@/lib/session";
+import { formatPrice } from "@/domain/plans";
+import type { PlanLimits } from "@/types";
 
 export const metadata: Metadata = {
   title: "Mi perfil",
@@ -26,6 +29,15 @@ export default async function DashboardPage() {
   if (!user) redirect("/entrar");
 
   const provider = await new D1ProviderRepository().findByUserId(user.id);
+
+  // El plan define los topes del formulario. Si faltara la fila, se cae a
+  // Cobre: es preferible el plan más restrictivo que un panel roto.
+  const planRepo = new D1PlanRepository();
+  const plan =
+    (await planRepo.findById(provider?.planId ?? "cobre")) ??
+    (await planRepo.findById("cobre"));
+
+  if (!plan) return <SetupNotice />;
 
   return (
     <div className="shell flex flex-col gap-7 py-8">
@@ -65,7 +77,44 @@ export default async function DashboardPage() {
         </p>
       ) : null}
 
-      <ProfileForm provider={provider} />
+      <PlanBanner plan={plan} />
+
+      <ProfileForm provider={provider} plan={plan} />
+    </div>
+  );
+}
+
+/**
+ * Plan vigente y qué incluye (RF-053).
+ *
+ * Se muestra siempre, también en Cobre: saber qué tope tenés es parte de
+ * entender por qué el formulario limita, y evita que el límite aparezca como
+ * un error sin explicación.
+ */
+function PlanBanner({ plan }: { plan: PlanLimits }) {
+  return (
+    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-card border border-line bg-white px-5 py-3.5">
+      <span className="flex items-center gap-2">
+        <Icon name="workspace_premium" className="text-[19px] text-brand-800" />
+        <span className="text-[14.5px] font-bold text-ink">
+          Plan {plan.name}
+        </span>
+        <span className="text-[13px] text-ink-faint">{formatPrice(plan)}</span>
+      </span>
+
+      <span className="text-[13px] text-ink-soft">
+        {plan.maxServices} servicios · {plan.maxServiceAreas} zonas
+        {plan.maxGalleryImages > 0
+          ? ` · ${plan.maxGalleryImages} imágenes`
+          : ""}
+      </span>
+
+      <Link
+        href="/planes"
+        className="ml-auto text-[13.5px] font-semibold text-brand-800 hover:underline"
+      >
+        {plan.id === "platinum" ? "Ver planes" : "Mejorar mi plan"}
+      </Link>
     </div>
   );
 }

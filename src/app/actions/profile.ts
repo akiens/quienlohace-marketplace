@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 
 import { getCategoryOfSubcategory } from "@/data/categories";
+import { limitFor, limitMessage } from "@/domain/plans";
+import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { requireUser } from "@/lib/session";
 import { fieldErrors, providerProfileSchema } from "@/lib/validation";
-import type { ProviderStatus } from "@/types";
+import type { PlanLimits, ProviderStatus } from "@/types";
 import type { FormState } from "@/app/actions/auth";
 
 /**
@@ -17,6 +19,30 @@ import type { FormState } from "@/app/actions/auth";
  */
 
 const providers = new D1ProviderRepository();
+const plans = new D1PlanRepository();
+
+/**
+ * Comprueba los topes del plan sobre lo que llega del formulario.
+ *
+ * Devuelve los errores por campo, o null si todo entra. RF-053 aclara que
+ * bajar de plan no borra datos: acá sólo se frenan altas nuevas por encima
+ * del límite, nunca se recorta lo ya guardado.
+ */
+function checkLimits(
+  plan: PlanLimits,
+  counts: { services: number; serviceAreas: number },
+): Record<string, string> | null {
+  const errors: Record<string, string> = {};
+
+  if (counts.services > limitFor(plan, "services")) {
+    errors.services = limitMessage(plan, "services", "servicios");
+  }
+  if (counts.serviceAreas > limitFor(plan, "serviceAreas")) {
+    errors.serviceAreaIds = limitMessage(plan, "serviceAreas", "zonas");
+  }
+
+  return Object.keys(errors).length > 0 ? errors : null;
+}
 
 /** Lee el formulario y lo valida. Los checkbox/multi-valor llegan como listas. */
 function parseProfile(formData: FormData) {
@@ -62,6 +88,20 @@ export async function saveProfile(
   };
 
   const existing = await providers.findByUserId(user.id);
+
+  // Los límites se comprueban en el servidor: que la UI deshabilite el botón
+  // "agregar" no es una restricción, sólo una ayuda (RF-053, RF-163).
+  const plan =
+    (await plans.findById(existing?.planId ?? "cobre")) ??
+    (await plans.findById("cobre"));
+
+  if (plan) {
+    const overLimit = checkLimits(plan, {
+      services: draft.services.length,
+      serviceAreas: draft.serviceAreaIds.length,
+    });
+    if (overLimit) return { errors: overLimit };
+  }
 
   if (existing) {
     await providers.update(existing.id, draft);

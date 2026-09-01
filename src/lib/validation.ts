@@ -2,13 +2,19 @@ import { z } from "zod";
 
 import { CATEGORIES } from "@/data/categories";
 import { getLocation } from "@/data/locations";
-import { MAX_LOCATIONS } from "@/types";
+
 
 /**
  * Schemas compartidos. La UI los usa para dar feedback inmediato, pero la
  * validación que cuenta es la del servidor: nunca se confía en el cliente
  * (RF-163).
  */
+
+/**
+ * Techo defensivo, por encima del plan más alto. El límite comercial real
+ * lo aplica la acción según el plan del proveedor.
+ */
+const ABSOLUTE_MAX_ITEMS = 60;
 
 const SUBCATEGORY_IDS = new Set(
   CATEGORIES.flatMap((category) =>
@@ -64,14 +70,17 @@ export const providerProfileSchema = z
       .max(20)
       .default(""),
     schedule: z.string().trim().max(160).default(""),
+    // El tope real lo pone el plan contratado, que se comprueba en la acción
+    // (RF-053). Acá sólo queda un techo defensivo, común a todos los planes,
+    // para que un envío manipulado no llegue con miles de elementos.
     services: z
       .array(z.string().trim().min(1).max(60))
       .min(1, "Agregá al menos un servicio.")
-      .max(12, "Máximo 12 servicios."),
+      .max(ABSOLUTE_MAX_ITEMS, "Demasiados servicios."),
     serviceAreaIds: z
       .array(locationId)
       .min(1, "Elegí al menos una zona donde trabajás.")
-      .max(MAX_LOCATIONS, `Máximo ${MAX_LOCATIONS} zonas.`),
+      .max(ABSOLUTE_MAX_ITEMS, "Demasiadas zonas."),
     paymentMethods: z.array(z.enum(PAYMENT_METHODS)).default([]),
   })
   // Sin al menos una vía de contacto el perfil no cumple su función.
@@ -81,13 +90,28 @@ export const providerProfileSchema = z
   });
 
 export const reviewSchema = z.object({
-  rating: z.coerce.number().int().min(1).max(5),
+  rating: z.coerce
+    .number("Elegí una puntuación.")
+    .int()
+    .min(1, "Elegí una puntuación.")
+    .max(5),
   comment: z
     .string()
     .trim()
     .min(10, "Contá un poco más sobre tu experiencia.")
+    // RF-180: un tope de longitud acota el texto masivo automatizado.
     .max(1000, "Máximo 1000 caracteres."),
   authorName: z.string().trim().min(2, "Escribí tu nombre.").max(60),
+});
+
+/** RF-154: motivos de reporte. El detalle es opcional. */
+export const reviewReportSchema = z.object({
+  reviewId: z.string().min(1),
+  reason: z.enum(
+    ["spam", "offensive", "false_info", "personal_info", "conflict", "other"],
+    "Elegí un motivo.",
+  ),
+  detail: z.string().trim().max(500, "Máximo 500 caracteres.").default(""),
 });
 
 export type ProviderProfileInput = z.infer<typeof providerProfileSchema>;

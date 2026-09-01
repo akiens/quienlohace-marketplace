@@ -4,6 +4,7 @@ import type {
   ProviderKind,
   ProviderStatus,
   Review,
+  ReviewReportReason,
   SearchFilters,
   User,
   UserRole,
@@ -46,14 +47,34 @@ export interface ProviderRepository {
 }
 
 export interface ReviewRepository {
-  listForProvider(providerId: string): Promise<Review[]>;
+  /** `viewerConsumerId` marca la opinión propia de quien mira (RF-151). */
+  listForProvider(
+    providerId: string,
+    viewerConsumerId?: string | null,
+  ): Promise<Review[]>;
+  findByConsumer(providerId: string, consumerId: string): Promise<Review | null>;
   create(input: {
     providerId: string;
     authorId: string | null;
+    consumerId?: string | null;
     authorName: string;
     rating: number;
     comment: string;
   }): Promise<Review>;
+  updateOwn(input: {
+    reviewId: string;
+    consumerId: string;
+    rating: number;
+    comment: string;
+  }): Promise<boolean>;
+  deleteOwn(reviewId: string, consumerId: string): Promise<boolean>;
+  report(input: {
+    reviewId: string;
+    consumerId: string | null;
+    userId: string | null;
+    reason: ReviewReportReason;
+    detail: string;
+  }): Promise<void>;
 }
 
 export type NewUser = {

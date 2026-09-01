@@ -93,15 +93,162 @@ export type Provider = {
   /** Presentes cuando el proveedor viene de la base; opcionales en datos de ejemplo. */
   status?: ProviderStatus;
   images?: ProviderImage[];
+
+  /** Plan contratado. Los datos de ejemplo no lo traen. */
+  planId?: PlanId;
+  subscriptionStatus?: SubscriptionStatus;
+  verificationStatus?: VerificationStatus;
+
+  /** RF-013: el teléfono normalizado; de acá salen tel: y wa.me. */
+  phoneE164?: string;
+  whatsappEnabled?: boolean;
+  phonePublic?: boolean;
+  publicEmail?: string;
+  serviceMode?: ServiceMode;
+
+  /** RF-011: subcategorías adicionales; `subcategoryId` sigue siendo la principal. */
+  subcategoryIds?: string[];
+  /** RF-170: horarios por día. `schedule` queda como resumen legible. */
+  hours?: DayHours[];
+  socialLinks?: SocialLink[];
+  teamMembers?: TeamMember[];
 };
+
+/** Estado de moderación de una opinión (RF-176). */
+export type ReviewStatus = "pending" | "published" | "hidden" | "reported";
 
 export type Review = {
   id: string;
   providerId: string;
   authorName: string;
+  /** Avatar de Google, cuando la opinión viene de un cliente identificado. */
+  authorAvatarUrl?: string;
   rating: number;
   comment: string;
   /** ISO date, para poder formatear en el servidor sin desajustes. */
+  createdAt: string;
+  updatedAt?: string;
+  /**
+   * true cuando el autor es el cliente que está mirando: habilita editar y
+   * borrar su propia opinión (RF-151) sin exponer esa acción a los demás.
+   */
+  isMine?: boolean;
+  /** RF-178: se indica que hay identidad, no que hubo contratación. */
+  identified?: boolean;
+};
+
+/** Motivos de reporte de una opinión (RF-154). */
+export type ReviewReportReason =
+  | "spam"
+  | "offensive"
+  | "false_info"
+  | "personal_info"
+  | "conflict"
+  | "other";
+
+// ---------------------------------------------------------------------------
+// Planes (RF-050 a RF-053)
+// ---------------------------------------------------------------------------
+
+export type PlanId = "cobre" | "gold" | "platinum";
+
+export type MetricsLevel = "basic" | "intermediate" | "full";
+
+/**
+ * Plan con sus límites. Se lee de la base: RF-096 pide que precios y topes
+ * sean configurables sin desplegar código.
+ */
+export type PlanLimits = {
+  id: PlanId;
+  name: string;
+  priceCents: number;
+  currency: string;
+  period: "month" | "year";
+  rank: number;
+  maxServices: number;
+  maxSubcategories: number;
+  maxServiceAreas: number;
+  maxGalleryImages: number;
+  maxTeamMembers: number;
+  allowsSocialLinks: boolean;
+  allowsLanding: boolean;
+  allowsFeatured: boolean;
+  allowsContactForm: boolean;
+  allowsVerificationRequest: boolean;
+  metricsLevel: MetricsLevel;
+};
+
+export type SubscriptionStatus =
+  | "trial"
+  | "active"
+  | "past_due"
+  | "cancelled"
+  | "expired";
+
+/** RF-084: la verificación se otorga tras validar, no por pagar. */
+export type VerificationStatus =
+  | "unverified"
+  | "pending"
+  | "verified"
+  | "rejected";
+
+/** RF-029: dónde presta el servicio. */
+export type ServiceMode = "on_site" | "at_business" | "remote" | "hybrid";
+
+export const SERVICE_MODE_LABELS: Record<ServiceMode, string> = {
+  on_site: "A domicilio",
+  at_business: "En mi local",
+  remote: "Remoto",
+  hybrid: "Combinado",
+};
+
+/** RF-170: horario de un día. `null` en las horas cuando cierra o es 24h. */
+export type DayHours = {
+  weekday: number;
+  opensAt: string | null;
+  closesAt: string | null;
+  closed: boolean;
+  open24h: boolean;
+};
+
+export const WEEKDAY_LABELS = [
+  "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado",
+];
+
+export type SocialPlatform =
+  | "instagram"
+  | "facebook"
+  | "linkedin"
+  | "x"
+  | "tiktok"
+  | "youtube"
+  | "website";
+
+export type SocialLink = { platform: SocialPlatform; url: string };
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  role: string;
+  bio: string;
+  photoKey: string;
+  position: number;
+};
+
+// ---------------------------------------------------------------------------
+// Clientes (RF-123, RF-125, RF-175)
+// ---------------------------------------------------------------------------
+
+/**
+ * Cliente que busca servicios. No tiene contraseña propia: la identidad la
+ * aporta Google y sólo se pide cuando quiere participar (RF-124).
+ */
+export type ConsumerUser = {
+  id: string;
+  email: string;
+  displayName: string;
+  avatarUrl: string;
+  status: "active" | "suspended";
   createdAt: string;
 };
 

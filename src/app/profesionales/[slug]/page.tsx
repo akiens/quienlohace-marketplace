@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
+import { ReviewForm } from "@/components/review-form";
 import { ReviewList } from "@/components/review-list";
 import {
   Chip,
@@ -201,7 +202,10 @@ export default async function ProviderPage({
             </Panel>
 
             <Panel title="Opiniones">
-              <ReviewList reviews={reviews} totalCount={provider.reviewCount} />
+              <div className="flex flex-col gap-5">
+                <ReviewList reviews={reviews} totalCount={provider.reviewCount} />
+                <ReviewForm providerId={provider.id} providerSlug={provider.slug} />
+              </div>
             </Panel>
           </div>
 

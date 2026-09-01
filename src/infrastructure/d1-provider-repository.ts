@@ -37,6 +37,14 @@ type ProviderRow = {
   verified: number;
   rating_sum: number;
   review_count: number;
+  plan_id: string;
+  subscription_status: string;
+  verification_status: string;
+  phone_e164: string;
+  whatsapp_enabled: number;
+  phone_public: number;
+  public_email: string;
+  service_mode: string;
 };
 
 /** Filas relacionadas de un lote de proveedores, en 4 consultas y no N+1. */
@@ -134,6 +142,14 @@ function toProvider(
     paymentMethods: relations.payments.get(row.id) ?? [],
     status: row.status as ProviderStatus,
     images: relations.images.get(row.id) ?? [],
+    planId: row.plan_id as Provider["planId"],
+    subscriptionStatus: row.subscription_status as Provider["subscriptionStatus"],
+    verificationStatus: row.verification_status as Provider["verificationStatus"],
+    phoneE164: row.phone_e164,
+    whatsappEnabled: row.whatsapp_enabled === 1,
+    phonePublic: row.phone_public === 1,
+    publicEmail: row.public_email,
+    serviceMode: row.service_mode as Provider["serviceMode"],
   };
 }
 
@@ -144,7 +160,9 @@ async function hydrate(rows: ProviderRow[]): Promise<Provider[]> {
 
 const SELECT_COLUMNS = `id, slug, name, kind, icon, description, category_id,
   subcategory_id, location_id, phone, whatsapp, schedule, status, featured,
-  verified, rating_sum, review_count`;
+  verified, rating_sum, review_count, plan_id, subscription_status,
+  verification_status, phone_e164, whatsapp_enabled, phone_public,
+  public_email, service_mode`;
 
 /** Sólo los perfiles publicados son visibles en el sitio público. */
 const PUBLIC_WHERE = `status = 'active'`;

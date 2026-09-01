@@ -7,24 +7,54 @@ del proveedor. Next.js full-stack sobre Cloudflare Workers, con D1 y R2.
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000 — UI con datos de ejemplo
-```
 
-`npm run dev` usa el servidor de Next: alcanza para trabajar en la interfaz
-pública, pero **no** tiene D1 ni sesiones. Para el panel del proveedor hace
-falta el runtime de Workers:
-
-```bash
 npm run db:migrate:local   # crea el esquema en la D1 local
 npm run seed:generate      # genera los datos de prueba
 npm run db:seed:local      # los carga en la D1 local
-npm run preview            # build + Workers en local, con D1 y R2 reales
+
+npm run dev                # http://localhost:3000
 ```
+
+Con eso ya se puede entrar al panel: cualquier cuenta del seed sirve, con la
+contraseña `admin.123` (ver [Datos de prueba](#datos-de-prueba)).
+
+### Cómo correr el sitio en local
+
+Hay dos formas y sirven para cosas distintas.
+
+**`npm run dev` — para el día a día.**
+
+Servidor de Next con recarga en caliente. Gracias a
+`initOpenNextCloudflareForDev()` en `next.config.mjs`, tiene acceso a la D1 y
+la R2 locales, así que el login, el panel y las opiniones funcionan.
+
+**`npm run preview` — antes de desplegar.**
+
+Compila y corre el bundle real sobre `workerd`, el mismo runtime que usa
+producción. No tiene recarga en caliente y la compilación tarda varios
+minutos, pero es la única forma de detectar lo que **sólo falla en Workers**.
+No es teórico: el login estuvo roto en producción porque el runtime limita
+PBKDF2 a 100.000 iteraciones, algo que `next dev` nunca reproduce porque Node
+no tiene ese tope.
+
+| Situación | Comando |
+| --- | --- |
+| Desarrollo normal, UI, formularios | `npm run dev` |
+| Verificar antes de un deploy | `npm run preview` |
+| Algo falla en producción pero no en local | `npm run preview` |
+| Ver o consultar datos | `npm run db:query` |
+
+La regla corta: **`dev` para construir, `preview` para confirmar.**
+
+> **No corras los dos a la vez.** En Windows el proceso mantiene bloqueado el
+> archivo SQLite de la D1 local, y el segundo falla al compilar o al leer.
+> Si pasa, cerrá el que sobre; si queda un `workerd` colgado,
+> `Get-Process workerd | Stop-Process -Force`.
 
 | Script | Qué hace |
 | --- | --- |
-| `npm run dev` | Next dev — sólo UI pública |
-| `npm run preview` | Build + Workers local (D1, R2, sesiones) |
+| `npm run dev` | Next dev con D1 y R2 locales |
+| `npm run preview` | Build + Workers local: el runtime real |
 | `npm run deploy` | Build + deploy a Cloudflare |
 | `npm run build` | Build de Next |
 | `npm run lint` / `typecheck` | ESLint / TypeScript |
@@ -32,8 +62,10 @@ npm run preview            # build + Workers en local, con D1 y R2 reales
 | `npm run check:backend` | Contraseñas y schemas de validación |
 | `npm run cf-typegen` | Regenera los tipos de los bindings |
 | `npm run db:migrate:local` / `:remote` | Aplica migraciones |
+| `npm run db:query` | Consulta la D1 local en formato tabla (sólo lectura) |
 | `npm run seed:generate` | Genera los datos de prueba |
 | `npm run db:seed:local` | Los carga en la D1 local |
+| `npm run db:password:local` / `:remote` | Repone la contraseña de prueba |
 | `npm run db:seed:remote` | Los carga en la D1 de producción ⚠️ |
 | `npm run db:reset:remote` | Vacía la D1 de producción ⚠️ |
 
@@ -46,8 +78,9 @@ npm run preview            # build + Workers en local, con D1 y R2 reales
 Master Data geográfico reales:
 
 ```text
-seeds/providers.json   los datos, legibles y reutilizables
-seeds/dev-seed.sql     lo mismo, listo para D1 (derivado del JSON)
+seeds/providers.json        los datos, legibles y reutilizables
+seeds/dev-seed.sql          lo mismo, listo para D1 (derivado del JSON)
+seeds/set-dev-password.sql  sólo la contraseña, para una base ya cargada
 ```
 
 Son ~900 proveedores, entre 5 y 10 por subcategoría, con una mezcla de
@@ -56,12 +89,47 @@ borrador y otros sin opiniones — para poder ver todos los estados de la UI.
 Los nombres y teléfonos salen de Faker con locale español; el rubro y la
 ubicación, del código, así toda referencia existe por construcción.
 
+Los perfiles se reparten entre los tres planes (≈60% Cobre, 28% Gold, 12%
+Platinum), cada uno dentro de sus propios límites, para poder probar el
+comportamiento de los topes y del upsell.
+
+**Todas las cuentas usan la contraseña `admin.123`.** Es sólo para pruebas:
+está en el repositorio y estos usuarios no deben existir en producción.
+
 El generador es determinista (semilla fija): dos corridas producen archivos
-idénticos. Los dos archivos están en `.gitignore` porque pesan varios MB y se
+idénticos. Los archivos están en `.gitignore` porque pesan varios MB y se
 regeneran en un comando.
 
 `db:seed:local` **borra** el contenido de las tablas antes de insertar, así
 que cada corrida deja la base en un estado conocido.
+
+### Dónde vive la base local
+
+La D1 local es un SQLite que administra Miniflare:
+
+```text
+.wrangler/state/v3/d1/miniflare-D1DatabaseObject/<hash>.sqlite
+```
+
+Es un directorio **generado**: está fuera de git y se pierde al resetear el
+estado. No guardes ahí nada que quieras conservar; para reconstruirlo,
+`npm run db:migrate:local && npm run db:seed:local`.
+
+Para inspeccionarla hay tres caminos:
+
+```bash
+npm run db:query                                    # resumen de tablas y filas
+npm run db:query -- "SELECT email, name FROM users LIMIT 5"
+```
+
+`db:query` lee el archivo directamente, así que no necesita que haya un
+servidor levantado, y **sólo acepta lecturas** (`SELECT`, `WITH`, `PRAGMA`,
+`EXPLAIN`) para no borrar datos por accidente.
+
+Con un servidor corriendo, `wrangler` trae un explorador web en
+`/cdn-cgi/local/explorer` que permite navegar tablas y correr SQL. Y para una
+app de escritorio, cualquier cliente SQLite abre ese archivo — pero cerrá
+antes `dev` o `preview`, porque en Windows el archivo queda bloqueado.
 
 ### Poblar la base remota
 
@@ -104,6 +172,31 @@ npm run db:reset:remote   # ejecuta seeds/truncate.sql
 
 Para desarrollo normal no hace falta nada de esto: `npm run preview` levanta
 el sitio con la base local y los mismos datos.
+
+### Login con Google (opiniones)
+
+Para publicar una opinión hace falta identidad (RF-148). El flujo está
+implementado; sólo faltan las credenciales, que son secretos y no viven en el
+repositorio.
+
+1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+   creá un **OAuth 2.0 Client ID** de tipo *Web application*.
+2. Agregá como *Authorized redirect URI*:
+
+   ```text
+   https://quienlohace-marketplace.akiens-dev.workers.dev/auth/google/callback
+   ```
+
+   Para probar en local, sumá también `http://localhost:8787/auth/google/callback`.
+3. Cargá las credenciales como secretos del Worker:
+
+   ```bash
+   npx wrangler secret put GOOGLE_CLIENT_ID
+   npx wrangler secret put GOOGLE_CLIENT_SECRET
+   ```
+
+Sin estas variables el sitio funciona igual: el botón de Google no se muestra
+y las opiniones quedan en modo lectura. Nada más se degrada.
 
 ## Despliegue
 
@@ -167,17 +260,20 @@ de `env.DB`. Cambiar D1 por Postgres es escribir otro adapter.
 ```text
 src/
 ├── app/                  Rutas y Server Actions
-│   ├── actions/            auth.ts · profile.ts
+│   ├── actions/            auth.ts · profile.ts · reviews.ts
 │   ├── dashboard/          panel del proveedor
+│   ├── planes/             comparación pública de planes
+│   ├── auth/google/        login de clientes (inicio y callback)
 │   ├── api/session/        estado de sesión para el header
+│   ├── api/review-context/ identidad para el formulario de opinión
 │   ├── media/[...key]/     sirve imágenes desde R2
 │   └── …                   público: inicio, buscar, categorías, perfiles
 ├── application/          Casos de uso
-├── domain/               Puertos (interfaces)
+├── domain/               Puertos (interfaces) y reglas de planes
 ├── infrastructure/       Adapters D1/R2 — único lugar con bindings
 ├── components/           UI
 ├── data/                 Master Data: ubicaciones, taxonomía, FAQ
-├── lib/                  Sesión, contraseñas, validación, búsqueda
+├── lib/                  Sesión, contraseñas, validación, búsqueda, OAuth
 └── types/                Contratos de dominio
 migrations/               Esquema (se aplica con wrangler)
 seeds/                    Datos de prueba — nunca en producción
@@ -213,16 +309,25 @@ volvería dinámico todo el sitio y las páginas de SEO dejarían de pregenerars
 ## Estado
 
 Funciona de punta a punta contra D1: registro, login, alta y edición del
-perfil, publicar/despublicar, búsqueda, filtros, categorías, perfiles públicos
-y opiniones.
+perfil por etapas, publicar/despublicar, búsqueda, filtros, categorías,
+perfiles públicos, planes con sus límites, y opiniones con alta, edición y
+borrado.
 
 Pendiente:
 
+- **Credenciales de Google** — el flujo de login de clientes está completo,
+  pero sin `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` el botón no se muestra
+  y las opiniones quedan de sólo lectura. Ver
+  [Login con Google](#login-con-google-opiniones).
+- **Campos con schema pero sin UI** — horarios por día, integrantes del
+  equipo, redes sociales y subcategorías múltiples tienen tablas y tipos
+  (migración `0002`), falta el formulario que los edite.
 - **Subida de imágenes desde el panel** — el backend está
   (`addProviderImage`, R2, `/media/...`), falta el control en el formulario.
-- **Login con Google** para consumidores, y publicación de opiniones desde la
-  web (hoy las opiniones se leen; el alta existe en el repositorio).
-- **Turnstile y rate limiting** en formularios sensibles.
+- **Cobro de suscripciones** — los planes y sus límites se aplican, pero no
+  hay pasarela de pago: el plan se asigna en la base.
+- **Turnstile y rate limiting** en formularios sensibles (RF-155 a RF-162).
+- **Tracking de eventos propio** (RF-130 a RF-142).
 - **App de administración** (`admin.quienlohace.uy`) — es una aplicación
   aparte, según `arquitectura-actualizada.md`.
 - Verificación de email y recuperación de contraseña.
