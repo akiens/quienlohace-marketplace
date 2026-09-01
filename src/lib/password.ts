@@ -9,7 +9,17 @@ import "server-only";
  * (el formato guarda los parámetros, así que se puede rehashear al ingresar).
  */
 
-const ITERATIONS = 210_000; // Recomendación OWASP 2023 para PBKDF2-SHA256.
+/**
+ * El runtime de Workers rechaza más de 100.000 iteraciones:
+ * "Pbkdf2 failed: iteration counts above 100000 are not supported".
+ * OWASP recomienda 210.000, pero ese valor hace fallar todo login en
+ * producción, así que 100.000 es el máximo que se puede usar acá.
+ *
+ * Como el hash guarda sus propios parámetros, subir esta constante el día que
+ * el runtime lo permita no invalida las contraseñas ya guardadas: `verify`
+ * usa las iteraciones del hash, no ésta.
+ */
+const ITERATIONS = 100_000;
 const KEY_LENGTH = 32;
 const FORMAT = "pbkdf2";
 

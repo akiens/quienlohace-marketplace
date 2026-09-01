@@ -8,4 +8,4 @@
 --
 -- Remoto: npm run db:password:remote
 
-UPDATE users SET password_hash = 'pbkdf2:210000:031425364758697a8b9cadbecfe0f102:48bca13c0f127f1b54ccfde671c1983c0b489ad8b8c7d4455a8c23281edf0c34', updated_at = '2026-08-31T12:00:00.000Z' WHERE id LIKE 'seed-user-%';
+UPDATE users SET password_hash = 'pbkdf2:100000:031425364758697a8b9cadbecfe0f102:37e0962c7b67fc7efbef8aaa62d8091629a7a1c40fa412450f7ae98a9fb07fd3', updated_at = '2026-08-31T12:00:00.000Z' WHERE id LIKE 'seed-user-%';
