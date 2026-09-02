@@ -72,15 +72,20 @@ export function PlanSwitcher({
     <>
       <div
         style={{ backgroundImage: PLAN_RIBBONS[plan.id].face }}
-        className="relative flex flex-wrap items-center gap-x-5 gap-y-2 overflow-hidden rounded-card px-5 py-3.5"
+        className="relative flex h-9 items-center gap-x-5 rounded-card py-[3px] pr-[3px]"
       >
-        <span className="flex items-center gap-2.5">
+        <span className="flex items-center gap-3">
+          {/*
+           * La franja mide 36px y la insignia 64px: se sale por arriba y por
+           * abajo, así se lee como algo apoyado encima. Va corrida a la
+           * derecha, y el texto detrás de ella para que no quede tapado.
+           */}
           <Image
             src={PLAN_BADGES[plan.id]}
             alt=""
-            width={64}
-            height={64}
-            className="h-9 w-9 shrink-0 object-contain drop-shadow-[0_2px_4px_rgba(16,24,40,.3)]"
+            width={96}
+            height={96}
+            className="pointer-events-none -my-3 ml-[15px] h-16 w-16 shrink-0 object-contain drop-shadow-[0_3px_8px_rgba(16,24,40,.35)]"
           />
           <span className="text-[15px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,.5)]">
             Plan {plan.name}
@@ -96,9 +101,9 @@ export function PlanSwitcher({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="ml-auto flex h-9 items-center gap-1.5 rounded-input bg-white/95 px-3.5 text-[13.5px] font-semibold text-ink transition-colors hover:bg-white"
+          className="ml-auto flex h-[30px] items-center gap-1.5 rounded-input bg-white/95 px-3 text-[13px] font-semibold text-ink transition-colors hover:bg-white"
         >
-          <Icon name="swap_horiz" className="text-[17px]" />
+          <Icon name="swap_horiz" className="text-[16px]" />
           Cambiar mi plan
         </button>
       </div>
