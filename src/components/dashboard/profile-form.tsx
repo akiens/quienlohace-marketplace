@@ -1,8 +1,23 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 
 import { saveProfile } from "@/app/actions/profile";
+import {
+  clearProfileDraft,
+  profileDraftServerSnapshot,
+  profileDraftSnapshot,
+  subscribeProfileDraft,
+  writeProfileDraft,
+  type ProfileDraft,
+} from "@/lib/profile-draft";
 import type { FormState } from "@/app/actions/auth";
 import { CATEGORIES } from "@/data/categories";
 import { locationLabelById, locationLevelLabel } from "@/data/locations";
@@ -65,6 +80,20 @@ const SOCIAL_FIELDS: Array<{ platform: SocialPlatform; label: string }> = [
   { platform: "x", label: "X" },
 ];
 
+/**
+ * Lee el borrador y monta el formulario con él.
+ *
+ * El borrador vive en `localStorage`, que en el servidor no existe: si los
+ * campos arrancaran con lo guardado, el HTML del servidor —siempre vacío— y
+ * el primer render del cliente dirían cosas distintas y React abortaría la
+ * hidratación.
+ *
+ * `useSyncExternalStore` da primero el snapshot del servidor (vacío, igual
+ * que el HTML) y después el del cliente. La `key` hace que al aparecer el
+ * borrador el formulario se monte de nuevo, ya con los valores en su estado
+ * inicial: hidratación limpia y campos completos, sin un efecto que los vaya
+ * llenando de a uno.
+ */
 export function ProfileForm({
   provider,
   plan,
@@ -72,12 +101,52 @@ export function ProfileForm({
   provider: Provider | null;
   plan: PlanLimits;
 }) {
+  const stored = useSyncExternalStore(
+    subscribeProfileDraft,
+    profileDraftSnapshot,
+    profileDraftServerSnapshot,
+  );
+
+  // Con perfil manda la base y el borrador no interviene.
+  const draft = provider ? null : stored;
+
+  return (
+    <ProfileFormFields
+      key={draft ? "con-borrador" : "sin-borrador"}
+      provider={provider}
+      plan={plan}
+      draft={draft}
+    />
+  );
+}
+
+function ProfileFormFields(props: {
+  provider: Provider | null;
+  plan: PlanLimits;
+  draft: ProfileDraft | null;
+}) {
+  const { provider, plan } = props;
+
   const [state, action, pending] = useActionState<FormState, FormData>(
     saveProfile,
     {},
   );
 
-  const [requestedStep, setRequestedStep] = useState<StepId>("identidad");
+  const formRef = useRef<HTMLFormElement>(null);
+
+  /*
+   * Ya resuelto por quien monta este componente, que además lo usa como
+   * `key`: acá el borrador es fijo y los campos pueden arrancar con él.
+   */
+  const draft = props.draft;
+
+  const [requestedStep, setRequestedStep] = useState<StepId>(() =>
+    // Volver al paso donde se estaba: reanudar desde el principio obligaría a
+    // recorrer de nuevo todo lo ya completado.
+    draft?.step && ALL_STEPS.some((s) => s.id === draft.step)
+      ? (draft.step as StepId)
+      : "identidad",
+  );
 
   /*
    * Sólo se muestran los pasos que el plan habilita: a quien tiene Cobre no
@@ -97,20 +166,22 @@ export function ProfileForm({
   // Sólo servicios confirmados: la fila en blanco dejó de existir cuando
   // pasaron a agregarse de a uno, como las zonas.
   const [services, setServices] = useState<string[]>(
-    provider?.services ?? [],
+    draft?.services ?? provider?.services ?? [],
   );
   /** Lo tipeado que todavía no se confirmó. */
   const [pendingService, setPendingService] = useState("");
   const [duplicateService, setDuplicateService] = useState<string | null>(null);
   const [subcategoryId, setSubcategoryId] = useState(
-    provider?.subcategoryId ?? "",
+    draft?.subcategoryId ?? provider?.subcategoryId ?? "",
   );
-  const [locationId, setLocationId] = useState(provider?.locationId ?? "");
+  const [locationId, setLocationId] = useState(
+    draft?.locationId ?? provider?.locationId ?? "",
+  );
   const [extraSubcategoryIds, setExtraSubcategoryIds] = useState<string[]>(
-    provider?.subcategoryIds ?? [],
+    draft?.subcategoryIds ?? provider?.subcategoryIds ?? [],
   );
   const [serviceAreaIds, setServiceAreaIds] = useState<string[]>(
-    provider?.serviceAreaIds ?? [],
+    draft?.serviceAreaIds ?? provider?.serviceAreaIds ?? [],
   );
   /** La última zona repetida que se intentó agregar, para avisarlo. */
   const [duplicateArea, setDuplicateArea] = useState<string | null>(null);
@@ -119,24 +190,34 @@ export function ProfileForm({
   const [duplicateSubcategory, setDuplicateSubcategory] = useState<
     string | null
   >(null);
-  const [name, setName] = useState(provider?.name ?? "");
-  const [description, setDescription] = useState(provider?.description ?? "");
-  const [phone, setPhone] = useState(provider?.phone ?? "");
+  const [name, setName] = useState(draft?.name ?? provider?.name ?? "");
+  const [description, setDescription] = useState(
+    draft?.description ?? provider?.description ?? "",
+  );
+  const [phone, setPhone] = useState(draft?.phone ?? provider?.phone ?? "");
   // Alcanza con saber si hay al menos una red cargada, no cuál.
   const [socialTouched, setSocialTouched] = useState(
-    (provider?.socialLinks?.length ?? 0) > 0,
+    Object.keys(draft?.socialLinks ?? {}).length > 0 ||
+      (provider?.socialLinks?.length ?? 0) > 0,
   );
   const [teamMembers, setTeamMembers] = useState<TeamRow[]>(
-    provider?.teamMembers?.map((member) => ({
-      name: member.name,
-      role: member.role,
-      subtitle: member.subtitle,
-      bio: member.bio,
-    })) ?? [],
+    draft?.teamMembers?.map((member) => ({
+      name: member.name ?? "",
+      role: member.role ?? "",
+      subtitle: member.subtitle ?? "",
+      bio: member.bio ?? "",
+    })) ??
+      provider?.teamMembers?.map((member) => ({
+        name: member.name,
+        role: member.role,
+        subtitle: member.subtitle,
+        bio: member.bio,
+      })) ??
+      [],
   );
   // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
   const [whatsappEnabled, setWhatsappEnabled] = useState(
-    provider?.whatsappEnabled ?? true,
+    draft?.whatsappEnabled ?? provider?.whatsappEnabled ?? true,
   );
 
   const errors = state.errors ?? {};
@@ -149,6 +230,47 @@ export function ProfileForm({
    * proveedor vea el estado real mientras completa, en vez de descubrirlo
    * recién al guardar.
    */
+  /*
+   * Los campos no controlados (tipo, modalidad, horarios, formas de pago,
+   * redes) no tienen estado en React: su valor vive en el DOM, así que el
+   * borrador se les aplica escribiéndolos una vez montado el formulario.
+   *
+   * Los controlados no pasan por acá: arrancan del borrador en su propio
+   * `useState`, sin un render extra.
+   */
+  useEffect(() => {
+    const form = formRef.current;
+    if (!draft || !form) return;
+
+    const setField = (name: string, value: string) => {
+      const field = form.elements.namedItem(name);
+      if (
+        field instanceof HTMLInputElement ||
+        field instanceof HTMLSelectElement ||
+        field instanceof HTMLTextAreaElement
+      ) {
+        field.value = value;
+      }
+    };
+
+    if (draft.kind) setField("kind", draft.kind);
+    if (draft.serviceMode) setField("serviceMode", draft.serviceMode);
+    if (draft.schedule) setField("schedule", draft.schedule);
+
+    for (const [platform, url] of Object.entries(draft.socialLinks ?? {})) {
+      if (url) setField(`social_${platform}`, url);
+    }
+
+    if (draft.paymentMethods?.length) {
+      const chosen = new Set(draft.paymentMethods);
+      for (const box of form.querySelectorAll<HTMLInputElement>(
+        'input[name="paymentMethods"]',
+      )) {
+        box.checked = chosen.has(box.value);
+      }
+    }
+  }, [draft]);
+
   /**
    * Confirma el servicio tipeado. Vacío no agrega nada y repetido avisa, en
    * vez de descartarse en silencio como pasaba con las zonas.
@@ -219,6 +341,84 @@ export function ProfileForm({
   const setStep = setRequestedStep;
 
   /*
+   * Guarda el borrador cada vez que cambia algo. Los campos no controlados se
+   * leen del DOM en el momento, que es donde está su valor.
+   *
+   * Sólo durante el alta: con perfil creado la base ya guarda todo y un
+   * borrador paralelo sólo podría contradecirla.
+   */
+  useEffect(() => {
+    if (provider) return;
+
+    const form = formRef.current;
+    const read = (name: string): string => {
+      const field = form?.elements.namedItem(name);
+      return field instanceof HTMLInputElement ||
+        field instanceof HTMLSelectElement ||
+        field instanceof HTMLTextAreaElement
+        ? field.value
+        : "";
+    };
+
+    const socialLinks: Record<string, string> = {};
+    for (const field of SOCIAL_FIELDS) {
+      const url = read(`social_${field.platform}`);
+      if (url) socialLinks[field.platform] = url;
+    }
+
+    const paymentMethods = form
+      ? Array.from(
+          form.querySelectorAll<HTMLInputElement>(
+            'input[name="paymentMethods"]:checked',
+          ),
+          (box) => box.value,
+        )
+      : [];
+
+    writeProfileDraft({
+      step,
+      name,
+      kind: read("kind"),
+      description,
+      subcategoryId,
+      subcategoryIds: extraSubcategoryIds,
+      services,
+      locationId,
+      serviceMode: read("serviceMode") as ServiceMode,
+      serviceAreaIds,
+      phone,
+      whatsappEnabled,
+      schedule: read("schedule"),
+      paymentMethods,
+      socialLinks,
+      teamMembers,
+    });
+  }, [
+    provider,
+    step,
+    name,
+    description,
+    subcategoryId,
+    extraSubcategoryIds,
+    services,
+    locationId,
+    serviceAreaIds,
+    phone,
+    whatsappEnabled,
+    teamMembers,
+    socialTouched,
+  ]);
+
+  /*
+   * Guardado: el borrador cumplió su función y se descarta. Dejarlo haría que
+   * una recarga posterior reviviera datos viejos por encima de los guardados.
+   */
+  useEffect(() => {
+    if (state.message && !state.errors) clearProfileDraft();
+  }, [state.message, state.errors]);
+
+
+  /*
    * Sólo los pasos obligatorios cuentan para habilitar el botón. Galería,
    * redes, equipo y pago son opcionales: el perfil se publica sin ellos.
    */
@@ -250,7 +450,7 @@ export function ProfileForm({
   };
 
   return (
-    <form action={action} className="flex flex-col gap-5">
+    <form ref={formRef} action={action} className="flex flex-col gap-5">
       {/*
         El plan con el que se crea el perfil. Sólo cuenta la primera vez: si
         el perfil ya existe, el servidor usa el suyo y descarta este valor.
