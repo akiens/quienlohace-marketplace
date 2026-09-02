@@ -28,6 +28,7 @@ import { newId } from "@/lib/id";
 
 type ProviderRow = {
   id: string;
+  user_id: string;
   slug: string;
   name: string;
   kind: string;
@@ -178,6 +179,7 @@ function toProvider(
 ): Provider {
   return {
     id: row.id,
+    userId: row.user_id,
     slug: row.slug,
     name: row.name,
     kind: row.kind as ProviderKind,
@@ -221,7 +223,7 @@ async function hydrate(
   return rows.map((row) => toProvider(row, relations));
 }
 
-const SELECT_COLUMNS = `id, slug, name, kind, icon, description, category_id,
+const SELECT_COLUMNS = `id, user_id, slug, name, kind, icon, description, category_id,
   subcategory_id, location_id, phone, whatsapp, schedule, status, featured,
   verified, rating_sum, review_count, plan_id, subscription_status,
   verification_status, phone_e164, whatsapp_enabled, phone_public,
@@ -378,6 +380,33 @@ export class D1ProviderRepository implements ProviderRepository {
     if (!row) return null;
     const [provider] = await hydrate([row]);
     return provider ?? null;
+  }
+
+  /**
+   * Perfiles publicados con nombre parecido, para sugerir cuando el buscado
+   * no existe o no es público.
+   *
+   * La comparación es por slug: ya viene normalizado (sin tildes, en
+   * minúsculas y con guiones), así que "plomeria-juan" encuentra a
+   * "Plomería Juan" sin pelear con acentos.
+   */
+  async findSimilarByName(slug: string, limit: number): Promise<Provider[]> {
+    const words = slug.split("-").filter((word) => word.length >= 3);
+    if (words.length === 0) return [];
+
+    // Una condición por palabra: alcanza con que coincida una para sugerir.
+    const clause = words.map(() => `slug LIKE ?`).join(" OR ");
+
+    const { results } = await getDb()
+      .prepare(
+        `SELECT ${SELECT_COLUMNS} FROM providers
+         WHERE ${PUBLIC_WHERE} AND slug != ? AND (${clause})
+         ${ORDER} LIMIT ?`,
+      )
+      .bind(slug, ...words.map((word) => `%${word}%`), limit)
+      .all<ProviderRow>();
+
+    return hydrate(results ?? []);
   }
 
   /** Para el panel: incluye lo que quedó fuera del plan, para poder editarlo. */

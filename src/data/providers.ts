@@ -8,6 +8,7 @@ import type { Provider, Review } from "@/types";
 export const PROVIDERS: Provider[] = [
   {
     id: "p-juan-electricidad",
+    userId: "u-juan-electricidad",
     slug: "juan-electricidad",
     name: "Juan Electricidad",
     kind: "individual",
@@ -35,6 +36,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-climasur",
+    userId: "u-climasur",
     slug: "climasur",
     name: "ClimaSur",
     kind: "business",
@@ -62,6 +64,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-estudio-rivera",
+    userId: "u-estudio-rivera",
     slug: "estudio-contable-rivera",
     name: "Estudio Contable Rivera",
     kind: "business",
@@ -88,6 +91,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-verde-jardin",
+    userId: "u-verde-jardin",
     slug: "verde-jardin",
     name: "Verde Jardín",
     kind: "individual",
@@ -114,6 +118,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-pixel-studio",
+    userId: "u-pixel-studio",
     slug: "pixel-studio",
     name: "Pixel Studio",
     kind: "business",
@@ -140,6 +145,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-dental-centro",
+    userId: "u-dental-centro",
     slug: "dental-centro",
     name: "Dental Centro",
     kind: "business",
@@ -162,6 +168,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-sanitaria-del-sur",
+    userId: "u-sanitaria-del-sur",
     slug: "sanitaria-del-sur",
     name: "Sanitaria Del Sur",
     kind: "individual",
@@ -189,6 +196,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-limpieza-total",
+    userId: "u-limpieza-total",
     slug: "limpieza-total",
     name: "Limpieza Total",
     kind: "business",
@@ -215,6 +223,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-tecnofix",
+    userId: "u-tecnofix",
     slug: "tecnofix",
     name: "TecnoFix",
     kind: "business",
@@ -240,6 +249,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-pintura-uy",
+    userId: "u-pintura-uy",
     slug: "pintura-uy",
     name: "Pintura Uy",
     kind: "individual",
@@ -266,6 +276,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-mudanzas-aguirre",
+    userId: "u-mudanzas-aguirre",
     slug: "mudanzas-aguirre",
     name: "Mudanzas Aguirre",
     kind: "business",
@@ -293,6 +304,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-taller-ferreira",
+    userId: "u-taller-ferreira",
     slug: "taller-ferreira",
     name: "Taller Ferreira",
     kind: "business",
@@ -319,6 +331,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-lucia-mendez",
+    userId: "u-lucia-mendez",
     slug: "lucia-mendez",
     name: "Lic. Lucía Méndez",
     kind: "individual",
@@ -341,6 +354,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-studio-nara",
+    userId: "u-studio-nara",
     slug: "studio-nara",
     name: "Studio Nara",
     kind: "business",
@@ -363,6 +377,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-cerrajeria-express",
+    userId: "u-cerrajeria-express",
     slug: "cerrajeria-express",
     name: "Cerrajería Express",
     kind: "individual",
@@ -389,6 +404,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-seguridad-norte",
+    userId: "u-seguridad-norte",
     slug: "seguridad-norte",
     name: "Seguridad Norte",
     kind: "business",
@@ -415,6 +431,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-vet-huellitas",
+    userId: "u-vet-huellitas",
     slug: "vet-huellitas",
     name: "Vet Huellitas",
     kind: "business",
@@ -441,6 +458,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-mesa-uruguaya",
+    userId: "u-mesa-uruguaya",
     slug: "mesa-uruguaya-catering",
     name: "Mesa Uruguaya Catering",
     kind: "business",
@@ -467,6 +485,7 @@ export const PROVIDERS: Provider[] = [
   },
   {
     id: "p-herreria-delgado",
+    userId: "u-herreria-delgado",
     slug: "herreria-delgado",
     name: "Herrería Delgado",
     kind: "individual",

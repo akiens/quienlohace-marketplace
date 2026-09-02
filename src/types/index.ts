@@ -87,6 +87,11 @@ export type PaymentMethod =
 
 export type Provider = {
   id: string;
+  /**
+   * Dueño del perfil. Permite saber si quien mira es quien lo creó, que es lo
+   * que habilita a ver en vista previa un perfil todavía sin publicar.
+   */
+  userId: string;
   slug: string;
   name: string;
   kind: ProviderKind;

@@ -67,6 +67,8 @@ export type DraftLimits = {
 
 export interface ProviderRepository {
   findBySlug(slug: string): Promise<Provider | null>;
+  /** Perfiles publicados con nombre parecido, para sugerir ante un 404. */
+  findSimilarByName(slug: string, limit: number): Promise<Provider[]>;
   findByUserId(userId: string): Promise<Provider | null>;
   search(filters: SearchFilters, limit: number, offset: number): Promise<Provider[]>;
   countForSearch(filters: SearchFilters): Promise<number>;

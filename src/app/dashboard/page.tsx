@@ -63,16 +63,20 @@ export default async function DashboardPage() {
 
         {provider ? (
           <div className="flex flex-wrap items-center gap-2.5">
+            {/*
+              Ver el perfil se ofrece siempre, publicado o no: sin publicar
+              abre la vista previa, que es la forma de revisar cómo queda
+              antes de mostrarlo. Antes sólo aparecía una vez publicado, o sea
+              justo cuando ya era tarde para revisarlo.
+            */}
+            <Link
+              href={`/profesionales/${provider.slug}`}
+              className="flex h-10 items-center gap-1.5 rounded-input border border-line-strong bg-white px-4 text-[14px] font-semibold text-ink hover:bg-surface-muted"
+            >
+              <Icon name="open_in_new" className="text-[17px] text-brand-800" />
+              Ver perfil
+            </Link>
             <PublishToggle status={provider.status ?? "draft"} />
-            {provider.status === "active" ? (
-              <Link
-                href={`/profesionales/${provider.slug}`}
-                className="flex h-10 items-center gap-1.5 rounded-input border border-line-strong bg-white px-4 text-[14px] font-semibold text-ink hover:bg-surface-muted"
-              >
-                <Icon name="open_in_new" className="text-[17px] text-brand-800" />
-                Ver mi perfil público
-              </Link>
-            ) : null}
           </div>
         ) : null}
       </header>

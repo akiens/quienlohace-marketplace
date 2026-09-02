@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ReviewForm } from "@/components/review-form";
@@ -14,18 +13,28 @@ import {
 } from "@/components/ui";
 import { getCategory, getSubcategory } from "@/data/categories";
 import { locationLabelById } from "@/data/locations";
-import { findProviderBySlug, listReviews } from "@/application/providers";
+import {
+  findProviderBySlug,
+  findSimilarProviders,
+  findVisibleProviderBySlug,
+  listReviews,
+} from "@/application/providers";
+import { NotFoundPage } from "@/components/not-found-page";
+import { getCurrentUser } from "@/lib/session";
 import { phoneHref, whatsappHref } from "@/lib/contact";
 
 type Params = { slug: string };
 
 /**
- * Los perfiles los edita cada proveedor, así que no se congelan en el build:
- * se generan bajo demanda y se revalidan. La primera visita arma el HTML y
- * las siguientes lo sirven desde caché hasta la próxima revalidación (o hasta
- * que el proveedor guarde cambios, que dispara `revalidatePath`).
+ * La página depende de quién mira: el dueño ve su perfil aún sin publicar, y
+ * cualquier otra persona ve el aviso de que no existe. Una respuesta cacheada
+ * y compartida serviría la versión equivocada —incluido un perfil despublicado
+ * a quien no debe verlo—, así que se rinde por pedido.
+ *
+ * Antes era `revalidate = 3600`, que valía cuando la página era igual para
+ * todo el mundo.
  */
-export const revalidate = 3600;
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -34,7 +43,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const provider = await findProviderBySlug(slug);
-  if (!provider) return {};
+
+  /*
+   * Sólo los publicados aportan metadatos. Uno sin publicar no debería
+   * aparecer en buscadores ni en la vista previa de un enlace compartido,
+   * aunque su dueño sí pueda verlo.
+   */
+  if (!provider || (provider.status ?? "active") !== "active") {
+    return { title: "Perfil no encontrado", robots: { index: false } };
+  }
 
   return {
     title: `${provider.name} · ${locationLabelById(provider.locationId)}`,
@@ -49,8 +66,28 @@ export default async function ProviderPage({
   params: Promise<Params>;
 }) {
   const { slug } = await params;
-  const provider = await findProviderBySlug(slug);
-  if (!provider) notFound();
+
+  /*
+   * Un perfil sin publicar sólo lo ve su dueño, en vista previa. Para
+   * cualquier otra persona la respuesta es la misma que ante un nombre que no
+   * existe: que esté despublicado no es algo que haya que contar.
+   */
+  const user = await getCurrentUser();
+  const visible = await findVisibleProviderBySlug(slug, user?.id ?? null);
+
+  if (!visible) {
+    // El nombre buscado sale de la URL y sirve para sugerir parecidos.
+    const suggestions = await findSimilarProviders(slug);
+    return (
+      <NotFoundPage
+        title="No existe un perfil público para un proveedor con este nombre"
+        message="Puede que el enlace esté desactualizado, que el nombre esté escrito distinto o que ese perfil todavía no se haya publicado."
+        suggestions={suggestions}
+      />
+    );
+  }
+
+  const { provider, isPreview } = visible;
 
   const category = getCategory(provider.categoryId);
   const subcategory = getSubcategory(provider.subcategoryId);
@@ -82,6 +119,26 @@ export default async function ProviderPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      {isPreview ? (
+        <div className="bg-accent-soft">
+          <div className="shell flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3">
+            <span className="flex items-center gap-2 text-[14px] font-semibold text-accent-ink">
+              <Icon name="visibility_off" className="text-[18px]" />
+              Vista previa: así se verá tu perfil cuando lo publiques.
+            </span>
+            <span className="text-[13.5px] text-accent-ink/80">
+              Todavía no es visible para nadie más.
+            </span>
+            <Link
+              href="/dashboard"
+              className="ml-auto text-[13.5px] font-semibold text-accent-ink underline"
+            >
+              Volver a mi perfil
+            </Link>
+          </div>
+        </div>
+      ) : null}
 
       {/* Portada */}
       {/* z-0 explícito: sin él la portada crea un contexto de apilamiento que
