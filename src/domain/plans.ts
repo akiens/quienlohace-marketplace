@@ -93,6 +93,27 @@ export function formatPrice(plan: Pick<PlanLimits, "priceCents">): string {
   return `USD ${shown}/mes`;
 }
 
+/**
+ * Qué campos habilita cada plan, más allá de los topes numéricos.
+ *
+ * Los topes viven en la base (`plans`) porque cambian sin desplegar; esto es
+ * distinto: es la forma del formulario, y define qué pasos se muestran.
+ */
+export type PlanFeature = "gallery" | "social" | "team" | "verification";
+
+export function allowsFeature(plan: PlanLimits, feature: PlanFeature): boolean {
+  switch (feature) {
+    case "gallery":
+      return plan.maxGalleryImages > 0;
+    case "social":
+      return plan.allowsSocialLinks;
+    case "team":
+      return plan.maxTeamMembers > 0;
+    case "verification":
+      return plan.allowsVerificationRequest;
+  }
+}
+
 /** Orden de presentación y comparación: Cobre < Oro < Platino. */
 export function isUpgrade(from: PlanLimits, to: PlanLimits): boolean {
   return to.rank > from.rank;

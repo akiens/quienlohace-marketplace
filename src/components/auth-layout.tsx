@@ -1,5 +1,4 @@
 import { PlanTeaser } from "@/components/plan-teaser";
-import type { PlanId } from "@/types";
 import { Icon } from "@/components/ui";
 
 /**
@@ -12,12 +11,10 @@ import { Icon } from "@/components/ui";
 export function AuthLayout({
   children,
   selectable = false,
-  selectedPlan,
 }: {
   children: React.ReactNode;
   /** En `/registro` las filas de plan eligen; en `/entrar` sólo informan. */
   selectable?: boolean;
-  selectedPlan?: PlanId;
 }) {
   return (
     <div className="shell grid grid-cols-1 gap-8 py-12 lg:grid-cols-2 lg:gap-14 lg:py-16">
@@ -45,7 +42,7 @@ export function AuthLayout({
             ))}
           </ul>
 
-          <PlanTeaser selectable={selectable} selected={selectedPlan} />
+          <PlanTeaser selectable={selectable} />
         </div>
       </aside>
     </div>

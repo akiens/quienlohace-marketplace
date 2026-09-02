@@ -23,6 +23,17 @@ const SUBCATEGORY_IDS = new Set(
   ),
 );
 
+/** Las redes que acepta el esquema de la base. */
+const SOCIAL_PLATFORMS = [
+  "instagram",
+  "facebook",
+  "linkedin",
+  "x",
+  "tiktok",
+  "youtube",
+  "website",
+] as const;
+
 const PAYMENT_METHODS = [
   "Efectivo",
   "Transferencia",
@@ -146,7 +157,24 @@ export const providerProfileSchema = z
     subcategoryId: z
       .string()
       .refine((id) => SUBCATEGORY_IDS.has(id), "Elegí una subcategoría válida."),
+    /*
+     * Subcategorías adicionales (RF-011). `subcategoryId` sigue siendo la
+     * principal; éstas son las otras en las que también trabaja. El tope real
+     * lo pone el plan y se comprueba en la acción.
+     */
+    subcategoryIds: z
+      .array(
+        z
+          .string()
+          .refine((id) => SUBCATEGORY_IDS.has(id), "Elegí una subcategoría válida."),
+      )
+      .max(ABSOLUTE_MAX_ITEMS, "Demasiadas subcategorías.")
+      .default([]),
     locationId,
+    /* Estaba en el formulario pero no en el schema: se perdía en cada guardado. */
+    serviceMode: z
+      .enum(["on_site", "at_business", "remote", "hybrid"])
+      .default("on_site"),
     /*
      * Un solo teléfono (RF-013). De acá se derivan el enlace `tel:` y el de
      * `wa.me`: se valida que sea un número marcable, no su formato exacto,
@@ -175,6 +203,38 @@ export const providerProfileSchema = z
       .min(1, "Elegí al menos una zona donde trabajás.")
       .max(ABSOLUTE_MAX_ITEMS, "Demasiadas zonas."),
     paymentMethods: z.array(z.enum(PAYMENT_METHODS)).default([]),
+
+    /* Redes sociales (RF-171). Sólo con plan que las habilite. */
+    socialLinks: z
+      .array(
+        z.object({
+          platform: z.enum(SOCIAL_PLATFORMS),
+          url: z
+            .string()
+            .trim()
+            .url("Poné una dirección completa, con https://")
+            .max(300, "La dirección es demasiado larga."),
+        }),
+      )
+      .max(SOCIAL_PLATFORMS.length, "Demasiadas redes.")
+      .default([]),
+
+    /* Equipo (RF-016). Sólo Platino; el tope lo comprueba la acción. */
+    teamMembers: z
+      .array(
+        z.object({
+          name: nameSchema,
+          role: z.string().trim().max(80, "Máximo 80 caracteres.").default(""),
+          subtitle: z
+            .string()
+            .trim()
+            .max(80, "Máximo 80 caracteres.")
+            .default(""),
+          bio: z.string().trim().max(300, "Máximo 300 caracteres.").default(""),
+        }),
+      )
+      .max(ABSOLUTE_MAX_ITEMS, "Demasiados integrantes.")
+      .default([]),
   });
 
 export const reviewSchema = z.object({

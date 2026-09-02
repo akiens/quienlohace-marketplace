@@ -2,6 +2,8 @@ import type {
   PaymentMethod,
   PlanId,
   Provider,
+  ServiceMode,
+  SocialLink,
   ProviderKind,
   ProviderStatus,
   Review,
@@ -31,9 +33,36 @@ export type ProviderDraft = {
   phoneE164: string;
   whatsappEnabled: boolean;
   schedule: string;
+  serviceMode: ServiceMode;
   services: string[];
   serviceAreaIds: string[];
+  /** Subcategorías adicionales; `subcategoryId` es la principal. */
+  subcategoryIds: string[];
   paymentMethods: PaymentMethod[];
+  socialLinks: SocialLink[];
+  teamMembers: TeamMemberDraft[];
+};
+
+/** Un integrante todavía sin id: lo asigna el repositorio. */
+export type TeamMemberDraft = {
+  name: string;
+  role: string;
+  subtitle: string;
+  bio: string;
+};
+
+/**
+ * Elementos que exceden el plan y quedan guardados pero inactivos (RF-053).
+ * La acción los calcula; el repositorio sólo obedece.
+ */
+export type DraftLimits = {
+  services: number;
+  serviceAreas: number;
+  subcategories: number;
+  teamMembers: number;
+  galleryImages: number;
+  /** Las redes son todo o nada: el plan las permite o no. */
+  social: boolean;
 };
 
 export interface ProviderRepository {
@@ -49,8 +78,14 @@ export interface ProviderRepository {
     userId: string,
     draft: ProviderDraft,
     planId?: PlanId,
+    limits?: DraftLimits,
   ): Promise<Provider>;
-  update(providerId: string, draft: ProviderDraft): Promise<Provider>;
+  update(
+    providerId: string,
+    draft: ProviderDraft,
+    limits?: DraftLimits,
+  ): Promise<Provider>;
+  setPlan(providerId: string, planId: PlanId): Promise<void>;
   setStatus(providerId: string, status: ProviderStatus): Promise<void>;
 }
 

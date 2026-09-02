@@ -2,15 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { ProfileForm } from "@/components/dashboard/profile-form";
+import { ProfileWorkspace } from "@/components/dashboard/profile-workspace";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
 import { Icon } from "@/components/ui";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { getCurrentUser } from "@/lib/session";
-import { PLAN_IDS, formatPrice } from "@/domain/plans";
-import type { PlanId, PlanLimits } from "@/types";
+import type { PlanId } from "@/types";
 
 export const metadata: Metadata = {
   title: "Mi perfil",
@@ -20,11 +19,7 @@ export const metadata: Metadata = {
 // El panel depende de la sesión: nunca se pregenera ni se cachea.
 export const dynamic = "force-dynamic";
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ plan?: string }>;
-}) {
+export default async function DashboardPage() {
   if (!hasCloudflareRuntime()) {
     return <SetupNotice />;
   }
@@ -35,21 +30,20 @@ export default async function DashboardPage({
   const provider = await new D1ProviderRepository().findByUserId(user.id);
 
   /*
-   * Qué plan manda: el del perfil si ya existe, y si todavía no hay perfil,
-   * el que se eligió en el registro y viene en la URL. El parámetro se
-   * ignora cuando ya hay perfil, para que no se pueda cambiar de plan
-   * escribiendo en la barra de direcciones.
+   * El plan del perfil manda. Cuando todavía no hay perfil, el que se eligió
+   * en el registro lo aporta el cliente desde el navegador: no viaja por la
+   * URL, que quedaba desactualizada al cambiar de plan y era editable a mano.
    */
-  const requested = (await searchParams).plan;
-  const planId: PlanId =
-    provider?.planId ??
-    (PLAN_IDS.includes(requested as PlanId) ? (requested as PlanId) : "cobre");
+  const planId: PlanId = provider?.planId ?? "cobre";
 
   // El plan define los topes del formulario. Si faltara la fila, se cae a
   // Cobre: es preferible el plan más restrictivo que un panel roto.
   const planRepo = new D1PlanRepository();
+  // La lista entera alimenta el diálogo de cambio de plan.
+  const allPlans = await planRepo.list();
   const plan =
-    (await planRepo.findById(planId)) ?? (await planRepo.findById("cobre"));
+    allPlans.find((p) => p.id === planId) ??
+    allPlans.find((p) => p.id === "cobre");
 
   if (!plan) return <SetupNotice />;
 
@@ -91,9 +85,7 @@ export default async function DashboardPage({
         </p>
       ) : null}
 
-      <PlanBanner plan={plan} />
-
-      <ProfileForm provider={provider} plan={plan} />
+      <ProfileWorkspace provider={provider} plan={plan} plans={allPlans} />
     </div>
   );
 }
@@ -105,33 +97,6 @@ export default async function DashboardPage({
  * entender por qué el formulario limita, y evita que el límite aparezca como
  * un error sin explicación.
  */
-function PlanBanner({ plan }: { plan: PlanLimits }) {
-  return (
-    <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-card border border-line bg-white px-5 py-3.5">
-      <span className="flex items-center gap-2">
-        <Icon name="workspace_premium" className="text-[19px] text-brand-800" />
-        <span className="text-[14.5px] font-bold text-ink">
-          Plan {plan.name}
-        </span>
-        <span className="text-[13px] text-ink-faint">{formatPrice(plan)}</span>
-      </span>
-
-      <span className="text-[13px] text-ink-soft">
-        {plan.maxServices} servicios · {plan.maxServiceAreas} zonas
-        {plan.maxGalleryImages > 0
-          ? ` · ${plan.maxGalleryImages} imágenes`
-          : ""}
-      </span>
-
-      <Link
-        href="/planes"
-        className="ml-auto text-[13.5px] font-semibold text-brand-800 hover:underline"
-      >
-        {plan.id === "platinum" ? "Ver planes" : "Mejorar mi plan"}
-      </Link>
-    </div>
-  );
-}
 
 /** Sin bindings de Cloudflare el panel no puede leer ni escribir en D1. */
 function SetupNotice() {

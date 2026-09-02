@@ -3,8 +3,6 @@ import { redirect } from "next/navigation";
 
 import { AuthLayout } from "@/components/auth-layout";
 import { getCurrentUser } from "@/lib/session";
-import { PLAN_IDS } from "@/domain/plans";
-import type { PlanId } from "@/types";
 import { LoginPanel } from "@/components/login-panel";
 
 export const metadata: Metadata = {
@@ -24,22 +22,12 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-export default async function SignupPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ plan?: string }>;
-}) {
+export default async function SignupPage() {
   if (await getCurrentUser()) redirect("/dashboard");
 
-  // Cobre por defecto: es el plan gratuito y el que menos compromete.
-  const requested = (await searchParams).plan;
-  const selectedPlan: PlanId = PLAN_IDS.includes(requested as PlanId)
-    ? (requested as PlanId)
-    : "cobre";
-
   return (
-    <AuthLayout selectable selectedPlan={selectedPlan}>
-      <LoginPanel mode="signup" planId={selectedPlan} />
+    <AuthLayout selectable>
+      <LoginPanel mode="signup" />
     </AuthLayout>
   );
 }

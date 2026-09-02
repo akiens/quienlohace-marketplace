@@ -53,11 +53,17 @@ export type User = {
   createdAt: string;
 };
 
+/** Rol de una imagen del perfil: foto, portada o galería. */
+export type ImageKind = "avatar" | "cover" | "gallery";
+
 export type ProviderImage = {
   id: string;
   storageKey: string;
   url: string;
   alt: string;
+  kind: ImageKind;
+  /** false cuando quedó fuera del plan contratado (RF-053). */
+  active: boolean;
 };
 
 export type PaymentMethod =
@@ -229,10 +235,13 @@ export type SocialLink = { platform: SocialPlatform; url: string };
 export type TeamMember = {
   id: string;
   name: string;
+  /** Cargo. En el formulario se muestra como «Título». */
   role: string;
+  subtitle: string;
   bio: string;
   photoKey: string;
   position: number;
+  active: boolean;
 };
 
 // ---------------------------------------------------------------------------

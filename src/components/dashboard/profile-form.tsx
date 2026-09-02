@@ -6,7 +6,7 @@ import { saveProfile } from "@/app/actions/profile";
 import type { FormState } from "@/app/actions/auth";
 import { CATEGORIES } from "@/data/categories";
 import { locationLabelById } from "@/data/locations";
-import { limitFor } from "@/domain/plans";
+import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon } from "@/components/ui";
 import { LocationPicker } from "@/components/dashboard/location-picker";
 import {
@@ -14,6 +14,7 @@ import {
   type PaymentMethod,
   type PlanLimits,
   type Provider,
+  type SocialPlatform,
   type ServiceMode,
 } from "@/types";
 
@@ -40,14 +41,29 @@ const SERVICE_MODES: ServiceMode[] = [
  * proveedor nuevo con veinte campos de golpe. Los campos ocultos siguen en
  * el DOM, así que cambiar de paso nunca pierde lo escrito.
  */
-const STEPS = [
-  { id: "identidad", label: "Identidad", icon: "badge" },
-  { id: "rubro", label: "Rubro", icon: "category" },
-  { id: "zonas", label: "Ubicación", icon: "location_on" },
-  { id: "contacto", label: "Contacto", icon: "call" },
+const ALL_STEPS = [
+  { id: "identidad", label: "Identidad", icon: "badge", feature: null },
+  { id: "rubro", label: "Rubro", icon: "category", feature: null },
+  { id: "zonas", label: "Ubicación", icon: "location_on", feature: null },
+  { id: "contacto", label: "Contacto", icon: "call", feature: null },
+  { id: "galeria", label: "Galería", icon: "photo_library", feature: "gallery" },
+  { id: "redes", label: "Redes", icon: "share", feature: "social" },
+  { id: "equipo", label: "Equipo", icon: "groups", feature: "team" },
+  { id: "pago", label: "Pago", icon: "credit_card", feature: "paid" },
 ] as const;
 
-type StepId = (typeof STEPS)[number]["id"];
+type StepId = (typeof ALL_STEPS)[number]["id"];
+
+/** Las redes que ofrece el formulario, en el orden en que se muestran. */
+const SOCIAL_FIELDS: Array<{ platform: SocialPlatform; label: string }> = [
+  { platform: "instagram", label: "Instagram" },
+  { platform: "facebook", label: "Facebook" },
+  { platform: "website", label: "Sitio web" },
+  { platform: "linkedin", label: "LinkedIn" },
+  { platform: "tiktok", label: "TikTok" },
+  { platform: "youtube", label: "YouTube" },
+  { platform: "x", label: "X" },
+];
 
 export function ProfileForm({
   provider,
@@ -61,7 +77,23 @@ export function ProfileForm({
     {},
   );
 
-  const [step, setStep] = useState<StepId>("identidad");
+  const [requestedStep, setRequestedStep] = useState<StepId>("identidad");
+
+  /*
+   * Sólo se muestran los pasos que el plan habilita: a quien tiene Cobre no
+   * le sirve ver tres pasos que no puede usar. Lo que ya estaba cargado no se
+   * pierde por dejar de verse — sigue guardado e inactivo (RF-053).
+   */
+  const STEPS = useMemo(
+    () =>
+      ALL_STEPS.filter((step) => {
+        if (!step.feature) return true;
+        // El paso de pago no depende de una capacidad sino del precio.
+        if (step.feature === "paid") return plan.priceCents > 0;
+        return allowsFeature(plan, step.feature);
+      }),
+    [plan],
+  );
   const [services, setServices] = useState<string[]>(
     provider?.services.length ? provider.services : [""],
   );
@@ -69,12 +101,27 @@ export function ProfileForm({
     provider?.subcategoryId ?? "",
   );
   const [locationId, setLocationId] = useState(provider?.locationId ?? "");
+  const [extraSubcategoryIds, setExtraSubcategoryIds] = useState<string[]>(
+    provider?.subcategoryIds ?? [],
+  );
   const [serviceAreaIds, setServiceAreaIds] = useState<string[]>(
     provider?.serviceAreaIds ?? [],
   );
   const [name, setName] = useState(provider?.name ?? "");
   const [description, setDescription] = useState(provider?.description ?? "");
   const [phone, setPhone] = useState(provider?.phone ?? "");
+  // Alcanza con saber si hay al menos una red cargada, no cuál.
+  const [socialTouched, setSocialTouched] = useState(
+    (provider?.socialLinks?.length ?? 0) > 0,
+  );
+  const [teamMembers, setTeamMembers] = useState<TeamRow[]>(
+    provider?.teamMembers?.map((member) => ({
+      name: member.name,
+      role: member.role,
+      subtitle: member.subtitle,
+      bio: member.bio,
+    })) ?? [],
+  );
   // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
   const [whatsappEnabled, setWhatsappEnabled] = useState(
     provider?.whatsappEnabled ?? true,
@@ -83,6 +130,7 @@ export function ProfileForm({
   const errors = state.errors ?? {};
   const maxServices = limitFor(plan, "services");
   const maxAreas = limitFor(plan, "serviceAreas");
+  const maxSubcategories = limitFor(plan, "subcategories");
 
   /**
    * Qué falta para poder publicar (RF-172). Se calcula acá para que el
@@ -96,6 +144,16 @@ export function ProfileForm({
       rubro: subcategoryId !== "" && filledServices.length > 0,
       zonas: locationId !== "" && serviceAreaIds.length > 0,
       contacto: phone.trim().length > 0,
+      /*
+       * Estos pasos son opcionales, pero el tilde verde tiene que querer
+       * decir "hay algo cargado". Marcarlos siempre como hechos haría que el
+       * recorrido apareciera casi completo sin haber escrito nada.
+       */
+      galeria: false,
+      redes: socialTouched,
+      equipo: teamMembers.length > 0,
+      // El cobro todavía no existe, así que nunca se da por hecho.
+      pago: false,
     } satisfies Record<StepId, boolean>;
   }, [
     name,
@@ -105,9 +163,49 @@ export function ProfileForm({
     locationId,
     serviceAreaIds,
     phone,
+    socialTouched,
+    teamMembers,
   ]);
 
-  const missing = STEPS.filter((s) => !completion[s.id]);
+  /*
+   * Al bajar de plan el paso donde se estaba puede dejar de existir (por
+   * ejemplo Equipo al pasar de Platino a Cobre). En ese caso se retrocede al
+   * anterior que siga disponible y que todavía no esté completo; si están
+   * todos completos, al último disponible.
+   *
+   * Se deriva en vez de corregirse desde un efecto: así nunca hay un render
+   * intermedio apuntando a un paso que ya no se muestra, que es lo que
+   * dejaba el formulario en blanco y sin ningún paso marcado.
+   */
+  const step: StepId = useMemo(() => {
+    if (STEPS.some((s) => s.id === requestedStep)) return requestedStep;
+
+    const position = ALL_STEPS.findIndex((s) => s.id === requestedStep);
+    const earlier = STEPS.filter(
+      (s) => ALL_STEPS.findIndex((a) => a.id === s.id) < position,
+    );
+
+    const pending = earlier.find((s) => !completion[s.id]);
+    return pending?.id ?? earlier[earlier.length - 1]?.id ?? "identidad";
+  }, [requestedStep, STEPS, completion]);
+
+  const setStep = setRequestedStep;
+
+  /*
+   * Sólo los pasos obligatorios cuentan para habilitar el botón. Galería,
+   * redes, equipo y pago son opcionales: el perfil se publica sin ellos.
+   */
+  const REQUIRED_STEPS: StepId[] = ["identidad", "rubro", "zonas", "contacto"];
+  const missing = STEPS.filter(
+    (s) => REQUIRED_STEPS.includes(s.id) && !completion[s.id],
+  );
+  /*
+   * El botón se habilita cuando están los datos con los que el perfil ya
+   * puede publicarse, sin importar el plan. El pago no entra todavía: sin
+   * cobro implementado, exigirlo dejaría a los planes pagos sin poder crear
+   * el perfil.
+   */
+  const canSubmit = missing.length === 0;
 
   // Un error del servidor puede referirse a un paso que no está a la vista;
   // este mapa permite señalarlo en la barra de pasos.
@@ -118,6 +216,10 @@ export function ProfileForm({
     contacto: Boolean(
       errors.phone || errors.whatsapp || errors.schedule || errors.paymentMethods,
     ),
+    galeria: false,
+    redes: Boolean(errors.socialLinks),
+    equipo: Boolean(errors.teamMembers),
+    pago: false,
   };
 
   return (
@@ -141,6 +243,7 @@ export function ProfileForm({
       {errors.form ? <ErrorBanner>{errors.form}</ErrorBanner> : null}
 
       <StepBar
+        steps={STEPS}
         current={step}
         completion={completion}
         hasError={stepHasError}
@@ -221,6 +324,84 @@ export function ProfileForm({
               ))}
             </select>
           </Field>
+
+          {maxSubcategories > 1 ? (
+            <Field
+              label="Otras subcategorías"
+              error={errors.subcategoryIds}
+              hint={`Si trabajás en más de un rubro. Tu plan ${plan.name} permite hasta ${maxSubcategories}.`}
+              counter={`${extraSubcategoryIds.length + 1}/${maxSubcategories}`}
+            >
+              <div className="flex flex-col gap-2.5">
+                {extraSubcategoryIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {extraSubcategoryIds.map((id) => (
+                      <span
+                        key={id}
+                        className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-3 pr-1.5 text-[13px] font-semibold text-brand-800"
+                      >
+                        <input
+                          type="hidden"
+                          name="subcategoryIds"
+                          value={id}
+                        />
+                        {subcategoryLabel(id)}
+                        <button
+                          type="button"
+                          aria-label={`Quitar ${subcategoryLabel(id)}`}
+                          onClick={() =>
+                            setExtraSubcategoryIds(
+                              extraSubcategoryIds.filter((x) => x !== id),
+                            )
+                          }
+                        >
+                          <Icon
+                            name="close"
+                            className="text-[15px] text-[#5B6B87]"
+                          />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                {/* +1: la principal también cuenta contra el tope del plan. */}
+                {extraSubcategoryIds.length + 1 < maxSubcategories ? (
+                  <select
+                    value=""
+                    onChange={(event) => {
+                      const id = event.target.value;
+                      if (
+                        id &&
+                        id !== subcategoryId &&
+                        !extraSubcategoryIds.includes(id)
+                      ) {
+                        setExtraSubcategoryIds([...extraSubcategoryIds, id]);
+                      }
+                    }}
+                    className={inputClass(undefined)}
+                  >
+                    <option value="">Agregar otra subcategoría…</option>
+                    {CATEGORIES.map((category) => (
+                      <optgroup key={category.id} label={category.short}>
+                        {category.subcategories.map((sub) => (
+                          <option key={sub.id} value={sub.id}>
+                            {sub.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                ) : (
+                  <PlanHint
+                    planName={plan.name}
+                    what="subcategorías"
+                    limit={maxSubcategories}
+                  />
+                )}
+              </div>
+            </Field>
+          ) : null}
 
           <Field
             label="Servicios"
@@ -420,10 +601,96 @@ export function ProfileForm({
           </Field>
         </Panel>
 
+        {allowsFeature(plan, "gallery") ? (
+          <Panel active={step === "galeria"}>
+            <Field
+              label="Galería de trabajos"
+              hint={`Tu plan ${plan.name} permite hasta ${limitFor(plan, "galleryImages")} imágenes.`}
+            >
+              {/*
+                La subida vive en su propia acción porque un archivo no puede
+                viajar en el mismo envío que el resto del formulario sin
+                perderse al recargar. Hasta que exista, se avisa.
+              */}
+              <p className="rounded-input border border-dashed border-line-strong bg-surface-muted px-4 py-6 text-center text-[13.5px] text-ink-soft">
+                La carga de imágenes se habilita cuando termines de completar
+                el perfil y lo guardes.
+              </p>
+            </Field>
+          </Panel>
+        ) : null}
+
+        {allowsFeature(plan, "social") ? (
+          <Panel active={step === "redes"}>
+            <p className="text-[13.5px] leading-relaxed text-ink-soft">
+              Dejá vacías las que no uses. Se muestran en tu perfil público.
+            </p>
+            {SOCIAL_FIELDS.map((field) => (
+              <Field
+                key={field.platform}
+                label={field.label}
+                error={errors[`socialLinks.${field.platform}`]}
+              >
+                <input
+                  name={`social_${field.platform}`}
+                  defaultValue={
+                    provider?.socialLinks?.find(
+                      (link) => link.platform === field.platform,
+                    )?.url ?? ""
+                  }
+                  type="url"
+                  maxLength={300}
+                  placeholder="https://"
+                  onInput={(event) =>
+                    setSocialTouched(
+                      event.currentTarget.value.trim().length > 0 ||
+                        socialTouched,
+                    )
+                  }
+                  className={inputClass(undefined)}
+                />
+              </Field>
+            ))}
+          </Panel>
+        ) : null}
+
+        {allowsFeature(plan, "team") ? (
+          <Panel active={step === "equipo"}>
+            <TeamEditor
+              members={teamMembers}
+              onChange={setTeamMembers}
+              max={limitFor(plan, "teamMembers")}
+              planName={plan.name}
+            />
+          </Panel>
+        ) : null}
+
+        {plan.priceCents > 0 ? (
+          <Panel active={step === "pago"}>
+            <div className="flex flex-col items-start gap-3 rounded-card border border-dashed border-line-strong bg-surface-muted p-6">
+              <span className="flex items-center gap-2 text-[15px] font-bold text-ink">
+                <Icon name="credit_card" className="text-[20px] text-brand-800" />
+                Pago del plan {plan.name}
+              </span>
+              <p className="text-[14px] leading-relaxed text-ink-soft">
+                El cobro todavía no está disponible. Mientras tanto podés crear
+                y publicar tu perfil igual: cuando habilitemos los pagos te
+                avisamos para completar la suscripción.
+              </p>
+              <span className="text-[19px] font-bold tracking-[-.4px] text-ink">
+                {formatPrice(plan)}
+              </span>
+            </div>
+          </Panel>
+        ) : null}
+
         <Footer
+          steps={STEPS}
           step={step}
           onStep={setStep}
           pending={pending}
+          canSubmit={canSubmit}
+          isNew={provider === null}
           missing={missing.map((s) => s.label)}
         />
       </div>
@@ -431,75 +698,236 @@ export function ProfileForm({
   );
 }
 
+/** Nombre legible de una subcategoría; su id si no se encuentra. */
+function subcategoryLabel(id: string): string {
+  for (const category of CATEGORIES) {
+    const found = category.subcategories.find((sub) => sub.id === id);
+    if (found) return found.name;
+  }
+  return id;
+}
+
+/** Fila del editor de equipo: lo que se escribe, sin id todavía. */
+type TeamRow = { name: string; role: string; subtitle: string; bio: string };
+
+/**
+ * Editor de integrantes (RF-016).
+ *
+ * Los campos van como listas paralelas (`teamName`, `teamRole`…): la acción
+ * las vuelve a unir por posición. Es lo que permite mandar un número variable
+ * de filas en un formulario normal.
+ */
+function TeamEditor({
+  members,
+  onChange,
+  max,
+  planName,
+}: {
+  members: TeamRow[];
+  onChange: (rows: TeamRow[]) => void;
+  max: number;
+  planName: string;
+}) {
+  const update = (index: number, patch: Partial<TeamRow>) => {
+    onChange(members.map((m, i) => (i === index ? { ...m, ...patch } : m)));
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-[13.5px] leading-relaxed text-ink-soft">
+        Quiénes trabajan con vos. Tu plan {planName} permite hasta {max}.
+      </p>
+
+      {members.map((member, index) => (
+        <div
+          key={index}
+          className="flex flex-col gap-3 rounded-card border border-line bg-surface-muted p-4"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-bold uppercase tracking-wide text-ink-soft">
+              Integrante {index + 1}
+            </span>
+            <button
+              type="button"
+              onClick={() => onChange(members.filter((_, i) => i !== index))}
+              aria-label={`Quitar integrante ${index + 1}`}
+              className="rounded-input p-1 text-ink-soft hover:bg-white"
+            >
+              <Icon name="close" className="text-[18px]" />
+            </button>
+          </div>
+
+          <Row>
+            <Field label="Nombre" half required>
+              <input
+                name="teamName"
+                value={member.name}
+                onChange={(event) => update(index, { name: event.target.value })}
+                maxLength={80}
+                className={inputClass(undefined)}
+              />
+            </Field>
+            <Field label="Título" half>
+              <input
+                name="teamRole"
+                value={member.role}
+                onChange={(event) => update(index, { role: event.target.value })}
+                maxLength={80}
+                placeholder="Ej.: Electricista"
+                className={inputClass(undefined)}
+              />
+            </Field>
+          </Row>
+
+          <Field label="Subtítulo">
+            <input
+              name="teamSubtitle"
+              value={member.subtitle}
+              onChange={(event) =>
+                update(index, { subtitle: event.target.value })
+              }
+              maxLength={80}
+              placeholder="Ej.: 10 años de experiencia"
+              className={inputClass(undefined)}
+            />
+          </Field>
+
+          <Field label="Descripción">
+            <textarea
+              name="teamBio"
+              value={member.bio}
+              onChange={(event) => update(index, { bio: event.target.value })}
+              rows={2}
+              maxLength={300}
+              className={`${inputClass(undefined)} h-auto resize-y py-2.5 leading-relaxed`}
+            />
+          </Field>
+        </div>
+      ))}
+
+      {members.length < max ? (
+        <button
+          type="button"
+          onClick={() =>
+            onChange([...members, { name: "", role: "", subtitle: "", bio: "" }])
+          }
+          className="flex items-center gap-1.5 self-start text-[14px] font-semibold text-brand-800 hover:underline"
+        >
+          <Icon name="add" className="text-[18px]" />
+          Agregar integrante
+        </button>
+      ) : (
+        <PlanHint planName={planName} what="integrantes" limit={max} />
+      )}
+    </div>
+  );
+}
+
 /** Barra de pasos: dice dónde estás, qué falta y dónde hay un error. */
 function StepBar({
+  steps,
   current,
   completion,
   hasError,
   onSelect,
 }: {
+  /** Sólo los pasos que habilita el plan. */
+  steps: ReadonlyArray<(typeof ALL_STEPS)[number]>;
   current: StepId;
   completion: Record<StepId, boolean>;
   hasError: Record<StepId, boolean>;
   onSelect: (id: StepId) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {STEPS.map((step) => {
+    /*
+     * Los pasos van unidos por una línea para que se lean como un recorrido y
+     * no como pestañas sueltas. La línea vive detrás de los nodos (`-z-10`) y
+     * se recorta a la altura del círculo.
+     */
+    <ol className="flex items-start overflow-x-auto pb-1">
+      {steps.map((step, index) => {
         const active = step.id === current;
         const done = completion[step.id];
         const failed = hasError[step.id];
+        const previousDone = index > 0 && completion[steps[index - 1]!.id];
 
         return (
-          <button
+          <li
             key={step.id}
-            type="button"
-            onClick={() => onSelect(step.id)}
-            aria-current={active ? "step" : undefined}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-input border px-3 py-2.5 text-[13.5px] font-semibold transition-colors sm:flex-none sm:px-4 ${
-              active
-                ? "border-brand-800 bg-brand-800 text-white"
-                : failed
-                  ? "border-[#FDA29B] bg-[#FFFBFA] text-[#B42318]"
-                  : "border-line-strong bg-white text-ink-muted hover:border-[#C6CEDC] hover:bg-surface-muted"
-            }`}
+            className="relative flex min-w-[84px] flex-1 flex-col items-center gap-1.5"
           >
-            <Icon
-              name={failed ? "error" : done ? "check_circle" : step.icon}
-              filled={done && !failed}
-              className={`text-[17px] ${
-                active
-                  ? "text-white"
-                  : failed
-                    ? "text-[#B42318]"
+            {/* Tramo que llega desde el paso anterior. */}
+            {index > 0 ? (
+              <span
+                aria-hidden="true"
+                className={`absolute right-1/2 top-[18px] -z-10 h-0.5 w-full ${
+                  previousDone ? "bg-[#7CC9A3]" : "bg-line-strong"
+                }`}
+              />
+            ) : null}
+
+            <button
+              type="button"
+              onClick={() => onSelect(step.id)}
+              aria-current={active ? "step" : undefined}
+              className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors ${
+                failed
+                  ? "border-[#D92D20] bg-[#FFFBFA] text-[#B42318]"
+                  : active
+                    ? "border-brand-800 bg-brand-800 text-white"
+                    : done
+                      ? "border-[#1E8C56] bg-[#E8F6EF] text-[#1E8C56]"
+                      : "border-line-strong bg-white text-ink-faint hover:border-[#C6CEDC]"
+              }`}
+            >
+              <Icon
+                name={failed ? "error" : done && !active ? "check" : step.icon}
+                filled={done && !failed}
+                className="text-[18px]"
+              />
+            </button>
+
+            <span
+              className={`px-1 text-center text-[12.5px] font-semibold leading-tight ${
+                failed
+                  ? "text-[#B42318]"
+                  : active
+                    ? "text-ink"
                     : done
                       ? "text-[#1E8C56]"
-                      : "text-ink-faint"
+                      : "text-ink-soft"
               }`}
-            />
-            {step.label}
-          </button>
+            >
+              {step.label}
+            </span>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }
 
 /** Pie con navegación entre pasos y el guardado. */
 function Footer({
+  steps,
   step,
   onStep,
   pending,
+  canSubmit,
+  isNew,
   missing,
 }: {
+  steps: ReadonlyArray<(typeof ALL_STEPS)[number]>;
   step: StepId;
   onStep: (id: StepId) => void;
   pending: boolean;
+  canSubmit: boolean;
+  isNew: boolean;
   missing: string[];
 }) {
-  const index = STEPS.findIndex((s) => s.id === step);
-  const previous = STEPS[index - 1];
-  const next = STEPS[index + 1];
+  const index = steps.findIndex((s) => s.id === step);
+  const previous = steps[index - 1];
+  const next = steps[index + 1];
 
   return (
     <div className="flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-surface-muted px-5 py-3.5">
@@ -538,8 +966,12 @@ function Footer({
             Listo para publicar
           </span>
         )}
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Guardando…" : "Guardar"}
+        <Button type="submit" size="sm" disabled={pending || !canSubmit}>
+          {pending
+            ? "Guardando…"
+            : isNew
+              ? "Crear perfil"
+              : "Guardar cambios"}
         </Button>
       </div>
     </div>

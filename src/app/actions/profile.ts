@@ -9,6 +9,7 @@ import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { requireUser } from "@/lib/session";
 import { fieldErrors, providerProfileSchema } from "@/lib/validation";
+import type { DraftLimits } from "@/domain/ports";
 import type { PlanId, PlanLimits, ProviderStatus } from "@/types";
 import type { FormState } from "@/app/actions/auth";
 
@@ -29,20 +30,78 @@ const plans = new D1PlanRepository();
  * bajar de plan no borra datos: acá sólo se frenan altas nuevas por encima
  * del límite, nunca se recorta lo ya guardado.
  */
-function checkLimits(
+/**
+ * Cuántos elementos de cada lista entran en el plan.
+ *
+ * Ya no se rechaza lo que sobra: se guarda inactivo (RF-053). Quien baja de
+ * plan no pierde lo que había cargado, y si vuelve a subir reaparece sin
+ * tener que escribirlo otra vez.
+ */
+function planLimits(plan: PlanLimits): DraftLimits {
+  return {
+    services: limitFor(plan, "services"),
+    serviceAreas: limitFor(plan, "serviceAreas"),
+    subcategories: limitFor(plan, "subcategories"),
+    teamMembers: limitFor(plan, "teamMembers"),
+    galleryImages: limitFor(plan, "galleryImages"),
+    social: plan.allowsSocialLinks,
+  };
+}
+
+/**
+ * Aviso, no error: dice qué quedó fuera del plan para que se sepa que no se
+ * está publicando, sin impedir guardarlo.
+ */
+function overLimitNotice(
   plan: PlanLimits,
-  counts: { services: number; serviceAreas: number },
-): Record<string, string> | null {
-  const errors: Record<string, string> = {};
-
-  if (counts.services > limitFor(plan, "services")) {
-    errors.services = limitMessage(plan, "services", "servicios");
+  draft: { services: string[]; serviceAreaIds: string[]; subcategoryIds: string[] },
+): string | null {
+  const parts: string[] = [];
+  if (draft.services.length > limitFor(plan, "services")) {
+    parts.push(limitMessage(plan, "services", "servicios"));
   }
-  if (counts.serviceAreas > limitFor(plan, "serviceAreas")) {
-    errors.serviceAreaIds = limitMessage(plan, "serviceAreas", "zonas");
+  if (draft.serviceAreaIds.length > limitFor(plan, "serviceAreas")) {
+    parts.push(limitMessage(plan, "serviceAreas", "zonas"));
   }
+  if (draft.subcategoryIds.length > limitFor(plan, "subcategories")) {
+    parts.push(limitMessage(plan, "subcategories", "subcategorías"));
+  }
+  if (parts.length === 0) return null;
+  return `${parts.join(" ")} Lo guardamos igual: se publica si volvés a ese plan.`;
+}
 
-  return Object.keys(errors).length > 0 ? errors : null;
+/**
+ * Redes sociales: llegan como `social_<plataforma>` con la dirección. Las
+ * vacías se descartan, que es como se borra una red.
+ */
+function parseSocialLinks(formData: FormData) {
+  const links: Array<{ platform: string; url: string }> = [];
+  for (const [key, value] of formData.entries()) {
+    if (!key.startsWith("social_")) continue;
+    const url = String(value).trim();
+    if (url.length > 0) links.push({ platform: key.slice(7), url });
+  }
+  return links;
+}
+
+/**
+ * Equipo: los campos llegan como listas paralelas (`teamName`, `teamRole`…).
+ * Se descartan las filas sin nombre, que son las que quedaron vacías.
+ */
+function parseTeamMembers(formData: FormData) {
+  const names = formData.getAll("teamName").map(String);
+  const roles = formData.getAll("teamRole").map(String);
+  const subtitles = formData.getAll("teamSubtitle").map(String);
+  const bios = formData.getAll("teamBio").map(String);
+
+  return names
+    .map((name, index) => ({
+      name: name.trim(),
+      role: (roles[index] ?? "").trim(),
+      subtitle: (subtitles[index] ?? "").trim(),
+      bio: (bios[index] ?? "").trim(),
+    }))
+    .filter((member) => member.name.length > 0);
 }
 
 /** Lee el formulario y lo valida. Los checkbox/multi-valor llegan como listas. */
@@ -61,7 +120,11 @@ function parseProfile(formData: FormData) {
       .map((value) => String(value).trim())
       .filter(Boolean),
     serviceAreaIds: formData.getAll("serviceAreaIds").map(String),
+    subcategoryIds: formData.getAll("subcategoryIds").map(String),
+    serviceMode: formData.get("serviceMode") ?? "on_site",
     paymentMethods: formData.getAll("paymentMethods").map(String),
+    socialLinks: parseSocialLinks(formData),
+    teamMembers: parseTeamMembers(formData),
   });
 }
 
@@ -109,30 +172,27 @@ export async function saveProfile(
       ? (requestedPlan as PlanId)
       : "cobre");
 
-  // Los límites se comprueban en el servidor: que la UI deshabilite el botón
-  // "agregar" no es una restricción, sólo una ayuda (RF-053, RF-163).
+  /*
+   * Los topes se aplican en el servidor: que la UI esconda un paso no es una
+   * restricción, sólo una ayuda (RF-163). Lo que excede no se rechaza — se
+   * guarda inactivo y se avisa (RF-053).
+   */
   const plan =
     (await plans.findById(planId)) ?? (await plans.findById("cobre"));
-
-  if (plan) {
-    const overLimit = checkLimits(plan, {
-      services: draft.services.length,
-      serviceAreas: draft.serviceAreaIds.length,
-    });
-    if (overLimit) return { errors: overLimit };
-  }
+  const limits = plan ? planLimits(plan) : undefined;
+  const notice = plan ? overLimitNotice(plan, draft) : null;
 
   if (existing) {
-    await providers.update(existing.id, draft);
+    await providers.update(existing.id, draft, limits);
     revalidatePath(`/profesionales/${existing.slug}`);
   } else {
-    await providers.create(user.id, draft, planId);
+    await providers.create(user.id, draft, planId, limits);
   }
 
   revalidatePath("/dashboard");
   revalidatePath(`/categorias/${category.slug}`);
 
-  return { message: "Perfil guardado." };
+  return { message: notice ? `Perfil guardado. ${notice}` : "Perfil guardado." };
 }
 
 /** Publica o despublica el perfil propio. */

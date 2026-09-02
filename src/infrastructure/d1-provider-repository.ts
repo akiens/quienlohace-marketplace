@@ -1,13 +1,19 @@
 import "server-only";
 
-import type { ProviderDraft, ProviderRepository } from "@/domain/ports";
 import type {
+  DraftLimits,
+  ProviderDraft,
+  ProviderRepository,
+} from "@/domain/ports";
+import type {
+  ImageKind,
   PaymentMethod,
   PlanId,
   Provider,
   ProviderKind,
   ProviderStatus,
   SearchFilters,
+  SocialLink,
 } from "@/types";
 import { getDb, getMediaBucket } from "@/infrastructure/cloudflare";
 import { slugify } from "@/lib/slug";
@@ -49,7 +55,10 @@ type ProviderRow = {
 };
 
 /** Filas relacionadas de un lote de proveedores, en 4 consultas y no N+1. */
-async function loadRelations(ids: string[]) {
+/** `public` sólo trae lo publicado; `owner` trae también lo inactivo. */
+type RelationScope = "public" | "owner";
+
+async function loadRelations(ids: string[], scope: RelationScope = "public") {
   if (ids.length === 0) {
     return { services: new Map(), areas: new Map(), payments: new Map(), images: new Map() };
   }
@@ -58,19 +67,26 @@ async function loadRelations(ids: string[]) {
   // Los placeholders se generan por cantidad; los valores siempre van por bind().
   const marks = ids.map(() => "?").join(",");
 
-  const [services, areas, payments, images] = await db.batch<
-    Record<string, string | number>
-  >([
+  /*
+   * Lo que excede el plan queda guardado con `active = 0` (RF-053). El
+   * público no debe verlo: un perfil que bajó a Cobre no puede seguir
+   * mostrando la galería de Platino. El panel sí lo pide entero, para que
+   * su dueño pueda editarlo y sepa que está ahí.
+   */
+  const onlyActive = scope === "public" ? "AND active = 1" : "";
+
+  const [services, areas, payments, images, subcategories, social, team] =
+    await db.batch<Record<string, string | number>>([
     db
       .prepare(
         `SELECT provider_id, name FROM provider_services
-         WHERE provider_id IN (${marks}) ORDER BY position, name`,
+         WHERE provider_id IN (${marks}) ${onlyActive} ORDER BY position, name`,
       )
       .bind(...ids),
     db
       .prepare(
         `SELECT provider_id, location_id FROM provider_service_areas
-         WHERE provider_id IN (${marks})`,
+         WHERE provider_id IN (${marks}) ${onlyActive}`,
       )
       .bind(...ids),
     db
@@ -81,8 +97,29 @@ async function loadRelations(ids: string[]) {
       .bind(...ids),
     db
       .prepare(
-        `SELECT id, provider_id, storage_key, alt FROM provider_images
-         WHERE provider_id IN (${marks}) ORDER BY position`,
+        `SELECT id, provider_id, storage_key, alt, kind, active
+         FROM provider_images
+         WHERE provider_id IN (${marks}) ${onlyActive} ORDER BY position`,
+      )
+      .bind(...ids),
+    db
+      .prepare(
+        `SELECT provider_id, subcategory_id FROM provider_subcategories
+         WHERE provider_id IN (${marks}) ${onlyActive} ORDER BY position`,
+      )
+      .bind(...ids),
+    db
+      .prepare(
+        `SELECT provider_id, platform, url FROM provider_social_links
+         WHERE provider_id IN (${marks}) ${onlyActive}`,
+      )
+      .bind(...ids),
+    db
+      .prepare(
+        `SELECT id, provider_id, name, role, subtitle, bio, photo_key,
+                position, active
+         FROM provider_team_members
+         WHERE provider_id IN (${marks}) ${onlyActive} ORDER BY position`,
       )
       .bind(...ids),
   ]);
@@ -112,6 +149,25 @@ async function loadRelations(ids: string[]) {
       storageKey: String(r.storage_key),
       url: `/media/${String(r.storage_key)}`,
       alt: String(r.alt),
+      kind: String(r.kind) as ImageKind,
+      active: Number(r.active) === 1,
+    })),
+    subcategories: group(subcategories?.results ?? [], (r) =>
+      String(r.subcategory_id),
+    ),
+    social: group(social?.results ?? [], (r) => ({
+      platform: String(r.platform) as SocialLink["platform"],
+      url: String(r.url),
+    })),
+    team: group(team?.results ?? [], (r) => ({
+      id: String(r.id),
+      name: String(r.name),
+      role: String(r.role),
+      subtitle: String(r.subtitle),
+      bio: String(r.bio),
+      photoKey: String(r.photo_key),
+      position: Number(r.position),
+      active: Number(r.active) === 1,
     })),
   };
 }
@@ -143,6 +199,9 @@ function toProvider(
     paymentMethods: relations.payments.get(row.id) ?? [],
     status: row.status as ProviderStatus,
     images: relations.images.get(row.id) ?? [],
+    subcategoryIds: relations.subcategories?.get(row.id) ?? [],
+    socialLinks: relations.social?.get(row.id) ?? [],
+    teamMembers: relations.team?.get(row.id) ?? [],
     planId: row.plan_id as Provider["planId"],
     subscriptionStatus: row.subscription_status as Provider["subscriptionStatus"],
     verificationStatus: row.verification_status as Provider["verificationStatus"],
@@ -154,8 +213,11 @@ function toProvider(
   };
 }
 
-async function hydrate(rows: ProviderRow[]): Promise<Provider[]> {
-  const relations = await loadRelations(rows.map((r) => r.id));
+async function hydrate(
+  rows: ProviderRow[],
+  scope: RelationScope = "public",
+): Promise<Provider[]> {
+  const relations = await loadRelations(rows.map((r) => r.id), scope);
   return rows.map((row) => toProvider(row, relations));
 }
 
@@ -191,7 +253,26 @@ async function uniqueSlug(name: string, excludeId?: string): Promise<string> {
 }
 
 /** Reescribe las filas hijas de un proveedor dentro de un batch atómico. */
-function relationStatements(providerId: string, draft: ProviderDraft) {
+/**
+ * @param limits cuántos elementos de cada lista entran en el plan. Lo que
+ *   pasa de ahí se guarda igual, con `active = 0`: RF-053 pide no borrar
+ *   nada al bajar de plan, y así vuelve solo si se recontrata.
+ */
+/** Sin topes: todo activo. Lo usa quien no aplica límites de plan. */
+const UNLIMITED: DraftLimits = {
+  services: Number.POSITIVE_INFINITY,
+  serviceAreas: Number.POSITIVE_INFINITY,
+  subcategories: Number.POSITIVE_INFINITY,
+  teamMembers: Number.POSITIVE_INFINITY,
+  galleryImages: Number.POSITIVE_INFINITY,
+  social: true,
+};
+
+function relationStatements(
+  providerId: string,
+  draft: ProviderDraft,
+  limits: DraftLimits,
+) {
   const db = getDb();
   const now = new Date().toISOString();
 
@@ -199,27 +280,48 @@ function relationStatements(providerId: string, draft: ProviderDraft) {
     db.prepare(`DELETE FROM provider_services WHERE provider_id = ?`).bind(providerId),
     db.prepare(`DELETE FROM provider_service_areas WHERE provider_id = ?`).bind(providerId),
     db.prepare(`DELETE FROM provider_payment_methods WHERE provider_id = ?`).bind(providerId),
+    db.prepare(`DELETE FROM provider_subcategories WHERE provider_id = ?`).bind(providerId),
+    db.prepare(`DELETE FROM provider_social_links WHERE provider_id = ?`).bind(providerId),
+    db.prepare(`DELETE FROM provider_team_members WHERE provider_id = ?`).bind(providerId),
   ];
 
   draft.services.forEach((name, index) => {
     statements.push(
       db
         .prepare(
-          `INSERT INTO provider_services (provider_id, name, position) VALUES (?, ?, ?)`,
+          `INSERT INTO provider_services (provider_id, name, position, active)
+           VALUES (?, ?, ?, ?)`,
         )
-        .bind(providerId, name, index),
+        .bind(providerId, name, index, index < limits.services ? 1 : 0),
     );
   });
 
-  for (const locationId of draft.serviceAreaIds) {
+  draft.serviceAreaIds.forEach((locationId, index) => {
     statements.push(
       db
         .prepare(
-          `INSERT INTO provider_service_areas (provider_id, location_id) VALUES (?, ?)`,
+          `INSERT INTO provider_service_areas (provider_id, location_id, active)
+           VALUES (?, ?, ?)`,
         )
-        .bind(providerId, locationId),
+        .bind(providerId, locationId, index < limits.serviceAreas ? 1 : 0),
     );
-  }
+  });
+
+  draft.subcategoryIds.forEach((subcategoryId, index) => {
+    statements.push(
+      db
+        .prepare(
+          `INSERT INTO provider_subcategories (provider_id, subcategory_id, position, active)
+           VALUES (?, ?, ?, ?)`,
+        )
+        .bind(
+          providerId,
+          subcategoryId,
+          index,
+          index < limits.subcategories ? 1 : 0,
+        ),
+    );
+  });
 
   for (const method of draft.paymentMethods) {
     statements.push(
@@ -230,6 +332,38 @@ function relationStatements(providerId: string, draft: ProviderDraft) {
         .bind(providerId, method),
     );
   }
+
+  for (const link of draft.socialLinks) {
+    statements.push(
+      db
+        .prepare(
+          `INSERT INTO provider_social_links (provider_id, platform, url, active)
+           VALUES (?, ?, ?, ?)`,
+        )
+        .bind(providerId, link.platform, link.url, limits.social ? 1 : 0),
+    );
+  }
+
+  draft.teamMembers.forEach((member, index) => {
+    statements.push(
+      db
+        .prepare(
+          `INSERT INTO provider_team_members
+             (id, provider_id, name, role, subtitle, bio, position, active)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          newId(),
+          providerId,
+          member.name,
+          member.role,
+          member.subtitle,
+          member.bio,
+          index,
+          index < limits.teamMembers ? 1 : 0,
+        ),
+    );
+  });
 
   return { statements, now };
 }
@@ -246,6 +380,7 @@ export class D1ProviderRepository implements ProviderRepository {
     return provider ?? null;
   }
 
+  /** Para el panel: incluye lo que quedó fuera del plan, para poder editarlo. */
   async findByUserId(userId: string): Promise<Provider | null> {
     const row = await getDb()
       .prepare(`SELECT ${SELECT_COLUMNS} FROM providers WHERE user_id = ?`)
@@ -253,7 +388,7 @@ export class D1ProviderRepository implements ProviderRepository {
       .first<ProviderRow>();
 
     if (!row) return null;
-    const [provider] = await hydrate([row]);
+    const [provider] = await hydrate([row], "owner");
     return provider ?? null;
   }
 
@@ -331,11 +466,12 @@ export class D1ProviderRepository implements ProviderRepository {
     userId: string,
     draft: ProviderDraft,
     planId: PlanId = "cobre",
+    limits: DraftLimits = UNLIMITED,
   ): Promise<Provider> {
     const db = getDb();
     const id = newId();
     const slug = await uniqueSlug(draft.name);
-    const { statements, now } = relationStatements(id, draft);
+    const { statements, now } = relationStatements(id, draft, limits);
 
     await db.batch([
       db
@@ -360,10 +496,14 @@ export class D1ProviderRepository implements ProviderRepository {
     return created;
   }
 
-  async update(providerId: string, draft: ProviderDraft): Promise<Provider> {
+  async update(
+    providerId: string,
+    draft: ProviderDraft,
+    limits: DraftLimits = UNLIMITED,
+  ): Promise<Provider> {
     const db = getDb();
     const slug = await uniqueSlug(draft.name, providerId);
-    const { statements, now } = relationStatements(providerId, draft);
+    const { statements, now } = relationStatements(providerId, draft, limits);
 
     await db.batch([
       db
@@ -386,6 +526,19 @@ export class D1ProviderRepository implements ProviderRepository {
     const updated = await this.findBySlug(slug);
     if (!updated) throw new Error("No se pudo actualizar el perfil.");
     return updated;
+  }
+
+  /**
+   * Cambia el plan del perfil.
+   *
+   * No toca las listas: qué queda activo se recalcula al guardar el perfil,
+   * que es donde se conocen los topes del plan nuevo.
+   */
+  async setPlan(providerId: string, planId: PlanId): Promise<void> {
+    await getDb()
+      .prepare(`UPDATE providers SET plan_id = ?, updated_at = ? WHERE id = ?`)
+      .bind(planId, new Date().toISOString(), providerId)
+      .run();
   }
 
   async setStatus(providerId: string, status: ProviderStatus): Promise<void> {

@@ -2,13 +2,17 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useSyncExternalStore } from "react";
 
 import { login, signup, type FormState } from "@/app/actions/auth";
 import { Button, Icon } from "@/components/ui";
 import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
 import { PLAN_BADGES, PLAN_RIBBONS } from "@/domain/plans";
-import type { PlanId } from "@/types";
+import {
+  selectedPlanServerSnapshot,
+  selectedPlanSnapshot,
+  subscribeSelectedPlan,
+} from "@/lib/selected-plan";
 
 /**
  * Acceso de proveedores. Envía a Server Actions: la validación y la
@@ -20,19 +24,24 @@ import type { PlanId } from "@/types";
  * formulario. Con una ruta por intención, cada página monta su propio panel y
  * el problema no puede volver.
  */
-export function LoginPanel({
-  mode,
-  planId,
-}: {
-  mode: "login" | "signup";
-  /** Plan elegido en el panel lateral; viaja con el alta. */
-  planId?: PlanId;
-}) {
+export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
   const isSignup = mode === "signup";
   const [state, action, pending] = useActionState<FormState, FormData>(
     isSignup ? signup : login,
     {},
   );
+
+  /*
+   * El plan elegido en el panel lateral, que lo guarda el navegador.
+   * `useSyncExternalStore` mantiene esto en sincronía con el selector sin
+   * renders en cascada y sin romper la hidratación.
+   */
+  const storedPlan = useSyncExternalStore(
+    subscribeSelectedPlan,
+    selectedPlanSnapshot,
+    selectedPlanServerSnapshot,
+  );
+  const planId = isSignup ? storedPlan : null;
 
   /**
    * Errores detectados en el cliente, con los mismos schemas que usa la
@@ -163,7 +172,7 @@ export function LoginPanel({
             alt=""
             width={112}
             height={112}
-            className="pointer-events-none absolute -right-2 -top-5 z-10 h-16 w-16 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] sm:-top-6 sm:h-20 sm:w-20"
+            className="pointer-events-none absolute -right-4 -top-7 z-10 h-16 w-16 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] sm:-right-5 sm:-top-8 sm:h-20 sm:w-20"
           />
         ) : null}
 
@@ -176,6 +185,7 @@ export function LoginPanel({
           describiendo el campo para la accesibilidad.
         */}
         <form
+          id="auth-form"
           key={mode}
           action={action}
           noValidate
@@ -184,10 +194,6 @@ export function LoginPanel({
           onSubmit={handleSubmit}
           className="flex flex-col gap-4"
         >
-          {isSignup && planId ? (
-            <input type="hidden" name="planId" value={planId} />
-          ) : null}
-
           <Field label="Correo" htmlFor="email" error={errors.email}>
             <input
               id="email"
