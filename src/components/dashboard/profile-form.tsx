@@ -5,7 +5,7 @@ import { useActionState, useMemo, useState } from "react";
 import { saveProfile } from "@/app/actions/profile";
 import type { FormState } from "@/app/actions/auth";
 import { CATEGORIES } from "@/data/categories";
-import { locationLabelById } from "@/data/locations";
+import { locationLabelById, locationLevelLabel } from "@/data/locations";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon } from "@/components/ui";
 import { LocationPicker } from "@/components/dashboard/location-picker";
@@ -94,9 +94,14 @@ export function ProfileForm({
       }),
     [plan],
   );
+  // Sólo servicios confirmados: la fila en blanco dejó de existir cuando
+  // pasaron a agregarse de a uno, como las zonas.
   const [services, setServices] = useState<string[]>(
-    provider?.services.length ? provider.services : [""],
+    provider?.services ?? [],
   );
+  /** Lo tipeado que todavía no se confirmó. */
+  const [pendingService, setPendingService] = useState("");
+  const [duplicateService, setDuplicateService] = useState<string | null>(null);
   const [subcategoryId, setSubcategoryId] = useState(
     provider?.subcategoryId ?? "",
   );
@@ -107,6 +112,13 @@ export function ProfileForm({
   const [serviceAreaIds, setServiceAreaIds] = useState<string[]>(
     provider?.serviceAreaIds ?? [],
   );
+  /** La última zona repetida que se intentó agregar, para avisarlo. */
+  const [duplicateArea, setDuplicateArea] = useState<string | null>(null);
+  /** La subcategoría elegida que todavía no se confirmó. */
+  const [pendingSubcategoryId, setPendingSubcategoryId] = useState("");
+  const [duplicateSubcategory, setDuplicateSubcategory] = useState<
+    string | null
+  >(null);
   const [name, setName] = useState(provider?.name ?? "");
   const [description, setDescription] = useState(provider?.description ?? "");
   const [phone, setPhone] = useState(provider?.phone ?? "");
@@ -137,11 +149,26 @@ export function ProfileForm({
    * proveedor vea el estado real mientras completa, en vez de descubrirlo
    * recién al guardar.
    */
+  /**
+   * Confirma el servicio tipeado. Vacío no agrega nada y repetido avisa, en
+   * vez de descartarse en silencio como pasaba con las zonas.
+   */
+  function addService() {
+    const value = pendingService.trim();
+    if (!value) return;
+    if (services.some((s) => s.toLowerCase() === value.toLowerCase())) {
+      setDuplicateService(value);
+      return;
+    }
+    setDuplicateService(null);
+    setServices([...services, value]);
+    setPendingService("");
+  }
+
   const completion = useMemo(() => {
-    const filledServices = services.filter((s) => s.trim().length > 0);
     return {
       identidad: name.trim().length >= 2 && description.trim().length >= 20,
-      rubro: subcategoryId !== "" && filledServices.length > 0,
+      rubro: subcategoryId !== "" && services.length > 0,
       zonas: locationId !== "" && serviceAreaIds.length > 0,
       contacto: phone.trim().length > 0,
       /*
@@ -331,67 +358,82 @@ export function ProfileForm({
               error={errors.subcategoryIds}
               hint={`Si trabajás en más de un rubro. Tu plan ${plan.name} permite hasta ${maxSubcategories}.`}
               counter={`${extraSubcategoryIds.length + 1}/${maxSubcategories}`}
+              group
             >
               <div className="flex flex-col gap-2.5">
                 {extraSubcategoryIds.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {extraSubcategoryIds.map((id) => (
-                      <span
+                      <ItemChip
                         key={id}
-                        className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-3 pr-1.5 text-[13px] font-semibold text-brand-800"
-                      >
-                        <input
-                          type="hidden"
-                          name="subcategoryIds"
-                          value={id}
-                        />
-                        {subcategoryLabel(id)}
-                        <button
-                          type="button"
-                          aria-label={`Quitar ${subcategoryLabel(id)}`}
-                          onClick={() =>
-                            setExtraSubcategoryIds(
-                              extraSubcategoryIds.filter((x) => x !== id),
-                            )
-                          }
-                        >
-                          <Icon
-                            name="close"
-                            className="text-[15px] text-[#5B6B87]"
-                          />
-                        </button>
-                      </span>
+                        name="subcategoryIds"
+                        value={id}
+                        label={subcategoryLabel(id)}
+                        onRemove={() =>
+                          setExtraSubcategoryIds(
+                            extraSubcategoryIds.filter((x) => x !== id),
+                          )
+                        }
+                      />
                     ))}
                   </div>
                 ) : null}
 
                 {/* +1: la principal también cuenta contra el tope del plan. */}
                 {extraSubcategoryIds.length + 1 < maxSubcategories ? (
-                  <select
-                    value=""
-                    onChange={(event) => {
-                      const id = event.target.value;
-                      if (
-                        id &&
-                        id !== subcategoryId &&
-                        !extraSubcategoryIds.includes(id)
-                      ) {
-                        setExtraSubcategoryIds([...extraSubcategoryIds, id]);
+                  <>
+                    {/*
+                      Elegir y agregar en dos pasos, igual que las zonas: antes
+                      el select agregaba solo al cambiar y no había forma de
+                      mirar la opción antes de confirmarla.
+                    */}
+                    <select
+                      aria-label="Otra subcategoría"
+                      value={pendingSubcategoryId}
+                      onChange={(event) =>
+                        setPendingSubcategoryId(event.target.value)
                       }
-                    }}
-                    className={inputClass(undefined)}
-                  >
-                    <option value="">Agregar otra subcategoría…</option>
-                    {CATEGORIES.map((category) => (
-                      <optgroup key={category.id} label={category.short}>
-                        {category.subcategories.map((sub) => (
-                          <option key={sub.id} value={sub.id}>
-                            {sub.name}
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))}
-                  </select>
+                      className={inputClass(undefined)}
+                    >
+                      <option value="">Elegí una subcategoría…</option>
+                      {CATEGORIES.map((category) => (
+                        <optgroup key={category.id} label={category.short}>
+                          {category.subcategories.map((sub) => (
+                            <option key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ))}
+                    </select>
+
+                    <AddButton
+                      label="Agregar subcategoría"
+                      onClick={() => {
+                        const id = pendingSubcategoryId;
+                        if (!id) return;
+                        if (
+                          id === subcategoryId ||
+                          extraSubcategoryIds.includes(id)
+                        ) {
+                          setDuplicateSubcategory(id);
+                          return;
+                        }
+                        setDuplicateSubcategory(null);
+                        setExtraSubcategoryIds([...extraSubcategoryIds, id]);
+                        setPendingSubcategoryId("");
+                      }}
+                    />
+
+                    {duplicateSubcategory ? (
+                      <p
+                        role="alert"
+                        className="text-[13px] font-medium text-[#B42318]"
+                      >
+                        Ya agregaste {subcategoryLabel(duplicateSubcategory)}.
+                      </p>
+                    ) : null}
+                  </>
                 ) : (
                   <PlanHint
                     planName={plan.name}
@@ -408,47 +450,58 @@ export function ProfileForm({
             error={errors.services}
             hint={`Lo que ofrecés concretamente. Tu plan ${plan.name} permite hasta ${maxServices}.`}
             required
-            counter={`${services.filter((s) => s.trim()).length}/${maxServices}`}
+            counter={`${services.length}/${maxServices}`}
+            group
           >
-            <div className="flex flex-col gap-2">
-              {services.map((service, index) => (
-                <div key={index} className="flex gap-2">
+            <div className="flex flex-col gap-2.5">
+              {services.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {services.map((service) => (
+                    <ItemChip
+                      key={service}
+                      name="services"
+                      value={service}
+                      label={service}
+                      onRemove={() => {
+                        setServices(services.filter((x) => x !== service));
+                        if (duplicateService === service) {
+                          setDuplicateService(null);
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              ) : null}
+
+              {services.length < maxServices ? (
+                <>
                   <input
-                    name="services"
-                    value={service}
-                    onChange={(event) => {
-                      const next = [...services];
-                      next[index] = event.target.value;
-                      setServices(next);
+                    aria-label="Servicio"
+                    value={pendingService}
+                    onChange={(event) => setPendingService(event.target.value)}
+                    // Enter agrega en vez de enviar el formulario entero.
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        addService();
+                      }
                     }}
                     maxLength={60}
                     placeholder="Ej.: Instalaciones eléctricas"
                     className={inputClass(undefined)}
                   />
-                  {services.length > 1 ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setServices(services.filter((_, i) => i !== index))
-                      }
-                      aria-label={`Quitar servicio ${index + 1}`}
-                      className="flex h-11 w-11 flex-none items-center justify-center rounded-input border border-line-strong text-ink-soft transition-colors hover:bg-surface-muted"
-                    >
-                      <Icon name="close" className="text-[18px]" />
-                    </button>
-                  ) : null}
-                </div>
-              ))}
 
-              {services.length < maxServices ? (
-                <button
-                  type="button"
-                  onClick={() => setServices([...services, ""])}
-                  className="flex items-center gap-1.5 self-start text-[14px] font-semibold text-brand-800 hover:underline"
-                >
-                  <Icon name="add" className="text-[18px]" />
-                  Agregar servicio
-                </button>
+                  <AddButton label="Agregar servicio" onClick={addService} />
+
+                  {duplicateService ? (
+                    <p
+                      role="alert"
+                      className="text-[13px] font-medium text-[#B42318]"
+                    >
+                      Ya agregaste {duplicateService}.
+                    </p>
+                  ) : null}
+                </>
               ) : (
                 <PlanHint planName={plan.name} what="servicios" limit={maxServices} />
               )}
@@ -461,8 +514,10 @@ export function ProfileForm({
             <Field
               label="Dónde estás ubicado"
               error={errors.locationId}
+              hint="Precisá hasta donde quieras: alcanza con el departamento."
               required
               half
+              group
             >
               <LocationPicker
                 name="locationId"
@@ -471,8 +526,21 @@ export function ProfileForm({
               />
             </Field>
 
-            <Field label="Modalidad" error={errors.serviceMode} half>
+            <Field label="Modalidad" error={errors.serviceMode} half group>
+              {/*
+                El campo de al lado rotula cada selector por dentro
+                («Departamento», «Localidad»…). Sin un rótulo acá los dos
+                controles arrancarían a distinta altura, así que este dice
+                qué se elige y de paso empareja las filas.
+              */}
+              <label
+                htmlFor="serviceMode"
+                className="text-[12.5px] font-semibold text-ink-muted"
+              >
+                Cómo trabajás
+              </label>
               <select
+                id="serviceMode"
                 name="serviceMode"
                 defaultValue={provider?.serviceMode ?? "on_site"}
                 className={inputClass(errors.serviceMode)}
@@ -489,46 +557,61 @@ export function ProfileForm({
           <Field
             label="Zonas donde trabajás"
             error={errors.serviceAreaIds}
-            hint="Puede ser distinto de dónde estás ubicado."
+            hint="Puede ser distinto de dónde estás ubicado. Precisá hasta donde quieras y tocá «Agregar zona»."
             required
             counter={`${serviceAreaIds.length}/${maxAreas}`}
+            group
           >
             <div className="flex flex-col gap-2.5">
               {serviceAreaIds.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {serviceAreaIds.map((id) => (
-                    <span
+                    <ItemChip
                       key={id}
-                      className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-3 pr-1.5 text-[13px] font-semibold text-brand-800"
-                    >
-                      <input type="hidden" name="serviceAreaIds" value={id} />
-                      {locationLabelById(id)}
-                      <button
-                        type="button"
-                        aria-label={`Quitar ${locationLabelById(id)}`}
-                        onClick={() =>
-                          setServiceAreaIds(
-                            serviceAreaIds.filter((x) => x !== id),
-                          )
-                        }
-                      >
-                        <Icon name="close" className="text-[15px] text-[#5B6B87]" />
-                      </button>
-                    </span>
+                      name="serviceAreaIds"
+                      value={id}
+                      label={locationLabelById(id)}
+                      detail={locationLevelLabel(id)}
+                      onRemove={() => {
+                        setServiceAreaIds(
+                          serviceAreaIds.filter((x) => x !== id),
+                        );
+                        // Quitarla despeja el aviso: ya no está repetida.
+                        if (duplicateArea === id) setDuplicateArea(null);
+                      }}
+                    />
                   ))}
                 </div>
               ) : null}
 
               {serviceAreaIds.length < maxAreas ? (
-                <LocationPicker
-                  value=""
-                  onChange={(id) => {
-                    if (id && !serviceAreaIds.includes(id)) {
+                <>
+                  <LocationPicker
+                    value=""
+                    onChange={(id) => {
+                      if (!id) return;
+                      /*
+                       * Repetir una zona no agrega nada y antes se descartaba
+                       * en silencio: se veía como si el botón no funcionara.
+                       */
+                      if (serviceAreaIds.includes(id)) {
+                        setDuplicateArea(id);
+                        return;
+                      }
+                      setDuplicateArea(null);
                       setServiceAreaIds([...serviceAreaIds, id]);
-                    }
-                  }}
-                  addMode
-                />
+                    }}
+                    addMode
+                  />
+                  {duplicateArea ? (
+                    <p
+                      role="alert"
+                      className="text-[13px] font-medium text-[#B42318]"
+                    >
+                      Ya agregaste {locationLabelById(duplicateArea)}.
+                    </p>
+                  ) : null}
+                </>
               ) : (
                 <PlanHint planName={plan.name} what="zonas" limit={maxAreas} />
               )}
@@ -580,7 +663,7 @@ export function ProfileForm({
             />
           </Field>
 
-          <Field label="Formas de pago" error={errors.paymentMethods}>
+          <Field label="Formas de pago" error={errors.paymentMethods} group>
             <div className="flex flex-wrap gap-x-5 gap-y-2">
               {PAYMENT_OPTIONS.map((method) => (
                 <label
@@ -1011,6 +1094,7 @@ function Field({
   required = false,
   half = false,
   counter,
+  group = false,
   children,
 }: {
   label: string;
@@ -1019,33 +1103,126 @@ function Field({
   required?: boolean;
   half?: boolean;
   counter?: string;
+  /**
+   * Para campos con más de un control adentro (varios selectores, una lista
+   * de etiquetas con su botón de quitar).
+   *
+   * Un `<label>` sin `htmlFor` manda cualquier clic sobre él al primer control
+   * que contenga. Envolviendo una lista, eso significaba que tocar el vacío
+   * del campo apretaba el botón de quitar de la primera etiqueta y borraba
+   * una zona sin que nadie la hubiera tocado. Un grupo se rinde como
+   * `fieldset` y no reenvía nada.
+   */
+  group?: boolean;
   children: React.ReactNode;
 }) {
-  return (
-    <label className={`flex flex-col gap-1.5 ${half ? "" : "w-full"}`}>
-      <span className="flex items-baseline justify-between gap-2">
-        <span className="text-[13.5px] font-semibold text-ink-muted">
-          {label}
-          {required ? <span className="text-[#B42318]"> *</span> : null}
-        </span>
-        {counter ? (
-          <span className="text-[12px] tabular-nums text-ink-faint">
-            {counter}
-          </span>
-        ) : null}
+  const heading = (
+    <>
+      <span className="text-[13.5px] font-semibold text-ink-muted">
+        {label}
+        {required ? <span className="text-[#B42318]"> *</span> : null}
       </span>
-
-      {children}
-
-      {error ? (
-        <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#B42318]">
-          <Icon name="error" className="text-[15px]" />
-          {error}
+      {counter ? (
+        <span className="text-[12px] tabular-nums text-ink-faint">
+          {counter}
         </span>
-      ) : hint ? (
-        <span className="text-[12.5px] text-ink-faint">{hint}</span>
       ) : null}
+    </>
+  );
+
+  const footer = error ? (
+    <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#B42318]">
+      <Icon name="error" className="text-[15px]" />
+      {error}
+    </span>
+  ) : hint ? (
+    <span className="text-[12.5px] text-ink-faint">{hint}</span>
+  ) : null;
+
+  const className = `flex flex-col gap-1.5 ${half ? "" : "w-full"}`;
+
+  if (group) {
+    return (
+      <fieldset className={className}>
+        {/* `legend` en flujo normal: no se quiere el corte del borde. */}
+        <legend className="mb-1.5 flex w-full items-baseline justify-between gap-2">
+          {heading}
+        </legend>
+        {children}
+        {footer}
+      </fieldset>
+    );
+  }
+
+  return (
+    <label className={className}>
+      <span className="flex items-baseline justify-between gap-2">
+        {heading}
+      </span>
+      {children}
+      {footer}
     </label>
+  );
+}
+
+/**
+ * Botón para sumar un elemento a una lista (zonas, subcategorías, servicios).
+ *
+ * Es blanco con borde, no del color de las etiquetas: cuando compartía el
+ * `brand-100` de éstas parecía una etiqueta más en vez de la acción que las
+ * agrega.
+ */
+function AddButton({
+  label,
+  onClick,
+}: {
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex h-8 items-center gap-1 self-start rounded-input border border-line-strong bg-white pl-1.5 pr-2.5 text-[13px] font-semibold text-brand-800 transition-colors hover:bg-surface-muted"
+    >
+      <Icon name="add" className="text-[16px]" />
+      {label}
+    </button>
+  );
+}
+
+/**
+ * Etiqueta de un elemento ya agregado, con su botón de quitar.
+ *
+ * Las tres listas del formulario se ven igual: lo agregado se lee de un
+ * vistazo y se saca desde el mismo lugar.
+ */
+function ItemChip({
+  name,
+  value,
+  label,
+  detail,
+  onRemove,
+}: {
+  /** Cuando se envía con el formulario, el campo que lo transporta. */
+  name?: string;
+  value: string;
+  label: string;
+  /** Dato secundario, como el nivel de una ubicación. */
+  detail?: string;
+  onRemove: () => void;
+}) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-3 pr-1.5 text-[13px] font-semibold text-brand-800">
+      {name ? <input type="hidden" name={name} value={value} /> : null}
+      {label}
+      {detail ? (
+        <span className="font-medium text-[#5B6B87]">{detail}</span>
+      ) : null}
+      <button type="button" aria-label={`Quitar ${label}`} onClick={onRemove}>
+        <Icon name="close" className="text-[15px] text-[#5B6B87]" />
+      </button>
+    </span>
   );
 }
 

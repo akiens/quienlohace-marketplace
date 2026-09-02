@@ -187,9 +187,15 @@ function uruguayanMobile(): string {
 /** Zonas de trabajo: la propia más otras de la misma localidad. */
 function serviceAreasFor(locationId: string): string[] {
   const own = LOCATIONS.find((location) => location.id === locationId)!;
-  const siblings = listAreas(own.department, own.locality)
-    .filter((location) => location.id !== locationId)
-    .map((location) => location.id);
+
+  // La semilla siempre parte de una localidad o un barrio; los niveles más
+  // generales no tienen hermanos que sumar.
+  const siblings =
+    own.department && own.locality
+      ? listAreas(own.department, own.locality)
+          .filter((location) => location.id !== locationId)
+          .map((location) => location.id)
+      : [];
 
   return [
     locationId,

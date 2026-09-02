@@ -4,12 +4,24 @@
  * Ubicación como Master Data: colección plana, IDs estables y slugs
  * predefinidos. La jerarquía se deriva en la UI, no en los datos.
  */
+/**
+ * Una ubicación seleccionable, en cualquiera de sus cuatro niveles: país,
+ * departamento, localidad o barrio. Cada nivel existe como fila propia con su
+ * id, así quien se registra elige hasta donde quiera precisar y no se le
+ * obliga a bajar a un barrio que no le corresponde (RF-117).
+ *
+ * Los campos se van llenando de lo general a lo particular: el país siempre,
+ * el resto según el nivel. `level` dice cuál es el último con valor.
+ */
+export type LocationLevel = "country" | "department" | "locality" | "area";
+
 export type Location = {
   id: string;
-  department: string;
-  departmentSlug: string;
-  locality: string;
-  localitySlug: string;
+  level: LocationLevel;
+  department?: string;
+  departmentSlug?: string;
+  locality?: string;
+  localitySlug?: string;
   area?: string;
   areaSlug?: string;
 };
