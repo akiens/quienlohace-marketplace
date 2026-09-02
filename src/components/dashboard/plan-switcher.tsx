@@ -24,10 +24,17 @@ import type { PlanLimits } from "@/types";
 export function PlanSwitcher({
   plan,
   plans,
+  persist,
   onPlanChange,
 }: {
   plan: PlanLimits;
   plans: PlanLimits[];
+  /**
+   * Si el plan hay que guardarlo en el servidor. Sin perfil no hay fila que
+   * actualizar: el cambio vive en el navegador y se manda al crear el perfil,
+   * así que el diálogo no envía nada y la página no se vuelve a pedir.
+   */
+  persist: boolean;
   /**
    * Se llama al confirmar el cambio. Sin perfil todavía no hay nada que
    * recargar desde el servidor, así que el panel avisa acá y el formulario
@@ -106,6 +113,7 @@ export function PlanSwitcher({
         <PlanDialog
           plans={plans}
           current={plan}
+          persist={persist}
           pending={pending}
           action={action}
           onChoose={(planId) => {
@@ -122,6 +130,7 @@ export function PlanSwitcher({
 function PlanDialog({
   plans,
   current,
+  persist,
   pending,
   action,
   onChoose,
@@ -129,6 +138,7 @@ function PlanDialog({
 }: {
   plans: PlanLimits[];
   current: PlanLimits;
+  persist: boolean;
   pending: boolean;
   action: (formData: FormData) => void;
   onChoose?: (planId: PlanLimits["id"]) => void;
@@ -171,6 +181,7 @@ function PlanDialog({
               key={option.id}
               option={option}
               current={option.id === current.id}
+              persist={persist}
               pending={pending}
               action={action}
               onChoose={onChoose}
@@ -185,27 +196,44 @@ function PlanDialog({
 function PlanOption({
   option,
   current,
+  persist,
   pending,
   action,
   onChoose,
 }: {
   option: PlanLimits;
   current: boolean;
+  persist: boolean;
   pending: boolean;
   action: (formData: FormData) => void;
   onChoose?: (planId: PlanLimits["id"]) => void;
 }) {
+  const card = {
+    style: { borderColor: PLAN_RIBBONS[option.id].edge },
+    className: `relative flex flex-col gap-3 rounded-card border-2 bg-white p-4 pt-8 ${
+      current ? "" : "border-opacity-40"
+    }`,
+  };
+
+  /*
+   * Sin perfil el plan sólo se recuerda en el navegador, así que la tarjeta no
+   * es un formulario: enviarlo pediría la página entera de vuelta para no
+   * guardar nada. Con perfil sí hay que escribir en la base y el envío manda.
+   */
+  const Card = persist ? "form" : "div";
+
   return (
-    <form
-      action={action}
-      // El aviso sale del envío mismo: el formulario ya sabe qué plan es.
-      onSubmit={() => onChoose?.(option.id)}
-      style={{ borderColor: PLAN_RIBBONS[option.id].edge }}
-      className={`relative flex flex-col gap-3 rounded-card border-2 bg-white p-4 pt-8 ${
-        current ? "" : "border-opacity-40"
-      }`}
+    <Card
+      {...card}
+      {...(persist
+        ? {
+            action,
+            // El aviso sale del envío mismo: el formulario ya sabe qué plan es.
+            onSubmit: () => onChoose?.(option.id),
+          }
+        : {})}
     >
-      <input type="hidden" name="planId" value={option.id} />
+      {persist ? <input type="hidden" name="planId" value={option.id} /> : null}
 
       <Image
         src={PLAN_BADGES[option.id]}
@@ -245,13 +273,14 @@ function PlanOption({
         </span>
       ) : (
         <button
-          type="submit"
-          disabled={pending}
+          type={persist ? "submit" : "button"}
+          disabled={persist && pending}
+          onClick={persist ? undefined : () => onChoose?.(option.id)}
           className="mt-auto flex h-10 items-center justify-center rounded-input bg-brand-800 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-900 disabled:opacity-60"
         >
-          {pending ? "Un momento…" : `Cambiar a ${option.name}`}
+          {persist && pending ? "Un momento…" : `Cambiar a ${option.name}`}
         </button>
       )}
-    </form>
+    </Card>
   );
 }

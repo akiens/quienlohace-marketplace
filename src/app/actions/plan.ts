@@ -54,7 +54,12 @@ export async function changePlan(
     };
   }
 
-  revalidatePath("/dashboard");
+  /*
+   * El panel no se revalida: ya muestra el plan elegido sin esperar al
+   * servidor, y pedir `/dashboard` de nuevo — que es `force-dynamic` — hacía
+   * que la página se recargara entera al cambiar de plan. El perfil público
+   * sí, que es otra ruta y ahí el plan cambia lo que se ve.
+   */
   revalidatePath(`/profesionales/${provider.slug}`);
   return { message: "Plan actualizado." };
 }
