@@ -44,7 +44,15 @@ export default async function CreateProfilePage() {
    * servidor no puede leerlo, así que manda el más restrictivo como piso.
    * Si el navegador trae otro, el formulario se reordena solo.
    */
-  const plan = allPlans.find((p) => p.id === "cobre");
+  /*
+   * Plan de partida. Subiendo, el del perfil, que ya está activado y define
+   * qué pasos mostrar. En el alta manda el que se eligió en el registro, que
+   * vive en el navegador y aplica `ProfileWorkspace`: el servidor no puede
+   * leerlo, así que pone el más restrictivo como piso.
+   */
+  const plan =
+    (provider ? allPlans.find((p) => p.id === provider.planId) : undefined) ??
+    allPlans.find((p) => p.id === "cobre");
   if (!plan) return <SetupNotice />;
 
   /*
@@ -52,8 +60,17 @@ export default async function CreateProfilePage() {
    * donde se edita. El redirect vive en el servidor y no en un botón para que
    * también cubra a quien llegue por un enlace viejo o escribiendo la
    * dirección a mano.
+   *
+   * La excepción es subir de plan. El plan nuevo se activa en el acto, pero
+   * queda el cobro sin resolver (`past_due`) y los pasos que ese plan recién
+   * habilita sin completar: el asistente vuelve a abrirse para eso, y se
+   * cierra solo al confirmar el pago. Lo decide el estado del perfil y no un
+   * parámetro de la URL, así un enlace guardado no lo reabre.
    */
-  if (provider) redirect("/dashboard");
+  const settlingUpgrade =
+    provider !== null && provider.subscriptionStatus === "past_due";
+
+  if (provider && !settlingUpgrade) redirect("/dashboard");
 
   /*
    * Las imágenes se piden por usuario y no por perfil: durante el alta se
@@ -66,17 +83,17 @@ export default async function CreateProfilePage() {
     <div className="shell flex flex-col gap-7 py-8">
       <header className="flex flex-col gap-1.5">
         <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
-          Creá tu perfil
+          {settlingUpgrade ? `Completá tu plan ${plan.name}` : "Creá tu perfil"}
         </h1>
         <p className="text-[15px] text-ink-soft">
-          Completá estos datos para aparecer en las búsquedas.
+          {settlingUpgrade
+            ? "Tu plan ya está activo. Completá los pasos que habilita y el pago para terminar."
+            : "Completá estos datos para aparecer en las búsquedas."}
         </p>
       </header>
 
-      {/* Pasado el redirect de arriba, acá nunca hay perfil: es siempre un
-          alta, y el formulario arranca vacío o con el borrador. */}
       <ProfileWorkspace
-        provider={null}
+        provider={provider}
         plan={plan}
         plans={allPlans}
         images={images}

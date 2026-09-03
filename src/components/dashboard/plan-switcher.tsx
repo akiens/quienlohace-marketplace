@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 
 import { changePlan } from "@/app/actions/plan";
@@ -11,6 +12,7 @@ import {
   PLAN_RIBBONS,
   PLAN_TIERS,
   formatPrice,
+  isUpgrade,
 } from "@/domain/plans";
 import type { PlanLimits } from "@/types";
 
@@ -49,14 +51,21 @@ export function PlanSwitcher({
   );
 
   /*
-   * El diálogo se cierra al elegir un plan, en el mismo gesto que lo envía.
-   *
-   * Antes se derivaba de `state.message`, y como ese mensaje queda puesto
-   * después de un cambio, el diálogo no volvía a abrirse nunca: el botón
-   * marcaba "abrir" y el mensaje viejo lo cerraba en el mismo render.
+   * Al subir de plan se sigue en el asistente: el plan nuevo habilita pasos
+   * que hay que completar y el pago que hay que resolver. Bajar no navega —
+   * se agenda y se responde en la misma pantalla, que es donde se lee el
+   * aviso.
    */
+  const router = useRouter();
+  const [upgraded, setUpgraded] = useState(false);
 
-
+  useEffect(() => {
+    // Se espera la confirmación del servidor: navegar antes dejaría el
+    // asistente mostrando el plan viejo.
+    if (upgraded && state.message && !state.errors) {
+      router.push("/dashboard/crear");
+    }
+  }, [upgraded, state.message, state.errors, router]);
 
   // Escape cierra, como cualquier diálogo.
   useEffect(() => {
@@ -122,6 +131,9 @@ export function PlanSwitcher({
           pending={pending}
           action={action}
           onChoose={(planId) => {
+            const target = plans.find((p) => p.id === planId);
+            // Sólo las subidas siguen al asistente; las bajas se resuelven acá.
+            if (persist && target && isUpgrade(plan, target)) setUpgraded(true);
             onPlanChange?.(planId);
             setOpen(false);
           }}

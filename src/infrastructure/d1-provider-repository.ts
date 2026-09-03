@@ -46,6 +46,8 @@ type ProviderRow = {
   rating_sum: number;
   review_count: number;
   plan_id: string;
+  downgrade_plan_id: string | null;
+  plan_expires_at: string | null;
   subscription_status: string;
   verification_status: string;
   phone_e164: string;
@@ -205,6 +207,8 @@ function toProvider(
     socialLinks: relations.social?.get(row.id) ?? [],
     teamMembers: relations.team?.get(row.id) ?? [],
     planId: row.plan_id as Provider["planId"],
+    downgradePlanId: (row.downgrade_plan_id ?? null) as Provider["downgradePlanId"],
+    planExpiresAt: row.plan_expires_at ?? null,
     subscriptionStatus: row.subscription_status as Provider["subscriptionStatus"],
     verificationStatus: row.verification_status as Provider["verificationStatus"],
     phoneE164: row.phone_e164,
@@ -225,7 +229,8 @@ async function hydrate(
 
 const SELECT_COLUMNS = `id, user_id, slug, name, kind, icon, description, category_id,
   subcategory_id, location_id, phone, whatsapp, schedule, status, featured,
-  verified, rating_sum, review_count, plan_id, subscription_status,
+  verified, rating_sum, review_count, plan_id, downgrade_plan_id, plan_expires_at,
+  subscription_status,
   verification_status, phone_e164, whatsapp_enabled, phone_public,
   public_email, service_mode`;
 
@@ -563,10 +568,118 @@ export class D1ProviderRepository implements ProviderRepository {
    * No toca las listas: qué queda activo se recalcula al guardar el perfil,
    * que es donde se conocen los topes del plan nuevo.
    */
-  async setPlan(providerId: string, planId: PlanId): Promise<void> {
+  /**
+   * Activa un plan de inmediato y corre el vencimiento.
+   *
+   * Es lo que corresponde al subir: se cobra y las funciones quedan
+   * disponibles en el acto. Limpia cualquier baja agendada — quien sube deja
+   * sin efecto la baja que hubiera pedido antes.
+   */
+  async setPlan(
+    providerId: string,
+    planId: PlanId,
+    expiresAt?: string | null,
+    /**
+     * `past_due` cuando el plan es pago y todavía no se resolvió el cobro:
+     * el plan queda activo —las funciones se habilitan en el acto— pero el
+     * asistente sigue abierto para completarlo. `active` cuando no hay nada
+     * que cobrar (Cobre) o ya se resolvió.
+     */
+    subscriptionStatus: "active" | "past_due" = "active",
+  ): Promise<void> {
     await getDb()
-      .prepare(`UPDATE providers SET plan_id = ?, updated_at = ? WHERE id = ?`)
-      .bind(planId, new Date().toISOString(), providerId)
+      .prepare(
+        `UPDATE providers
+            SET plan_id = ?, downgrade_plan_id = NULL,
+                plan_expires_at = COALESCE(?, plan_expires_at),
+                purge_excess_after = NULL, subscription_status = ?,
+                updated_at = ?
+          WHERE id = ?`,
+      )
+      .bind(
+        planId,
+        expiresAt ?? null,
+        subscriptionStatus,
+        new Date().toISOString(),
+        providerId,
+      )
+      .run();
+  }
+
+  /** Marca el plan como pago: cierra el paso pendiente del asistente. */
+  async markPlanPaid(providerId: string): Promise<void> {
+    await getDb()
+      .prepare(
+        `UPDATE providers SET subscription_status = 'active', updated_at = ?
+          WHERE id = ?`,
+      )
+      .bind(new Date().toISOString(), providerId)
+      .run();
+  }
+
+  /**
+   * Agenda una baja de plan para cuando termine el período pago.
+   *
+   * No toca `plan_id`: hasta el vencimiento sigue rigiendo el plan que se
+   * pagó, y quitar las funciones antes sería cobrar por algo que se dejó de
+   * dar. Sólo anota a qué plan se baja y hasta cuándo se conserva lo que
+   * quedará fuera.
+   */
+  async scheduleDowngrade(input: {
+    providerId: string;
+    downgradePlanId: PlanId;
+    /** Fin del período pago. Se deja el que ya había si no viene otro. */
+    expiresAt: string | null;
+    /** Desde cuándo se puede borrar lo que exceda el plan nuevo. */
+    purgeAfter: string;
+  }): Promise<void> {
+    await getDb()
+      .prepare(
+        `UPDATE providers
+            SET downgrade_plan_id = ?,
+                plan_expires_at = COALESCE(?, plan_expires_at),
+                purge_excess_after = ?, updated_at = ?
+          WHERE id = ?`,
+      )
+      .bind(
+        input.downgradePlanId,
+        input.expiresAt,
+        input.purgeAfter,
+        new Date().toISOString(),
+        input.providerId,
+      )
+      .run();
+  }
+
+  /** Cancela una baja agendada: se sigue con el plan actual. */
+  async cancelDowngrade(providerId: string): Promise<void> {
+    await getDb()
+      .prepare(
+        `UPDATE providers
+            SET downgrade_plan_id = NULL, purge_excess_after = NULL,
+                updated_at = ?
+          WHERE id = ?`,
+      )
+      .bind(new Date().toISOString(), providerId)
+      .run();
+  }
+
+  /**
+   * Consolida una baja ya vencida: el plan bajado pasa a ser el contratado.
+   *
+   * Lo llama el perfil al abrirse. `effectivePlanId` ya devolvía el plan
+   * menor, así que esto no cambia lo que se ve — deja la fila coherente con
+   * lo que se muestra, que es lo que después leerá el cobro.
+   */
+  async applyDueDowngrade(providerId: string, planId: PlanId): Promise<void> {
+    await getDb()
+      .prepare(
+        `UPDATE providers
+            SET plan_id = ?, downgrade_plan_id = NULL, plan_expires_at = NULL,
+                updated_at = ?
+          WHERE id = ? AND downgrade_plan_id = ?`,
+      )
+      .bind(planId, new Date().toISOString(), providerId, planId)
       .run();
   }
 

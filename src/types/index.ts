@@ -119,6 +119,10 @@ export type Provider = {
 
   /** Plan contratado. Los datos de ejemplo no lo traen. */
   planId?: PlanId;
+  /** Plan al que se baja al vencer el período, o null si no hay baja. */
+  downgradePlanId?: PlanId | null;
+  /** Fin del período pago (ISO). NULL en Cobre, que no vence. */
+  planExpiresAt?: string | null;
   subscriptionStatus?: SubscriptionStatus;
   verificationStatus?: VerificationStatus;
 

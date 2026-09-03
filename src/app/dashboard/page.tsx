@@ -5,6 +5,11 @@ import { redirect } from "next/navigation";
 import { PlanSwitcher } from "@/components/dashboard/plan-switcher";
 import { ProfileView } from "@/components/dashboard/profile-view";
 import { Icon } from "@/components/ui";
+import {
+  downgradeIsDue,
+  effectivePlanId,
+  hasScheduledDowngrade,
+} from "@/domain/plan-changes";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { listImagesForUser } from "@/infrastructure/d1-provider-images";
@@ -46,14 +51,45 @@ export default async function DashboardPage() {
    */
   const images = await listImagesForUser(user.id);
 
-  const planRepo = new D1PlanRepository();
-  const allPlans = await planRepo.list();
-  const planId: PlanId = provider.planId ?? "cobre";
+  const allPlans = await new D1PlanRepository().list();
+
+  /*
+   * El plan que rige hoy, no el de la columna: con una baja agendada y el
+   * período todavía corriendo sigue mandando el plan pago. Si acá se tomara
+   * la columna a secas, bajar de plan apagaría las funciones en el acto —
+   * cobrando un período que ya no se puede usar.
+   */
+  const planState = {
+    planId: provider.planId ?? "cobre",
+    downgradePlanId: provider.downgradePlanId,
+    planExpiresAt: provider.planExpiresAt,
+  };
+  const planId: PlanId = effectivePlanId(planState);
+
+  /*
+   * Cada vez que se abre el perfil se evalúa la baja agendada: si ya venció,
+   * se consolida en la fila —el plan bajado pasa a ser el contratado y
+   * `downgrade_plan_id` vuelve a NULL—.
+   *
+   * Lo que se ve no depende de esto: `effectivePlanId` ya devuelve el plan
+   * menor desde el instante del vencimiento. Esto deja la fila coherente con
+   * lo que se muestra, que es lo que después leerá el cobro, y evita que la
+   * baja quede colgada para siempre esperando una tarea que todavía no
+   * existe.
+   */
+  if (downgradeIsDue(planState)) {
+    await new D1ProviderRepository().applyDueDowngrade(provider.id, planId);
+  }
   const plan =
     allPlans.find((p) => p.id === planId) ??
     allPlans.find((p) => p.id === "cobre");
 
   if (!plan) return <SetupNotice />;
+
+  // Baja agendada que todavía no entró en vigencia: hay que avisarlo.
+  const downgrade = hasScheduledDowngrade(planState)
+    ? allPlans.find((p) => p.id === provider.downgradePlanId)
+    : undefined;
 
   return (
     <div className="shell flex flex-col gap-7 py-8">
@@ -67,11 +103,34 @@ export default async function DashboardPage() {
         </p>
       </header>
 
+      {downgrade ? (
+        <p className="flex flex-wrap items-center gap-2 rounded-card border border-accent bg-accent-soft p-4 text-[14px] leading-relaxed text-accent-ink">
+          <Icon name="schedule" className="text-[18px]" />
+          Vas a pasar al plan {downgrade.name}
+          {provider.planExpiresAt ? (
+            <> el {formatDate(provider.planExpiresAt)}</>
+          ) : null}
+          . Hasta entonces seguís usando todo lo de {plan.name}; lo que no
+          entre en {downgrade.name} se guarda por si volvés.
+        </p>
+      ) : null}
+
       <PlanSwitcher plan={plan} plans={allPlans} persist />
 
       <ProfileView provider={provider} plan={plan} images={images} />
     </div>
   );
+}
+
+/** Fecha corta y legible: "12 de marzo de 2027". */
+function formatDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("es-UY", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
 }
 
 /** Sin bindings de Cloudflare el panel no puede leer ni escribir en D1. */

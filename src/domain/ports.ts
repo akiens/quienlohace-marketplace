@@ -87,7 +87,26 @@ export interface ProviderRepository {
     draft: ProviderDraft,
     limits?: DraftLimits,
   ): Promise<Provider>;
-  setPlan(providerId: string, planId: PlanId): Promise<void>;
+  /** Activa un plan de inmediato y corre el vencimiento (subir de plan). */
+  setPlan(
+    providerId: string,
+    planId: PlanId,
+    expiresAt?: string | null,
+    subscriptionStatus?: "active" | "past_due",
+  ): Promise<void>;
+  /** Marca el plan como pago: cierra el paso pendiente del asistente. */
+  markPlanPaid(providerId: string): Promise<void>;
+  /** Agenda una baja para el fin del período pago (no toca el plan vigente). */
+  scheduleDowngrade(input: {
+    providerId: string;
+    downgradePlanId: PlanId;
+    expiresAt: string | null;
+    purgeAfter: string;
+  }): Promise<void>;
+  /** Deja sin efecto una baja agendada. */
+  cancelDowngrade(providerId: string): Promise<void>;
+  /** Consolida una baja ya vencida en la fila. */
+  applyDueDowngrade(providerId: string, planId: PlanId): Promise<void>;
   setStatus(providerId: string, status: ProviderStatus): Promise<void>;
 }
 

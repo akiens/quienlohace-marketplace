@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { getCategoryOfSubcategory } from "@/data/categories";
 import { toE164, toWhatsapp } from "@/domain/phone";
+import { effectivePlanId } from "@/domain/plan-changes";
 import { PLAN_IDS, limitFor, limitMessage } from "@/domain/plans";
 import {
   applyGalleryLimit,
@@ -169,13 +170,22 @@ export async function saveProfile(
    * Plan con el que se guarda. En un perfil que ya existe manda el suyo: el
    * cambio de plan es otra acción. En uno nuevo vale el que se eligió en el
    * registro, que llega en el formulario.
+   *
+   * En el que existe se toma el plan que rige hoy y no la columna: con una
+   * baja agendada y el período todavía corriendo sigue valiendo el plan pago,
+   * y aplicar ya los topes del plan nuevo desactivaría datos que se están
+   * pagando.
    */
   const requestedPlan = formData.get("planId");
-  const planId: PlanId =
-    existing?.planId ??
-    (PLAN_IDS.includes(requestedPlan as PlanId)
+  const planId: PlanId = existing
+    ? effectivePlanId({
+        planId: existing.planId ?? "cobre",
+        downgradePlanId: existing.downgradePlanId,
+        planExpiresAt: existing.planExpiresAt,
+      })
+    : PLAN_IDS.includes(requestedPlan as PlanId)
       ? (requestedPlan as PlanId)
-      : "cobre");
+      : "cobre";
 
   /*
    * Los topes se aplican en el servidor: que la UI esconda un paso no es una
@@ -184,6 +194,39 @@ export async function saveProfile(
    */
   const plan =
     (await plans.findById(planId)) ?? (await plans.findById("cobre"));
+
+  /*
+   * En un plan pago no se crea el perfil sin resolver el pago.
+   *
+   * Se comprueba también acá y no sólo en el formulario: que el botón esté
+   * deshabilitado no impide mandar el envío a mano (RF-163). Sólo aplica al
+   * alta — un perfil que ya existe se sigue editando sin volver a pasar por
+   * esto.
+   *
+   * Hoy alcanza con la casilla del asistente, que es un marcador provisional.
+   * Cuando exista el cobro, lo que se mire acá será la suscripción.
+   */
+  const paymentTicked = formData.get("paymentAcknowledged") === "on";
+
+  if (!existing && plan && plan.priceCents > 0 && !paymentTicked) {
+    return {
+      errors: {
+        form: `Para crear tu perfil con el plan ${plan.name} tenés que completar el paso de pago.`,
+      },
+    };
+  }
+
+  /*
+   * Subida a medio resolver: el plan ya está activo pero el cobro quedaba
+   * pendiente (`past_due`), que es lo que mantiene abierto el asistente.
+   * Marcarlo pago lo cierra y devuelve al perfil.
+   */
+  const settlingUpgrade =
+    existing?.subscriptionStatus === "past_due" &&
+    plan !== null &&
+    plan.priceCents > 0 &&
+    paymentTicked;
+
   const limits = plan ? planLimits(plan) : undefined;
   const notice = plan ? overLimitNotice(plan, draft) : null;
 
@@ -192,6 +235,7 @@ export async function saveProfile(
 
   if (existing) {
     await providers.update(existing.id, draft, limits);
+    if (settlingUpgrade) await providers.markPlanPaid(existing.id);
     revalidatePath(`/profesionales/${existing.slug}`);
   } else {
     const created = await providers.create(user.id, draft, planId, limits);
@@ -224,7 +268,9 @@ export async function saveProfile(
    * `redirect` corta por excepción, así que nada de lo que sigue se ejecuta:
    * va al final, después de revalidar.
    */
-  if (isNew) redirect("/dashboard");
+  // Recién creado, o recién resuelto el pago de una subida: en los dos casos
+  // el asistente cumplió y se sigue en el perfil.
+  if (isNew || settlingUpgrade) redirect("/dashboard");
 
   return { message: notice ? `Perfil guardado. ${notice}` : "Perfil guardado." };
 }

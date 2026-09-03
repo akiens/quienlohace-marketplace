@@ -39,6 +39,11 @@ export type ProfileDraft = {
   serviceAreaIds?: string[];
   phone?: string;
   whatsappEnabled?: boolean;
+  /**
+   * Marca provisional del paso de pago. Todavía no hay cobro: sólo recuerda
+   * que se dio por revisado, para no perder el tilde al recargar.
+   */
+  paymentAcknowledged?: boolean;
   schedule?: string;
   paymentMethods?: string[];
   socialLinks?: Record<string, string>;

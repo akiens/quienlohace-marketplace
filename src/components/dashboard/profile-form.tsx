@@ -280,6 +280,18 @@ function ProfileFormFields(props: {
     props.images.filter((image) => image.kind === "gallery"),
   );
 
+  /*
+   * Marca de "pago resuelto". Es provisional: no cobra nada ni consulta a
+   * ninguna pasarela, sólo deja constancia de que el paso se dio por hecho
+   * mientras el cobro no exista. Cuando se implemente de verdad, el estado
+   * saldrá de la suscripción y esta casilla desaparece.
+   *
+   * Arranca de lo que ya venía marcado para que no se pierda al recargar.
+   */
+  const [paymentDone, setPaymentDone] = useState(
+    draft?.paymentAcknowledged ?? false,
+  );
+
   // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
   const [whatsappEnabled, setWhatsappEnabled] = useState(
     draft?.whatsappEnabled ?? provider?.whatsappEnabled ?? true,
@@ -369,8 +381,11 @@ function ProfileFormFields(props: {
       imagenes: avatar !== null,
       redes: socialTouched,
       equipo: teamMembers.length > 0,
-      // El cobro todavía no existe, así que nunca se da por hecho.
-      pago: false,
+      /*
+       * Mientras no haya cobro, lo marca la persona: es un marcador de que
+       * el paso se revisó, no una confirmación de que se pagó.
+       */
+      pago: paymentDone,
     } satisfies Record<StepId, boolean>;
   }, [
     name,
@@ -383,6 +398,7 @@ function ProfileFormFields(props: {
     socialTouched,
     teamMembers,
     avatar,
+    paymentDone,
   ]);
 
   /*
@@ -459,6 +475,7 @@ function ProfileFormFields(props: {
       whatsappEnabled,
       schedule: read("schedule"),
       paymentMethods,
+      paymentAcknowledged: paymentDone,
       socialLinks,
       teamMembers,
     });
@@ -474,6 +491,7 @@ function ProfileFormFields(props: {
     serviceAreaIds,
     phone,
     whatsappEnabled,
+    paymentDone,
     teamMembers,
     socialTouched,
   ]);
@@ -488,20 +506,28 @@ function ProfileFormFields(props: {
 
 
   /*
-   * Sólo los pasos obligatorios cuentan para habilitar el botón. Imágenes,
-   * redes, equipo y pago son opcionales: el perfil se crea y se publica sin
-   * ellos, y las fotos se pueden agregar después desde el mismo panel.
+   * Los pasos que hay que completar para poder guardar.
+   *
+   * Identidad, rubro, zonas y contacto son los datos con los que un perfil
+   * puede publicarse. Imágenes, redes y equipo quedan afuera: son opcionales
+   * y se pueden completar después.
+   *
+   * El pago entra sólo al crear o al cambiar de plan, y sólo si el plan
+   * cuesta: ahí no se puede seguir sin resolverlo. Editando no corresponde —
+   * la suscripción ya está resuelta y exigirla otra vez dejaría el perfil sin
+   * poder guardarse. En Cobre el paso ni siquiera existe.
    */
-  const REQUIRED_STEPS: StepId[] = ["identidad", "rubro", "zonas", "contacto"];
+  const REQUIRED_STEPS: StepId[] = [
+    "identidad",
+    "rubro",
+    "zonas",
+    "contacto",
+    ...(plan.priceCents > 0 && !editing ? (["pago"] as StepId[]) : []),
+  ];
   const missing = STEPS.filter(
     (s) => REQUIRED_STEPS.includes(s.id) && !completion[s.id],
   );
-  /*
-   * El botón se habilita cuando están los datos con los que el perfil ya
-   * puede publicarse, sin importar el plan. El pago no entra todavía: sin
-   * cobro implementado, exigirlo dejaría a los planes pagos sin poder crear
-   * el perfil.
-   */
+
   const canSubmit = missing.length === 0;
 
   /*
@@ -1173,7 +1199,14 @@ function ProfileFormFields(props: {
           </Panel>
         ) : null}
 
-        {plan.priceCents > 0 ? (
+        {/*
+          El pago es del alta y del cambio de plan, no de la edición: quien
+          entra a corregir un teléfono no viene a tocar la suscripción. En
+          edición se muestran todos los paneles a la vez, así que sin esta
+          condición el paso aparecía ahí y, peor, se pedía completarlo para
+          poder guardar — dejando un perfil de plan pago sin forma de editarse.
+        */}
+        {plan.priceCents > 0 && !editing ? (
           <Panel active={step === "pago"} editing={editing} title="Pago">
             <div className="flex flex-col items-start gap-3 rounded-card border border-dashed border-line-strong bg-surface-muted p-6">
               <span className="flex items-center gap-2 text-[15px] font-bold text-ink">
@@ -1189,6 +1222,24 @@ function ProfileFormFields(props: {
                 {formatPrice(plan)}
               </span>
             </div>
+
+            {/*
+              Marcador provisional mientras no exista el cobro: deja constancia
+              de que el paso se revisó y da el tilde en la barra de pasos, para
+              que el recorrido pueda verse completo. No condiciona la creación
+              del perfil — el botón de guardar no la mira.
+            */}
+            <label className="flex cursor-pointer items-start gap-2.5 text-[14px] leading-relaxed text-ink-muted">
+              <input
+                type="checkbox"
+                name="paymentAcknowledged"
+                checked={paymentDone}
+                onChange={(event) => setPaymentDone(event.target.checked)}
+                className="mt-0.5 h-4 w-4 accent-brand-800"
+              />
+              Doy por completado este paso. Cuando habilitemos los pagos te
+              avisamos para completar la suscripción.
+            </label>
           </Panel>
         ) : null}
 

@@ -122,6 +122,23 @@ export function isUpgrade(from: PlanLimits, to: PlanLimits): boolean {
 export const PLAN_IDS: PlanId[] = ["cobre", "gold", "platinum"];
 
 /**
+ * Orden de los planes, para comparar cuál es mayor sin ir a la base.
+ *
+ * El `rank` de verdad vive en `plans` y es el que manda donde ya se tiene la
+ * fila. Esto es para las reglas que sólo reciben ids —qué plan rige hoy, si
+ * un cambio es subida o baja— y que no deberían tener que leer la base para
+ * contestar algo que es parte de la definición de los planes.
+ *
+ * Los valores coinciden con la columna `rank` del seed (Cobre 1, Oro 2,
+ * Platino 3): son el mismo orden comercial, no dos listas distintas.
+ */
+export const PLAN_RANKS: Record<PlanId, number> = {
+  cobre: 1,
+  gold: 2,
+  platinum: 3,
+};
+
+/**
  * Insignia de cada plan. Vive acá y no en un componente porque la usan tanto
  * `/planes` como el adelanto del panel de acceso, y una sola copia evita que
  * un plan quede con la imagen de otro.
