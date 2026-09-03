@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 
 import { getCategoryOfSubcategory } from "@/data/categories";
 import { toE164, toWhatsapp } from "@/domain/phone";
@@ -186,6 +187,9 @@ export async function saveProfile(
   const limits = plan ? planLimits(plan) : undefined;
   const notice = plan ? overLimitNotice(plan, draft) : null;
 
+  // Al crear, se manda al perfil; al editar, se responde en la misma página.
+  let isNew = false;
+
   if (existing) {
     await providers.update(existing.id, draft, limits);
     revalidatePath(`/profesionales/${existing.slug}`);
@@ -197,6 +201,7 @@ export async function saveProfile(
      * portada quedarían guardadas pero sin aparecer en el perfil.
      */
     await claimImagesForProvider(user.id, created.id);
+    isNew = true;
   }
 
   /*
@@ -209,6 +214,17 @@ export async function saveProfile(
 
   revalidatePath("/dashboard");
   revalidatePath(`/categorias/${category.slug}`);
+
+  /*
+   * Recién creado, el asistente ya cumplió y se sigue en el perfil: es donde
+   * se publica y se edita. Se redirige desde el servidor y no desde el
+   * formulario para que el paso ocurra una sola vez, en la misma respuesta
+   * que creó la fila.
+   *
+   * `redirect` corta por excepción, así que nada de lo que sigue se ejecuta:
+   * va al final, después de revalidar.
+   */
+  if (isNew) redirect("/dashboard");
 
   return { message: notice ? `Perfil guardado. ${notice}` : "Perfil guardado." };
 }

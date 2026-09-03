@@ -2,33 +2,33 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { PlanSwitcher } from "@/components/dashboard/plan-switcher";
-import { ProfileView } from "@/components/dashboard/profile-view";
+import { ProfileWorkspace } from "@/components/dashboard/profile-workspace";
 import { Icon } from "@/components/ui";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { listImagesForUser } from "@/infrastructure/d1-provider-images";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { getCurrentUser } from "@/lib/session";
-import type { PlanId } from "@/types";
 
 export const metadata: Metadata = {
-  title: "Mi perfil",
+  title: "Creá tu perfil",
   robots: { index: false },
 };
 
-// El panel depende de la sesión: nunca se pregenera ni se cachea.
+// Depende de la sesión: nunca se pregenera ni se cachea.
 export const dynamic = "force-dynamic";
 
 /**
- * El perfil del proveedor: mirarlo, publicarlo y editarlo.
+ * Alta del perfil, separada del perfil en sí.
  *
- * El alta vive en `/dashboard/crear` y se recorre una sola vez. Desde que el
- * perfil existe, todo pasa por acá: el modo edición muestra los campos que
- * habilita el plan vigente, así que subir de plan hace aparecer los nuevos
- * sin tener que volver al asistente.
+ * El asistente es un recorrido de una sola vez: se completa, se crea el
+ * perfil y no se vuelve. A partir de ahí todo se corrige en `/dashboard`, en
+ * modo edición, que muestra los campos que el plan habilita —incluidos los
+ * que habilite un plan nuevo—. Con eso el asistente no tiene nada que
+ * agregar: volver a ofrecer ocho pasos para tocar un campo es trabajo, no
+ * ayuda.
  */
-export default async function DashboardPage() {
+export default async function CreateProfilePage() {
   if (!hasCloudflareRuntime()) return <SetupNotice />;
 
   const user = await getCurrentUser();
@@ -36,40 +36,51 @@ export default async function DashboardPage() {
 
   const provider = await new D1ProviderRepository().findByUserId(user.id);
 
-  // Sin perfil todavía no hay nada que mirar: se va al alta.
-  if (!provider) redirect("/dashboard/crear");
+  const allPlans = await new D1PlanRepository().list();
 
   /*
-   * Las imágenes se piden por usuario y no por perfil: es la misma consulta
-   * que usa el alta, donde el perfil todavía no existe, y así las dos
-   * pantallas ven exactamente lo mismo.
+   * Plan de partida. En el alta el que vale es el que se eligió en el
+   * registro, que vive en el navegador y lo aplica `ProfileWorkspace`: el
+   * servidor no puede leerlo, así que manda el más restrictivo como piso.
+   * Si el navegador trae otro, el formulario se reordena solo.
+   */
+  const plan = allPlans.find((p) => p.id === "cobre");
+  if (!plan) return <SetupNotice />;
+
+  /*
+   * Con el perfil ya creado el asistente cumplió: se manda al perfil, que es
+   * donde se edita. El redirect vive en el servidor y no en un botón para que
+   * también cubra a quien llegue por un enlace viejo o escribiendo la
+   * dirección a mano.
+   */
+  if (provider) redirect("/dashboard");
+
+  /*
+   * Las imágenes se piden por usuario y no por perfil: durante el alta se
+   * suben antes de que el perfil exista, y pedirlas por perfil no devolvería
+   * las recién cargadas.
    */
   const images = await listImagesForUser(user.id);
-
-  const planRepo = new D1PlanRepository();
-  const allPlans = await planRepo.list();
-  const planId: PlanId = provider.planId ?? "cobre";
-  const plan =
-    allPlans.find((p) => p.id === planId) ??
-    allPlans.find((p) => p.id === "cobre");
-
-  if (!plan) return <SetupNotice />;
 
   return (
     <div className="shell flex flex-col gap-7 py-8">
       <header className="flex flex-col gap-1.5">
         <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
-          Mi perfil
+          Creá tu perfil
         </h1>
         <p className="text-[15px] text-ink-soft">
-          Revisá cómo quedó, publicalo cuando esté listo y editá lo que
-          necesites.
+          Completá estos datos para aparecer en las búsquedas.
         </p>
       </header>
 
-      <PlanSwitcher plan={plan} plans={allPlans} persist />
-
-      <ProfileView provider={provider} plan={plan} images={images} />
+      {/* Pasado el redirect de arriba, acá nunca hay perfil: es siempre un
+          alta, y el formulario arranca vacío o con el borrador. */}
+      <ProfileWorkspace
+        provider={null}
+        plan={plan}
+        plans={allPlans}
+        images={images}
+      />
     </div>
   );
 }

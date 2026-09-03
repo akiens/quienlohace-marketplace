@@ -109,10 +109,26 @@ const SOCIAL_FIELDS: Array<{ platform: SocialPlatform; label: string }> = [
  * inicial: hidratación limpia y campos completos, sin un efecto que los vaya
  * llenando de a uno.
  */
+/**
+ * Cómo se presenta el formulario.
+ *
+ * `alta` es el asistente: un paso a la vez, con la barra de pasos arriba y el
+ * recorrido guiado. `edicion` es el mismo formulario abierto de una vez, con
+ * todos los campos a la vista y sólo Cancelar y Guardar: quien ya creó el
+ * perfil viene a corregir un dato puntual, y hacerlo caminar los ocho pasos
+ * para llegar al teléfono sería trabajo en vez de ayuda.
+ *
+ * Los campos, la validación y la acción son los mismos en los dos modos: sólo
+ * cambia qué se muestra a la vez.
+ */
+export type ProfileFormMode = "alta" | "edicion";
+
 export function ProfileForm({
   provider,
   plan,
   images,
+  mode = "alta",
+  onCancel,
 }: {
   provider: Provider | null;
   plan: PlanLimits;
@@ -121,6 +137,9 @@ export function ProfileForm({
    * todavía no hay perfil al que pertenezcan.
    */
   images: ProviderImage[];
+  mode?: ProfileFormMode;
+  /** Sólo en edición: salir sin guardar. */
+  onCancel?: () => void;
 }) {
   const stored = useSyncExternalStore(
     subscribeProfileDraft,
@@ -138,6 +157,8 @@ export function ProfileForm({
       plan={plan}
       draft={draft}
       images={images}
+      mode={mode}
+      onCancel={onCancel}
     />
   );
 }
@@ -147,8 +168,13 @@ function ProfileFormFields(props: {
   plan: PlanLimits;
   draft: ProfileDraft | null;
   images: ProviderImage[];
+  mode: ProfileFormMode;
+  onCancel?: () => void;
 }) {
-  const { provider, plan } = props;
+  const { provider, plan, mode } = props;
+
+  /** En edición todo se muestra junto: no hay recorrido que seguir. */
+  const editing = mode === "edicion";
 
   const [state, action, pending] = useActionState<FormState, FormData>(
     saveProfile,
@@ -478,6 +504,110 @@ function ProfileFormFields(props: {
    */
   const canSubmit = missing.length === 0;
 
+  /*
+   * Si hay algo distinto de lo guardado (sólo en edición).
+   *
+   * Se compara el formulario entero serializado contra una foto tomada al
+   * abrir. Podría llevarse campo por campo, pero el formulario mezcla estado
+   * de React (nombre, servicios, zonas) con campos que viven en el DOM (tipo,
+   * modalidad, horarios, formas de pago, redes): una comparación por campo
+   * tendría que replicar esa lista y se desactualizaría al agregar uno. La
+   * foto los toma a todos, incluidas las etiquetas que se agregan y quitan.
+   *
+   * Las imágenes quedan fuera a propósito: se suben y se borran por su cuenta
+   * y ya están guardadas cuando vuelven, así que no son un cambio pendiente.
+   */
+  const [dirty, setDirty] = useState(false);
+  const cleanSnapshot = useRef<string | null>(null);
+  /*
+   * De qué guardado es la foto vigente. Es estado y no una ref porque se
+   * compara durante el render: leer una ref ahí no está permitido, y con
+   * estado el ajuste ocurre en el mismo render sin pintar el botón encendido
+   * un instante.
+   */
+  const [savedAt, setSavedAt] = useState<string | undefined>(undefined);
+
+  /** El formulario serializado, para comparar contra la foto inicial. */
+  const snapshot = (): string => {
+    const form = formRef.current;
+    if (!form) return "";
+    /*
+     * Los pares se ordenan: `FormData` los entrega en el orden del DOM, y
+     * quitar una etiqueta y volver a ponerla la deja en otra posición sin que
+     * el perfil haya cambiado.
+     */
+    return JSON.stringify(
+      [...new FormData(form).entries()]
+        .filter(([, value]) => typeof value === "string")
+        .map(([key, value]) => `${key}=${String(value)}`)
+        .sort(),
+    );
+  };
+
+  /*
+   * La foto se toma después del primer pintado, cuando los campos que se
+   * llenan desde el DOM ya tienen su valor. Tomarla durante el render los
+   * encontraría vacíos y todo parecería cambiado apenas abrir.
+   *
+   * `savedAt` marca de qué guardado es la foto vigente: al volver un mensaje
+   * nuevo del servidor, lo recién guardado pasa a ser el punto de partida y
+   * el botón se apaga hasta que se toque algo otra vez.
+   */
+  useEffect(() => {
+    if (!editing) return;
+    cleanSnapshot.current = snapshot();
+  }, [editing, state.message]);
+
+  /*
+   * Tras un guardado exitoso el formulario queda limpio: lo recién guardado
+   * es el nuevo punto de partida y el botón se apaga hasta el próximo cambio.
+   *
+   * Se ajusta durante el render y no desde un efecto: es la forma que React
+   * recomienda para el estado que se deriva de otro, y evita el render extra
+   * en el que el botón se vería todavía encendido.
+   */
+  if (editing && state.message !== savedAt) {
+    setSavedAt(state.message);
+    setDirty(false);
+  }
+
+  /** Recalcula si hay cambios pendientes. La llaman los eventos del form. */
+  const checkDirty = () => {
+    if (!editing || cleanSnapshot.current === null) return;
+    setDirty(snapshot() !== cleanSnapshot.current);
+  };
+
+  /*
+   * Las listas (servicios, zonas, subcategorías, equipo) viajan en campos
+   * ocultos que React agrega y quita. Eso no dispara `input` ni `change` —no
+   * los tocó nadie, aparecieron—, así que se recalcula cuando cambian.
+   *
+   * `whatsappEnabled` y la ubicación también entran acá: son controlados y su
+   * valor cambia sin que el evento llegue a burbujear en todos los casos.
+   */
+  useEffect(() => {
+    checkDirty();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    services,
+    serviceAreaIds,
+    extraSubcategoryIds,
+    teamMembers,
+    subcategoryId,
+    locationId,
+    whatsappEnabled,
+    name,
+    description,
+    phone,
+  ]);
+
+  /*
+   * En edición el botón pide además que haya algo para guardar: apretarlo sin
+   * cambios mandaría el mismo perfil al servidor y respondería «guardado» sin
+   * haber guardado nada, que es peor que no poder apretarlo.
+   */
+  const canSave = canSubmit && (!editing || dirty);
+
   // Un error del servidor puede referirse a un paso que no está a la vista;
   // este mapa permite señalarlo en la barra de pasos.
   const stepHasError: Record<StepId, boolean> = {
@@ -494,7 +624,18 @@ function ProfileFormFields(props: {
   };
 
   return (
-    <form ref={formRef} action={action} className="flex flex-col gap-5">
+    <form
+      ref={formRef}
+      action={action}
+      className="flex flex-col gap-5"
+      /*
+       * Se escucha en el formulario y no en cada campo: `input` y `change`
+       * burbujean, así que un solo par de manejadores alcanza para los
+       * cincuenta y pico de campos, incluidos los que se agregan después.
+       */
+      onInput={checkDirty}
+      onChange={checkDirty}
+    >
       {/*
         El plan con el que se crea el perfil. Sólo cuenta la primera vez: si
         el perfil ya existe, el servidor usa el suyo y descarta este valor.
@@ -513,18 +654,22 @@ function ProfileFormFields(props: {
 
       {errors.form ? <ErrorBanner>{errors.form}</ErrorBanner> : null}
 
-      <StepBar
-        steps={STEPS}
-        current={step}
-        completion={completion}
-        hasError={stepHasError}
-        onSelect={setStep}
-      />
+      {/* La barra de pasos es del recorrido guiado: en edición no hay
+          recorrido, están todos los campos a la vez. */}
+      {editing ? null : (
+        <StepBar
+          steps={STEPS}
+          current={step}
+          completion={completion}
+          hasError={stepHasError}
+          onSelect={setStep}
+        />
+      )}
 
       <div className="rounded-card border border-line bg-white">
         {/* Cada panel se oculta con `hidden`, no se desmonta: los valores
             siguen en el formulario aunque el paso no esté a la vista. */}
-        <Panel active={step === "identidad"}>
+        <Panel active={step === "identidad"} editing={editing} title="Identidad">
           <Row>
             <Field label="Nombre del perfil" error={errors.name} required half>
               <input
@@ -569,7 +714,7 @@ function ProfileFormFields(props: {
           </Field>
         </Panel>
 
-        <Panel active={step === "rubro"}>
+        <Panel active={step === "rubro"} editing={editing} title="Rubro">
           <Field
             label="Subcategoría"
             error={errors.subcategoryId}
@@ -753,7 +898,7 @@ function ProfileFormFields(props: {
           </Field>
         </Panel>
 
-        <Panel active={step === "zonas"}>
+        <Panel active={step === "zonas"} editing={editing} title="Ubicación">
           <Row>
             <Field
               label="Dónde estás ubicado"
@@ -863,7 +1008,7 @@ function ProfileFormFields(props: {
           </Field>
         </Panel>
 
-        <Panel active={step === "contacto"}>
+        <Panel active={step === "contacto"} editing={editing} title="Contacto">
           {/*
             Un solo número: de él salen el enlace de llamada y el de WhatsApp
             (RF-013). Antes se pedía dos veces el mismo dato y podían quedar
@@ -929,7 +1074,7 @@ function ProfileFormFields(props: {
         </Panel>
 
 
-        <Panel active={step === "imagenes"}>
+        <Panel active={step === "imagenes"} editing={editing} title="Imágenes">
           {/*
             Se dice que es opcional: es el único paso donde no se escribe sino
             que se sube algo, y sin aclararlo parece que hay que conseguir una
@@ -984,7 +1129,7 @@ function ProfileFormFields(props: {
         </Panel>
 
         {allowsFeature(plan, "social") ? (
-          <Panel active={step === "redes"}>
+          <Panel active={step === "redes"} editing={editing} title="Redes">
             <p className="text-[13.5px] leading-relaxed text-ink-soft">
               Dejá vacías las que no uses. Se muestran en tu perfil público.
             </p>
@@ -1018,7 +1163,7 @@ function ProfileFormFields(props: {
         ) : null}
 
         {allowsFeature(plan, "team") ? (
-          <Panel active={step === "equipo"}>
+          <Panel active={step === "equipo"} editing={editing} title="Equipo">
             <TeamEditor
               members={teamMembers}
               onChange={setTeamMembers}
@@ -1029,7 +1174,7 @@ function ProfileFormFields(props: {
         ) : null}
 
         {plan.priceCents > 0 ? (
-          <Panel active={step === "pago"}>
+          <Panel active={step === "pago"} editing={editing} title="Pago">
             <div className="flex flex-col items-start gap-3 rounded-card border border-dashed border-line-strong bg-surface-muted p-6">
               <span className="flex items-center gap-2 text-[15px] font-bold text-ink">
                 <Icon name="credit_card" className="text-[20px] text-brand-800" />
@@ -1047,15 +1192,25 @@ function ProfileFormFields(props: {
           </Panel>
         ) : null}
 
-        <Footer
-          steps={STEPS}
-          step={step}
-          onStep={setStep}
-          pending={pending}
-          canSubmit={canSubmit}
-          isNew={provider === null}
-          missing={missing.map((s) => s.label)}
-        />
+        {editing ? (
+          <EditFooter
+            pending={pending}
+            canSubmit={canSave}
+            dirty={dirty}
+            missing={missing.map((s) => s.label)}
+            onCancel={props.onCancel}
+          />
+        ) : (
+          <Footer
+            steps={STEPS}
+            step={step}
+            onStep={setStep}
+            pending={pending}
+            canSubmit={canSubmit}
+            isNew={provider === null}
+            missing={missing.map((s) => s.label)}
+          />
+        )}
       </div>
     </form>
   );
@@ -1342,19 +1497,90 @@ function Footer({
 }
 
 /**
+ * Pie del modo edición: salir sin guardar, o guardar lo cambiado.
+ *
+ * No lleva navegación entre pasos porque no hay pasos: están todos a la
+ * vista. Cancelar es un botón y no un enlace — no navega, sólo devuelve el
+ * perfil a modo lectura.
+ */
+function EditFooter({
+  pending,
+  canSubmit,
+  dirty,
+  missing,
+  onCancel,
+}: {
+  pending: boolean;
+  canSubmit: boolean;
+  /** Si hay algo distinto de lo guardado. */
+  dirty: boolean;
+  missing: string[];
+  onCancel?: () => void;
+}) {
+  return (
+    <div className="sticky bottom-0 flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-surface-muted px-5 py-3.5">
+      {missing.length > 0 ? (
+        <span className="text-[12.5px] text-ink-soft">
+          Falta completar: {missing.join(", ")}
+        </span>
+      ) : !dirty ? (
+        /*
+         * Con el botón apagado hay que decir por qué: si no, parece roto.
+         * Es el estado normal al abrir la edición y al terminar de guardar.
+         */
+        <span className="text-[12.5px] text-ink-faint">
+          No hay cambios sin guardar.
+        </span>
+      ) : null}
+
+      <div className="ml-auto flex flex-wrap items-center gap-2.5">
+        <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
+          Salir del modo edición
+        </Button>
+        <Button type="submit" size="sm" disabled={pending || !canSubmit}>
+          {pending ? "Guardando…" : "Guardar cambios"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Panel de un paso.
  *
  * Se oculta con `hidden:` de Tailwind y no con el atributo `hidden`: la clase
  * `flex` define `display`, y ganaría sobre el atributo dejando el panel a la
  * vista. Los campos siguen montados, así que cambiar de paso no pierde nada.
+ *
+ * En edición no se oculta ninguno: se ven todos, uno debajo del otro y con su
+ * título, porque no hay recorrido sino un formulario largo. El título sólo
+ * aparece ahí — en el asistente lo dice la barra de pasos, y repetirlo sería
+ * decir dos veces dónde estás parado.
  */
 function Panel({
   active,
+  editing = false,
+  title,
   children,
 }: {
   active: boolean;
+  editing?: boolean;
+  title?: string;
   children: React.ReactNode;
 }) {
+  if (editing) {
+    return (
+      <section className="flex flex-col gap-4 border-b border-line-soft p-5 last:border-b-0">
+        {title ? (
+          <h2 className="text-[15px] font-bold tracking-[-.2px] text-ink">
+            {title}
+          </h2>
+        ) : null}
+        {children}
+      </section>
+    );
+  }
+
   return (
     <div className={`${active ? "flex" : "hidden"} flex-col gap-4 p-5`}>
       {children}
