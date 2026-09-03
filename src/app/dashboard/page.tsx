@@ -7,6 +7,7 @@ import { PublishToggle } from "@/components/dashboard/publish-toggle";
 import { Icon } from "@/components/ui";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
+import { listImagesForUser } from "@/infrastructure/d1-provider-images";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { getCurrentUser } from "@/lib/session";
 import type { PlanId } from "@/types";
@@ -28,6 +29,13 @@ export default async function DashboardPage() {
   if (!user) redirect("/entrar");
 
   const provider = await new D1ProviderRepository().findByUserId(user.id);
+
+  /*
+   * Las imágenes se piden por usuario y no por perfil: durante el alta se
+   * suben antes de que el perfil exista, y pedirlas por perfil no devolvería
+   * las recién cargadas.
+   */
+  const images = await listImagesForUser(user.id);
 
   /*
    * El plan del perfil manda. Cuando todavía no hay perfil, el que se eligió
@@ -89,7 +97,12 @@ export default async function DashboardPage() {
         </p>
       ) : null}
 
-      <ProfileWorkspace provider={provider} plan={plan} plans={allPlans} />
+      <ProfileWorkspace
+        provider={provider}
+        plan={plan}
+        plans={allPlans}
+        images={images}
+      />
     </div>
   );
 }

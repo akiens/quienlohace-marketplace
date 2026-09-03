@@ -23,12 +23,17 @@ import { CATEGORIES } from "@/data/categories";
 import { locationLabelById, locationLevelLabel } from "@/data/locations";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon } from "@/components/ui";
+import {
+  GalleryField,
+  SingleImageField,
+} from "@/components/dashboard/image-uploader";
 import { LocationPicker } from "@/components/dashboard/location-picker";
 import {
   SERVICE_MODE_LABELS,
   type PaymentMethod,
   type PlanLimits,
   type Provider,
+  type ProviderImage,
   type SocialPlatform,
   type ServiceMode,
 } from "@/types";
@@ -61,7 +66,17 @@ const ALL_STEPS = [
   { id: "rubro", label: "Rubro", icon: "category", feature: null },
   { id: "zonas", label: "Ubicación", icon: "location_on", feature: null },
   { id: "contacto", label: "Contacto", icon: "call", feature: null },
-  { id: "galeria", label: "Galería", icon: "photo_library", feature: "gallery" },
+  /*
+   * Después de los datos con los que el perfil ya puede publicarse, y
+   * opcional: se puede crear el perfil sin ninguna imagen y agregarlas
+   * después. Va acá y no antes para que lo obligatorio se complete de corrido
+   * y subir fotos no se interponga entre el nombre y el rubro.
+   *
+   * La foto de perfil y la portada las incluyen todos los planes (RF-167):
+   * son la cara del perfil, no una ventaja del plan pago. La galería, que sí
+   * depende del plan, se muestra dentro de este mismo paso.
+   */
+  { id: "imagenes", label: "Imágenes", icon: "photo_camera", feature: null },
   { id: "redes", label: "Redes", icon: "share", feature: "social" },
   { id: "equipo", label: "Equipo", icon: "groups", feature: "team" },
   { id: "pago", label: "Pago", icon: "credit_card", feature: "paid" },
@@ -97,9 +112,15 @@ const SOCIAL_FIELDS: Array<{ platform: SocialPlatform; label: string }> = [
 export function ProfileForm({
   provider,
   plan,
+  images,
 }: {
   provider: Provider | null;
   plan: PlanLimits;
+  /**
+   * Las imágenes ya subidas, del usuario y no del perfil: durante el alta
+   * todavía no hay perfil al que pertenezcan.
+   */
+  images: ProviderImage[];
 }) {
   const stored = useSyncExternalStore(
     subscribeProfileDraft,
@@ -116,6 +137,7 @@ export function ProfileForm({
       provider={provider}
       plan={plan}
       draft={draft}
+      images={images}
     />
   );
 }
@@ -124,6 +146,7 @@ function ProfileFormFields(props: {
   provider: Provider | null;
   plan: PlanLimits;
   draft: ProfileDraft | null;
+  images: ProviderImage[];
 }) {
   const { provider, plan } = props;
 
@@ -215,6 +238,22 @@ function ProfileFormFields(props: {
       })) ??
       [],
   );
+  /*
+   * Las imágenes no salen del borrador: no viajan en el envío del formulario
+   * sino en su propia acción, así que ya están guardadas en el servidor. Lo
+   * que llega por `images` es la verdad, y el estado local sólo evita tener
+   * que volver a pedir la página entera después de cada subida.
+   */
+  const [avatar, setAvatar] = useState<ProviderImage | null>(
+    () => props.images.find((image) => image.kind === "avatar") ?? null,
+  );
+  const [cover, setCover] = useState<ProviderImage | null>(
+    () => props.images.find((image) => image.kind === "cover") ?? null,
+  );
+  const [gallery, setGallery] = useState<ProviderImage[]>(() =>
+    props.images.filter((image) => image.kind === "gallery"),
+  );
+
   // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
   const [whatsappEnabled, setWhatsappEnabled] = useState(
     draft?.whatsappEnabled ?? provider?.whatsappEnabled ?? true,
@@ -297,8 +336,11 @@ function ProfileFormFields(props: {
        * Estos pasos son opcionales, pero el tilde verde tiene que querer
        * decir "hay algo cargado". Marcarlos siempre como hechos haría que el
        * recorrido apareciera casi completo sin haber escrito nada.
+       *
+       * Las imágenes cuentan como hechas con la foto de perfil, que es la que
+       * se ve en los listados; la portada y la galería son un extra.
        */
-      galeria: false,
+      imagenes: avatar !== null,
       redes: socialTouched,
       equipo: teamMembers.length > 0,
       // El cobro todavía no existe, así que nunca se da por hecho.
@@ -314,6 +356,7 @@ function ProfileFormFields(props: {
     phone,
     socialTouched,
     teamMembers,
+    avatar,
   ]);
 
   /*
@@ -419,8 +462,9 @@ function ProfileFormFields(props: {
 
 
   /*
-   * Sólo los pasos obligatorios cuentan para habilitar el botón. Galería,
-   * redes, equipo y pago son opcionales: el perfil se publica sin ellos.
+   * Sólo los pasos obligatorios cuentan para habilitar el botón. Imágenes,
+   * redes, equipo y pago son opcionales: el perfil se crea y se publica sin
+   * ellos, y las fotos se pueden agregar después desde el mismo panel.
    */
   const REQUIRED_STEPS: StepId[] = ["identidad", "rubro", "zonas", "contacto"];
   const missing = STEPS.filter(
@@ -443,7 +487,7 @@ function ProfileFormFields(props: {
     contacto: Boolean(
       errors.phone || errors.whatsapp || errors.schedule || errors.paymentMethods,
     ),
-    galeria: false,
+    imagenes: false,
     redes: Boolean(errors.socialLinks),
     equipo: Boolean(errors.teamMembers),
     pago: false,
@@ -884,24 +928,60 @@ function ProfileFormFields(props: {
           </Field>
         </Panel>
 
-        {allowsFeature(plan, "gallery") ? (
-          <Panel active={step === "galeria"}>
-            <Field
-              label="Galería de trabajos"
-              hint={`Tu plan ${plan.name} permite hasta ${limitFor(plan, "galleryImages")} imágenes.`}
-            >
-              {/*
-                La subida vive en su propia acción porque un archivo no puede
-                viajar en el mismo envío que el resto del formulario sin
-                perderse al recargar. Hasta que exista, se avisa.
-              */}
-              <p className="rounded-input border border-dashed border-line-strong bg-surface-muted px-4 py-6 text-center text-[13.5px] text-ink-soft">
-                La carga de imágenes se habilita cuando termines de completar
-                el perfil y lo guardes.
-              </p>
-            </Field>
-          </Panel>
-        ) : null}
+
+        <Panel active={step === "imagenes"}>
+          {/*
+            Se dice que es opcional: es el único paso donde no se escribe sino
+            que se sube algo, y sin aclararlo parece que hay que conseguir una
+            foto antes de poder seguir.
+          */}
+          <p className="text-[13.5px] leading-relaxed text-ink-soft">
+            Son opcionales: podés crear el perfil sin imágenes y agregarlas
+            más adelante.
+          </p>
+
+          {/*
+            Se suben de a una, apenas se eligen: cada una viaja en su propia
+            acción y queda guardada aunque el alta siga sin terminar. Por eso
+            no hay ningún campo de archivo dentro del envío del formulario.
+          */}
+          <SingleImageField
+            kind="avatar"
+            image={avatar}
+            shape="circle"
+            label="Foto de perfil"
+            hint="Se ve en los resultados de búsqueda y arriba de tu perfil. JPG, PNG o WebP, hasta 5 MB."
+            onChange={setAvatar}
+          />
+
+          <SingleImageField
+            kind="cover"
+            image={cover}
+            shape="wide"
+            label="Imagen de portada"
+            hint="La franja ancha del encabezado de tu perfil."
+            onChange={setCover}
+          />
+
+          {/*
+            La galería sí depende del plan: los que no la incluyen ven la vía
+            para ampliarlo en vez de un campo que no podrían usar (RF-171).
+          */}
+          {allowsFeature(plan, "gallery") ? (
+            <GalleryField
+              images={gallery}
+              max={limitFor(plan, "galleryImages")}
+              planName={plan.name}
+              onChange={setGallery}
+            />
+          ) : (
+            <PlanHint
+              planName={plan.name}
+              what="imágenes de galería"
+              limit={0}
+            />
+          )}
+        </Panel>
 
         {allowsFeature(plan, "social") ? (
           <Panel active={step === "redes"}>
@@ -1439,7 +1519,11 @@ function PlanHint({
   return (
     <p className="flex flex-wrap items-center gap-1.5 rounded-input bg-surface-muted px-3 py-2 text-[12.5px] text-ink-soft">
       <Icon name="info" className="text-[15px] text-ink-faint" />
-      Tu plan {planName} permite hasta {limit} {what}.
+      {/* Con tope 0 no hay un "hasta" que informar: el plan directamente no
+          lo incluye, y decir "hasta 0" se lee como un error. */}
+      {limit === 0
+        ? `Tu plan ${planName} no incluye ${what}.`
+        : `Tu plan ${planName} permite hasta ${limit} ${what}.`}
       <a href="/planes" className="font-semibold text-brand-800 hover:underline">
         Ver planes
       </a>

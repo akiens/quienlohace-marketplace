@@ -89,6 +89,16 @@ export default async function ProviderPage({
 
   const { provider, isPreview } = visible;
 
+  /*
+   * Las imágenes vienen con el perfil, ya filtradas por plan: la consulta
+   * pública sólo trae las activas, así que lo que excede el plan no aparece
+   * acá aunque siga guardado (RF-053).
+   */
+  const images = provider.images ?? [];
+  const avatar = images.find((image) => image.kind === "avatar") ?? null;
+  const cover = images.find((image) => image.kind === "cover") ?? null;
+  const gallery = images.filter((image) => image.kind === "gallery");
+
   const category = getCategory(provider.categoryId);
   const subcategory = getSubcategory(provider.subcategoryId);
   const reviews = await listReviews(provider.id);
@@ -144,11 +154,31 @@ export default async function ProviderPage({
       {/* z-0 explícito: sin él la portada crea un contexto de apilamiento que
           se dibuja por encima del header sticky y le tapa el logo. */}
       <div className="relative z-0 h-[150px] overflow-hidden bg-card-gradient sm:h-[200px]">
-        <div className="absolute inset-0 bg-hatch" />
-        <Icon
-          name={provider.icon}
-          className="pointer-events-none absolute bottom-[-24px] right-6 text-[180px] leading-none text-white/[.12]"
-        />
+        {cover ? (
+          /*
+            La imagen que subió el proveedor manda; el degradado con el icono
+            del rubro queda como respaldo para los perfiles que todavía no
+            cargaron una.
+
+            No pasa por `next/image`: la sirve `/media`, que ya la entrega
+            desde R2 con cache inmutable, y el optimizador sólo agregaría un
+            salto más sin nada que optimizar.
+          */
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={cover.url}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-hatch" />
+            <Icon
+              name={provider.icon}
+              className="pointer-events-none absolute bottom-[-24px] right-6 text-[180px] leading-none text-white/[.12]"
+            />
+          </>
+        )}
       </div>
 
       <div className="shell relative z-10 flex flex-col gap-8 pb-12">
@@ -156,14 +186,25 @@ export default async function ProviderPage({
             la portada (que tiene z-0) se dibuja encima y corta el avatar. */}
         <div className="-mt-12 flex flex-col gap-5 rounded-card border border-line bg-white p-6 shadow-card">
           <div className="flex flex-wrap items-start gap-4">
-            <span className="flex h-[72px] w-[72px] flex-none items-center justify-center rounded-[18px] border border-line bg-brand-100 text-[22px] font-extrabold text-brand-800">
-              {provider.name
-                .split(/\s+/)
-                .slice(0, 2)
-                .map((word) => word[0])
-                .join("")
-                .toUpperCase()}
-            </span>
+            {/* Con foto se muestra la foto; sin ella, las iniciales, que es
+                lo que había antes y sigue sirviendo de respaldo. */}
+            {avatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={avatar.url}
+                alt={`Foto de ${provider.name}`}
+                className="h-[72px] w-[72px] flex-none rounded-[18px] border border-line object-cover"
+              />
+            ) : (
+              <span className="flex h-[72px] w-[72px] flex-none items-center justify-center rounded-[18px] border border-line bg-brand-100 text-[22px] font-extrabold text-brand-800">
+                {provider.name
+                  .split(/\s+/)
+                  .slice(0, 2)
+                  .map((word) => word[0])
+                  .join("")
+                  .toUpperCase()}
+              </span>
+            )}
 
             <div className="flex min-w-0 flex-1 flex-col gap-2">
               <div className="flex flex-wrap items-center gap-2">
@@ -257,6 +298,29 @@ export default async function ProviderPage({
                 ))}
               </div>
             </Panel>
+
+            {/* Sólo con imágenes: un panel vacío diciendo que no hay
+                trabajos cargados no le sirve a quien mira. */}
+            {gallery.length > 0 ? (
+              <Panel title="Trabajos">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {gallery.map((image) => (
+                    <div
+                      key={image.id}
+                      className="aspect-[4/3] overflow-hidden rounded-card border border-line bg-surface-muted"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={image.url}
+                        alt={image.alt}
+                        loading="lazy"
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </Panel>
+            ) : null}
 
             <Panel title="Opiniones">
               <div className="flex flex-col gap-5">

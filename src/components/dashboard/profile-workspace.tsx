@@ -10,7 +10,7 @@ import {
   subscribeSelectedPlan,
   writeSelectedPlan,
 } from "@/lib/selected-plan";
-import type { PlanLimits, Provider } from "@/types";
+import type { PlanLimits, Provider, ProviderImage } from "@/types";
 
 /**
  * Une el bloque de plan con el formulario.
@@ -28,10 +28,12 @@ export function ProfileWorkspace({
   provider,
   plan,
   plans,
+  images,
 }: {
   provider: Provider | null;
   plan: PlanLimits;
   plans: PlanLimits[];
+  images: ProviderImage[];
 }) {
   const storedPlanId = useSyncExternalStore(
     subscribeSelectedPlan,
@@ -79,7 +81,7 @@ export function ProfileWorkspace({
           writeSelectedPlan(planId);
         }}
       />
-      <ProfileForm provider={provider} plan={current} />
+      <ProfileForm provider={provider} plan={current} images={images} />
     </>
   );
 }

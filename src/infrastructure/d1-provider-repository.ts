@@ -15,7 +15,7 @@ import type {
   SearchFilters,
   SocialLink,
 } from "@/types";
-import { getDb, getMediaBucket } from "@/infrastructure/cloudflare";
+import { getDb } from "@/infrastructure/cloudflare";
 import { slugify } from "@/lib/slug";
 import { newId } from "@/lib/id";
 
@@ -636,36 +636,4 @@ function buildSearchWhere(filters: SearchFilters): {
   }
 
   return { where: clauses.join(" AND "), params };
-}
-
-/** Sube una imagen a R2 y la referencia en D1 (el binario nunca va a la base). */
-export async function addProviderImage(input: {
-  providerId: string;
-  body: ArrayBuffer;
-  contentType: string;
-  extension: string;
-  alt?: string;
-}): Promise<void> {
-  const db = getDb();
-  const id = newId();
-  const key = `providers/${input.providerId}/${id}.${input.extension}`;
-
-  await getMediaBucket().put(key, input.body, {
-    httpMetadata: { contentType: input.contentType },
-  });
-
-  const position = await db
-    .prepare(
-      `SELECT COALESCE(MAX(position) + 1, 0) AS next FROM provider_images WHERE provider_id = ?`,
-    )
-    .bind(input.providerId)
-    .first<{ next: number }>();
-
-  await db
-    .prepare(
-      `INSERT INTO provider_images (id, provider_id, storage_key, alt, position, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`,
-    )
-    .bind(id, input.providerId, key, input.alt ?? "", position?.next ?? 0, new Date().toISOString())
-    .run();
 }

@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { getCategoryOfSubcategory } from "@/data/categories";
 import { toE164, toWhatsapp } from "@/domain/phone";
 import { PLAN_IDS, limitFor, limitMessage } from "@/domain/plans";
+import {
+  applyGalleryLimit,
+  claimImagesForProvider,
+} from "@/infrastructure/d1-provider-images";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
 import { requireUser } from "@/lib/session";
@@ -186,8 +190,22 @@ export async function saveProfile(
     await providers.update(existing.id, draft, limits);
     revalidatePath(`/profesionales/${existing.slug}`);
   } else {
-    await providers.create(user.id, draft, planId, limits);
+    const created = await providers.create(user.id, draft, planId, limits);
+    /*
+     * Las imágenes que se subieron durante el alta todavía no tenían perfil
+     * al que colgarse: recién ahora existe el id. Sin esto la foto y la
+     * portada quedarían guardadas pero sin aparecer en el perfil.
+     */
+    await claimImagesForProvider(user.id, created.id);
   }
+
+  /*
+   * La galería se recorta al plan igual que el resto de las listas: lo que
+   * excede queda inactivo, no borrado (RF-053). Se hace acá y no al subir
+   * porque el plan puede cambiar después, y el guardado es el momento donde
+   * se recalcula todo contra el plan vigente.
+   */
+  if (plan) await applyGalleryLimit(user.id, limitFor(plan, "galleryImages"));
 
   revalidatePath("/dashboard");
   revalidatePath(`/categorias/${category.slug}`);
