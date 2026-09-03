@@ -35,10 +35,44 @@ export function writeSelectedPlan(planId: PlanId): void {
   window.dispatchEvent(new Event("qlh:selected-plan"));
 }
 
+/**
+ * La cuenta que dejó el plan elegido, para no arrastrarlo a otra.
+ *
+ * El plan se elige antes de existir la cuenta —en `/planes`, sin sesión—, así
+ * que no puede quedar a nombre de nadie desde el principio como el borrador.
+ * Lo que se anota es quién lo usó: cuando el alta se abre con otra cuenta, el
+ * plan recordado es de la persona anterior y se descarta.
+ */
+const OWNER_KEY = "qlh.selectedPlanOwner";
+
+/**
+ * Deja el plan a nombre de una cuenta, o lo descarta si ya era de otra.
+ *
+ * Devuelve `true` si se descartó, para que quien llame sepa que el valor
+ * cambió y vuelva a leerlo.
+ */
+export function claimSelectedPlan(ownerId: string): boolean {
+  try {
+    const owner = window.localStorage.getItem(OWNER_KEY);
+    if (owner === ownerId) return false;
+
+    // De otra cuenta: no es una preferencia de quien está entrando ahora.
+    const stale = owner !== null;
+    if (stale) window.localStorage.removeItem(KEY);
+
+    window.localStorage.setItem(OWNER_KEY, ownerId);
+    return stale;
+  } catch {
+    // Sin almacenamiento no hay nada arrastrado que limpiar.
+    return false;
+  }
+}
+
 /** Se limpia cuando el plan ya vive en el perfil y no hace falta recordarlo. */
 export function clearSelectedPlan(): void {
   try {
     window.localStorage.removeItem(KEY);
+    window.localStorage.removeItem(OWNER_KEY);
   } catch {
     // Nada que hacer: si no se puede borrar, la próxima lectura lo ignora.
   }

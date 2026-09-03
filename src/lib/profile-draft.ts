@@ -12,6 +12,12 @@ import type { ServiceMode } from "@/types";
  * Sólo aplica al alta: con perfil creado la fuente de verdad es la base, y un
  * borrador viejo la contradiría.
  *
+ * El borrador queda a nombre de la cuenta que lo escribió. `localStorage` es
+ * del navegador y no de la sesión: en una máquina compartida —o con una
+ * segunda cuenta propia— quien entre después encontraría el alta a medio
+ * llenar con datos de otra persona. Con el dueño anotado, un borrador ajeno
+ * simplemente no se lee.
+ *
  * No es un dato de confianza: el servidor valida igual todo lo que llega
  * (RF-163). Esto sólo evita volver a tipearlo.
  */
@@ -21,11 +27,16 @@ const KEY = "qlh.profileDraft";
  * Sube cuando cambia la forma del borrador. Uno viejo se descarta en vez de
  * rehidratar campos que ya no existen o cambiaron de significado.
  */
-const VERSION = 1;
+const VERSION = 2;
 
 /** Lo que se recuerda. Todo opcional: un borrador es, por definición, parcial. */
 export type ProfileDraft = {
   version: number;
+  /**
+   * La cuenta que lo escribió. Un borrador sin dueño, o de otra cuenta, se
+   * descarta al leerlo.
+   */
+  ownerId?: string;
   /** El paso donde estaba, para volver ahí y no al principio. */
   step?: string;
   name?: string;
@@ -60,7 +71,7 @@ export type ProfileDraft = {
  * versión vieja— se trata como "no hay borrador": es preferible un formulario
  * vacío que uno a medio rehidratar.
  */
-export function readProfileDraft(): ProfileDraft | null {
+export function readProfileDraft(ownerId: string): ProfileDraft | null {
   try {
     const raw = window.localStorage.getItem(KEY);
     if (!raw) return null;
@@ -70,6 +81,10 @@ export function readProfileDraft(): ProfileDraft | null {
 
     const draft = parsed as ProfileDraft;
     if (draft.version !== VERSION) return null;
+
+    // De otra cuenta: es de quien usó este navegador antes, no de quien está
+    // completando el alta ahora.
+    if (draft.ownerId !== ownerId) return null;
 
     return draft;
   } catch {
@@ -103,13 +118,21 @@ function isEmpty(draft: Omit<ProfileDraft, "version">): boolean {
  * guardado, borraría justo lo que venía a rescatar. Vacío sólo se escribe si
  * no había nada, que es el caso de empezar de cero.
  */
-export function writeProfileDraft(draft: Omit<ProfileDraft, "version">): void {
+export function writeProfileDraft(
+  draft: Omit<ProfileDraft, "version" | "ownerId">,
+  ownerId: string,
+): void {
   try {
-    if (isEmpty(draft) && window.localStorage.getItem(KEY)) return;
+    /*
+     * Un borrador vacío no pisa a uno con datos, pero sí tiene que poder
+     * pisar el de otra cuenta: si no, el de la persona anterior se quedaría
+     * en el navegador hasta que ésta escriba algo.
+     */
+    if (isEmpty(draft) && readProfileDraft(ownerId)) return;
 
     window.localStorage.setItem(
       KEY,
-      JSON.stringify({ ...draft, version: VERSION }),
+      JSON.stringify({ ...draft, ownerId, version: VERSION }),
     );
   } catch {
     // Ventana privada, almacenamiento lleno o bloqueado: se sigue sin
@@ -153,9 +176,10 @@ export function subscribeProfileDraft(onChange: () => void): () => void {
  * cachea el texto crudo y se reusa el objeto mientras no cambie.
  */
 let cachedRaw: string | null = null;
+let cachedOwnerId: string | null = null;
 let cachedDraft: ProfileDraft | null = null;
 
-export function profileDraftSnapshot(): ProfileDraft | null {
+export function profileDraftSnapshot(ownerId: string): ProfileDraft | null {
   let raw: string | null = null;
   try {
     raw = window.localStorage.getItem(KEY);
@@ -163,9 +187,12 @@ export function profileDraftSnapshot(): ProfileDraft | null {
     return null;
   }
 
-  if (raw !== cachedRaw) {
+  // El dueño entra en la caché: el mismo texto crudo da un borrador para su
+  // cuenta y nada para cualquier otra.
+  if (raw !== cachedRaw || ownerId !== cachedOwnerId) {
     cachedRaw = raw;
-    cachedDraft = readProfileDraft();
+    cachedOwnerId = ownerId;
+    cachedDraft = readProfileDraft(ownerId);
   }
   return cachedDraft;
 }

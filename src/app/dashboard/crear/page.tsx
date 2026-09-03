@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { ProfileWorkspace } from "@/components/dashboard/profile-workspace";
+import { WizardReset } from "@/components/dashboard/wizard-reset";
 import { Icon } from "@/components/ui";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
@@ -92,7 +93,15 @@ export default async function CreateProfilePage() {
         </p>
       </header>
 
+      {/*
+       * Antes que nada: si el navegador trae el plan de otra cuenta —una
+       * máquina compartida, o una segunda cuenta propia— se descarta, para
+       * que el alta no arranque con elecciones ajenas.
+       */}
+      <WizardReset userId={user.id} />
+
       <ProfileWorkspace
+        userId={user.id}
         provider={provider}
         plan={plan}
         plans={allPlans}

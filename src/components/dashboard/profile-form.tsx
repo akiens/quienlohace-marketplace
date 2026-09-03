@@ -18,6 +18,7 @@ import {
   writeProfileDraft,
   type ProfileDraft,
 } from "@/lib/profile-draft";
+import { clearSelectedPlan } from "@/lib/selected-plan";
 import type { FormState } from "@/app/actions/auth";
 import { CATEGORIES } from "@/data/categories";
 import { locationLabelById, locationLevelLabel } from "@/data/locations";
@@ -124,12 +125,21 @@ const SOCIAL_FIELDS: Array<{ platform: SocialPlatform; label: string }> = [
 export type ProfileFormMode = "alta" | "edicion";
 
 export function ProfileForm({
+  userId,
   provider,
   plan,
   images,
   mode = "alta",
   onCancel,
 }: {
+  /**
+   * Dueño del borrador. `localStorage` es del navegador y no de la sesión: sin
+   * esto, el alta de una cuenta rehidrataría lo que dejó otra.
+   *
+   * Sólo hace falta en el alta. Editando ya hay perfil, manda la base y el
+   * borrador no se toca ni para leer ni para escribir.
+   */
+  userId?: string;
   provider: Provider | null;
   plan: PlanLimits;
   /**
@@ -141,9 +151,19 @@ export function ProfileForm({
   /** Sólo en edición: salir sin guardar. */
   onCancel?: () => void;
 }) {
+  /*
+   * `useSyncExternalStore` exige un `getSnapshot` estable: uno nuevo en cada
+   * render lo haría releer sin parar. Se memoiza por cuenta, que es lo único
+   * de lo que depende.
+   */
+  const snapshot = useMemo(
+    () => () => (userId ? profileDraftSnapshot(userId) : null),
+    [userId],
+  );
+
   const stored = useSyncExternalStore(
     subscribeProfileDraft,
-    profileDraftSnapshot,
+    snapshot,
     profileDraftServerSnapshot,
   );
 
@@ -153,6 +173,7 @@ export function ProfileForm({
   return (
     <ProfileFormFields
       key={draft ? "con-borrador" : "sin-borrador"}
+      userId={userId}
       provider={provider}
       plan={plan}
       draft={draft}
@@ -164,6 +185,7 @@ export function ProfileForm({
 }
 
 function ProfileFormFields(props: {
+  userId?: string;
   provider: Provider | null;
   plan: PlanLimits;
   draft: ProfileDraft | null;
@@ -171,7 +193,7 @@ function ProfileFormFields(props: {
   mode: ProfileFormMode;
   onCancel?: () => void;
 }) {
-  const { provider, plan, mode } = props;
+  const { userId, provider, plan, mode } = props;
 
   /** En edición todo se muestra junto: no hay recorrido que seguir. */
   const editing = mode === "edicion";
@@ -433,7 +455,10 @@ function ProfileFormFields(props: {
    * borrador paralelo sólo podría contradecirla.
    */
   useEffect(() => {
-    if (provider) return;
+    // Con perfil no hay borrador que llevar; sin dueño no habría a nombre de
+    // quién guardarlo, y uno anónimo es justamente el que se arrastra entre
+    // cuentas.
+    if (provider || !userId) return;
 
     const form = formRef.current;
     const read = (name: string): string => {
@@ -478,8 +503,9 @@ function ProfileFormFields(props: {
       paymentAcknowledged: paymentDone,
       socialLinks,
       teamMembers,
-    });
+    }, userId);
   }, [
+    userId,
     provider,
     step,
     name,
@@ -497,11 +523,21 @@ function ProfileFormFields(props: {
   ]);
 
   /*
-   * Guardado: el borrador cumplió su función y se descarta. Dejarlo haría que
-   * una recarga posterior reviviera datos viejos por encima de los guardados.
+   * Guardado: el borrador cumplió su función y se descarta, junto con el plan
+   * que el alta recordaba. Dejarlos haría que una recarga posterior reviviera
+   * datos viejos por encima de los guardados.
+   *
+   * Esto cubre el guardado que vuelve al cliente, que es el de edición. Al
+   * crear el perfil la acción termina en un `redirect` y nunca devuelve
+   * estado, así que el borrador queda: no molesta, porque lleva anotada la
+   * cuenta y con perfil creado ya no se lee, y el alta lo pisa al empezar de
+   * nuevo.
    */
   useEffect(() => {
-    if (state.message && !state.errors) clearProfileDraft();
+    if (state.message && !state.errors) {
+      clearProfileDraft();
+      clearSelectedPlan();
+    }
   }, [state.message, state.errors]);
 
 

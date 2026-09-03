@@ -25,11 +25,14 @@ import type { PlanLimits, Provider, ProviderImage } from "@/types";
  * ese enlace resucitaba el plan anterior.
  */
 export function ProfileWorkspace({
+  userId,
   provider,
   plan,
   plans,
   images,
 }: {
+  /** Dueño del borrador: sin esto se leería el de quien usó antes el navegador. */
+  userId: string;
   provider: Provider | null;
   plan: PlanLimits;
   plans: PlanLimits[];
@@ -81,7 +84,12 @@ export function ProfileWorkspace({
           writeSelectedPlan(planId);
         }}
       />
-      <ProfileForm provider={provider} plan={current} images={images} />
+      <ProfileForm
+        userId={userId}
+        provider={provider}
+        plan={current}
+        images={images}
+      />
     </>
   );
 }
