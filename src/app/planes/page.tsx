@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 
-import { Icon } from "@/components/ui";
+import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import {
   PLAN_BADGES,
   PLAN_RIBBONS,
@@ -170,7 +170,7 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         className={`mt-auto flex h-11 items-center justify-center rounded-input text-[14.5px] font-semibold transition-colors ${
           highlighted
             ? "bg-brand-800 text-white hover:bg-brand-900"
-            : "border border-line-strong bg-white text-ink hover:bg-surface-muted"
+            : SECONDARY_SURFACE
         }`}
       >
         {plan.priceCents === 0 ? "Crear mi perfil" : `Elegir ${plan.name}`}

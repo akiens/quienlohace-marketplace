@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 
 import { deleteReview, submitReview } from "@/app/actions/reviews";
 import type { FormState } from "@/app/actions/auth";
-import { Button, Icon } from "@/components/ui";
+import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
 import type { ConsumerUser, Review } from "@/types";
 
 /**
@@ -94,7 +94,7 @@ export function ReviewForm({
         {googleEnabled ? (
           <a
             href={`/auth/google?returnTo=${encodeURIComponent(`/profesionales/${providerSlug}`)}`}
-            className="inline-flex items-center justify-center gap-2 rounded-input border border-line-strong bg-white px-4 py-2 text-[13.5px] font-semibold text-ink transition-colors hover:border-[#C6CEDC] hover:bg-surface-muted"
+            className={`inline-flex items-center justify-center gap-2 rounded-input px-4 py-2 text-[13.5px] font-semibold ${SECONDARY_SURFACE}`}
           >
             <GoogleMark />
             Continuar con Google

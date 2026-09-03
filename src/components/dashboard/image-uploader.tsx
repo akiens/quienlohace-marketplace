@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 
-import { Icon } from "@/components/ui";
+import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import type { ImageKind, ProviderImage } from "@/types";
 
 /**
@@ -227,7 +227,7 @@ export function SingleImageField({
               type="button"
               disabled={pending}
               onClick={() => inputRef.current?.click()}
-              className="flex h-8 items-center gap-1 rounded-input border border-line-strong bg-white pl-1.5 pr-2.5 text-[13px] font-semibold text-brand-800 transition-colors hover:bg-surface-muted disabled:opacity-50"
+              className={`flex h-8 items-center gap-1 rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold disabled:opacity-50 ${SECONDARY_SURFACE}`}
             >
               <Icon name={shown ? "sync" : "upload"} className="text-[16px]" />
               {shown ? "Cambiar" : "Subir"}

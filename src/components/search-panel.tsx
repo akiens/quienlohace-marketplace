@@ -14,7 +14,7 @@ import {
 import { searchHref } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
 import { MAX_LOCATIONS, MAX_SUBCATEGORIES, type SearchFilters } from "@/types";
-import { Icon } from "@/components/ui";
+import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 
 const QUICK_SEARCHES = [
   "Electricista",
@@ -164,7 +164,7 @@ export function SearchPanel({
               <button
                 type="button"
                 onClick={onOpenFilters}
-                className="flex h-12 flex-none items-center justify-center gap-2 rounded-input border border-line-strong bg-white px-3.5 text-[14.5px] font-semibold text-ink transition-colors hover:bg-surface-muted"
+                className={`flex h-12 flex-none items-center justify-center gap-2 rounded-input px-3.5 text-[14.5px] font-semibold ${SECONDARY_SURFACE}`}
               >
                 <Icon name="tune" className="text-[20px] text-brand-800" />
                 Filtros

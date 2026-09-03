@@ -8,6 +8,7 @@ import {
   FeaturedBadge,
   Icon,
   RatingLine,
+  SECONDARY_SURFACE,
   VerifiedBadge,
 } from "@/components/ui";
 import { whatsappHref } from "@/lib/contact";
@@ -126,7 +127,7 @@ export function ProviderCard({
             // En cards angostas queda sólo el icono: el texto apretaría el
             // botón principal. El nombre accesible se mantiene igual.
             aria-label={`Escribir por WhatsApp a ${provider.name}`}
-            className="relative z-[1] flex h-10 flex-none items-center justify-center gap-1.5 rounded-input border border-line-strong bg-white px-3 text-[14px] font-semibold text-ink transition-colors hover:border-[#C6CEDC] hover:bg-surface-muted"
+            className={`relative z-[1] flex h-10 flex-none items-center justify-center gap-1.5 rounded-input px-3 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
           >
             <Icon name="chat" className="text-[18px] text-whatsapp" />
             <span className="hidden sm:inline xl:hidden">WhatsApp</span>

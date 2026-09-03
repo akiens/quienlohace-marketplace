@@ -144,10 +144,37 @@ type ButtonBase = {
   size?: "md" | "sm";
 };
 
+/*
+ * El secundario no es blanco.
+ *
+ * Los campos de texto son borde `line-strong` sobre blanco, con la misma
+ * altura y el mismo radio: un botón blanco al lado de un input era el mismo
+ * rectángulo, y en un formulario —donde lo que abunda es justamente casillas
+ * para llenar— se leía como una más, vacía. Nada decía "esto se toca".
+ *
+ * La distinción es de superficie, no de borde: el botón se apoya sobre un
+ * relleno de marca (`brand-100`) con el texto en `brand-800`. Ese tinte no
+ * aparece nunca en un campo editable, así que la diferencia se nota sin
+ * mirar el contenido; el gris queda para lo que se escribe y el azul para lo
+ * que se acciona. La sombra mínima lo despega del fondo —los inputs no la
+ * tienen, van hundidos— y al apoyarse se apaga, que es el gesto de hundirse.
+ *
+ * Sigue siendo secundario: el peso fuerte es del primario, que es sólido y
+ * de mucho más contraste. Acá el color es apenas un tinte.
+ */
+/**
+ * La superficie del secundario, aparte para que la usen también los botones
+ * que no pasan por `Button` —los que tienen otra altura o otro tipo de
+ * texto—. Sin esto cada uno repetiría los colores y se irían separando.
+ *
+ * Es sólo el fondo, el borde y el texto: quien la use pone su propio tamaño.
+ */
+export const SECONDARY_SURFACE =
+  "border border-[#DAE0EC] bg-brand-100 text-brand-800 shadow-[0_1px_0_rgba(23,32,51,.04)] transition-colors hover:border-[#C6CEDC] hover:bg-[#E4E9F2] active:shadow-none";
+
 const BUTTON_STYLES: Record<NonNullable<ButtonBase["variant"]>, string> = {
   primary: "bg-brand-800 text-white hover:bg-brand-900",
-  secondary:
-    "border border-line-strong bg-white text-ink hover:border-[#C6CEDC] hover:bg-surface-muted",
+  secondary: SECONDARY_SURFACE,
   accent: "bg-accent text-ink hover:bg-accent-hover font-bold",
   ghost: "text-brand-800 hover:bg-brand-100",
 };

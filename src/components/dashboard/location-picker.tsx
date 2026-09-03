@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 
-import { Icon } from "@/components/ui";
+import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import {
   COUNTRY_LABEL,
   getLocation,
@@ -168,10 +168,13 @@ export function LocationPicker({
             reset();
           }}
           /*
-           * Blanco con borde, no del `brand-100` de las etiquetas: compartir
-           * el fondo con ellas lo hacía parecer una etiqueta más.
+           * Mismo tinte que las etiquetas, pero no se confunde con ellas: van
+           * en píldora (`rounded-full`) y sin borde, y esto es un rectángulo
+           * redondeado con borde y sombra. Blanco tampoco servía —era igual a
+           * un campo para llenar—, que es el problema que se estaba evitando
+           * al revés.
            */
-          className="flex h-8 items-center gap-1 self-start rounded-input border border-line-strong bg-white pl-1.5 pr-2.5 text-[13px] font-semibold text-brand-800 transition-colors hover:bg-surface-muted"
+          className={`flex h-8 items-center gap-1 self-start rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold ${SECONDARY_SURFACE}`}
         >
           <Icon name="add" className="text-[16px]" />
           Agregar zona

@@ -23,7 +23,7 @@ import type { FormState } from "@/app/actions/auth";
 import { CATEGORIES } from "@/data/categories";
 import { locationLabelById, locationLevelLabel } from "@/data/locations";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
-import { Button, Icon } from "@/components/ui";
+import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
 import {
   GalleryField,
   SingleImageField,
@@ -1776,7 +1776,7 @@ function AddButton({
     <button
       type="button"
       onClick={onClick}
-      className="flex h-8 items-center gap-1 self-start rounded-input border border-line-strong bg-white pl-1.5 pr-2.5 text-[13px] font-semibold text-brand-800 transition-colors hover:bg-surface-muted"
+      className={`flex h-8 items-center gap-1 self-start rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold ${SECONDARY_SURFACE}`}
     >
       <Icon name="add" className="text-[16px]" />
       {label}

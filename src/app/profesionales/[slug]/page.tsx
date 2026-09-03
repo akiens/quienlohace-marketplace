@@ -9,6 +9,7 @@ import {
   FeaturedBadge,
   Icon,
   RatingLine,
+  SECONDARY_SURFACE,
   VerifiedBadge,
 } from "@/components/ui";
 import { getCategory, getSubcategory } from "@/data/categories";
@@ -258,7 +259,7 @@ export default async function ProviderPage({
             </a>
             <a
               href={phoneHref(provider)}
-              className="flex h-11 items-center gap-2 rounded-input border border-line-strong bg-white px-5 text-[15px] font-semibold text-ink transition-colors hover:bg-surface-muted"
+              className={`flex h-11 items-center gap-2 rounded-input px-5 text-[15px] font-semibold ${SECONDARY_SURFACE}`}
             >
               <Icon name="call" className="text-[19px] text-brand-800" />
               {provider.phone}

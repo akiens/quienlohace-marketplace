@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
-import { Icon } from "@/components/ui";
+import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import { CATEGORIES } from "@/data/categories";
 import { locationLabelById } from "@/data/locations";
 import { allowsFeature } from "@/domain/plans";
@@ -116,7 +116,7 @@ export function ProfileView({
         <div className="ml-auto flex flex-wrap items-center gap-2.5">
           <Link
             href={`/profesionales/${provider.slug}`}
-            className="flex h-10 items-center gap-1.5 rounded-input border border-line-strong bg-white px-4 text-[14px] font-semibold text-ink hover:bg-surface-muted"
+            className={`flex h-10 items-center gap-1.5 rounded-input px-4 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
           >
             <Icon name="open_in_new" className="text-[17px] text-brand-800" />
             Ver perfil
@@ -125,7 +125,7 @@ export function ProfileView({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="flex h-10 items-center gap-1.5 rounded-input border border-line-strong bg-white px-4 text-[14px] font-semibold text-ink hover:bg-surface-muted"
+            className={`flex h-10 items-center gap-1.5 rounded-input px-4 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
           >
             <Icon name="edit" className="text-[17px] text-brand-800" />
             Editar
