@@ -64,6 +64,12 @@ const config: Config = {
       },
       boxShadow: {
         card: "0 1px 2px rgba(23,32,51,.04)",
+        /*
+         * Para cajas grandes apoyadas sobre el fondo gris. `card` es de
+         * tarjetas chicas y a esta escala no se ve: 4% de opacidad en 2px de
+         * radio, contra un panel que ya tiene borde, no despega nada.
+         */
+        panel: "0 1px 3px rgba(23,32,51,.06), 0 8px 24px -12px rgba(23,32,51,.14)",
         "card-hover": "0 10px 24px -8px rgba(23,32,51,.16)",
         pop: "0 24px 48px -20px rgba(10,20,40,.4)",
         mega: "0 18px 40px -20px rgba(23,32,51,.25)",

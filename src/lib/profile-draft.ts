@@ -92,13 +92,19 @@ export function readProfileDraft(ownerId: string): ProfileDraft | null {
   }
 }
 
-/** Si el borrador no tiene nada que valga la pena recordar. */
+/**
+ * Si el borrador no tiene nada que valga la pena recordar.
+ *
+ * `locationId` no cuenta: arranca en Uruguay sin que nadie lo elija, así que
+ * un formulario recién montado ya lo trae. Tomarlo como dato hacía que el
+ * borrador en blanco del primer render pareciera lleno y pisara al guardado
+ * antes de que llegara a leerse.
+ */
 function isEmpty(draft: Omit<ProfileDraft, "version">): boolean {
   return (
     !draft.name?.trim() &&
     !draft.description?.trim() &&
     !draft.subcategoryId &&
-    !draft.locationId &&
     !draft.phone?.trim() &&
     !draft.schedule?.trim() &&
     !draft.services?.length &&

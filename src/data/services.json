@@ -1,0 +1,5443 @@
+[
+  {
+    "id": "automotor-carroceria-chapa-y-pintura",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Chapa y pintura",
+    "aliases": [
+      "chapista",
+      "pintor automotriz"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-detailing-automotriz",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Detailing automotriz",
+    "aliases": [
+      "limpieza premium",
+      "estética vehicular"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-lavado-de-automovil",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Lavado de automóvil",
+    "aliases": [
+      "lavadero",
+      "lavado de auto"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-polarizado-de-vidrios",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Polarizado de vidrios",
+    "aliases": [
+      "lámina solar",
+      "polarizado"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-pulido-de-automovil",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Pulido de automóvil",
+    "aliases": [
+      "pulido de carrocería"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-reparacion-de-abolladuras",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Reparación de abolladuras",
+    "aliases": [
+      "sacar bollos",
+      "desabollado"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-reparacion-de-paragolpes",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Reparación de paragolpes",
+    "aliases": [
+      "paragolpe roto"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-tapiceria-automotriz",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Tapicería automotriz",
+    "aliases": [
+      "reparación de asientos",
+      "tapizado de auto"
+    ]
+  },
+  {
+    "id": "automotor-carroceria-tratamiento-ceramico",
+    "subcategoryId": "automotor-carroceria",
+    "name": "Tratamiento cerámico",
+    "aliases": [
+      "coating",
+      "protección de pintura"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-cambio-de-bateria",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Cambio de batería",
+    "aliases": [
+      "batería de auto"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-diagnostico-electronico-automotriz",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Diagnóstico electrónico automotriz",
+    "aliases": [
+      "scanner",
+      "computadora del auto"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-electricidad-automotriz",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Electricidad automotriz",
+    "aliases": [
+      "electricista de autos"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-instalacion-de-alarma-para-vehiculo",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Instalación de alarma para vehículo",
+    "aliases": [
+      "alarma de auto"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-instalacion-de-audio-para-automovil",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Instalación de audio para automóvil",
+    "aliases": [
+      "radio",
+      "parlantes de auto"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-instalacion-de-camaras-y-sensores",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Instalación de cámaras y sensores",
+    "aliases": [
+      "cámara de reversa",
+      "sensor de estacionamiento"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-reparacion-de-alternador",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Reparación de alternador",
+    "aliases": [
+      "alternador"
+    ]
+  },
+  {
+    "id": "automotor-electricidad-automotriz-reparacion-de-arranque",
+    "subcategoryId": "automotor-electricidad-automotriz",
+    "name": "Reparación de arranque",
+    "aliases": [
+      "motor de arranque"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-alineacion-y-balanceo",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Alineación y balanceo",
+    "aliases": [
+      "alinear auto",
+      "balancear ruedas"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-cambio-de-aceite-y-filtros",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Cambio de aceite y filtros",
+    "aliases": [
+      "lubricentro"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-diagnostico-computarizado",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Diagnóstico computarizado",
+    "aliases": [
+      "escáner automotriz",
+      "check engine"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-mecanica-general",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Mecánica general",
+    "aliases": [
+      "mecánico",
+      "taller mecánico"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-mecanico-a-domicilio",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Mecánico a domicilio",
+    "aliases": [
+      "auxilio mecánico"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-reparacion-de-bicicletas",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Reparación de bicicletas",
+    "aliases": [
+      "bicicletería",
+      "mecánico de bici"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-reparacion-de-bicicletas-electricas",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Reparación de bicicletas eléctricas",
+    "aliases": [
+      "ebike",
+      "bici eléctrica"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-reparacion-de-embrague",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Reparación de embrague",
+    "aliases": [
+      "cambio de embrague"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-reparacion-de-frenos",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Reparación de frenos",
+    "aliases": [
+      "frenos",
+      "pastillas"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-reparacion-de-motor",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Reparación de motor",
+    "aliases": [
+      "motorista",
+      "motor"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-reparacion-de-motos",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Reparación de motos",
+    "aliases": [
+      "mecánico de motos",
+      "taller de motos"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-reparacion-de-suspension",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Reparación de suspensión",
+    "aliases": [
+      "amortiguadores",
+      "tren delantero"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-service-de-automovil",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Service de automóvil",
+    "aliases": [
+      "mantenimiento",
+      "service del auto"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-service-de-bicicletas",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Service de bicicletas",
+    "aliases": [
+      "mantenimiento de bicicleta"
+    ]
+  },
+  {
+    "id": "automotor-mecanica-service-de-motos",
+    "subcategoryId": "automotor-mecanica",
+    "name": "Service de motos",
+    "aliases": [
+      "mantenimiento de moto"
+    ]
+  },
+  {
+    "id": "automotor-neumaticos-arranque-de-bateria",
+    "subcategoryId": "automotor-neumaticos",
+    "name": "Arranque de batería",
+    "aliases": [
+      "puente de batería"
+    ]
+  },
+  {
+    "id": "automotor-neumaticos-auxilio-mecanico",
+    "subcategoryId": "automotor-neumaticos",
+    "name": "Auxilio mecánico",
+    "aliases": [
+      "asistencia en ruta"
+    ]
+  },
+  {
+    "id": "automotor-neumaticos-cambio-de-neumaticos",
+    "subcategoryId": "automotor-neumaticos",
+    "name": "Cambio de neumáticos",
+    "aliases": [
+      "cubiertas"
+    ]
+  },
+  {
+    "id": "automotor-neumaticos-gomeria",
+    "subcategoryId": "automotor-neumaticos",
+    "name": "Gomería",
+    "aliases": [
+      "gomero",
+      "neumáticos"
+    ]
+  },
+  {
+    "id": "automotor-neumaticos-gomeria-movil",
+    "subcategoryId": "automotor-neumaticos",
+    "name": "Gomería móvil",
+    "aliases": [
+      "gomero a domicilio"
+    ]
+  },
+  {
+    "id": "automotor-neumaticos-remolque-de-vehiculos",
+    "subcategoryId": "automotor-neumaticos",
+    "name": "Remolque de vehículos",
+    "aliases": [
+      "grúa",
+      "guinche"
+    ]
+  },
+  {
+    "id": "automotor-neumaticos-reparacion-de-pinchazos",
+    "subcategoryId": "automotor-neumaticos",
+    "name": "Reparación de pinchazos",
+    "aliases": [
+      "rueda pinchada"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-depilacion",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Depilación",
+    "aliases": [
+      "depiladora",
+      "cera"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-depilacion-laser",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Depilación láser",
+    "aliases": [
+      "láser definitivo"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-diseno-de-cejas",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Diseño de cejas",
+    "aliases": [
+      "perfilado",
+      "laminado de cejas"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-drenaje-linfatico",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Drenaje linfático",
+    "aliases": [
+      "masaje linfático"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-extensiones-de-pestanas",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Extensiones de pestañas",
+    "aliases": [
+      "pestañas pelo por pelo"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-lifting-de-pestanas",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Lifting de pestañas",
+    "aliases": [
+      "arqueado de pestañas"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-limpieza-facial",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Limpieza facial",
+    "aliases": [
+      "facial",
+      "cosmetóloga"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-masajes-relajantes",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Masajes relajantes",
+    "aliases": [
+      "masajista",
+      "relax"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-micropigmentacion",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Micropigmentación",
+    "aliases": [
+      "microblading",
+      "maquillaje permanente"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-solarium",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Solárium",
+    "aliases": [
+      "bronceado"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-tratamientos-corporales",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Tratamientos corporales",
+    "aliases": [
+      "estética corporal"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-estetica-tratamientos-faciales",
+    "subcategoryId": "belleza-y-bienestar-estetica",
+    "name": "Tratamientos faciales",
+    "aliases": [
+      "estética facial"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-masajes-aromaterapia",
+    "subcategoryId": "belleza-y-bienestar-masajes",
+    "name": "Aromaterapia",
+    "aliases": [
+      "aceites esenciales"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-masajes-meditacion-guiada",
+    "subcategoryId": "belleza-y-bienestar-masajes",
+    "name": "Meditación guiada",
+    "aliases": [
+      "mindfulness"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-masajes-reflexologia",
+    "subcategoryId": "belleza-y-bienestar-masajes",
+    "name": "Reflexología",
+    "aliases": [
+      "masaje de pies"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-masajes-reiki",
+    "subcategoryId": "belleza-y-bienestar-masajes",
+    "name": "Reiki",
+    "aliases": [
+      "terapia energética"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-masajes-spa-a-domicilio",
+    "subcategoryId": "belleza-y-bienestar-masajes",
+    "name": "Spa a domicilio",
+    "aliases": [
+      "bienestar en casa"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-alisado-y-keratina",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Alisado y keratina",
+    "aliases": [
+      "alisado progresivo"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-barberia",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Barbería",
+    "aliases": [
+      "barbero",
+      "arreglo de barba"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-coloracion-de-cabello",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Coloración de cabello",
+    "aliases": [
+      "tintura",
+      "teñido"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-corte-de-cabello-para-hombre",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Corte de cabello para hombre",
+    "aliases": [
+      "peluquero",
+      "corte masculino"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-corte-de-cabello-para-mujer",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Corte de cabello para mujer",
+    "aliases": [
+      "peluquera",
+      "corte femenino"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-mechas-y-balayage",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Mechas y balayage",
+    "aliases": [
+      "reflejos",
+      "iluminación de cabello"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-peinados",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Peinados",
+    "aliases": [
+      "brushing",
+      "recogido"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-peluqueria-a-domicilio",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Peluquería a domicilio",
+    "aliases": [
+      "estilista a domicilio"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-peluqueria-tratamientos-capilares",
+    "subcategoryId": "belleza-y-bienestar-peluqueria",
+    "name": "Tratamientos capilares",
+    "aliases": [
+      "hidratación",
+      "reparación de cabello"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-unas-esmaltado-semipermanente",
+    "subcategoryId": "belleza-y-bienestar-unas",
+    "name": "Esmaltado semipermanente",
+    "aliases": [
+      "semi",
+      "uñas semipermanentes"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-unas-manicura",
+    "subcategoryId": "belleza-y-bienestar-unas",
+    "name": "Manicura",
+    "aliases": [
+      "uñas",
+      "manicurista"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-unas-maquillaje-a-domicilio",
+    "subcategoryId": "belleza-y-bienestar-unas",
+    "name": "Maquillaje a domicilio",
+    "aliases": [
+      "maquillista a domicilio"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-unas-maquillaje-para-novias",
+    "subcategoryId": "belleza-y-bienestar-unas",
+    "name": "Maquillaje para novias",
+    "aliases": [
+      "maquillaje de boda"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-unas-maquillaje-social",
+    "subcategoryId": "belleza-y-bienestar-unas",
+    "name": "Maquillaje social",
+    "aliases": [
+      "maquilladora",
+      "maquillaje para fiesta"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-unas-pedicura",
+    "subcategoryId": "belleza-y-bienestar-unas",
+    "name": "Pedicura",
+    "aliases": [
+      "cuidado de pies"
+    ]
+  },
+  {
+    "id": "belleza-y-bienestar-unas-unas-esculpidas",
+    "subcategoryId": "belleza-y-bienestar-unas",
+    "name": "Uñas esculpidas",
+    "aliases": [
+      "uñas acrílicas",
+      "gel"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-adultos-mayores-acompanamiento-en-domicilio",
+    "subcategoryId": "cuidado-y-asistencia-adultos-mayores",
+    "name": "Acompañamiento en domicilio",
+    "aliases": [
+      "compañía para mayores"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-adultos-mayores-acompanamiento-hospitalario",
+    "subcategoryId": "cuidado-y-asistencia-adultos-mayores",
+    "name": "Acompañamiento hospitalario",
+    "aliases": [
+      "cuidador en hospital",
+      "sanatorio"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-adultos-mayores-apoyo-en-actividades-cotidianas",
+    "subcategoryId": "cuidado-y-asistencia-adultos-mayores",
+    "name": "Apoyo en actividades cotidianas",
+    "aliases": [
+      "asistencia diaria"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-adultos-mayores-asistencia-para-personas-con-discapacidad",
+    "subcategoryId": "cuidado-y-asistencia-adultos-mayores",
+    "name": "Asistencia para personas con discapacidad",
+    "aliases": [
+      "cuidador personal"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-adultos-mayores-cuidado-de-adultos-mayores",
+    "subcategoryId": "cuidado-y-asistencia-adultos-mayores",
+    "name": "Cuidado de adultos mayores",
+    "aliases": [
+      "cuidador",
+      "acompañante de ancianos"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-adultos-mayores-cuidado-nocturno",
+    "subcategoryId": "cuidado-y-asistencia-adultos-mayores",
+    "name": "Cuidado nocturno",
+    "aliases": [
+      "acompañante nocturno"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-adultos-mayores-relevo-para-cuidadores-familiares",
+    "subcategoryId": "cuidado-y-asistencia-adultos-mayores",
+    "name": "Relevo para cuidadores familiares",
+    "aliases": [
+      "respiro familiar"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-cuidado-de-ninos-acompanamiento-y-retiro-escolar",
+    "subcategoryId": "cuidado-y-asistencia-cuidado-de-ninos",
+    "name": "Acompañamiento y retiro escolar",
+    "aliases": [
+      "llevar y buscar niños"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-cuidado-de-ninos-animacion-y-cuidado-infantil-en-eventos",
+    "subcategoryId": "cuidado-y-asistencia-cuidado-de-ninos",
+    "name": "Animación y cuidado infantil en eventos",
+    "aliases": [
+      "niñera para fiestas"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-cuidado-de-ninos-apoyo-familiar-posparto",
+    "subcategoryId": "cuidado-y-asistencia-cuidado-de-ninos",
+    "name": "Apoyo familiar posparto",
+    "aliases": [
+      "puericultora",
+      "ayuda con recién nacido"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-cuidado-de-ninos-cuidado-de-bebes",
+    "subcategoryId": "cuidado-y-asistencia-cuidado-de-ninos",
+    "name": "Cuidado de bebés",
+    "aliases": [
+      "niñera para bebé"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-cuidado-de-ninos-cuidado-de-ninos",
+    "subcategoryId": "cuidado-y-asistencia-cuidado-de-ninos",
+    "name": "Cuidado de niños",
+    "aliases": [
+      "niñera",
+      "babysitter"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-cuidado-de-ninos-ninera-por-horas",
+    "subcategoryId": "cuidado-y-asistencia-cuidado-de-ninos",
+    "name": "Niñera por horas",
+    "aliases": [
+      "babysitting ocasional"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-personas-con-dependencia-acompanamiento-a-consultas-medicas",
+    "subcategoryId": "cuidado-y-asistencia-personas-con-dependencia",
+    "name": "Acompañamiento a consultas médicas",
+    "aliases": [
+      "acompañante para trámites médicos"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-personas-con-dependencia-asistencia-personal-a-domicilio",
+    "subcategoryId": "cuidado-y-asistencia-personas-con-dependencia",
+    "name": "Asistencia personal a domicilio",
+    "aliases": [
+      "ayudante personal"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-personas-con-dependencia-lectura-y-compania",
+    "subcategoryId": "cuidado-y-asistencia-personas-con-dependencia",
+    "name": "Lectura y compañía",
+    "aliases": [
+      "acompañamiento social"
+    ]
+  },
+  {
+    "id": "cuidado-y-asistencia-personas-con-dependencia-realizacion-de-mandados",
+    "subcategoryId": "cuidado-y-asistencia-personas-con-dependencia",
+    "name": "Realización de mandados",
+    "aliases": [
+      "compras",
+      "trámites personales"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-apoyo-escolar",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Apoyo escolar",
+    "aliases": [
+      "maestro particular",
+      "deberes"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-apoyo-liceal",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Apoyo liceal",
+    "aliases": [
+      "profesor particular",
+      "secundaria"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-clases-de-biologia",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Clases de biología",
+    "aliases": [
+      "profesor de biología"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-clases-de-fisica",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Clases de física",
+    "aliases": [
+      "profesor de física"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-clases-de-idioma-espanol",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Clases de idioma español",
+    "aliases": [
+      "lengua",
+      "literatura"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-clases-de-matematica",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Clases de matemática",
+    "aliases": [
+      "profesor de matemáticas",
+      "apoyo de matemática"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-clases-de-quimica",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Clases de química",
+    "aliases": [
+      "profesor de química"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-clases-universitarias-de-apoyo",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Clases universitarias de apoyo",
+    "aliases": [
+      "tutor universitario"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-preparacion-de-examenes",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Preparación de exámenes",
+    "aliases": [
+      "clases para examen"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-apoyo-academico-tecnicas-de-estudio",
+    "subcategoryId": "educacion-y-clases-apoyo-academico",
+    "name": "Técnicas de estudio",
+    "aliases": [
+      "aprender a estudiar"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-clases-profesionales-clases-de-cocina",
+    "subcategoryId": "educacion-y-clases-clases-profesionales",
+    "name": "Clases de cocina",
+    "aliases": [
+      "curso de cocina"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-clases-profesionales-clases-de-excel",
+    "subcategoryId": "educacion-y-clases-clases-profesionales",
+    "name": "Clases de Excel",
+    "aliases": [
+      "planillas",
+      "Microsoft Excel"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-clases-profesionales-clases-de-informatica",
+    "subcategoryId": "educacion-y-clases-clases-profesionales",
+    "name": "Clases de informática",
+    "aliases": [
+      "computación",
+      "PC para principiantes"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-clases-profesionales-clases-de-manejo",
+    "subcategoryId": "educacion-y-clases-clases-profesionales",
+    "name": "Clases de manejo",
+    "aliases": [
+      "instructor de conducción",
+      "academia de choferes"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-clases-profesionales-clases-de-programacion",
+    "subcategoryId": "educacion-y-clases-clases-profesionales",
+    "name": "Clases de programación",
+    "aliases": [
+      "aprender a programar"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-clases-profesionales-tutorias-online",
+    "subcategoryId": "educacion-y-clases-clases-profesionales",
+    "name": "Tutorías online",
+    "aliases": [
+      "clases remotas",
+      "profesor online"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-clases-de-aleman",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Clases de alemán",
+    "aliases": [
+      "profesor de alemán"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-clases-de-espanol-para-extranjeros",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Clases de español para extranjeros",
+    "aliases": [
+      "Spanish lessons"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-clases-de-frances",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Clases de francés",
+    "aliases": [
+      "profesor de francés"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-clases-de-ingles",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Clases de inglés",
+    "aliases": [
+      "profesor de inglés",
+      "inglés particular"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-clases-de-italiano",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Clases de italiano",
+    "aliases": [
+      "profesor de italiano"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-clases-de-portugues",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Clases de portugués",
+    "aliases": [
+      "profesor de portugués"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-conversacion-en-idiomas",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Conversación en idiomas",
+    "aliases": [
+      "práctica de conversación"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-idiomas-preparacion-de-examenes-internacionales",
+    "subcategoryId": "educacion-y-clases-idiomas",
+    "name": "Preparación de exámenes internacionales",
+    "aliases": [
+      "Cambridge",
+      "TOEFL",
+      "IELTS"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-bateria",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de batería",
+    "aliases": [
+      "profesor de batería"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-canto",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de canto",
+    "aliases": [
+      "profesor de canto"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-danza",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de danza",
+    "aliases": [
+      "baile",
+      "profesor de danza"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-dibujo-y-pintura",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de dibujo y pintura",
+    "aliases": [
+      "arte",
+      "taller de pintura"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-fotografia",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de fotografía",
+    "aliases": [
+      "curso de fotografía"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-guitarra",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de guitarra",
+    "aliases": [
+      "profesor de guitarra"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-piano",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de piano",
+    "aliases": [
+      "profesor de piano"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-teatro",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de teatro",
+    "aliases": [
+      "actuación"
+    ]
+  },
+  {
+    "id": "educacion-y-clases-musica-clases-de-violin",
+    "subcategoryId": "educacion-y-clases-musica",
+    "name": "Clases de violín",
+    "aliases": [
+      "profesor de violín"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-alquiler-de-carpas",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Alquiler de carpas",
+    "aliases": [
+      "gazebo",
+      "toldo para evento"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-alquiler-de-manteleria",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Alquiler de mantelería",
+    "aliases": [
+      "manteles",
+      "fundas de sillas"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-alquiler-de-mobiliario-para-eventos",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Alquiler de mobiliario para eventos",
+    "aliases": [
+      "mesas",
+      "sillas",
+      "livings"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-alquiler-de-vajilla",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Alquiler de vajilla",
+    "aliases": [
+      "platos",
+      "copas",
+      "cubiertos"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-ambientacion-floral",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Ambientación floral",
+    "aliases": [
+      "flores para eventos"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-decoracion-con-globos",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Decoración con globos",
+    "aliases": [
+      "globos",
+      "arco de globos"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-decoracion-de-eventos",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Decoración de eventos",
+    "aliases": [
+      "decorador de fiestas"
+    ]
+  },
+  {
+    "id": "eventos-decoracion-iluminacion-decorativa",
+    "subcategoryId": "eventos-decoracion",
+    "name": "Iluminación decorativa",
+    "aliases": [
+      "guirnaldas",
+      "luces de fiesta"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-animacion-infantil",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "Animación infantil",
+    "aliases": [
+      "animador de cumpleaños"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-banda-en-vivo",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "Banda en vivo",
+    "aliases": [
+      "músicos para fiesta"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-dj-para-eventos",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "DJ para eventos",
+    "aliases": [
+      "disc jockey",
+      "música para fiesta"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-fotocabina",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "Fotocabina",
+    "aliases": [
+      "cabina de fotos"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-inflables-y-juegos",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "Inflables y juegos",
+    "aliases": [
+      "castillos inflables",
+      "entretenimiento infantil"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-karaoke-para-eventos",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "Karaoke para eventos",
+    "aliases": [
+      "alquiler de karaoke"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-magia-y-espectaculos",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "Magia y espectáculos",
+    "aliases": [
+      "mago",
+      "show"
+    ]
+  },
+  {
+    "id": "eventos-entretenimiento-sonido-e-iluminacion",
+    "subcategoryId": "eventos-entretenimiento",
+    "name": "Sonido e iluminación",
+    "aliases": [
+      "luces para eventos",
+      "amplificación"
+    ]
+  },
+  {
+    "id": "eventos-fotografia-y-video-filmacion-de-eventos",
+    "subcategoryId": "eventos-fotografia-y-video",
+    "name": "Filmación de eventos",
+    "aliases": [
+      "video de boda",
+      "videógrafo"
+    ]
+  },
+  {
+    "id": "eventos-fotografia-y-video-fotografia-de-bodas",
+    "subcategoryId": "eventos-fotografia-y-video",
+    "name": "Fotografía de bodas",
+    "aliases": [
+      "fotógrafo de casamiento"
+    ]
+  },
+  {
+    "id": "eventos-fotografia-y-video-fotografia-de-cumpleanos",
+    "subcategoryId": "eventos-fotografia-y-video",
+    "name": "Fotografía de cumpleaños",
+    "aliases": [
+      "fotógrafo de fiesta"
+    ]
+  },
+  {
+    "id": "eventos-fotografia-y-video-transmision-en-vivo-de-eventos",
+    "subcategoryId": "eventos-fotografia-y-video",
+    "name": "Transmisión en vivo de eventos",
+    "aliases": [
+      "streaming"
+    ]
+  },
+  {
+    "id": "eventos-organizacion-ceremonial-y-protocolo",
+    "subcategoryId": "eventos-organizacion",
+    "name": "Ceremonial y protocolo",
+    "aliases": [
+      "coordinación protocolar"
+    ]
+  },
+  {
+    "id": "eventos-organizacion-coordinacion-de-cumpleanos",
+    "subcategoryId": "eventos-organizacion",
+    "name": "Coordinación de cumpleaños",
+    "aliases": [
+      "fiesta de cumpleaños"
+    ]
+  },
+  {
+    "id": "eventos-organizacion-organizacion-de-eventos",
+    "subcategoryId": "eventos-organizacion",
+    "name": "Organización de eventos",
+    "aliases": [
+      "organizador",
+      "productor de eventos"
+    ]
+  },
+  {
+    "id": "eventos-organizacion-organizacion-de-eventos-empresariales",
+    "subcategoryId": "eventos-organizacion",
+    "name": "Organización de eventos empresariales",
+    "aliases": [
+      "evento corporativo"
+    ]
+  },
+  {
+    "id": "eventos-organizacion-personal-para-eventos",
+    "subcategoryId": "eventos-organizacion",
+    "name": "Personal para eventos",
+    "aliases": [
+      "mozos",
+      "azafatas",
+      "recepción"
+    ]
+  },
+  {
+    "id": "eventos-organizacion-wedding-planner",
+    "subcategoryId": "eventos-organizacion",
+    "name": "Wedding planner",
+    "aliases": [
+      "organizador de bodas",
+      "casamiento"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-artes-marciales",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de artes marciales",
+    "aliases": [
+      "karate",
+      "judo",
+      "taekwondo"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-boxeo",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de boxeo",
+    "aliases": [
+      "entrenador de boxeo"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-danza",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de danza",
+    "aliases": [
+      "profesor de baile"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-futbol",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de fútbol",
+    "aliases": [
+      "entrenador de fútbol"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-natacion",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de natación",
+    "aliases": [
+      "profesor de natación"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-padel",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de pádel",
+    "aliases": [
+      "profesor de pádel"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-pilates",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de pilates",
+    "aliases": [
+      "instructor de pilates"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-running",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de running",
+    "aliases": [
+      "entrenador de corredores"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-tenis",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de tenis",
+    "aliases": [
+      "profesor de tenis"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-clases-deportivas-clases-de-yoga",
+    "subcategoryId": "fitness-y-deportes-clases-deportivas",
+    "name": "Clases de yoga",
+    "aliases": [
+      "profesor de yoga"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-deportes-arbitraje-deportivo",
+    "subcategoryId": "fitness-y-deportes-deportes",
+    "name": "Arbitraje deportivo",
+    "aliases": [
+      "árbitro para partidos"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-deportes-asesoramiento-de-entrenamiento",
+    "subcategoryId": "fitness-y-deportes-deportes",
+    "name": "Asesoramiento de entrenamiento",
+    "aliases": [
+      "coaching deportivo"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-deportes-masaje-deportivo",
+    "subcategoryId": "fitness-y-deportes-deportes",
+    "name": "Masaje deportivo",
+    "aliases": [
+      "recuperación muscular"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-deportes-organizacion-de-torneos",
+    "subcategoryId": "fitness-y-deportes-deportes",
+    "name": "Organización de torneos",
+    "aliases": [
+      "campeonato",
+      "evento deportivo"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-entrenamiento-entrenamiento-funcional",
+    "subcategoryId": "fitness-y-deportes-entrenamiento",
+    "name": "Entrenamiento funcional",
+    "aliases": [
+      "funcional"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-entrenamiento-entrenamiento-online",
+    "subcategoryId": "fitness-y-deportes-entrenamiento",
+    "name": "Entrenamiento online",
+    "aliases": [
+      "personal trainer remoto"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-entrenamiento-entrenamiento-para-adultos-mayores",
+    "subcategoryId": "fitness-y-deportes-entrenamiento",
+    "name": "Entrenamiento para adultos mayores",
+    "aliases": [
+      "gimnasia para mayores"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-entrenamiento-entrenamiento-personal",
+    "subcategoryId": "fitness-y-deportes-entrenamiento",
+    "name": "Entrenamiento personal",
+    "aliases": [
+      "personal trainer",
+      "entrenador personal"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-entrenamiento-musculacion",
+    "subcategoryId": "fitness-y-deportes-entrenamiento",
+    "name": "Musculación",
+    "aliases": [
+      "gimnasio",
+      "pesas"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-entrenamiento-plan-de-entrenamiento",
+    "subcategoryId": "fitness-y-deportes-entrenamiento",
+    "name": "Plan de entrenamiento",
+    "aliases": [
+      "rutina de ejercicios"
+    ]
+  },
+  {
+    "id": "fitness-y-deportes-entrenamiento-preparacion-fisica-deportiva",
+    "subcategoryId": "fitness-y-deportes-entrenamiento",
+    "name": "Preparación física deportiva",
+    "aliases": [
+      "preparador físico"
+    ]
+  },
+  {
+    "id": "gastronomia-bebidas-y-eventos-alquiler-de-dispensadores-de-bebidas",
+    "subcategoryId": "gastronomia-bebidas-y-eventos",
+    "name": "Alquiler de dispensadores de bebidas",
+    "aliases": [
+      "choperas",
+      "jugueras"
+    ]
+  },
+  {
+    "id": "gastronomia-bebidas-y-eventos-asesoria-gastronomica",
+    "subcategoryId": "gastronomia-bebidas-y-eventos",
+    "name": "Asesoría gastronómica",
+    "aliases": [
+      "consultor de restaurante"
+    ]
+  },
+  {
+    "id": "gastronomia-bebidas-y-eventos-barra-de-tragos-para-eventos",
+    "subcategoryId": "gastronomia-bebidas-y-eventos",
+    "name": "Barra de tragos para eventos",
+    "aliases": [
+      "bartender",
+      "coctelería"
+    ]
+  },
+  {
+    "id": "gastronomia-bebidas-y-eventos-diseno-de-menu-gastronomico",
+    "subcategoryId": "gastronomia-bebidas-y-eventos",
+    "name": "Diseño de menú gastronómico",
+    "aliases": [
+      "carta de restaurante"
+    ]
+  },
+  {
+    "id": "gastronomia-bebidas-y-eventos-servicio-de-cafe-para-eventos",
+    "subcategoryId": "gastronomia-bebidas-y-eventos",
+    "name": "Servicio de café para eventos",
+    "aliases": [
+      "cafetería móvil",
+      "barista"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-catering-para-eventos",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Catering para eventos",
+    "aliases": [
+      "servicio de comida",
+      "catering"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-chef-a-domicilio",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Chef a domicilio",
+    "aliases": [
+      "cocinero privado"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-comida-para-empresas",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Comida para empresas",
+    "aliases": [
+      "almuerzos empresariales"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-lunch-para-eventos",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Lunch para eventos",
+    "aliases": [
+      "bocados",
+      "mesa de lunch"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-menu-vegetariano-y-vegano",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Menú vegetariano y vegano",
+    "aliases": [
+      "comida vegana",
+      "comida vegetariana"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-parrillero-para-eventos",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Parrillero para eventos",
+    "aliases": [
+      "asador",
+      "parrilla"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-servicio-de-mozos",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Servicio de mozos",
+    "aliases": [
+      "mozo para fiesta"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-viandas-saludables",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Viandas saludables",
+    "aliases": [
+      "comida sana",
+      "dieta"
+    ]
+  },
+  {
+    "id": "gastronomia-catering-viandas-semanales",
+    "subcategoryId": "gastronomia-catering",
+    "name": "Viandas semanales",
+    "aliases": [
+      "comida preparada",
+      "menú semanal"
+    ]
+  },
+  {
+    "id": "gastronomia-reposteria-cupcakes-y-galletas-decoradas",
+    "subcategoryId": "gastronomia-reposteria",
+    "name": "Cupcakes y galletas decoradas",
+    "aliases": [
+      "cookies",
+      "cupcakes"
+    ]
+  },
+  {
+    "id": "gastronomia-reposteria-panaderia-artesanal",
+    "subcategoryId": "gastronomia-reposteria",
+    "name": "Panadería artesanal",
+    "aliases": [
+      "pan casero",
+      "masa madre"
+    ]
+  },
+  {
+    "id": "gastronomia-reposteria-pasteleria-sin-gluten",
+    "subcategoryId": "gastronomia-reposteria",
+    "name": "Pastelería sin gluten",
+    "aliases": [
+      "celíacos",
+      "libre de gluten"
+    ]
+  },
+  {
+    "id": "gastronomia-reposteria-postres-a-pedido",
+    "subcategoryId": "gastronomia-reposteria",
+    "name": "Postres a pedido",
+    "aliases": [
+      "dulces",
+      "postres caseros"
+    ]
+  },
+  {
+    "id": "gastronomia-reposteria-reposteria-para-eventos",
+    "subcategoryId": "gastronomia-reposteria",
+    "name": "Repostería para eventos",
+    "aliases": [
+      "postres",
+      "mesa dulce"
+    ]
+  },
+  {
+    "id": "gastronomia-reposteria-tortas-personalizadas",
+    "subcategoryId": "gastronomia-reposteria",
+    "name": "Tortas personalizadas",
+    "aliases": [
+      "torta de cumpleaños",
+      "cake"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-colocacion-de-estantes",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Colocación de estantes",
+    "aliases": [
+      "repisas",
+      "biblioteca"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-decks-de-madera",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Decks de madera",
+    "aliases": [
+      "piso exterior de madera"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-instalacion-de-puertas-de-madera",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Instalación de puertas de madera",
+    "aliases": [
+      "colocar puerta"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-lustrado-y-barnizado",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Lustrado y barnizado",
+    "aliases": [
+      "barniz",
+      "pulido de madera"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-muebles-a-medida",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Muebles a medida",
+    "aliases": [
+      "carpintero",
+      "mueble personalizado"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-muebles-de-cocina",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Muebles de cocina",
+    "aliases": [
+      "bajo mesada",
+      "aéreo de cocina"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-pergolas-de-madera",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Pérgolas de madera",
+    "aliases": [
+      "techo liviano de madera"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-placares-a-medida",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Placares a medida",
+    "aliases": [
+      "ropero",
+      "armario empotrado"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-reparacion-de-muebles",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Reparación de muebles",
+    "aliases": [
+      "arreglo de muebles"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-reparacion-de-puertas-y-marcos",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Reparación de puertas y marcos",
+    "aliases": [
+      "puerta trancada",
+      "marco roto"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-carpinteria-restauracion-de-muebles",
+    "subcategoryId": "hogar-y-mantenimiento-carpinteria",
+    "name": "Restauración de muebles",
+    "aliases": [
+      "restaurador",
+      "reciclaje de muebles"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-desinstalacion-y-traslado-de-aire-acondicionado",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Desinstalación y traslado de aire acondicionado",
+    "aliases": [
+      "mover split"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-instalacion-de-aire-acondicionado",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Instalación de aire acondicionado",
+    "aliases": [
+      "aire",
+      "split",
+      "instalador de aire"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-instalacion-de-bomba-de-calor",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Instalación de bomba de calor",
+    "aliases": [
+      "calefacción por bomba de calor"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-instalacion-de-calefaccion",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Instalación de calefacción",
+    "aliases": [
+      "calefacción central",
+      "radiadores"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-mantenimiento-de-aire-acondicionado",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Mantenimiento de aire acondicionado",
+    "aliases": [
+      "limpieza de aire",
+      "carga de gas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-mantenimiento-de-calderas",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Mantenimiento de calderas",
+    "aliases": [
+      "service de caldera"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-reparacion-de-aire-acondicionado",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Reparación de aire acondicionado",
+    "aliases": [
+      "service de aire",
+      "técnico de aire"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-climatizacion-reparacion-de-estufas",
+    "subcategoryId": "hogar-y-mantenimiento-climatizacion",
+    "name": "Reparación de estufas",
+    "aliases": [
+      "calefactor",
+      "estufa a gas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-aislacion-termica-de-techos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Aislación térmica de techos",
+    "aliases": [
+      "aislante",
+      "poliuretano"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-aislacion-termica-y-acustica",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Aislación térmica y acústica",
+    "aliases": [
+      "aislación de paredes",
+      "lana de vidrio"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-ampliacion-de-vivienda",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Ampliación de vivienda",
+    "aliases": [
+      "ampliaciones",
+      "nuevo ambiente"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-ceramicas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de cerámicas",
+    "aliases": [
+      "ceramista",
+      "baldosa"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-cielorraso-de-yeso",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de cielorraso de yeso",
+    "aliases": [
+      "cielo raso",
+      "cielorraso"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-membrana-asfaltica",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de membrana asfáltica",
+    "aliases": [
+      "membrana para azotea"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-piso-flotante",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de piso flotante",
+    "aliases": [
+      "piso laminado"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-piso-vinilico",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de piso vinílico",
+    "aliases": [
+      "vinilo",
+      "piso pvc"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-pisos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de pisos",
+    "aliases": [
+      "baldosas",
+      "cerámicas",
+      "porcelanato"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-porcelanato",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de porcelanato",
+    "aliases": [
+      "porcelanato"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-de-revestimientos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación de revestimientos",
+    "aliases": [
+      "azulejos",
+      "revestir pared"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-colocacion-y-reparacion-de-canaletas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Colocación y reparación de canaletas",
+    "aliases": [
+      "canalón",
+      "desagüe pluvial"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-con-steel-framing",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción con steel framing",
+    "aliases": [
+      "estructura liviana",
+      "construcción seca"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-de-churrasqueras",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción de churrasqueras",
+    "aliases": [
+      "parrillero",
+      "barbacoa"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-de-muros",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción de muros",
+    "aliases": [
+      "pared",
+      "muro de ladrillos"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-de-paredes-de-yeso",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción de paredes de yeso",
+    "aliases": [
+      "drywall",
+      "tabiquería",
+      "yeso"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-de-pergolas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción de pérgolas",
+    "aliases": [
+      "pergolado"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-de-techo-liviano",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción de techo liviano",
+    "aliases": [
+      "techo de chapa",
+      "isopanel"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-de-vivienda",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción de vivienda",
+    "aliases": [
+      "obra nueva",
+      "albañil"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-construccion-y-reparacion-de-veredas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Construcción y reparación de veredas",
+    "aliases": [
+      "entrada vehicular",
+      "camino"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-contrapiso-y-carpetas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Contrapiso y carpetas",
+    "aliases": [
+      "nivelación de piso"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-demoliciones-pequenas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Demoliciones pequeñas",
+    "aliases": [
+      "tirar pared",
+      "demolición interior"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-impermeabilizacion-con-membrana-liquida",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Impermeabilización con membrana líquida",
+    "aliases": [
+      "pintura impermeable"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-impermeabilizacion-de-azoteas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Impermeabilización de azoteas",
+    "aliases": [
+      "membrana",
+      "impermeabilizar techo"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-impermeabilizacion-de-cimientos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Impermeabilización de cimientos",
+    "aliases": [
+      "humedad de cimientos",
+      "humedad ascendente"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-limpieza-de-canaletas",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Limpieza de canaletas",
+    "aliases": [
+      "canaleta tapada"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-microcemento",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Microcemento",
+    "aliases": [
+      "piso continuo",
+      "revestimiento cementicio"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-molduras-y-terminaciones-en-yeso",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Molduras y terminaciones en yeso",
+    "aliases": [
+      "garganta de yeso",
+      "molduras"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-plastificado-de-parquet",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Plastificado de parquet",
+    "aliases": [
+      "parquet",
+      "plastificador"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-pulido-de-pisos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Pulido de pisos",
+    "aliases": [
+      "pulidor",
+      "lustrado de piso"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-reformas-y-remodelaciones",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Reformas y remodelaciones",
+    "aliases": [
+      "reforma de casa",
+      "renovación"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-reparacion-de-cielorrasos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Reparación de cielorrasos",
+    "aliases": [
+      "techo de yeso roto"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-reparacion-de-goteras",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Reparación de goteras",
+    "aliases": [
+      "filtración de techo"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-reparacion-de-grietas-y-fisuras",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Reparación de grietas y fisuras",
+    "aliases": [
+      "pared rajada",
+      "fisuras"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-reparacion-de-pisos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Reparación de pisos",
+    "aliases": [
+      "baldosas rotas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-reparacion-de-techos",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Reparación de techos",
+    "aliases": [
+      "gotera",
+      "techo roto"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-revestimiento-de-paredes-con-yeso",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Revestimiento de paredes con yeso",
+    "aliases": [
+      "placas de yeso"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-construccion-revoque-de-paredes",
+    "subcategoryId": "hogar-y-mantenimiento-construccion",
+    "name": "Revoque de paredes",
+    "aliases": [
+      "revocar",
+      "fino",
+      "grueso"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-control-de-hormigas",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Control de hormigas",
+    "aliases": [
+      "fumigar hormigas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-control-de-mosquitos",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Control de mosquitos",
+    "aliases": [
+      "fumigar mosquitos"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-control-de-palomas",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Control de palomas",
+    "aliases": [
+      "ahuyentamiento de aves"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-control-de-pulgas-y-garrapatas",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Control de pulgas y garrapatas",
+    "aliases": [
+      "fumigación de pulgas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-control-de-roedores",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Control de roedores",
+    "aliases": [
+      "desratización",
+      "ratas",
+      "ratones"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-desinfeccion-de-ambientes",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Desinfección de ambientes",
+    "aliases": [
+      "sanitización"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-fumigacion-comercial",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Fumigación comercial",
+    "aliases": [
+      "empresa de fumigación"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-fumigacion-de-cucarachas",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Fumigación de cucarachas",
+    "aliases": [
+      "control de cucarachas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-control-de-plagas-retiro-de-panales-y-avispas",
+    "subcategoryId": "hogar-y-mantenimiento-control-de-plagas",
+    "name": "Retiro de panales y avispas",
+    "aliases": [
+      "abejas",
+      "avispas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-automatizacion-de-iluminacion",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Automatización de iluminación",
+    "aliases": [
+      "luces inteligentes",
+      "domótica"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-cableado-y-recableado-electrico",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Cableado y recableado eléctrico",
+    "aliases": [
+      "cambio de cables",
+      "recableado"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-cambio-de-llaves-termicas-y-disyuntores",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Cambio de llaves térmicas y disyuntores",
+    "aliases": [
+      "térmica",
+      "diferencial"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-certificacion-y-revision-de-instalacion-electrica",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Certificación y revisión de instalación eléctrica",
+    "aliases": [
+      "firma de electricista",
+      "inspección eléctrica"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-electricista-de-urgencia",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Electricista de urgencia",
+    "aliases": [
+      "emergencia eléctrica",
+      "electricista 24 horas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-instalacion-de-luces-led",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Instalación de luces LED",
+    "aliases": [
+      "tiras led",
+      "iluminación led"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-instalacion-de-luminarias",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Instalación de luminarias",
+    "aliases": [
+      "lámparas",
+      "luces",
+      "plafones"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-instalacion-de-tomacorrientes-e-interruptores",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Instalación de tomacorrientes e interruptores",
+    "aliases": [
+      "enchufes",
+      "llaves de luz"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-instalacion-electrica",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Instalación eléctrica",
+    "aliases": [
+      "electricista",
+      "instalaciones eléctricas",
+      "instalación de luz"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-instalacion-electrica-para-obra-nueva",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Instalación eléctrica para obra nueva",
+    "aliases": [
+      "electricidad de obra"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-instalacion-y-reparacion-de-tableros-electricos",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Instalación y reparación de tableros eléctricos",
+    "aliases": [
+      "tablero",
+      "llave térmica",
+      "disyuntor"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-puesta-a-tierra",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Puesta a tierra",
+    "aliases": [
+      "descarga a tierra",
+      "jabalina"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-electricidad-reparacion-de-fallas-electricas",
+    "subcategoryId": "hogar-y-mantenimiento-electricidad",
+    "name": "Reparación de fallas eléctricas",
+    "aliases": [
+      "corto circuito",
+      "corte de luz",
+      "falla eléctrica"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-automatizacion-de-portones",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Automatización de portones",
+    "aliases": [
+      "motor de portón",
+      "portón automático"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-cerramientos-de-aluminio",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Cerramientos de aluminio",
+    "aliases": [
+      "aluminio",
+      "cerramiento"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-escaleras-y-barandas",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Escaleras y barandas",
+    "aliases": [
+      "pasamanos",
+      "baranda metálica"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-estructuras-metalicas",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Estructuras metálicas",
+    "aliases": [
+      "estructura de hierro"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-mosquiteros-a-medida",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Mosquiteros a medida",
+    "aliases": [
+      "tela mosquitera"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-portones-de-hierro",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Portones de hierro",
+    "aliases": [
+      "portón metálico"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-rejas-a-medida",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Rejas a medida",
+    "aliases": [
+      "herrero",
+      "rejas para ventanas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-reparacion-de-portones",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Reparación de portones",
+    "aliases": [
+      "arreglo de portón"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-soldadura-a-domicilio",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Soldadura a domicilio",
+    "aliases": [
+      "soldador",
+      "trabajos de soldadura"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-herreria-y-metal-ventanas-de-aluminio",
+    "subcategoryId": "hogar-y-mantenimiento-herreria-y-metal",
+    "name": "Ventanas de aluminio",
+    "aliases": [
+      "abertura de aluminio"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-cercos-y-alambrados",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Cercos y alambrados",
+    "aliases": [
+      "cerco perimetral",
+      "tejido"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-construccion-de-piscinas",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Construcción de piscinas",
+    "aliases": [
+      "piscina de material"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-corte-de-cesped",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Corte de césped",
+    "aliases": [
+      "cortar pasto"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-desmalezado-y-limpieza-de-terrenos",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Desmalezado y limpieza de terrenos",
+    "aliases": [
+      "cortar maleza",
+      "limpiar terreno"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-diseno-de-jardines",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Diseño de jardines",
+    "aliases": [
+      "paisajismo",
+      "paisajista"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-instalacion-de-riego-automatico",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Instalación de riego automático",
+    "aliases": [
+      "sistema de riego",
+      "aspersores"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-mantenimiento-de-jardines",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Mantenimiento de jardines",
+    "aliases": [
+      "jardinero",
+      "cuidado de jardín"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-mantenimiento-de-piscinas",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Mantenimiento de piscinas",
+    "aliases": [
+      "piscinero",
+      "limpieza de piscina"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-plantacion-de-cesped",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Plantación de césped",
+    "aliases": [
+      "panes de césped",
+      "sembrar pasto"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-poda-de-arboles",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Poda de árboles",
+    "aliases": [
+      "podador",
+      "poda en altura"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-jardineria-tala-controlada-de-arboles",
+    "subcategoryId": "hogar-y-mantenimiento-jardineria",
+    "name": "Tala controlada de árboles",
+    "aliases": [
+      "sacar árbol",
+      "tala"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-empapelado-de-paredes",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Empapelado de paredes",
+    "aliases": [
+      "papel tapiz",
+      "wallpaper"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-enduido-y-preparacion-de-paredes",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Enduido y preparación de paredes",
+    "aliases": [
+      "alisado",
+      "reparar pared antes de pintar"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-hidrolavado-previo-a-pintura",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Hidrolavado previo a pintura",
+    "aliases": [
+      "lavado de fachada"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-pintura-de-aberturas",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Pintura de aberturas",
+    "aliases": [
+      "pintar puertas",
+      "pintar ventanas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-pintura-de-fachadas",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Pintura de fachadas",
+    "aliases": [
+      "renovación de fachada"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-pintura-de-rejas",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Pintura de rejas",
+    "aliases": [
+      "pintura de hierro"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-pintura-de-techos",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Pintura de techos",
+    "aliases": [
+      "techo pintado"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-pintura-decorativa",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Pintura decorativa",
+    "aliases": [
+      "efectos",
+      "texturas"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-pintura-exterior",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Pintura exterior",
+    "aliases": [
+      "pintar fachada",
+      "pintor exterior"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-pintura-interior",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Pintura interior",
+    "aliases": [
+      "pintor de interiores",
+      "pintar casa"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-pintura-tratamiento-antihumedad",
+    "subcategoryId": "hogar-y-mantenimiento-pintura",
+    "name": "Tratamiento antihumedad",
+    "aliases": [
+      "pintura antihumedad",
+      "manchas de humedad"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-destape-de-canerias",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Destape de cañerías",
+    "aliases": [
+      "desobstrucción",
+      "caño tapado",
+      "desagüe tapado"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-deteccion-de-fugas",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Detección de fugas",
+    "aliases": [
+      "pérdida oculta",
+      "humedad por caño"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-instalacion-de-canerias",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Instalación de cañerías",
+    "aliases": [
+      "tuberías",
+      "sanitaria"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-instalacion-de-inodoros-y-bides",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Instalación de inodoros y bidés",
+    "aliases": [
+      "colocar inodoro",
+      "colocar bidet"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-instalacion-de-lavamanos-y-piletas",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Instalación de lavamanos y piletas",
+    "aliases": [
+      "bacha",
+      "pileta de cocina"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-instalacion-de-tanque-de-agua",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Instalación de tanque de agua",
+    "aliases": [
+      "depósito de agua"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-instalacion-y-reparacion-de-griferia",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Instalación y reparación de grifería",
+    "aliases": [
+      "canilla",
+      "mezcladora"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-limpieza-de-tanque-de-agua",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Limpieza de tanque de agua",
+    "aliases": [
+      "desinfección de tanque"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-reparacion-de-bombas-de-agua",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Reparación de bombas de agua",
+    "aliases": [
+      "bomba presurizadora",
+      "bomba de agua"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-reparacion-de-cisternas",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Reparación de cisternas",
+    "aliases": [
+      "cisterna pierde",
+      "mochila de baño"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-reparacion-de-desagues",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Reparación de desagües",
+    "aliases": [
+      "drenaje",
+      "desagüe"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-reparacion-de-perdidas-de-agua",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Reparación de pérdidas de agua",
+    "aliases": [
+      "sanitario",
+      "plomero",
+      "fuga de agua"
+    ]
+  },
+  {
+    "id": "hogar-y-mantenimiento-plomeria-y-sanitaria-sanitario-de-urgencia",
+    "subcategoryId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+    "name": "Sanitario de urgencia",
+    "aliases": [
+      "plomero urgente",
+      "sanitaria 24 horas"
+    ]
+  },
+  {
+    "id": "inmuebles-agrimensura-amojonamiento",
+    "subcategoryId": "inmuebles-agrimensura",
+    "name": "Amojonamiento",
+    "aliases": [
+      "límites del terreno",
+      "mojones"
+    ]
+  },
+  {
+    "id": "inmuebles-agrimensura-certificado-de-eficiencia-energetica",
+    "subcategoryId": "inmuebles-agrimensura",
+    "name": "Certificado de eficiencia energética",
+    "aliases": [
+      "evaluación energética"
+    ]
+  },
+  {
+    "id": "inmuebles-agrimensura-fraccionamiento-de-terrenos",
+    "subcategoryId": "inmuebles-agrimensura",
+    "name": "Fraccionamiento de terrenos",
+    "aliases": [
+      "división de padrón"
+    ]
+  },
+  {
+    "id": "inmuebles-agrimensura-inspeccion-tecnica-de-propiedades",
+    "subcategoryId": "inmuebles-agrimensura",
+    "name": "Inspección técnica de propiedades",
+    "aliases": [
+      "revisar casa antes de comprar"
+    ]
+  },
+  {
+    "id": "inmuebles-agrimensura-inventario-de-propiedad",
+    "subcategoryId": "inmuebles-agrimensura",
+    "name": "Inventario de propiedad",
+    "aliases": [
+      "inventario para alquiler"
+    ]
+  },
+  {
+    "id": "inmuebles-agrimensura-mensura-de-terrenos",
+    "subcategoryId": "inmuebles-agrimensura",
+    "name": "Mensura de terrenos",
+    "aliases": [
+      "agrimensor",
+      "medir terreno"
+    ]
+  },
+  {
+    "id": "inmuebles-arquitectura-direccion-de-obra",
+    "subcategoryId": "inmuebles-arquitectura",
+    "name": "Dirección de obra",
+    "aliases": [
+      "arquitecto de obra"
+    ]
+  },
+  {
+    "id": "inmuebles-arquitectura-diseno-de-interiores",
+    "subcategoryId": "inmuebles-arquitectura",
+    "name": "Diseño de interiores",
+    "aliases": [
+      "interiorista",
+      "decoración interior"
+    ]
+  },
+  {
+    "id": "inmuebles-arquitectura-permiso-de-construccion",
+    "subcategoryId": "inmuebles-arquitectura",
+    "name": "Permiso de construcción",
+    "aliases": [
+      "trámite de obra",
+      "intendencia"
+    ]
+  },
+  {
+    "id": "inmuebles-arquitectura-proyecto-arquitectonico",
+    "subcategoryId": "inmuebles-arquitectura",
+    "name": "Proyecto arquitectónico",
+    "aliases": [
+      "arquitecto",
+      "diseño de vivienda"
+    ]
+  },
+  {
+    "id": "inmuebles-arquitectura-regularizacion-de-construcciones",
+    "subcategoryId": "inmuebles-arquitectura",
+    "name": "Regularización de construcciones",
+    "aliases": [
+      "regularizar obra",
+      "planos"
+    ]
+  },
+  {
+    "id": "inmuebles-arquitectura-relevamiento-y-planos",
+    "subcategoryId": "inmuebles-arquitectura",
+    "name": "Relevamiento y planos",
+    "aliases": [
+      "dibujante técnico",
+      "planos de casa"
+    ]
+  },
+  {
+    "id": "inmuebles-arquitectura-render-arquitectonico",
+    "subcategoryId": "inmuebles-arquitectura",
+    "name": "Render arquitectónico",
+    "aliases": [
+      "visualización 3D",
+      "render 3D"
+    ]
+  },
+  {
+    "id": "inmuebles-inmobiliarias-administracion-de-alquileres",
+    "subcategoryId": "inmuebles-inmobiliarias",
+    "name": "Administración de alquileres",
+    "aliases": [
+      "gestión de propiedades"
+    ]
+  },
+  {
+    "id": "inmuebles-inmobiliarias-alquiler-de-propiedades",
+    "subcategoryId": "inmuebles-inmobiliarias",
+    "name": "Alquiler de propiedades",
+    "aliases": [
+      "alquilar casa",
+      "alquilar apartamento"
+    ]
+  },
+  {
+    "id": "inmuebles-inmobiliarias-alquiler-temporario",
+    "subcategoryId": "inmuebles-inmobiliarias",
+    "name": "Alquiler temporario",
+    "aliases": [
+      "alquiler por temporada"
+    ]
+  },
+  {
+    "id": "inmuebles-inmobiliarias-busqueda-de-propiedades",
+    "subcategoryId": "inmuebles-inmobiliarias",
+    "name": "Búsqueda de propiedades",
+    "aliases": [
+      "asesor inmobiliario"
+    ]
+  },
+  {
+    "id": "inmuebles-inmobiliarias-gestion-de-garantias-de-alquiler",
+    "subcategoryId": "inmuebles-inmobiliarias",
+    "name": "Gestión de garantías de alquiler",
+    "aliases": [
+      "garantía",
+      "contrato de alquiler"
+    ]
+  },
+  {
+    "id": "inmuebles-inmobiliarias-tasacion-de-propiedades",
+    "subcategoryId": "inmuebles-inmobiliarias",
+    "name": "Tasación de propiedades",
+    "aliases": [
+      "tasador",
+      "valoración inmobiliaria"
+    ]
+  },
+  {
+    "id": "inmuebles-inmobiliarias-venta-de-propiedades",
+    "subcategoryId": "inmuebles-inmobiliarias",
+    "name": "Venta de propiedades",
+    "aliases": [
+      "inmobiliaria",
+      "vender casa"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-comercial-limpieza-de-centros-educativos",
+    "subcategoryId": "limpieza-limpieza-comercial",
+    "name": "Limpieza de centros educativos",
+    "aliases": [
+      "colegio",
+      "escuela"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-comercial-limpieza-de-depositos",
+    "subcategoryId": "limpieza-limpieza-comercial",
+    "name": "Limpieza de depósitos",
+    "aliases": [
+      "galpón",
+      "almacén"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-comercial-limpieza-de-edificios",
+    "subcategoryId": "limpieza-limpieza-comercial",
+    "name": "Limpieza de edificios",
+    "aliases": [
+      "áreas comunes",
+      "edificio"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-comercial-limpieza-de-locales-comerciales",
+    "subcategoryId": "limpieza-limpieza-comercial",
+    "name": "Limpieza de locales comerciales",
+    "aliases": [
+      "comercio",
+      "tienda"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-comercial-limpieza-de-oficinas",
+    "subcategoryId": "limpieza-limpieza-comercial",
+    "name": "Limpieza de oficinas",
+    "aliases": [
+      "empresa de limpieza",
+      "oficina"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-comercial-limpieza-industrial",
+    "subcategoryId": "limpieza-limpieza-comercial",
+    "name": "Limpieza industrial",
+    "aliases": [
+      "fábrica",
+      "planta"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-comercial-limpieza-para-eventos",
+    "subcategoryId": "limpieza-limpieza-comercial",
+    "name": "Limpieza para eventos",
+    "aliases": [
+      "limpieza antes y después de fiesta"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-de-apartamentos",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza de apartamentos",
+    "aliases": [
+      "limpieza de apartamento"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-de-banos",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza de baños",
+    "aliases": [
+      "desinfección de baño"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-de-casas",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza de casas",
+    "aliases": [
+      "limpiadora",
+      "doméstica",
+      "limpieza del hogar"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-de-cocinas",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza de cocinas",
+    "aliases": [
+      "desengrasado",
+      "limpieza de horno"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-de-fin-de-obra",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza de fin de obra",
+    "aliases": [
+      "limpieza posobra",
+      "limpieza de obra"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-de-vidrios",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza de vidrios",
+    "aliases": [
+      "limpiavidrios",
+      "ventanas"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-despues-de-mudanza",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza después de mudanza",
+    "aliases": [
+      "limpieza de entrega"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-para-alquileres-temporarios",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza para alquileres temporarios",
+    "aliases": [
+      "Airbnb",
+      "recambio de huéspedes"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-por-horas",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza por horas",
+    "aliases": [
+      "servicio doméstico por hora"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-domestica-limpieza-profunda",
+    "subcategoryId": "limpieza-limpieza-domestica",
+    "name": "Limpieza profunda",
+    "aliases": [
+      "limpieza general",
+      "limpieza a fondo"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-profunda-limpieza-de-alfombras",
+    "subcategoryId": "limpieza-limpieza-profunda",
+    "name": "Limpieza de alfombras",
+    "aliases": [
+      "lavado de alfombra"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-profunda-limpieza-de-colchones",
+    "subcategoryId": "limpieza-limpieza-profunda",
+    "name": "Limpieza de colchones",
+    "aliases": [
+      "lavado de colchón",
+      "ácaros"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-profunda-limpieza-de-interiores-de-vehiculos",
+    "subcategoryId": "limpieza-limpieza-profunda",
+    "name": "Limpieza de interiores de vehículos",
+    "aliases": [
+      "detailing interior",
+      "tapizado de auto"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-profunda-limpieza-de-moquetas",
+    "subcategoryId": "limpieza-limpieza-profunda",
+    "name": "Limpieza de moquetas",
+    "aliases": [
+      "alfombra fija"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-profunda-limpieza-de-sillas-tapizadas",
+    "subcategoryId": "limpieza-limpieza-profunda",
+    "name": "Limpieza de sillas tapizadas",
+    "aliases": [
+      "tapicería"
+    ]
+  },
+  {
+    "id": "limpieza-limpieza-profunda-limpieza-de-sillones",
+    "subcategoryId": "limpieza-limpieza-profunda",
+    "name": "Limpieza de sillones",
+    "aliases": [
+      "sofá",
+      "tapizado"
+    ]
+  },
+  {
+    "id": "limpieza-servicios-domesticos-cocinero-a-domicilio",
+    "subcategoryId": "limpieza-servicios-domesticos",
+    "name": "Cocinero a domicilio",
+    "aliases": [
+      "cocina doméstica",
+      "viandas en casa"
+    ]
+  },
+  {
+    "id": "limpieza-servicios-domesticos-cuidado-de-vivienda-durante-ausencias",
+    "subcategoryId": "limpieza-servicios-domesticos",
+    "name": "Cuidado de vivienda durante ausencias",
+    "aliases": [
+      "house sitting",
+      "vigilancia de casa"
+    ]
+  },
+  {
+    "id": "limpieza-servicios-domesticos-lavado-y-planchado-de-ropa",
+    "subcategoryId": "limpieza-servicios-domesticos",
+    "name": "Lavado y planchado de ropa",
+    "aliases": [
+      "planchadora",
+      "lavandería"
+    ]
+  },
+  {
+    "id": "limpieza-servicios-domesticos-organizacion-de-hogares",
+    "subcategoryId": "limpieza-servicios-domesticos",
+    "name": "Organización de hogares",
+    "aliases": [
+      "orden de casa",
+      "organizador profesional"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-edicion-de-video",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Edición de video",
+    "aliases": [
+      "editor audiovisual"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-fotografia-con-dron",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Fotografía con dron",
+    "aliases": [
+      "drone",
+      "tomas aéreas"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-fotografia-corporativa",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Fotografía corporativa",
+    "aliases": [
+      "fotos empresariales"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-fotografia-de-productos",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Fotografía de productos",
+    "aliases": [
+      "fotos para catálogo",
+      "ecommerce"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-fotografia-gastronomica",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Fotografía gastronómica",
+    "aliases": [
+      "fotos de comida"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-fotografia-inmobiliaria",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Fotografía inmobiliaria",
+    "aliases": [
+      "fotos de propiedades"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-produccion-de-video",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Producción de video",
+    "aliases": [
+      "videógrafo",
+      "filmación"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-retratos-profesionales",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Retratos profesionales",
+    "aliases": [
+      "foto de perfil",
+      "headshot"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-audiovisual-videos-para-redes-sociales",
+    "subcategoryId": "marketing-y-diseno-audiovisual",
+    "name": "Videos para redes sociales",
+    "aliases": [
+      "reels",
+      "TikTok"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-comunicacion-comunicacion-institucional",
+    "subcategoryId": "marketing-y-diseno-comunicacion",
+    "name": "Comunicación institucional",
+    "aliases": [
+      "prensa",
+      "relaciones públicas"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-comunicacion-correccion-de-textos",
+    "subcategoryId": "marketing-y-diseno-comunicacion",
+    "name": "Corrección de textos",
+    "aliases": [
+      "corrector",
+      "edición de texto"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-comunicacion-locucion",
+    "subcategoryId": "marketing-y-diseno-comunicacion",
+    "name": "Locución",
+    "aliases": [
+      "voz en off",
+      "locutor"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-comunicacion-produccion-de-podcast",
+    "subcategoryId": "marketing-y-diseno-comunicacion",
+    "name": "Producción de podcast",
+    "aliases": [
+      "edición de podcast",
+      "audio"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-comunicacion-redaccion-de-contenidos",
+    "subcategoryId": "marketing-y-diseno-comunicacion",
+    "name": "Redacción de contenidos",
+    "aliases": [
+      "redactor",
+      "copywriter"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-diseno-de-carteleria",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Diseño de cartelería",
+    "aliases": [
+      "cartel",
+      "banner"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-diseno-de-folleteria",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Diseño de folletería",
+    "aliases": [
+      "flyer",
+      "folleto",
+      "volante"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-diseno-de-identidad-de-marca",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Diseño de identidad de marca",
+    "aliases": [
+      "branding",
+      "manual de marca"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-diseno-de-logotipo",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Diseño de logotipo",
+    "aliases": [
+      "logo",
+      "identidad visual"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-diseno-de-presentaciones",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Diseño de presentaciones",
+    "aliases": [
+      "PowerPoint",
+      "pitch deck"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-diseno-de-tarjetas-personales",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Diseño de tarjetas personales",
+    "aliases": [
+      "tarjeta de presentación"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-diseno-editorial",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Diseño editorial",
+    "aliases": [
+      "catálogo",
+      "revista",
+      "libro"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-diseno-ilustracion",
+    "subcategoryId": "marketing-y-diseno-diseno",
+    "name": "Ilustración",
+    "aliases": [
+      "ilustrador",
+      "dibujo digital"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-analitica-digital",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Analítica digital",
+    "aliases": [
+      "Google Analytics",
+      "métricas web"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-creacion-de-contenido",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Creación de contenido",
+    "aliases": [
+      "contenido para redes"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-email-marketing",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Email marketing",
+    "aliases": [
+      "newsletters",
+      "campañas de correo"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-estrategia-de-marketing",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Estrategia de marketing",
+    "aliases": [
+      "plan de marketing"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-gestion-de-redes-sociales",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Gestión de redes sociales",
+    "aliases": [
+      "community manager",
+      "social media"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-marketing-para-comercios-locales",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Marketing para comercios locales",
+    "aliases": [
+      "promoción local"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-posicionamiento-seo",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Posicionamiento SEO",
+    "aliases": [
+      "aparecer en Google",
+      "SEO web"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-publicidad-en-google",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Publicidad en Google",
+    "aliases": [
+      "Google Ads",
+      "SEM"
+    ]
+  },
+  {
+    "id": "marketing-y-diseno-marketing-publicidad-en-redes-sociales",
+    "subcategoryId": "marketing-y-diseno-marketing",
+    "name": "Publicidad en redes sociales",
+    "aliases": [
+      "Meta Ads",
+      "Facebook Ads",
+      "Instagram Ads"
+    ]
+  },
+  {
+    "id": "mascotas-cuidado-adiestramiento-canino",
+    "subcategoryId": "mascotas-cuidado",
+    "name": "Adiestramiento canino",
+    "aliases": [
+      "entrenador de perros"
+    ]
+  },
+  {
+    "id": "mascotas-cuidado-cuidado-de-mascotas-a-domicilio",
+    "subcategoryId": "mascotas-cuidado",
+    "name": "Cuidado de mascotas a domicilio",
+    "aliases": [
+      "pet sitter",
+      "cuidador de animales"
+    ]
+  },
+  {
+    "id": "mascotas-cuidado-educacion-de-cachorros",
+    "subcategoryId": "mascotas-cuidado",
+    "name": "Educación de cachorros",
+    "aliases": [
+      "conducta canina"
+    ]
+  },
+  {
+    "id": "mascotas-cuidado-guarderia-para-perros",
+    "subcategoryId": "mascotas-cuidado",
+    "name": "Guardería para perros",
+    "aliases": [
+      "guardería canina"
+    ]
+  },
+  {
+    "id": "mascotas-cuidado-hospedaje-para-mascotas",
+    "subcategoryId": "mascotas-cuidado",
+    "name": "Hospedaje para mascotas",
+    "aliases": [
+      "hotel para perros",
+      "pensionado"
+    ]
+  },
+  {
+    "id": "mascotas-cuidado-paseo-de-perros",
+    "subcategoryId": "mascotas-cuidado",
+    "name": "Paseo de perros",
+    "aliases": [
+      "paseador",
+      "dog walker"
+    ]
+  },
+  {
+    "id": "mascotas-cuidado-traslado-de-mascotas",
+    "subcategoryId": "mascotas-cuidado",
+    "name": "Traslado de mascotas",
+    "aliases": [
+      "taxi de mascotas"
+    ]
+  },
+  {
+    "id": "mascotas-estetica-animal-bano-de-mascotas",
+    "subcategoryId": "mascotas-estetica-animal",
+    "name": "Baño de mascotas",
+    "aliases": [
+      "lavado de perro"
+    ]
+  },
+  {
+    "id": "mascotas-estetica-animal-corte-de-unas-para-mascotas",
+    "subcategoryId": "mascotas-estetica-animal",
+    "name": "Corte de uñas para mascotas",
+    "aliases": [
+      "uñas de perro",
+      "uñas de gato"
+    ]
+  },
+  {
+    "id": "mascotas-estetica-animal-peluqueria-canina",
+    "subcategoryId": "mascotas-estetica-animal",
+    "name": "Peluquería canina",
+    "aliases": [
+      "baño y corte de perro"
+    ]
+  },
+  {
+    "id": "mascotas-estetica-animal-peluqueria-felina",
+    "subcategoryId": "mascotas-estetica-animal",
+    "name": "Peluquería felina",
+    "aliases": [
+      "baño y corte de gato"
+    ]
+  },
+  {
+    "id": "mascotas-veterinaria-castracion",
+    "subcategoryId": "mascotas-veterinaria",
+    "name": "Castración",
+    "aliases": [
+      "esterilización",
+      "castrar mascota"
+    ]
+  },
+  {
+    "id": "mascotas-veterinaria-consulta-veterinaria",
+    "subcategoryId": "mascotas-veterinaria",
+    "name": "Consulta veterinaria",
+    "aliases": [
+      "veterinario",
+      "veterinaria"
+    ]
+  },
+  {
+    "id": "mascotas-veterinaria-desparasitacion",
+    "subcategoryId": "mascotas-veterinaria",
+    "name": "Desparasitación",
+    "aliases": [
+      "antiparasitario"
+    ]
+  },
+  {
+    "id": "mascotas-veterinaria-fisioterapia-animal",
+    "subcategoryId": "mascotas-veterinaria",
+    "name": "Fisioterapia animal",
+    "aliases": [
+      "rehabilitación veterinaria"
+    ]
+  },
+  {
+    "id": "mascotas-veterinaria-urgencia-veterinaria",
+    "subcategoryId": "mascotas-veterinaria",
+    "name": "Urgencia veterinaria",
+    "aliases": [
+      "veterinaria 24 horas"
+    ]
+  },
+  {
+    "id": "mascotas-veterinaria-vacunacion-de-mascotas",
+    "subcategoryId": "mascotas-veterinaria",
+    "name": "Vacunación de mascotas",
+    "aliases": [
+      "vacunas para perro",
+      "vacunas para gato"
+    ]
+  },
+  {
+    "id": "mascotas-veterinaria-veterinario-a-domicilio",
+    "subcategoryId": "mascotas-veterinaria",
+    "name": "Veterinario a domicilio",
+    "aliases": [
+      "consulta veterinaria en casa"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-cadeteria",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Cadetería",
+    "aliases": [
+      "mandados",
+      "mensajería"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-envios-urgentes",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Envíos urgentes",
+    "aliases": [
+      "cadetería urgente",
+      "entrega rápida"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-flete-con-camion",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Flete con camión",
+    "aliases": [
+      "transporte de carga"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-flete-pequeno",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Flete pequeño",
+    "aliases": [
+      "camioneta",
+      "traslado chico"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-reparto-de-mercaderia",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Reparto de mercadería",
+    "aliases": [
+      "distribución",
+      "entregas"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-retiro-y-entrega-de-muebles",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Retiro y entrega de muebles",
+    "aliases": [
+      "traslado de muebles"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-transporte-de-electrodomesticos",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Transporte de electrodomésticos",
+    "aliases": [
+      "llevar heladera",
+      "llevar lavarropas"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-fletes-ultima-milla-para-comercios",
+    "subcategoryId": "mudanzas-y-transporte-fletes",
+    "name": "Última milla para comercios",
+    "aliases": [
+      "delivery empresarial",
+      "ecommerce"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-desarme-y-armado-de-muebles",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Desarme y armado de muebles",
+    "aliases": [
+      "desmontaje de muebles"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-elevacion-de-muebles",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Elevación de muebles",
+    "aliases": [
+      "subida por balcón",
+      "guinche"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-embalaje-para-mudanza",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Embalaje para mudanza",
+    "aliases": [
+      "empacado",
+      "cajas"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-guardamuebles",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Guardamuebles",
+    "aliases": [
+      "depósito temporal",
+      "almacenamiento"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-mudanza-al-interior",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Mudanza al interior",
+    "aliases": [
+      "mudanza interdepartamental"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-mudanza-de-apartamento",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Mudanza de apartamento",
+    "aliases": [
+      "traslado de apartamento"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-mudanza-de-casa",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Mudanza de casa",
+    "aliases": [
+      "empresa de mudanzas",
+      "flete"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-mudanza-de-oficina",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Mudanza de oficina",
+    "aliases": [
+      "traslado empresarial"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-mudanza-dentro-de-montevideo",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Mudanza dentro de Montevideo",
+    "aliases": [
+      "mudanza local"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-mudanzas-mudanza-internacional",
+    "subcategoryId": "mudanzas-y-transporte-mudanzas",
+    "name": "Mudanza internacional",
+    "aliases": [
+      "traslado internacional"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-transporte-de-personas-chofer-particular",
+    "subcategoryId": "mudanzas-y-transporte-transporte-de-personas",
+    "name": "Chofer particular",
+    "aliases": [
+      "conductor privado"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-transporte-de-personas-minibus-con-chofer",
+    "subcategoryId": "mudanzas-y-transporte-transporte-de-personas",
+    "name": "Minibús con chofer",
+    "aliases": [
+      "van",
+      "traslado de grupos"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-transporte-de-personas-transporte-accesible",
+    "subcategoryId": "mudanzas-y-transporte-transporte-de-personas",
+    "name": "Transporte accesible",
+    "aliases": [
+      "traslado en silla de ruedas"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-transporte-de-personas-transporte-escolar",
+    "subcategoryId": "mudanzas-y-transporte-transporte-de-personas",
+    "name": "Transporte escolar",
+    "aliases": [
+      "camioneta escolar"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-transporte-de-personas-transporte-para-eventos",
+    "subcategoryId": "mudanzas-y-transporte-transporte-de-personas",
+    "name": "Transporte para eventos",
+    "aliases": [
+      "traslado de invitados"
+    ]
+  },
+  {
+    "id": "mudanzas-y-transporte-transporte-de-personas-traslado-al-aeropuerto",
+    "subcategoryId": "mudanzas-y-transporte-transporte-de-personas",
+    "name": "Traslado al aeropuerto",
+    "aliases": [
+      "transfer Carrasco",
+      "taxi aeropuerto"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-celulares-y-tablets-cambio-de-bateria-de-celular",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-celulares-y-tablets",
+    "name": "Cambio de batería de celular",
+    "aliases": [
+      "batería agotada"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-celulares-y-tablets-cambio-de-pantalla-de-celular",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-celulares-y-tablets",
+    "name": "Cambio de pantalla de celular",
+    "aliases": [
+      "pantalla rota",
+      "módulo"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-celulares-y-tablets-configuracion-y-respaldo-de-celular",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-celulares-y-tablets",
+    "name": "Configuración y respaldo de celular",
+    "aliases": [
+      "backup",
+      "pasar datos"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-celulares-y-tablets-recuperacion-de-datos-de-celular",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-celulares-y-tablets",
+    "name": "Recuperación de datos de celular",
+    "aliases": [
+      "fotos borradas",
+      "archivos del teléfono"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-celulares-y-tablets-reparacion-de-celulares",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-celulares-y-tablets",
+    "name": "Reparación de celulares",
+    "aliases": [
+      "técnico de celular",
+      "smartphone"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-celulares-y-tablets-reparacion-de-puerto-de-carga",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-celulares-y-tablets",
+    "name": "Reparación de puerto de carga",
+    "aliases": [
+      "conector de carga"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-celulares-y-tablets-reparacion-de-tablets",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-celulares-y-tablets",
+    "name": "Reparación de tablets",
+    "aliases": [
+      "técnico de tablet"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-instalacion-de-electrodomesticos",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Instalación de electrodomésticos",
+    "aliases": [
+      "conexión de lavarropas",
+      "instalar cocina"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-calefones",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de calefones",
+    "aliases": [
+      "termotanque",
+      "calentador de agua"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-cocinas-y-hornos",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de cocinas y hornos",
+    "aliases": [
+      "cocina a gas",
+      "horno eléctrico"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-heladeras",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de heladeras",
+    "aliases": [
+      "técnico de heladera",
+      "refrigerador"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-lavarropas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de lavarropas",
+    "aliases": [
+      "técnico de lavarropas",
+      "lavadora"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-lavavajillas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de lavavajillas",
+    "aliases": [
+      "lavaplatos"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-microondas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de microondas",
+    "aliases": [
+      "técnico de microondas"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-pequenos-electrodomesticos",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de pequeños electrodomésticos",
+    "aliases": [
+      "licuadora",
+      "batidora",
+      "aspiradora"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-electrodomesticos-reparacion-de-secarropas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-electrodomesticos",
+    "name": "Reparación de secarropas",
+    "aliases": [
+      "secadora"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-otros-equipos-mantenimiento-de-maquinaria-liviana",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-otros-equipos",
+    "name": "Mantenimiento de maquinaria liviana",
+    "aliases": [
+      "service de máquinas"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-otros-equipos-reparacion-de-bombas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-otros-equipos",
+    "name": "Reparación de bombas",
+    "aliases": [
+      "bomba eléctrica",
+      "bomba sumergible"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-otros-equipos-reparacion-de-cortadoras-de-cesped",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-otros-equipos",
+    "name": "Reparación de cortadoras de césped",
+    "aliases": [
+      "máquina de cortar pasto"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-otros-equipos-reparacion-de-generadores",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-otros-equipos",
+    "name": "Reparación de generadores",
+    "aliases": [
+      "grupo electrógeno"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-otros-equipos-reparacion-de-herramientas-electricas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-otros-equipos",
+    "name": "Reparación de herramientas eléctricas",
+    "aliases": [
+      "taladro",
+      "amoladora",
+      "sierra"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-otros-equipos-reparacion-de-hidrolavadoras",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-otros-equipos",
+    "name": "Reparación de hidrolavadoras",
+    "aliases": [
+      "service de hidrolavadora"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-television-y-audio-configuracion-de-television-digital",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-television-y-audio",
+    "name": "Configuración de televisión digital",
+    "aliases": [
+      "decodificador",
+      "canales digitales"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-television-y-audio-instalacion-de-antenas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-television-y-audio",
+    "name": "Instalación de antenas",
+    "aliases": [
+      "antenista",
+      "antena digital"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-television-y-audio-instalacion-de-tv-y-soportes",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-television-y-audio",
+    "name": "Instalación de TV y soportes",
+    "aliases": [
+      "colgar televisor",
+      "soporte de pared"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-television-y-audio-reparacion-de-consolas-de-videojuegos",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-television-y-audio",
+    "name": "Reparación de consolas de videojuegos",
+    "aliases": [
+      "PlayStation",
+      "Xbox",
+      "Nintendo"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-television-y-audio-reparacion-de-equipos-de-audio",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-television-y-audio",
+    "name": "Reparación de equipos de audio",
+    "aliases": [
+      "parlantes",
+      "amplificador"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-television-y-audio-reparacion-de-placas-electronicas",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-television-y-audio",
+    "name": "Reparación de placas electrónicas",
+    "aliases": [
+      "electrónica",
+      "circuitos"
+    ]
+  },
+  {
+    "id": "reparaciones-y-servicio-tecnico-television-y-audio-reparacion-de-televisores",
+    "subcategoryId": "reparaciones-y-servicio-tecnico-television-y-audio",
+    "name": "Reparación de televisores",
+    "aliases": [
+      "técnico tv",
+      "smart tv"
+    ]
+  },
+  {
+    "id": "salud-medicina-cardiologia",
+    "subcategoryId": "salud-medicina",
+    "name": "Cardiología",
+    "aliases": [
+      "cardiólogo",
+      "corazón"
+    ]
+  },
+  {
+    "id": "salud-medicina-consulta-medica-a-domicilio",
+    "subcategoryId": "salud-medicina",
+    "name": "Consulta médica a domicilio",
+    "aliases": [
+      "médico a domicilio"
+    ]
+  },
+  {
+    "id": "salud-medicina-dermatologia",
+    "subcategoryId": "salud-medicina",
+    "name": "Dermatología",
+    "aliases": [
+      "dermatólogo",
+      "piel"
+    ]
+  },
+  {
+    "id": "salud-medicina-geriatria",
+    "subcategoryId": "salud-medicina",
+    "name": "Geriatría",
+    "aliases": [
+      "geriatra",
+      "adulto mayor"
+    ]
+  },
+  {
+    "id": "salud-medicina-ginecologia",
+    "subcategoryId": "salud-medicina",
+    "name": "Ginecología",
+    "aliases": [
+      "ginecólogo"
+    ]
+  },
+  {
+    "id": "salud-medicina-medicina-familiar",
+    "subcategoryId": "salud-medicina",
+    "name": "Medicina familiar",
+    "aliases": [
+      "médico de familia"
+    ]
+  },
+  {
+    "id": "salud-medicina-medicina-general",
+    "subcategoryId": "salud-medicina",
+    "name": "Medicina general",
+    "aliases": [
+      "médico general",
+      "consulta médica"
+    ]
+  },
+  {
+    "id": "salud-medicina-pediatria",
+    "subcategoryId": "salud-medicina",
+    "name": "Pediatría",
+    "aliases": [
+      "pediatra",
+      "médico de niños"
+    ]
+  },
+  {
+    "id": "salud-medicina-telemedicina",
+    "subcategoryId": "salud-medicina",
+    "name": "Telemedicina",
+    "aliases": [
+      "consulta médica online"
+    ]
+  },
+  {
+    "id": "salud-medicina-traumatologia",
+    "subcategoryId": "salud-medicina",
+    "name": "Traumatología",
+    "aliases": [
+      "traumatólogo",
+      "lesiones"
+    ]
+  },
+  {
+    "id": "salud-nutricion-acompanamiento-terapeutico",
+    "subcategoryId": "salud-nutricion",
+    "name": "Acompañamiento terapéutico",
+    "aliases": [
+      "acompañante terapéutico"
+    ]
+  },
+  {
+    "id": "salud-nutricion-consulta-nutricional",
+    "subcategoryId": "salud-nutricion",
+    "name": "Consulta nutricional",
+    "aliases": [
+      "nutricionista",
+      "dieta"
+    ]
+  },
+  {
+    "id": "salud-nutricion-curaciones-y-control-de-heridas",
+    "subcategoryId": "salud-nutricion",
+    "name": "Curaciones y control de heridas",
+    "aliases": [
+      "enfermería"
+    ]
+  },
+  {
+    "id": "salud-nutricion-enfermeria-a-domicilio",
+    "subcategoryId": "salud-nutricion",
+    "name": "Enfermería a domicilio",
+    "aliases": [
+      "enfermero",
+      "curaciones"
+    ]
+  },
+  {
+    "id": "salud-nutricion-inyectables-a-domicilio",
+    "subcategoryId": "salud-nutricion",
+    "name": "Inyectables a domicilio",
+    "aliases": [
+      "dar inyección"
+    ]
+  },
+  {
+    "id": "salud-nutricion-nutricion-deportiva",
+    "subcategoryId": "salud-nutricion",
+    "name": "Nutrición deportiva",
+    "aliases": [
+      "alimentación para deportistas"
+    ]
+  },
+  {
+    "id": "salud-nutricion-podologia",
+    "subcategoryId": "salud-nutricion",
+    "name": "Podología",
+    "aliases": [
+      "podólogo",
+      "cuidado de pies"
+    ]
+  },
+  {
+    "id": "salud-odontologia-blanqueamiento-dental",
+    "subcategoryId": "salud-odontologia",
+    "name": "Blanqueamiento dental",
+    "aliases": [
+      "estética dental"
+    ]
+  },
+  {
+    "id": "salud-odontologia-consulta-odontologica",
+    "subcategoryId": "salud-odontologia",
+    "name": "Consulta odontológica",
+    "aliases": [
+      "dentista",
+      "odontólogo"
+    ]
+  },
+  {
+    "id": "salud-odontologia-extraccion-dental",
+    "subcategoryId": "salud-odontologia",
+    "name": "Extracción dental",
+    "aliases": [
+      "sacar muela"
+    ]
+  },
+  {
+    "id": "salud-odontologia-implantes-dentales",
+    "subcategoryId": "salud-odontologia",
+    "name": "Implantes dentales",
+    "aliases": [
+      "implante"
+    ]
+  },
+  {
+    "id": "salud-odontologia-limpieza-dental",
+    "subcategoryId": "salud-odontologia",
+    "name": "Limpieza dental",
+    "aliases": [
+      "profilaxis",
+      "sarro"
+    ]
+  },
+  {
+    "id": "salud-odontologia-odontologia-infantil",
+    "subcategoryId": "salud-odontologia",
+    "name": "Odontología infantil",
+    "aliases": [
+      "dentista para niños"
+    ]
+  },
+  {
+    "id": "salud-odontologia-ortodoncia",
+    "subcategoryId": "salud-odontologia",
+    "name": "Ortodoncia",
+    "aliases": [
+      "brackets",
+      "alineadores"
+    ]
+  },
+  {
+    "id": "salud-odontologia-protesis-dental",
+    "subcategoryId": "salud-odontologia",
+    "name": "Prótesis dental",
+    "aliases": [
+      "dentadura",
+      "corona"
+    ]
+  },
+  {
+    "id": "salud-odontologia-tratamiento-de-caries",
+    "subcategoryId": "salud-odontologia",
+    "name": "Tratamiento de caries",
+    "aliases": [
+      "empaste",
+      "arreglo dental"
+    ]
+  },
+  {
+    "id": "salud-odontologia-urgencia-odontologica",
+    "subcategoryId": "salud-odontologia",
+    "name": "Urgencia odontológica",
+    "aliases": [
+      "dolor de muela",
+      "dentista urgente"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-fisioterapia",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Fisioterapia",
+    "aliases": [
+      "fisioterapeuta",
+      "rehabilitación física"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-fonoaudiologia",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Fonoaudiología",
+    "aliases": [
+      "fonoaudiólogo",
+      "terapia del habla"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-masaje-terapeutico",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Masaje terapéutico",
+    "aliases": [
+      "masoterapia",
+      "masajista terapéutico"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-osteopatia",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Osteopatía",
+    "aliases": [
+      "osteópata"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-psicomotricidad",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Psicomotricidad",
+    "aliases": [
+      "psicomotricista"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-quiropraxia",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Quiropraxia",
+    "aliases": [
+      "quiropráctico"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-rehabilitacion-deportiva",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Rehabilitación deportiva",
+    "aliases": [
+      "recuperación de lesiones"
+    ]
+  },
+  {
+    "id": "salud-rehabilitacion-terapia-ocupacional",
+    "subcategoryId": "salud-rehabilitacion",
+    "name": "Terapia ocupacional",
+    "aliases": [
+      "terapeuta ocupacional"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-atencion-psicologica-online",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Atención psicológica online",
+    "aliases": [
+      "psicólogo remoto"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-neuropsicologia",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Neuropsicología",
+    "aliases": [
+      "evaluación neuropsicológica"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-orientacion-vocacional",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Orientación vocacional",
+    "aliases": [
+      "test vocacional"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-psicologia-infantil",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Psicología infantil",
+    "aliases": [
+      "psicólogo para niños"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-psicoterapia-individual",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Psicoterapia individual",
+    "aliases": [
+      "psicólogo",
+      "terapia"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-psiquiatria",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Psiquiatría",
+    "aliases": [
+      "psiquiatra"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-terapia-de-pareja",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Terapia de pareja",
+    "aliases": [
+      "psicólogo de pareja"
+    ]
+  },
+  {
+    "id": "salud-salud-mental-terapia-familiar",
+    "subcategoryId": "salud-salud-mental",
+    "name": "Terapia familiar",
+    "aliases": [
+      "psicología familiar"
+    ]
+  },
+  {
+    "id": "seguridad-alarmas-configuracion-de-camaras-ip",
+    "subcategoryId": "seguridad-alarmas",
+    "name": "Configuración de cámaras IP",
+    "aliases": [
+      "cámara wifi",
+      "cámara remota"
+    ]
+  },
+  {
+    "id": "seguridad-alarmas-control-de-acceso",
+    "subcategoryId": "seguridad-alarmas",
+    "name": "Control de acceso",
+    "aliases": [
+      "tarjeta",
+      "huella",
+      "acceso electrónico"
+    ]
+  },
+  {
+    "id": "seguridad-alarmas-instalacion-de-alarmas",
+    "subcategoryId": "seguridad-alarmas",
+    "name": "Instalación de alarmas",
+    "aliases": [
+      "alarma para casa",
+      "alarma comercial"
+    ]
+  },
+  {
+    "id": "seguridad-alarmas-instalacion-de-camaras-de-seguridad",
+    "subcategoryId": "seguridad-alarmas",
+    "name": "Instalación de cámaras de seguridad",
+    "aliases": [
+      "CCTV",
+      "videovigilancia"
+    ]
+  },
+  {
+    "id": "seguridad-alarmas-mantenimiento-de-sistemas-de-alarma",
+    "subcategoryId": "seguridad-alarmas",
+    "name": "Mantenimiento de sistemas de alarma",
+    "aliases": [
+      "service de alarma"
+    ]
+  },
+  {
+    "id": "seguridad-alarmas-monitoreo-de-alarmas",
+    "subcategoryId": "seguridad-alarmas",
+    "name": "Monitoreo de alarmas",
+    "aliases": [
+      "respuesta de alarma"
+    ]
+  },
+  {
+    "id": "seguridad-alarmas-videoporteros",
+    "subcategoryId": "seguridad-alarmas",
+    "name": "Videoporteros",
+    "aliases": [
+      "portero eléctrico con cámara"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-apertura-de-puertas",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Apertura de puertas",
+    "aliases": [
+      "llave adentro",
+      "puerta trancada"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-cambio-de-cerraduras",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Cambio de cerraduras",
+    "aliases": [
+      "cerradura nueva"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-cerrajeria-automotriz",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Cerrajería automotriz",
+    "aliases": [
+      "llave de auto",
+      "abrir auto"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-cerrajero-a-domicilio",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Cerrajero a domicilio",
+    "aliases": [
+      "cerrajero",
+      "abrir puerta"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-cerrajero-de-urgencia",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Cerrajero de urgencia",
+    "aliases": [
+      "cerrajero 24 horas"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-copia-y-codificacion-de-llaves",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Copia y codificación de llaves",
+    "aliases": [
+      "duplicado de llave"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-instalacion-de-cerraduras-inteligentes",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Instalación de cerraduras inteligentes",
+    "aliases": [
+      "cerradura digital"
+    ]
+  },
+  {
+    "id": "seguridad-cerrajeria-reparacion-de-cerraduras",
+    "subcategoryId": "seguridad-cerrajeria",
+    "name": "Reparación de cerraduras",
+    "aliases": [
+      "cerradura rota"
+    ]
+  },
+  {
+    "id": "seguridad-seguridad-privada-asesoria-en-seguridad",
+    "subcategoryId": "seguridad-seguridad-privada",
+    "name": "Asesoría en seguridad",
+    "aliases": [
+      "evaluación de riesgos"
+    ]
+  },
+  {
+    "id": "seguridad-seguridad-privada-instalacion-de-cercas-electricas",
+    "subcategoryId": "seguridad-seguridad-privada",
+    "name": "Instalación de cercas eléctricas",
+    "aliases": [
+      "cerco eléctrico"
+    ]
+  },
+  {
+    "id": "seguridad-seguridad-privada-instalacion-de-portones-automaticos",
+    "subcategoryId": "seguridad-seguridad-privada",
+    "name": "Instalación de portones automáticos",
+    "aliases": [
+      "acceso vehicular"
+    ]
+  },
+  {
+    "id": "seguridad-seguridad-privada-instalacion-y-mantenimiento-de-extintores",
+    "subcategoryId": "seguridad-seguridad-privada",
+    "name": "Instalación y mantenimiento de extintores",
+    "aliases": [
+      "matafuegos",
+      "recarga de extintor"
+    ]
+  },
+  {
+    "id": "seguridad-seguridad-privada-seguridad-para-eventos",
+    "subcategoryId": "seguridad-seguridad-privada",
+    "name": "Seguridad para eventos",
+    "aliases": [
+      "control de acceso en fiestas"
+    ]
+  },
+  {
+    "id": "seguridad-seguridad-privada-servicio-de-vigilancia",
+    "subcategoryId": "seguridad-seguridad-privada",
+    "name": "Servicio de vigilancia",
+    "aliases": [
+      "guardia de seguridad",
+      "vigilante"
+    ]
+  },
+  {
+    "id": "seguridad-seguridad-privada-sistemas-contra-incendios",
+    "subcategoryId": "seguridad-seguridad-privada",
+    "name": "Sistemas contra incendios",
+    "aliases": [
+      "detección de incendio",
+      "alarma de humo"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-comercio-exterior",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Comercio exterior",
+    "aliases": [
+      "importación",
+      "exportación",
+      "despachante"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-consultoria-de-calidad",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Consultoría de calidad",
+    "aliases": [
+      "ISO",
+      "sistema de calidad"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-consultoria-de-procesos",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Consultoría de procesos",
+    "aliases": [
+      "mejora de procesos"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-consultoria-empresarial",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Consultoría empresarial",
+    "aliases": [
+      "asesor de empresas"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-gestion-de-proyectos",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Gestión de proyectos",
+    "aliases": [
+      "project manager"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-plan-de-negocios",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Plan de negocios",
+    "aliases": [
+      "proyecto empresarial"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-prevencion-de-riesgos-laborales",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Prevención de riesgos laborales",
+    "aliases": [
+      "técnico prevencionista",
+      "seguridad laboral"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-traduccion-profesional",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Traducción profesional",
+    "aliases": [
+      "traductor",
+      "traducciones"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-consultoria-traduccion-publica",
+    "subcategoryId": "servicios-profesionales-consultoria",
+    "name": "Traducción pública",
+    "aliases": [
+      "traductor público"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-asesoramiento-financiero",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Asesoramiento financiero",
+    "aliases": [
+      "finanzas empresariales"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-contabilidad-para-empresas",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Contabilidad para empresas",
+    "aliases": [
+      "contador",
+      "estudio contable"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-contabilidad-para-unipersonales",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Contabilidad para unipersonales",
+    "aliases": [
+      "contador independiente"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-declaracion-jurada",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Declaración jurada",
+    "aliases": [
+      "impuestos",
+      "DGI"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-facturacion-y-cobranza",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Facturación y cobranza",
+    "aliases": [
+      "administración de facturas"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-gestion-administrativa",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Gestión administrativa",
+    "aliases": [
+      "administrativo externo"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-inscripcion-de-empresa",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Inscripción de empresa",
+    "aliases": [
+      "abrir empresa",
+      "unipersonal"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-liquidacion-de-impuestos",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Liquidación de impuestos",
+    "aliases": [
+      "DGI",
+      "IVA",
+      "IRAE"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-liquidacion-de-sueldos",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Liquidación de sueldos",
+    "aliases": [
+      "nómina",
+      "recibos de sueldo"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-contabilidad-tramites-ante-bps",
+    "subcategoryId": "servicios-profesionales-contabilidad",
+    "name": "Trámites ante BPS",
+    "aliases": [
+      "seguridad social",
+      "BPS"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-asesoramiento-legal",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Asesoramiento legal",
+    "aliases": [
+      "abogado",
+      "consulta jurídica"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-certificacion-de-firmas",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Certificación de firmas",
+    "aliases": [
+      "escribano público"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-defensa-del-consumidor",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Defensa del consumidor",
+    "aliases": [
+      "reclamo de consumo"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-derecho-civil",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Derecho civil",
+    "aliases": [
+      "abogado civil"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-derecho-comercial",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Derecho comercial",
+    "aliases": [
+      "abogado de empresas"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-derecho-de-familia",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Derecho de familia",
+    "aliases": [
+      "divorcio",
+      "tenencia",
+      "pensión"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-derecho-inmobiliario",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Derecho inmobiliario",
+    "aliases": [
+      "contratos de alquiler",
+      "propiedad"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-derecho-laboral",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Derecho laboral",
+    "aliases": [
+      "abogado laboral",
+      "despido"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-poderes-y-escrituras",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Poderes y escrituras",
+    "aliases": [
+      "escritura pública",
+      "poder notarial"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-servicios-notariales",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Servicios notariales",
+    "aliases": [
+      "escribano",
+      "escribanía"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-legal-sucesiones",
+    "subcategoryId": "servicios-profesionales-legal",
+    "name": "Sucesiones",
+    "aliases": [
+      "herencia",
+      "trámite sucesorio"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-recursos-humanos-capacitacion-empresarial",
+    "subcategoryId": "servicios-profesionales-recursos-humanos",
+    "name": "Capacitación empresarial",
+    "aliases": [
+      "formación para empresas"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-recursos-humanos-coaching-ejecutivo",
+    "subcategoryId": "servicios-profesionales-recursos-humanos",
+    "name": "Coaching ejecutivo",
+    "aliases": [
+      "coach empresarial"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-recursos-humanos-consultoria-de-recursos-humanos",
+    "subcategoryId": "servicios-profesionales-recursos-humanos",
+    "name": "Consultoría de recursos humanos",
+    "aliases": [
+      "gestión humana"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-recursos-humanos-evaluacion-psicotecnica",
+    "subcategoryId": "servicios-profesionales-recursos-humanos",
+    "name": "Evaluación psicotécnica",
+    "aliases": [
+      "evaluación laboral"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-recursos-humanos-outsourcing-administrativo",
+    "subcategoryId": "servicios-profesionales-recursos-humanos",
+    "name": "Outsourcing administrativo",
+    "aliases": [
+      "tercerización administrativa"
+    ]
+  },
+  {
+    "id": "servicios-profesionales-recursos-humanos-seleccion-de-personal",
+    "subcategoryId": "servicios-profesionales-recursos-humanos",
+    "name": "Selección de personal",
+    "aliases": [
+      "reclutamiento",
+      "contratar empleados"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-asesoramiento-agronomico",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Asesoramiento agronómico",
+    "aliases": [
+      "ingeniero agrónomo"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-control-de-plagas-agricolas",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Control de plagas agrícolas",
+    "aliases": [
+      "plagas de cultivo"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-desmalezado-de-campos",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Desmalezado de campos",
+    "aliases": [
+      "limpieza de campo"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-gestion-de-establecimientos-rurales",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Gestión de establecimientos rurales",
+    "aliases": [
+      "administración de campo"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-instalacion-de-riego-rural",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Instalación de riego rural",
+    "aliases": [
+      "riego agrícola"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-limpieza-de-tajamares",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Limpieza de tajamares",
+    "aliases": [
+      "mantenimiento de tajamar"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-mensura-rural",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Mensura rural",
+    "aliases": [
+      "agrimensor rural"
+    ]
+  },
+  {
+    "id": "servicios-rurales-infraestructura-rural-perforacion-de-pozos-de-agua",
+    "subcategoryId": "servicios-rurales-infraestructura-rural",
+    "name": "Perforación de pozos de agua",
+    "aliases": [
+      "pozo semisurgente",
+      "perforista"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-contratacion-de-maquinaria-agricola",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Contratación de maquinaria agrícola",
+    "aliases": [
+      "tractor",
+      "maquinaria rural"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-corte-y-enfardado",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Corte y enfardado",
+    "aliases": [
+      "fardos",
+      "pastura"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-cosecha",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Cosecha",
+    "aliases": [
+      "cosechadora",
+      "servicio de cosecha"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-laboreo-de-suelos",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Laboreo de suelos",
+    "aliases": [
+      "arado",
+      "preparación de tierra"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-movimiento-de-tierra",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Movimiento de tierra",
+    "aliases": [
+      "retroexcavadora",
+      "tajamar"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-pulverizacion-agricola",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Pulverización agrícola",
+    "aliases": [
+      "fumigación de cultivo"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-reparacion-de-maquinaria-agricola",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Reparación de maquinaria agrícola",
+    "aliases": [
+      "mecánico agrícola"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-agricolas-siembra",
+    "subcategoryId": "servicios-rurales-servicios-agricolas",
+    "name": "Siembra",
+    "aliases": [
+      "sembradora",
+      "servicio de siembra"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-ganaderos-alambrado-rural",
+    "subcategoryId": "servicios-rurales-servicios-ganaderos",
+    "name": "Alambrado rural",
+    "aliases": [
+      "alambrador",
+      "cerco de campo"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-ganaderos-esquila",
+    "subcategoryId": "servicios-rurales-servicios-ganaderos",
+    "name": "Esquila",
+    "aliases": [
+      "esquilador",
+      "ovejas"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-ganaderos-herrado-de-caballos",
+    "subcategoryId": "servicios-rurales-servicios-ganaderos",
+    "name": "Herrado de caballos",
+    "aliases": [
+      "herrador",
+      "equinos"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-ganaderos-inseminacion-artificial",
+    "subcategoryId": "servicios-rurales-servicios-ganaderos",
+    "name": "Inseminación artificial",
+    "aliases": [
+      "reproducción animal"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-ganaderos-manejo-de-ganado",
+    "subcategoryId": "servicios-rurales-servicios-ganaderos",
+    "name": "Manejo de ganado",
+    "aliases": [
+      "trabajo con vacunos"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-ganaderos-transporte-de-animales",
+    "subcategoryId": "servicios-rurales-servicios-ganaderos",
+    "name": "Transporte de animales",
+    "aliases": [
+      "traslado de ganado"
+    ]
+  },
+  {
+    "id": "servicios-rurales-servicios-ganaderos-veterinaria-rural",
+    "subcategoryId": "servicios-rurales-servicios-ganaderos",
+    "name": "Veterinaria rural",
+    "aliases": [
+      "veterinario de campo",
+      "ganado"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-automatizacion-de-procesos",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Automatización de procesos",
+    "aliases": [
+      "integraciones",
+      "automatización empresarial"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-ciberseguridad-para-empresas",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Ciberseguridad para empresas",
+    "aliases": [
+      "seguridad informática",
+      "auditoría"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-configuracion-de-correo-corporativo",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Configuración de correo corporativo",
+    "aliases": [
+      "email de empresa",
+      "dominio"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-consultoria-tecnologica",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Consultoría tecnológica",
+    "aliases": [
+      "asesor IT",
+      "transformación digital"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-desarrollo-de-aplicaciones",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Desarrollo de aplicaciones",
+    "aliases": [
+      "programador",
+      "software a medida"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-desarrollo-de-aplicaciones-moviles",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Desarrollo de aplicaciones móviles",
+    "aliases": [
+      "app Android",
+      "app iOS"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-desarrollo-de-paginas-web",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Desarrollo de páginas web",
+    "aliases": [
+      "sitio web",
+      "programador web"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-desarrollo-de-tienda-online",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Desarrollo de tienda online",
+    "aliases": [
+      "ecommerce",
+      "comercio electrónico"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-mantenimiento-de-paginas-web",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Mantenimiento de páginas web",
+    "aliases": [
+      "actualizar web",
+      "soporte web"
+    ]
+  },
+  {
+    "id": "tecnologia-desarrollo-migracion-y-respaldo-en-la-nube",
+    "subcategoryId": "tecnologia-desarrollo",
+    "name": "Migración y respaldo en la nube",
+    "aliases": [
+      "cloud",
+      "backup"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-actualizacion-de-hardware",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Actualización de hardware",
+    "aliases": [
+      "memoria RAM",
+      "disco SSD"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-armado-de-pc",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Armado de PC",
+    "aliases": [
+      "ensamblaje de computadora",
+      "PC gamer"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-cableado-de-red",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Cableado de red",
+    "aliases": [
+      "ethernet",
+      "cable UTP"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-configuracion-de-almacenamiento-nas",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Configuración de almacenamiento NAS",
+    "aliases": [
+      "servidor de archivos"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-configuracion-de-routers",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Configuración de routers",
+    "aliases": [
+      "módem",
+      "router wifi"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-eliminacion-de-virus-y-malware",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Eliminación de virus y malware",
+    "aliases": [
+      "computadora con virus"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-formateo-e-instalacion-de-sistema",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Formateo e instalación de sistema",
+    "aliases": [
+      "instalar Windows",
+      "formatear PC"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-instalacion-de-redes-wi-fi",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Instalación de redes Wi-Fi",
+    "aliases": [
+      "wifi",
+      "red inalámbrica"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-instalacion-de-servidores",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Instalación de servidores",
+    "aliases": [
+      "servidor empresarial"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-mejora-de-cobertura-wi-fi",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Mejora de cobertura Wi-Fi",
+    "aliases": [
+      "repetidor",
+      "mesh",
+      "wifi lento"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-optimizacion-de-computadora",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Optimización de computadora",
+    "aliases": [
+      "PC lenta",
+      "acelerar notebook"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-recuperacion-de-datos",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Recuperación de datos",
+    "aliases": [
+      "archivos borrados",
+      "disco dañado"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-redes-para-empresas",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Redes para empresas",
+    "aliases": [
+      "infraestructura de red"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-reparacion-de-computadoras",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Reparación de computadoras",
+    "aliases": [
+      "técnico PC",
+      "arreglo de computadora"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-reparacion-de-notebooks",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Reparación de notebooks",
+    "aliases": [
+      "laptop",
+      "técnico de notebook"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-soporte-tecnico-a-domicilio",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Soporte técnico a domicilio",
+    "aliases": [
+      "informático a domicilio"
+    ]
+  },
+  {
+    "id": "tecnologia-soporte-it-soporte-tecnico-remoto",
+    "subcategoryId": "tecnologia-soporte-it",
+    "name": "Soporte técnico remoto",
+    "aliases": [
+      "asistencia informática online"
+    ]
+  },
+  {
+    "id": "turismo-experiencias-actividades-para-grupos",
+    "subcategoryId": "turismo-experiencias",
+    "name": "Actividades para grupos",
+    "aliases": [
+      "team building",
+      "excursión grupal"
+    ]
+  },
+  {
+    "id": "turismo-experiencias-clases-de-surf",
+    "subcategoryId": "turismo-experiencias",
+    "name": "Clases de surf",
+    "aliases": [
+      "instructor de surf"
+    ]
+  },
+  {
+    "id": "turismo-experiencias-experiencias-fotograficas",
+    "subcategoryId": "turismo-experiencias",
+    "name": "Experiencias fotográficas",
+    "aliases": [
+      "tour de fotografía"
+    ]
+  },
+  {
+    "id": "turismo-experiencias-paseos-a-caballo",
+    "subcategoryId": "turismo-experiencias",
+    "name": "Paseos a caballo",
+    "aliases": [
+      "cabalgata"
+    ]
+  },
+  {
+    "id": "turismo-experiencias-paseos-en-kayak",
+    "subcategoryId": "turismo-experiencias",
+    "name": "Paseos en kayak",
+    "aliases": [
+      "kayak guiado"
+    ]
+  },
+  {
+    "id": "turismo-experiencias-senderismo-guiado",
+    "subcategoryId": "turismo-experiencias",
+    "name": "Senderismo guiado",
+    "aliases": [
+      "trekking"
+    ]
+  },
+  {
+    "id": "turismo-guias-avistamiento-de-aves",
+    "subcategoryId": "turismo-guias",
+    "name": "Avistamiento de aves",
+    "aliases": [
+      "birdwatching"
+    ]
+  },
+  {
+    "id": "turismo-guias-guia-turistico-en-colonia",
+    "subcategoryId": "turismo-guias",
+    "name": "Guía turístico en Colonia",
+    "aliases": [
+      "tour Colonia del Sacramento"
+    ]
+  },
+  {
+    "id": "turismo-guias-guia-turistico-en-montevideo",
+    "subcategoryId": "turismo-guias",
+    "name": "Guía turístico en Montevideo",
+    "aliases": [
+      "city tour",
+      "guía local"
+    ]
+  },
+  {
+    "id": "turismo-guias-guia-turistico-en-punta-del-este",
+    "subcategoryId": "turismo-guias",
+    "name": "Guía turístico en Punta del Este",
+    "aliases": [
+      "tour Maldonado"
+    ]
+  },
+  {
+    "id": "turismo-guias-pesca-guiada",
+    "subcategoryId": "turismo-guias",
+    "name": "Pesca guiada",
+    "aliases": [
+      "guía de pesca"
+    ]
+  },
+  {
+    "id": "turismo-guias-recorridos-historicos",
+    "subcategoryId": "turismo-guias",
+    "name": "Recorridos históricos",
+    "aliases": [
+      "tour histórico"
+    ]
+  },
+  {
+    "id": "turismo-guias-tours-de-bodegas",
+    "subcategoryId": "turismo-guias",
+    "name": "Tours de bodegas",
+    "aliases": [
+      "enoturismo",
+      "visita a bodega"
+    ]
+  },
+  {
+    "id": "turismo-guias-tours-gastronomicos",
+    "subcategoryId": "turismo-guias",
+    "name": "Tours gastronómicos",
+    "aliases": [
+      "experiencia culinaria"
+    ]
+  },
+  {
+    "id": "turismo-guias-turismo-rural",
+    "subcategoryId": "turismo-guias",
+    "name": "Turismo rural",
+    "aliases": [
+      "estancia turística",
+      "experiencia rural"
+    ]
+  },
+  {
+    "id": "turismo-traslados-alquiler-de-vehiculo-con-chofer",
+    "subcategoryId": "turismo-traslados",
+    "name": "Alquiler de vehículo con chofer",
+    "aliases": [
+      "chofer turístico"
+    ]
+  },
+  {
+    "id": "turismo-traslados-excursiones-privadas",
+    "subcategoryId": "turismo-traslados",
+    "name": "Excursiones privadas",
+    "aliases": [
+      "paseo privado"
+    ]
+  },
+  {
+    "id": "turismo-traslados-planificacion-de-viajes-dentro-de-uruguay",
+    "subcategoryId": "turismo-traslados",
+    "name": "Planificación de viajes dentro de Uruguay",
+    "aliases": [
+      "itinerario",
+      "asesor de viaje"
+    ]
+  },
+  {
+    "id": "turismo-traslados-recepcion-de-pasajeros",
+    "subcategoryId": "turismo-traslados",
+    "name": "Recepción de pasajeros",
+    "aliases": [
+      "asistencia al turista"
+    ]
+  },
+  {
+    "id": "turismo-traslados-traslados-turisticos",
+    "subcategoryId": "turismo-traslados",
+    "name": "Traslados turísticos",
+    "aliases": [
+      "transfer turístico"
+    ]
+  }
+]

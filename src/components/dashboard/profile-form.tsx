@@ -21,9 +21,22 @@ import {
 import { clearSelectedPlan } from "@/lib/selected-plan";
 import type { FormState } from "@/app/actions/auth";
 import { CATEGORIES } from "@/data/categories";
-import { locationLabelById, locationLevelLabel } from "@/data/locations";
+import {
+  COUNTRY_ID,
+  locationLabelById,
+  locationLevelLabel,
+} from "@/data/locations";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
-import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
+import { Button, Icon } from "@/components/ui";
+import {
+  SearchSelect,
+  type SearchOption,
+} from "@/components/dashboard/search-select";
+import { searchServices } from "@/data/services";
+import {
+  SocialLinksEditor,
+  type SocialLinkDraft,
+} from "@/components/dashboard/social-links-editor";
 import {
   GalleryField,
   SingleImageField,
@@ -211,6 +224,25 @@ function ProfileFormFields(props: {
    */
   const draft = props.draft;
 
+  /*
+   * Los pasos por los que ya se pasó.
+   *
+   * Ubicación no tiene nada que completar: el selector arranca en Uruguay y
+   * las zonas se derivan de ahí, así que exigir un cambio para darlo por
+   * hecho pediría tocar algo que ya está bien. Alcanza con haberlo mirado.
+   *
+   * Se arranca con el paso donde el borrador quedó: quien vuelve ya recorrió
+   * lo anterior, y marcarlo como no visitado lo mandaría para atrás.
+   */
+  const [visited, setVisited] = useState<Set<StepId>>(() => {
+    const resumed =
+      draft?.step && ALL_STEPS.some((s) => s.id === draft.step)
+        ? (draft.step as StepId)
+        : "identidad";
+    const upTo = ALL_STEPS.findIndex((s) => s.id === resumed);
+    return new Set(ALL_STEPS.slice(0, upTo + 1).map((s) => s.id));
+  });
+
   const [requestedStep, setRequestedStep] = useState<StepId>(() =>
     // Volver al paso donde se estaba: reanudar desde el principio obligaría a
     // recorrer de nuevo todo lo ya completado.
@@ -239,14 +271,22 @@ function ProfileFormFields(props: {
   const [services, setServices] = useState<string[]>(
     draft?.services ?? provider?.services ?? [],
   );
-  /** Lo tipeado que todavía no se confirmó. */
-  const [pendingService, setPendingService] = useState("");
-  const [duplicateService, setDuplicateService] = useState<string | null>(null);
+  /**
+   * Lo tipeado en el buscador de servicios. Vive acá y no adentro del
+   * selector porque el catálogo se filtra afuera: son 633 servicios y el
+   * orden depende del rubro ya elegido.
+   */
+  const [serviceQuery, setServiceQuery] = useState("");
   const [subcategoryId, setSubcategoryId] = useState(
     draft?.subcategoryId ?? provider?.subcategoryId ?? "",
   );
+  /*
+   * Arranca en Uruguay y no vacío: el selector nunca devuelve nada sin
+   * elegir —parar en el país es una respuesta válida— y dejarlo vacío
+   * fingía que faltaba un dato que en realidad ya estaba.
+   */
   const [locationId, setLocationId] = useState(
-    draft?.locationId ?? provider?.locationId ?? "",
+    draft?.locationId ?? provider?.locationId ?? COUNTRY_ID,
   );
   const [extraSubcategoryIds, setExtraSubcategoryIds] = useState<string[]>(
     draft?.subcategoryIds ?? provider?.subcategoryIds ?? [],
@@ -256,21 +296,30 @@ function ProfileFormFields(props: {
   );
   /** La última zona repetida que se intentó agregar, para avisarlo. */
   const [duplicateArea, setDuplicateArea] = useState<string | null>(null);
-  /** La subcategoría elegida que todavía no se confirmó. */
-  const [pendingSubcategoryId, setPendingSubcategoryId] = useState("");
-  const [duplicateSubcategory, setDuplicateSubcategory] = useState<
-    string | null
-  >(null);
   const [name, setName] = useState(draft?.name ?? provider?.name ?? "");
   const [description, setDescription] = useState(
     draft?.description ?? provider?.description ?? "",
   );
   const [phone, setPhone] = useState(draft?.phone ?? provider?.phone ?? "");
-  // Alcanza con saber si hay al menos una red cargada, no cuál.
-  const [socialTouched, setSocialTouched] = useState(
-    Object.keys(draft?.socialLinks ?? {}).length > 0 ||
-      (provider?.socialLinks?.length ?? 0) > 0,
-  );
+  /*
+   * Las redes cargadas, con su dirección. Antes alcanzaba con saber si había
+   * alguna —los campos vivían en el DOM—, pero ahora la lista es la fuente:
+   * se agrega y se quita contra este estado.
+   */
+  const [socialLinks, setSocialLinks] = useState<SocialLinkDraft[]>(() => {
+    const fromDraft = Object.entries(draft?.socialLinks ?? {})
+      .filter(([, url]) => url)
+      .map(([platform, url]) => ({
+        platform: platform as SocialPlatform,
+        url,
+      }));
+    if (fromDraft.length > 0) return fromDraft;
+
+    return (provider?.socialLinks ?? []).map((link) => ({
+      platform: link.platform,
+      url: link.url,
+    }));
+  });
   const [teamMembers, setTeamMembers] = useState<TeamRow[]>(
     draft?.teamMembers?.map((member) => ({
       name: member.name ?? "",
@@ -356,10 +405,6 @@ function ProfileFormFields(props: {
     if (draft.serviceMode) setField("serviceMode", draft.serviceMode);
     if (draft.schedule) setField("schedule", draft.schedule);
 
-    for (const [platform, url] of Object.entries(draft.socialLinks ?? {})) {
-      if (url) setField(`social_${platform}`, url);
-    }
-
     if (draft.paymentMethods?.length) {
       const chosen = new Set(draft.paymentMethods);
       for (const box of form.querySelectorAll<HTMLInputElement>(
@@ -370,27 +415,84 @@ function ProfileFormFields(props: {
     }
   }, [draft]);
 
-  /**
-   * Confirma el servicio tipeado. Vacío no agrega nada y repetido avisa, en
-   * vez de descartarse en silencio como pasaba con las zonas.
+  /*
+   * Los rubros como una sola lista. El principal va primero: para quien
+   * completa el formulario "el primero" y "el principal" son lo mismo, y
+   * mantener ese orden hace que quitar y volver a agregar se comporte como
+   * se ve.
    */
-  function addService() {
-    const value = pendingService.trim();
-    if (!value) return;
-    if (services.some((s) => s.toLowerCase() === value.toLowerCase())) {
-      setDuplicateService(value);
-      return;
-    }
-    setDuplicateService(null);
-    setServices([...services, value]);
-    setPendingService("");
-  }
+  const allSubcategoryIds = useMemo(
+    () => (subcategoryId ? [subcategoryId, ...extraSubcategoryIds] : []),
+    [subcategoryId, extraSubcategoryIds],
+  );
+
+  const selectedSubcategories: SearchOption[] = useMemo(
+    () =>
+      allSubcategoryIds.map((id) => ({
+        value: id,
+        label: subcategoryLabel(id),
+      })),
+    [allSubcategoryIds],
+  );
+
+  /** Todos los rubros, con su categoría debajo para distinguir homónimos. */
+  const subcategoryOptions: SearchOption[] = useMemo(
+    () =>
+      CATEGORIES.flatMap((category) =>
+        category.subcategories.map((sub) => ({
+          value: sub.id,
+          label: sub.name,
+          context: category.short,
+        })),
+      ),
+    [],
+  );
+
+  const selectedServices: SearchOption[] = useMemo(
+    () => services.map((service) => ({ value: service, label: service })),
+    [services],
+  );
+
+  /*
+   * Los servicios que se ofrecen, filtrados por lo tipeado.
+   *
+   * Los del rubro ya elegido van primero —con y sin texto—: es lo que casi
+   * siempre se está por agregar. La prioridad la resuelve `searchServices`,
+   * que la aplica antes de recortar; ordenar acá, sobre lo ya recortado,
+   * dejaba fuera justo los del rubro cuando no entraban en el recorte.
+   */
+  const serviceOptions: SearchOption[] = useMemo(() => {
+    const matches = searchServices(serviceQuery, {
+      limit: 60,
+      exclude: services,
+      preferSubcategories: allSubcategoryIds,
+    });
+
+    /*
+     * El valor es el id del catálogo y no el nombre: hay servicios homónimos
+     * en rubros distintos ("Clases de danza" está en Música y en Deportes) y
+     * con el nombre como valor eran la misma fila repetida.
+     *
+     * Lo que se guarda igual es el nombre —`services` es texto libre—, y de
+     * eso se encarga `onSelect`.
+     */
+    return matches.map((service) => ({
+      value: service.id,
+      label: service.name,
+      context: service.context,
+    }));
+  }, [serviceQuery, services, allSubcategoryIds]);
 
   const completion = useMemo(() => {
     return {
       identidad: name.trim().length >= 2 && description.trim().length >= 20,
       rubro: subcategoryId !== "" && services.length > 0,
-      zonas: locationId !== "" && serviceAreaIds.length > 0,
+      /*
+       * Ubicación queda hecha al visitarla: sus dos campos ya vienen con un
+       * valor válido —Uruguay, y las zonas que de ahí salen—, así que no hay
+       * nada que la persona tenga que completar para que el paso sea válido.
+       */
+      zonas: visited.has("zonas"),
       contacto: phone.trim().length > 0,
       /*
        * Estos pasos son opcionales, pero el tilde verde tiene que querer
@@ -401,7 +503,7 @@ function ProfileFormFields(props: {
        * se ve en los listados; la portada y la galería son un extra.
        */
       imagenes: avatar !== null,
-      redes: socialTouched,
+      redes: socialLinks.length > 0,
       equipo: teamMembers.length > 0,
       /*
        * Mientras no haya cobro, lo marca la persona: es un marcador de que
@@ -414,10 +516,9 @@ function ProfileFormFields(props: {
     description,
     subcategoryId,
     services,
-    locationId,
-    serviceAreaIds,
+    visited,
     phone,
-    socialTouched,
+    socialLinks,
     teamMembers,
     avatar,
     paymentDone,
@@ -448,6 +549,18 @@ function ProfileFormFields(props: {
   const setStep = setRequestedStep;
 
   /*
+   * Anota el paso que se está mirando, comparando durante el render en vez de
+   * desde un efecto: así el tilde aparece en el mismo render que muestra el
+   * paso, sin un render intermedio donde ya se ve pero todavía no cuenta.
+   */
+  if (!visited.has(step)) {
+    setVisited((current) => {
+      if (current.has(step)) return current;
+      return new Set(current).add(step);
+    });
+  }
+
+  /*
    * Guarda el borrador cada vez que cambia algo. Los campos no controlados se
    * leen del DOM en el momento, que es donde está su valor.
    *
@@ -469,12 +582,6 @@ function ProfileFormFields(props: {
         ? field.value
         : "";
     };
-
-    const socialLinks: Record<string, string> = {};
-    for (const field of SOCIAL_FIELDS) {
-      const url = read(`social_${field.platform}`);
-      if (url) socialLinks[field.platform] = url;
-    }
 
     const paymentMethods = form
       ? Array.from(
@@ -501,7 +608,9 @@ function ProfileFormFields(props: {
       schedule: read("schedule"),
       paymentMethods,
       paymentAcknowledged: paymentDone,
-      socialLinks,
+      socialLinks: Object.fromEntries(
+        socialLinks.map((link) => [link.platform, link.url]),
+      ),
       teamMembers,
     }, userId);
   }, [
@@ -519,7 +628,7 @@ function ProfileFormFields(props: {
     whatsappEnabled,
     paymentDone,
     teamMembers,
-    socialTouched,
+    socialLinks,
   ]);
 
   /*
@@ -728,7 +837,13 @@ function ProfileFormFields(props: {
         />
       )}
 
-      <div className="rounded-card border border-line bg-white">
+      {/*
+        Con sombra, para que la caja se apoye sobre el fondo en vez de
+        confundirse con él. `shadow-card` no alcanzaba: está pensada para
+        tarjetas chicas y a esta escala, con borde propio y sobre el gris del
+        fondo, no se distinguía de no tener nada.
+      */}
+      <div className="rounded-card border border-line bg-white shadow-panel">
         {/* Cada panel se oculta con `hidden`, no se desmonta: los valores
             siguen en el formulario aunque el paso no esté a la vista. */}
         <Panel active={step === "identidad"} editing={editing} title="Identidad">
@@ -778,123 +893,73 @@ function ProfileFormFields(props: {
 
         <Panel active={step === "rubro"} editing={editing} title="Rubro">
           <Field
-            label="Subcategoría"
-            error={errors.subcategoryId}
-            hint="La categoría se asigna sola según lo que elijas."
+            label="Rubros"
+            error={errors.subcategoryId ?? errors.subcategoryIds}
+            hint={
+              maxSubcategories > 1
+                ? `En qué trabajás. El primero es el principal y define tu categoría; tu plan ${plan.name} permite hasta ${maxSubcategories}.`
+                : "En qué trabajás. Define la categoría en la que aparecés."
+            }
             required
+            counter={`${allSubcategoryIds.length}/${maxSubcategories}`}
+            group
           >
-            <select
-              name="subcategoryId"
-              value={subcategoryId}
-              onChange={(event) => setSubcategoryId(event.target.value)}
-              required
-              className={inputClass(errors.subcategoryId)}
-            >
-              <option value="">Elegí una subcategoría…</option>
-              {CATEGORIES.map((category) => (
-                <optgroup key={category.id} label={category.short}>
-                  {category.subcategories.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+            {/*
+              El principal viaja aparte porque el servidor lo espera aparte:
+              `subcategoryId` decide la categoría del perfil y los demás son
+              adicionales. Para quien completa son una sola lista —el primero
+              que elige es el principal—, que es como se piensa el rubro.
+            */}
+            <input type="hidden" name="subcategoryId" value={subcategoryId} />
+
+            <SearchSelect
+              label="Rubros"
+              name="subcategoryIds"
+              /*
+               * El principal ya viaja en `subcategoryId`: si además saliera
+               * acá, el servidor lo contaría dos veces contra el tope del
+               * plan y avisaría de un exceso que no existe.
+               */
+              omitFromSubmit={subcategoryId ? [subcategoryId] : []}
+              options={subcategoryOptions}
+              selected={selectedSubcategories}
+              max={maxSubcategories}
+              error={errors.subcategoryId ?? errors.subcategoryIds}
+              placeholder="Buscá tu rubro…"
+              emptyLabel="No encontramos ese rubro."
+              onSelect={(option) => {
+                if (subcategoryId === "") {
+                  setSubcategoryId(option.value);
+                  return;
+                }
+                setExtraSubcategoryIds([...extraSubcategoryIds, option.value]);
+              }}
+              onRemove={(value) => {
+                if (value === subcategoryId) {
+                  /*
+                   * Sacar el principal asciende al siguiente: dejar el perfil
+                   * sin principal teniendo otros cargados lo dejaría sin
+                   * categoría, que es dato obligatorio.
+                   */
+                  const [next, ...rest] = extraSubcategoryIds;
+                  setSubcategoryId(next ?? "");
+                  setExtraSubcategoryIds(rest);
+                  return;
+                }
+                setExtraSubcategoryIds(
+                  extraSubcategoryIds.filter((id) => id !== value),
+                );
+              }}
+            />
+
+            {allSubcategoryIds.length >= maxSubcategories ? (
+              <PlanHint
+                planName={plan.name}
+                what="rubros"
+                limit={maxSubcategories}
+              />
+            ) : null}
           </Field>
-
-          {maxSubcategories > 1 ? (
-            <Field
-              label="Otras subcategorías"
-              error={errors.subcategoryIds}
-              hint={`Si trabajás en más de un rubro. Tu plan ${plan.name} permite hasta ${maxSubcategories}.`}
-              counter={`${extraSubcategoryIds.length + 1}/${maxSubcategories}`}
-              group
-            >
-              <div className="flex flex-col gap-2.5">
-                {extraSubcategoryIds.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {extraSubcategoryIds.map((id) => (
-                      <ItemChip
-                        key={id}
-                        name="subcategoryIds"
-                        value={id}
-                        label={subcategoryLabel(id)}
-                        onRemove={() =>
-                          setExtraSubcategoryIds(
-                            extraSubcategoryIds.filter((x) => x !== id),
-                          )
-                        }
-                      />
-                    ))}
-                  </div>
-                ) : null}
-
-                {/* +1: la principal también cuenta contra el tope del plan. */}
-                {extraSubcategoryIds.length + 1 < maxSubcategories ? (
-                  <>
-                    {/*
-                      Elegir y agregar en dos pasos, igual que las zonas: antes
-                      el select agregaba solo al cambiar y no había forma de
-                      mirar la opción antes de confirmarla.
-                    */}
-                    <select
-                      aria-label="Otra subcategoría"
-                      value={pendingSubcategoryId}
-                      onChange={(event) =>
-                        setPendingSubcategoryId(event.target.value)
-                      }
-                      className={inputClass(undefined)}
-                    >
-                      <option value="">Elegí una subcategoría…</option>
-                      {CATEGORIES.map((category) => (
-                        <optgroup key={category.id} label={category.short}>
-                          {category.subcategories.map((sub) => (
-                            <option key={sub.id} value={sub.id}>
-                              {sub.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-
-                    <AddButton
-                      label="Agregar subcategoría"
-                      onClick={() => {
-                        const id = pendingSubcategoryId;
-                        if (!id) return;
-                        if (
-                          id === subcategoryId ||
-                          extraSubcategoryIds.includes(id)
-                        ) {
-                          setDuplicateSubcategory(id);
-                          return;
-                        }
-                        setDuplicateSubcategory(null);
-                        setExtraSubcategoryIds([...extraSubcategoryIds, id]);
-                        setPendingSubcategoryId("");
-                      }}
-                    />
-
-                    {duplicateSubcategory ? (
-                      <p
-                        role="alert"
-                        className="text-[13px] font-medium text-[#B42318]"
-                      >
-                        Ya agregaste {subcategoryLabel(duplicateSubcategory)}.
-                      </p>
-                    ) : null}
-                  </>
-                ) : (
-                  <PlanHint
-                    planName={plan.name}
-                    what="subcategorías"
-                    limit={maxSubcategories}
-                  />
-                )}
-              </div>
-            </Field>
-          ) : null}
 
           <Field
             label="Servicios"
@@ -904,59 +969,46 @@ function ProfileFormFields(props: {
             counter={`${services.length}/${maxServices}`}
             group
           >
-            <div className="flex flex-col gap-2.5">
-              {services.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {services.map((service) => (
-                    <ItemChip
-                      key={service}
-                      name="services"
-                      value={service}
-                      label={service}
-                      onRemove={() => {
-                        setServices(services.filter((x) => x !== service));
-                        if (duplicateService === service) {
-                          setDuplicateService(null);
-                        }
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : null}
+            <SearchSelect
+              label="Servicios"
+              name="services"
+              options={serviceOptions}
+              selected={selectedServices}
+              max={maxServices}
+              error={errors.services}
+              placeholder="Buscá un servicio…"
+              onQueryChange={setServiceQuery}
+              externallyFiltered
+              emptyLabel="No encontramos ese servicio. Escribilo y agregalo igual."
+              allowCustom
+              customHint="Si no está en la lista, escribilo y agregalo igual."
+              onSelect={(option) => {
+                /*
+                 * Se guarda el nombre, no el id del catálogo: `services` es
+                 * una lista de textos libres, y así lo elegido de la lista y
+                 * lo escrito a mano son la misma clase de dato.
+                 */
+                if (
+                  services.some(
+                    (s) => s.toLowerCase() === option.label.toLowerCase(),
+                  )
+                ) {
+                  return;
+                }
+                setServices([...services, option.label]);
+              }}
+              onRemove={(value) =>
+                setServices(services.filter((s) => s !== value))
+              }
+            />
 
-              {services.length < maxServices ? (
-                <>
-                  <input
-                    aria-label="Servicio"
-                    value={pendingService}
-                    onChange={(event) => setPendingService(event.target.value)}
-                    // Enter agrega en vez de enviar el formulario entero.
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        addService();
-                      }
-                    }}
-                    maxLength={60}
-                    placeholder="Ej.: Instalaciones eléctricas"
-                    className={inputClass(undefined)}
-                  />
-
-                  <AddButton label="Agregar servicio" onClick={addService} />
-
-                  {duplicateService ? (
-                    <p
-                      role="alert"
-                      className="text-[13px] font-medium text-[#B42318]"
-                    >
-                      Ya agregaste {duplicateService}.
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <PlanHint planName={plan.name} what="servicios" limit={maxServices} />
-              )}
-            </div>
+            {services.length >= maxServices ? (
+              <PlanHint
+                planName={plan.name}
+                what="servicios"
+                limit={maxServices}
+              />
+            ) : null}
           </Field>
         </Panel>
 
@@ -966,7 +1018,6 @@ function ProfileFormFields(props: {
               label="Dónde estás ubicado"
               error={errors.locationId}
               hint="Precisá hasta donde quieras: alcanza con el departamento."
-              required
               half
               group
             >
@@ -1008,12 +1059,27 @@ function ProfileFormFields(props: {
           <Field
             label="Zonas donde trabajás"
             error={errors.serviceAreaIds}
-            hint="Puede ser distinto de dónde estás ubicado. Precisá hasta donde quieras y tocá «Agregar zona»."
-            required
+            hint="Puede ser distinto de dónde estás ubicado. Si no agregás ninguna, se toma dónde estás ubicado."
+            required={false}
             counter={`${serviceAreaIds.length}/${maxAreas}`}
             group
           >
             <div className="flex flex-col gap-2.5">
+              {/*
+                Sin zonas propias se manda dónde está ubicado. El servidor
+                sigue exigiendo al menos una (RF-163) y tiene razón —un perfil
+                sin zona no aparece en ninguna búsqueda—, pero no es algo que
+                haya que pedirle a la persona: si no dijo otra cosa, trabaja
+                donde está.
+              */}
+              {serviceAreaIds.length === 0 ? (
+                <input
+                  type="hidden"
+                  name="serviceAreaIds"
+                  value={locationId}
+                />
+              ) : null}
+
               {serviceAreaIds.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {serviceAreaIds.map((id) => (
@@ -1193,34 +1259,14 @@ function ProfileFormFields(props: {
         {allowsFeature(plan, "social") ? (
           <Panel active={step === "redes"} editing={editing} title="Redes">
             <p className="text-[13.5px] leading-relaxed text-ink-soft">
-              Dejá vacías las que no uses. Se muestran en tu perfil público.
+              Agregá sólo las que uses. Se muestran en tu perfil público.
             </p>
-            {SOCIAL_FIELDS.map((field) => (
-              <Field
-                key={field.platform}
-                label={field.label}
-                error={errors[`socialLinks.${field.platform}`]}
-              >
-                <input
-                  name={`social_${field.platform}`}
-                  defaultValue={
-                    provider?.socialLinks?.find(
-                      (link) => link.platform === field.platform,
-                    )?.url ?? ""
-                  }
-                  type="url"
-                  maxLength={300}
-                  placeholder="https://"
-                  onInput={(event) =>
-                    setSocialTouched(
-                      event.currentTarget.value.trim().length > 0 ||
-                        socialTouched,
-                    )
-                  }
-                  className={inputClass(undefined)}
-                />
-              </Field>
-            ))}
+            <SocialLinksEditor
+              platforms={SOCIAL_FIELDS}
+              value={socialLinks}
+              onChange={setSocialLinks}
+              error={(platform) => errors[`socialLinks.${platform}`]}
+            />
           </Panel>
         ) : null}
 
@@ -1765,24 +1811,6 @@ function Field({
  * `brand-100` de éstas parecía una etiqueta más en vez de la acción que las
  * agrega.
  */
-function AddButton({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex h-8 items-center gap-1 self-start rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold ${SECONDARY_SURFACE}`}
-    >
-      <Icon name="add" className="text-[16px]" />
-      {label}
-    </button>
-  );
-}
 
 /**
  * Etiqueta de un elemento ya agregado, con su botón de quitar.
