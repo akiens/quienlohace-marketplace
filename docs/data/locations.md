@@ -6,107 +6,22 @@ inicial utilizado para poblar la tabla jerárquica `locations`.
 
 ---
 
-## 1. Cómo leer este documento
+## 1. Formato editorial
 
-La geografía tiene tres niveles seleccionables. `Uruguay` es la raíz, los
-departamentos dependen del país y las localidades dependen de un departamento.
-El proveedor selecciona una opción existente; nunca crea ubicaciones.
+El cuerpo mantiene la jerarquía `Uruguay → departamento → localidad`. Cada
+departamento abre con un encabezado y su slug; cada localidad es una viñeta sin
+indentación. Los encabezados de nivel `##` son agrupaciones de lectura.
 
-```text
-Uruguay → Departamento → Localidad
-```
+Los nombres conservan tildes, mayúsculas y aclaraciones entre paréntesis. Este
+documento no define cómo seleccionar, normalizar, buscar o persistir lugares.
 
-- **País** (1): `Uruguay`. Es una selección válida cuando el proveedor no quiere
-  precisar su ubicación o cuando ofrece servicios en todo el territorio.
-- **Departamento** (19): es una selección válida cuando el proveedor quiere
-  indicar un departamento completo sin precisar una localidad.
-- **Localidad** (452): ciudad, villa, pueblo, balneario o centro poblado utilizado
-  cuando el proveedor desea indicar una ubicación o cobertura más precisa.
+## 2. Referencias normativas
 
-Los barrios y las zonas internas de una ciudad quedan fuera de este catálogo.
-La mayor precisión admitida por el modelo inicial es la localidad.
-
-### Formato de cada línea
-
-Cada departamento abre con su encabezado y su slug. Dentro, cada localidad se
-escribe como una viñeta sin indentación:
-
-```text
-- Nombre de la localidad
-```
-
-- El **nombre canónico** es lo único que se muestra en la interfaz. Se conserva
-  con tildes, mayúsculas y sin abreviaciones innecesarias.
-- Las variantes de escritura no generan registros separados; las resuelve la
-  normalización utilizada para búsquedas.
-- Cuando un nombre convive con otro de uso corriente, el alternativo se mantiene
-  entre paréntesis y no genera una localidad adicional.
-
-### Encabezados y agrupaciones
-
-Los encabezados de nivel `##` dentro de un departamento son agrupaciones de
-lectura. No representan otro nivel geográfico y el generador debe ignorarlos.
-Solo las viñetas sin indentación representan localidades.
-
-### Identificadores derivados
-
-Los IDs se derivan al generar los datos iniciales para evitar mantener dos
-fuentes diferentes:
-
-| Nivel | Fórmula | Ejemplo |
-| --- | --- | --- |
-| País | constante | `uruguay` |
-| Departamento | `slugify(nombre)` | `canelones` |
-| Localidad | `<id departamento>-<slugify(nombre)>` | `canelones-ciudad-de-la-costa` |
-
-`slugify` normaliza a NFD, quita diacríticos, pasa a minúsculas y reemplaza todo
-lo que no sea `a-z0-9` por guiones (`src/lib/slug.ts`).
-
-> **Los IDs geográficos son estables y no se renombran.** Pueden aparecer en
-> URLs, en la ubicación de un perfil y en sus áreas de servicio. Cambiar
-> un nombre visible es posible; cambiar su ID requiere una migración explícita.
-
-### Colisiones de nombre
-
-En Uruguay se repiten topónimos entre departamentos. El prefijo del departamento
-desambigua cada localidad:
-
-| Caso | IDs resultantes |
-| --- | --- |
-| Localidad homónima de su departamento | `florida-florida`, `salto-salto`, `rocha-rocha` |
-| Mismo nombre en departamentos diferentes | `canelones-santa-lucia`, `colonia-santa-ana` |
-
-Dentro de un mismo departamento no puede haber dos localidades con el mismo ID.
-
----
-
-## 2. Criterios de catalogación
-
-1. Una localidad es un lugar reconocido donde alguien puede ubicarse o recibir
-   un servicio: ciudad, villa, pueblo, balneario o centro poblado.
-2. Los barrios, zonas internas, municipios, códigos postales y calles no forman
-   parte de esta versión del catálogo.
-3. Los balnearios reconocidos se mantienen como localidades aunque estén próximos
-   entre sí.
-4. El catálogo prioriza lugares útiles para la búsqueda de servicios y evita
-   subdivisiones que obliguen al usuario a tomar decisiones demasiado precisas.
-
-### Reglas de selección que asume este dataset
-
-- **Ubicación del proveedor:** puede seleccionar `Uruguay`, un departamento o
-  una localidad. Solo se guarda una selección.
-- **Lugares donde ofrece servicios:** puede seleccionar `Uruguay`, uno o varios
-  departamentos, una o varias localidades, o una combinación no redundante de
-  departamentos y localidades.
-- El proveedor nunca está obligado a llegar hasta la localidad. El valor que se
-  guarda es el nivel más específico que decidió indicar.
-- `Uruguay` debe ser una elección explícita. No se debe interpretar un dato
-  ausente como cobertura nacional en un perfil activo.
-- Seleccionar `Uruguay` reemplaza cualquier área de servicio más específica.
-- Seleccionar un departamento hace redundantes sus localidades descendientes,
-  pero puede combinarse con localidades de otros departamentos.
-
----
+- Catálogo y alcance geográfico: **BR-014**.
+- Ubicaciones físicas: **BR-015**.
+- Áreas de servicio y búsqueda: **BR-016**.
+- Estructura persistida y normalización: **TR-017 a TR-019**.
+- Parsing, IDs, validaciones y evolución del dataset: **TR-032 a TR-034**.
 
 ## 3. Índice de departamentos
 
@@ -133,8 +48,7 @@ Dentro de un mismo departamento no puede haber dos localidades con el mismo ID.
 | 19 | Treinta y Tres | `treinta-y-tres` | Treinta y Tres | 18 |
 | | **Total** | | | **452** |
 
-> Los conteos se validan contra las localidades del cuerpo del documento. Si no
-> coinciden, se corrige esta tabla antes de generar los datos iniciales.
+> La validación de estos conteos está definida en **TR-033**.
 
 ---
 
@@ -880,104 +794,12 @@ Minas y su entorno serrano tienen movimiento turístico propio todo el año.
 
 ---
 
-# Anexo A — Cobertura y trazabilidad
+# Anexo A — Trazabilidad
 
-## A.1. Estado respecto del dataset anterior
+La versión anterior contenía zonas y barrios. Este nivel fue eliminado y las
+referencias existentes deben migrarse a su localidad padre antes de adoptar el
+dataset actual. El cuerpo conserva 19 departamentos y 452 localidades.
 
-La versión anterior del documento contenía un tercer nivel con zonas y barrios.
-Ese nivel fue eliminado para simplificar la selección y mantener únicamente
-departamentos y localidades.
-
-Si ya existen perfiles con identificadores de zonas o barrios, antes de aplicar
-este catálogo se debe migrar cada referencia hacia su localidad padre. Si aún no
-hay datos persistidos en producción, el cambio puede aplicarse directamente.
-
-Se conservan los 19 departamentos y las 452 localidades listadas en el cuerpo
-del documento.
-
-## A.2. Consecuencia para el generador
-
-El generador debe producir una única colección para poblar `locations`.
-`Uruguay` se guarda como el registro raíz, de modo que elegir el país sea una
-selección explícita y use la misma FK que departamentos y localidades.
-
-Reglas que el generador aplica, en orden:
-
-1. Emitir `uruguay` como registro raíz de tipo `country`, con `parent_id = null`.
-2. Por cada `# N. Departamento`, emitir un registro de tipo `department` con
-   `parent_id = 'uruguay'`.
-3. Por cada viñeta sin indentación, emitir un registro de tipo `locality` con
-   `parent_id` igual al ID del departamento del encabezado `#` vigente.
-4. Rechazar cualquier viñeta indentada: el catálogo no admite un nivel inferior
-   a localidad.
-5. Ignorar los encabezados `##`: son agrupaciones de lectura.
-6. Ignorar todo texto en prosa entre listas.
-7. Descartar el paréntesis del nombre al derivar el slug, pero conservarlo en
-   el nombre visible: `Charqueada (La Charqueada)` → `charqueada`.
-
-## A.3. Validaciones obligatorias al generar
-
-El generador falla —no advierte— si alguna de estas no se cumple:
-
-1. **Unicidad de ID.** No puede haber dos entradas con el mismo `id` en toda la
-   colección.
-2. **Unicidad dentro del departamento.** No puede haber dos localidades con el
-   mismo ID dentro de un departamento.
-3. **Padre existente.** Todo departamento debe depender de `uruguay` y toda
-   localidad debe depender de uno de los departamentos definidos.
-4. **19 departamentos exactos.** Ni uno más ni uno menos, y sus slugs son los de
-   la tabla del punto 3.
-5. **Slug no vacío.** Un nombre que al normalizar quede vacío es un error de
-   escritura, no una ubicación.
-6. **Conteo consistente.** El número de localidades por departamento debe
-   coincidir con el índice del punto 3.
-7. **Sin cuarto nivel.** Una viñeta indentada es un error y debe detener la
-   generación.
-8. **Raíz única.** `uruguay` debe ser el único registro sin `parentId` y el único
-   registro de tipo `country`.
-
-## A.4. Reglas para ampliar este documento
-
-1. **Agregar una localidad es seguro**: se escribe la viñeta en el departamento
-   que corresponde y se regenera el JSON. No rompe nada existente.
-2. **Renombrar no es seguro.** Cambiar el nombre cambia el slug y por lo tanto
-   el ID. Si hay que corregir un nombre mal escrito, se corrige y se agrega el
-   ID viejo a la tabla de redirecciones; no se borra en silencio.
-3. **Eliminar no es seguro** sin revisar `profiles.location_id` y
-   `profile_service_areas.location_id`.
-4. **No agregar barrios o zonas internas.** Si se necesita mayor precisión en
-   el futuro, debe diseñarse como una ampliación explícita del modelo.
-5. Toda localidad nueva entra con su nombre canónico completo, sin abreviar y
-   con tildes.
-
-## A.5. Forma esperada del JSON
-
-El JSON entrega una sola colección jerárquica destinada a poblar `locations`:
-
-```json
-{
-  "locations": [
-    {
-      "id": "uruguay",
-      "parentId": null,
-      "type": "country",
-      "name": "Uruguay",
-      "slug": "uruguay"
-    },
-    {
-      "id": "canelones",
-      "parentId": "uruguay",
-      "type": "department",
-      "name": "Canelones",
-      "slug": "canelones"
-    },
-    {
-      "id": "canelones-ciudad-de-la-costa",
-      "parentId": "canelones",
-      "type": "locality",
-      "name": "Ciudad de la Costa",
-      "slug": "ciudad-de-la-costa"
-    }
-  ]
-}
-```
+Las reglas de generación, validación, migración, renombre y eliminación están
+centralizadas en **TR-032**, **TR-033** y **TR-034**. Las reglas funcionales de
+selección y cobertura están en **BR-014 a BR-016**.

@@ -1,141 +1,35 @@
-# Categorías, Subcategorías y Servicios
+# Rubros, Especialidades y Servicios
 
-Este documento es la **fuente de la verdad** para cualquier validación de datos
-respecto a las categorías, subcategorías y servicios de cualquier rubro que un
-proveedor podrá seleccionar. De acá se genera el JSON que consume el proyecto.
-
----
-
-## Notas para la UI
-
-Este documento utiliza los términos técnicos **Categoría**, **Subcategoría** y
-**Servicio**, que también pueden conservarse internamente en el código, el JSON
-y la base de datos. Sin embargo, en la interfaz se deben utilizar nombres más
-naturales y fáciles de comprender para el usuario:
-
-| Término técnico | Nombre en la UI |
-| --- | --- |
-| Categoría | **Rubro** |
-| Subcategoría | **Especialidad** |
-| Servicio | **Servicio** |
-
-Por lo tanto, la jerarquía debe presentarse en la interfaz como:
-
-```text
-Rubro  →  Especialidad  →  Servicio
-```
-
-Ejemplo:
-
-```text
-Hogar, Construcción y Mantenimiento
-└── Electricidad
-    └── Instalación de luminarias
-```
-
-Textos sugeridos para los formularios:
-
-1. **¿En qué rubro trabajás?**
-2. **Elegí tu especialidad.**
-3. **¿Qué servicios ofrecés?**
-
-Esta diferencia es únicamente de presentación: no modifica la taxonomía, los
-identificadores, los nombres de propiedades ni las relaciones descritas en este
-documento.
+Este documento es la **fuente de la verdad de los datos canónicos** de rubros,
+especialidades, servicios y aliases. De aquí se genera el JSON consumido por el
+proyecto; las reglas funcionales y técnicas se referencian más abajo.
 
 ---
 
-## 1. Cómo leer este documento
+## 1. Formato editorial
 
-La taxonomía tiene tres niveles, administrados (RF-019): el proveedor
-**selecciona**, nunca crea.
-
-```text
-Categoría  →  Subcategoría  →  Servicio
-```
-
-- **Categoría** (20): el rubro madre. Define la navegación y la URL
-  `/categorias/<slug-categoría>`.
-- **Subcategoría** (120): el oficio o especialidad. Define la URL
-  `/categorias/<slug-categoría>/<slug-subcategoría>` y es lo que se persiste en
-  `providers.subcategory_id`.
-- **Servicio** (1174): lo concreto que el proveedor dice que hace y que la
-  persona busca. Es lo que alimenta el buscador del alta.
-
-### Formato de cada línea
+El cuerpo conserva la jerarquía `rubro → especialidad → servicio`. Cada rubro
+abre con un encabezado, nombre corto e icono; cada especialidad declara su ID;
+y cada servicio utiliza una viñeta con este formato:
 
 ```text
-- Nombre canónico del servicio — alias: término1, término2, término3
+- Nombre canónico — alias: término1, término2, término3
 ```
 
-- El **nombre canónico** es lo único que se muestra en la interfaz. Escrito en
-  español natural de Uruguay, en singular y empezando por el sustantivo o la
-  acción ("Instalación de aire acondicionado", no "Instalar aires").
-- Los **alias** son exclusivamente términos de búsqueda: sinónimos, regionalismos,
-  marcas genéricas y formas coloquiales. **Nunca se muestran** como opción
-  seleccionable ni aparecen en el perfil público.
-- No se crean entradas separadas para singular, plural, con o sin tilde: eso lo
-  resuelve la normalización del buscador.
+Los encabezados, nombres, IDs, servicios y aliases de este archivo constituyen
+los datos canónicos. Su interpretación no introduce reglas adicionales.
 
-### Identificadores derivados
+## 2. Referencias normativas
 
-Los IDs no se escriben acá: se **derivan** al generar el JSON, para que no haya
-dos verdades.
+- Terminología, jerarquía y selección: **BR-010** y **BR-011**.
+- Calidad y evolución del catálogo: **BR-012** y **BR-013**.
+- Habilitaciones para especialidades reguladas: **BR-020**.
+- Identificadores, generación y búsqueda: **TR-020 a TR-022**.
+- Migraciones de identificadores: **TR-034** y **TR-035**.
 
-| Nivel | Fórmula | Ejemplo |
-| --- | --- | --- |
-| Categoría | `slugify(nombre corto)` | `hogar-y-mantenimiento` |
-| Subcategoría | `<id categoría>-<slugify(nombre)>` | `hogar-y-mantenimiento-electricidad` |
-| Servicio | `<id subcategoría>-<slugify(nombre)>` | `hogar-y-mantenimiento-electricidad-puesta-a-tierra` |
+## 3. Índice de rubros
 
-`slugify` normaliza a NFD, quita diacríticos, pasa a minúsculas y reemplaza todo
-lo que no sea `a-z0-9` por guiones (`src/lib/slug.ts`).
-
-> **Los IDs de categoría y subcategoría son estables y no se renombran.** Están
-> escritos en las URLs indexadas y en el `subcategory_id` de cada perfil ya
-> creado. Cambiar un nombre visible es aceptable; cambiar un slug rompe enlaces
-> y deja perfiles huérfanos.
-
----
-
-## 2. Criterios de catalogación
-
-Reglas que se aplicaron al armar esta lista y que hay que sostener al ampliarla.
-
-1. **Un servicio es una unidad de contratación**, no una habilidad. "Reparación
-   de frenos" sí; "conocimiento de hidráulica" no.
-2. **Cada servicio cuelga de exactamente una subcategoría.** Si un servicio
-   parece pertenecer a dos, se elige la que corresponde a *quién lo presta*, no
-   a *para qué sirve*. El descubrimiento cruzado lo resuelven los alias, no la
-   duplicación.
-3. **Granularidad pareja**: entre 4 y 20 servicios por subcategoría. Menos de 4
-   indica que la subcategoría sobra o está mal recortada; más de 20, que
-   convendría partirla.
-4. **Nombres orientados a quien busca**, no a quien factura. "Destape de
-   cañerías" antes que "Desobstrucción de conductos sanitarios".
-5. **Alias con intención de búsqueda real**: cómo lo escribe alguien apurado en
-   el celular. Incluye el nombre del oficio ("plomero", "gomero"), el
-   regionalismo ("bollos", "canilla") y el error previsible.
-6. **Sin marcas comerciales** como nombre canónico. Se admiten como alias
-   cuando son el término de uso corriente (`PlayStation`, `Airbnb`, `Excel`).
-7. **Rubros regulados**: los servicios de salud, legales, notariales, contables
-   y de seguros existen en el catálogo, pero su publicación queda sujeta a la
-   verificación de habilitación profesional (RF-086).
-
-### Reglas de búsqueda que asume este catálogo
-
-El buscador indexa, por servicio: nombre canónico, alias, nombre de
-subcategoría y nombre de categoría. Antes de comparar normaliza a minúsculas,
-sin tildes y sin espacios repetidos. La relevancia baja en este orden:
-coincidencia exacta de nombre → prefijo de nombre → alias exacto → palabra del
-nombre → prefijo de alias → nombre parcial → alias parcial → subcategoría →
-categoría.
-
----
-
-## 3. Índice de categorías
-
-| # | Categoría | Nombre corto (base del slug) | Icono | Subcats | Servicios |
+| # | Rubro | Nombre corto (base del slug) | Icono | Especialidades | Servicios |
 | --- | --- | --- | --- | --- | --- |
 | 1 | Hogar, Construcción y Mantenimiento | Hogar y mantenimiento | `home_repair_service` | 11 | 153 |
 | 2 | Reparaciones y Servicio Técnico | Reparaciones y servicio técnico | `handyman` | 5 | 51 |
@@ -493,7 +387,7 @@ servidores y ciberseguridad corporativos viven en *Tecnología · Soporte IT*.
 - Limpieza de colchones — alias: lavado de colchón, ácaros
 - Limpieza de sillas tapizadas — alias: tapicería, sillas
 - Limpieza de cortinas — alias: lavado de cortinas
-- Limpieza de interiores de vehículos — alias: detailing interior, tapizado de auto
+- Limpieza de toldos — alias: lavado de toldo, toldo exterior, limpieza a domicilio
 - Hidrolavado de superficies — alias: hidrolavadora, lavado a presión
 
 ## 3.3. Limpieza comercial
@@ -684,9 +578,8 @@ Incluye el taller de motos y bicicletas, que en el sitio no tiene rubro propio.
 
 `salud` · corto: *Salud* · icono: `medical_services`
 
-> **Rubro regulado (RF-086).** La publicación de estos servicios queda sujeta a
-> la verificación de la habilitación profesional correspondiente. El catálogo
-> no presenta ninguno de estos servicios como sustituto de una emergencia.
+> **Clasificación:** rubro regulado. Ver **BR-020**. Este catálogo no presenta
+> ninguno de sus servicios como sustituto de una emergencia.
 
 ## 6.1. Medicina
 
@@ -896,7 +789,7 @@ Perfiles institucionales: la organización, no la persona.
 
 - Masajes relajantes — alias: masajista, relax, masaje descontracturante
 - Masaje descontracturante — alias: contracturas, masaje profundo
-- Masaje deportivo — alias: recuperación muscular, masaje para deportistas
+- Preparación física para competencias — alias: preparación deportiva, plan precompetencia
 - Drenaje linfático — alias: masaje linfático, drenaje
 - Masaje con piedras calientes — alias: piedras calientes, hot stone
 - Masaje a domicilio — alias: masajista a domicilio
@@ -1023,8 +916,8 @@ Perfiles institucionales: el centro, no el entrenador.
 
 `servicios-profesionales` · corto: *Servicios profesionales* · icono: `business_center`
 
-> **Rubro parcialmente regulado (RF-086).** Contabilidad, abogacía, escribanía
-> y seguros exigen habilitación profesional verificada antes de publicar.
+> **Clasificación:** Contabilidad, Legal —incluida escribanía— y Seguros son
+> especialidades reguladas. Ver **BR-020**.
 
 ## 9.1. Contabilidad
 
@@ -1469,16 +1362,16 @@ Perfiles institucionales: el instituto, no el docente.
 `eventos-gastronomia`
 
 Gastronomía contratada específicamente para un evento. La oferta gastronómica
-general vive en la categoría 17.
+general vive en el rubro 17.
 
-- Catering para eventos — alias: servicio de comida, catering
+- Coordinación de proveedores gastronómicos — alias: coordinar catering, gestión gastronómica del evento
 - Lunch y mesa de bocados — alias: bocados, mesa de lunch, lunch
 - Parrillero para eventos — alias: asador, parrilla, asado
 - Mesa dulce y candy bar — alias: mesa dulce, candy bar, mesa de postres
 - Torta de fiesta — alias: torta de casamiento, torta de cumpleaños
-- Barra de tragos para eventos — alias: bartender, coctelería, barra
-- Servicio de café para eventos — alias: cafetería móvil, barista
-- Servicio de mozos — alias: mozo para fiesta, mozos
+- Diseño del menú del evento — alias: planificación del menú, propuesta gastronómica
+- Supervisión del servicio gastronómico — alias: coordinación gastronómica, supervisar catering
+- Coordinación de salón para eventos — alias: jefe de salón, coordinación de mozos
 - Food truck para eventos — alias: food truck, gastronomía móvil
 
 ## 13.5. Decoración
@@ -1887,7 +1780,7 @@ Perfiles institucionales: la empresa. El profesional individual va en
 `turismo-experiencias`
 
 - Paseos a caballo — alias: cabalgata, cabalgatas
-- Clases de surf — alias: instructor de surf, surf
+- Salida guiada de surf — alias: surf trip, experiencia de surf, guía de surf
 - Paseos en kayak — alias: kayak guiado, kayak
 - Senderismo guiado — alias: trekking, caminata
 - Paseos en barco y náutica — alias: paseo en barco, náutico, velero
@@ -2093,23 +1986,23 @@ Perfiles institucionales: la empresa. El profesional individual va en
 
 ---
 
-# Anexo A — Cobertura y trazabilidad
+# Anexo A — Trazabilidad
 
 ## A.1. Estado respecto del catálogo anterior
 
 Este documento **reemplaza** a `projects/quienlohace-marketplace/docs/catalogo-servicios.md`
 como fuente de la verdad.
 
-El catálogo anterior estaba escrito contra una división de subcategorías propia
+El catálogo anterior estaba escrito contra una división de especialidades propia
 que **no** era la del sitio, y se aplanaba con la tabla `MAPPING` de
 `scripts/generate-services.ts`. El efecto de ese aplanamiento era que **45 de
-las 120 subcategorías reales quedaban sin un solo servicio**: sus páginas
-`/categorias/<categoría>/<subcategoría>` existían pero no ofrecían nada que
+las 120 especialidades reales quedaban sin un solo servicio**: sus páginas
+`/rubros/<rubro>/<especialidad>` existían pero no ofrecían nada que
 seleccionar en el alta.
 
-Las subcategorías que estaban vacías y ahora tienen servicios propios:
+Las especialidades que estaban vacías y ahora tienen servicios propios:
 
-| Categoría | Subcategorías que estaban vacías |
+| Rubro | Especialidades que estaban vacías |
 | --- | --- |
 | Hogar y mantenimiento | Aberturas, Piscinas |
 | Reparaciones y servicio técnico | Computación |
@@ -2131,24 +2024,12 @@ Las subcategorías que estaban vacías y ahora tienen servicios propios:
 | Seguridad | Cámaras, Control de acceso, Cercos eléctricos, Porteros y videoporteros |
 
 Ningún servicio del catálogo anterior se perdió: los 633 existentes están todos
-acá, reubicados en la subcategoría que les corresponde en la taxonomía real.
+acá, reubicados en la especialidad que les corresponde en la taxonomía real.
 
-## A.2. Consecuencia para el generador
 
-Como este documento ya está escrito contra las subcategorías reales del sitio,
-**la tabla `MAPPING` deja de ser necesaria**: cada bloque `##` declara su propio
-`subcategory_id` en la línea de código que le sigue. El generador debe leer ese
-identificador en lugar de traducir nombres.
+## A.2. Reubicaciones respecto del JSON anterior
 
-Antes de reemplazar el JSON hay que verificar que ningún perfil ya publicado
-quede apuntando a un servicio que cambió de subcategoría. Los servicios se
-guardan por nombre en `provider_services` (texto), así que el riesgo real está
-acotado a `providers.subcategory_id`, que este documento **no** modifica: las
-120 subcategorías y sus slugs son exactamente los de `src/data/categories.ts`.
-
-## A.3. Reubicaciones respecto del JSON actual
-
-Servicios que cambian de subcategoría al adoptar este documento:
+Servicios que cambian de especialidad al adoptar este documento:
 
 | Servicio | Antes | Ahora |
 | --- | --- | --- |
@@ -2178,34 +2059,9 @@ Servicios que cambian de subcategoría al adoptar este documento:
 | Videoporteros | `seguridad-alarmas` | `seguridad-porteros-y-videoporteros` |
 | Cercas eléctricas | `seguridad-seguridad-privada` | `seguridad-cercos-electricos` |
 
-## A.4. Reglas para ampliar este documento
 
-1. **Nunca renombrar ni reordenar** una categoría o subcategoría existente sin
-   una migración explícita: el slug está en URLs indexadas y en
-   `providers.subcategory_id`.
-2. Agregar un servicio es seguro: se añade la línea en el bloque `##` que
-   corresponde y se regenera el JSON.
-3. Eliminar un servicio **no** es seguro sin revisar `provider_services`: hay
-   perfiles que pueden tenerlo declarado por nombre.
-4. Antes de crear una subcategoría nueva, verificar que no sea un servicio
-   dentro de una existente. La subcategoría es un oficio; el servicio, una
-   contratación.
-5. Todo servicio nuevo entra con al menos un alias, salvo que su nombre
-   canónico ya sea el término exacto que se busca.
+## A.3. Referencias normativas
 
-## A.5. Forma esperada del JSON
-
-```json
-[
-  {
-    "id": "hogar-y-mantenimiento-electricidad-puesta-a-tierra",
-    "categoryId": "hogar-y-mantenimiento",
-    "subcategoryId": "hogar-y-mantenimiento-electricidad",
-    "name": "Puesta a tierra",
-    "aliases": ["descarga a tierra", "jabalina", "aterramiento"]
-  }
-]
-```
-
-`categoryId` es derivable de `subcategoryId`, pero incluirlo evita que cada
-consumidor tenga que resolver la pertenencia por su cuenta.
+- Generación, validación y contrato JSON: **TR-020** y **TR-021**.
+- Indexación y relevancia de búsqueda: **TR-022**.
+- Altas, bajas, renombres y migraciones: **BR-013**, **TR-034** y **TR-035**.

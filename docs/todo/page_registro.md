@@ -1,0 +1,2 @@
+- En el panel de servicios para el plan cobre en ves de "Tu perfil publicado" poner "Perfil basico"
+- En el panel de servicios para el plan platino en ves de "Destacados y landing" poner "Perfil completo"
