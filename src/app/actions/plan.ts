@@ -10,7 +10,7 @@ import {
 } from "@/domain/plan-changes";
 import { PLAN_IDS } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
-import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
+import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
 import { requireUser } from "@/lib/session";
 import type { FormState } from "@/app/actions/auth";
 import type { PlanId } from "@/types";
@@ -46,7 +46,7 @@ export async function changePlan(
     return { errors: { form: "Ese plan no está disponible." } };
   }
 
-  const providers = new D1ProviderRepository();
+  const providers = new D1ProfileRepository();
   const provider = await providers.findByUserId(user.id);
 
   /*
@@ -130,7 +130,7 @@ export async function changePlan(
      * null haría que la baja se aplicara al instante y sin aviso.
      */
     await providers.scheduleDowngrade({
-      providerId: provider.id,
+      profileId: provider.id,
       downgradePlanId: planId,
       expiresAt: provider.planExpiresAt ?? nextPeriodEnd(),
       purgeAfter: purgeDeadline(),

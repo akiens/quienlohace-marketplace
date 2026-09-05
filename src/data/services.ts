@@ -1,26 +1,25 @@
-import rawServices from "@/data/services.json";
-import { getCategoryOfSubcategory, getSubcategory } from "@/data/categories";
+import {
+  SERVICE_SUGGESTIONS,
+  getServiceSector,
+  getSpecialty,
+} from "@/data/taxonomy";
+import type { ServiceSuggestion } from "@/types";
 
 /**
- * Catálogo de servicios: lo que un proveedor puede decir que hace.
+ * Sugerencias de servicios: lo que un proveedor puede decir que hace.
  *
- * Se genera desde `docs/catalogo-servicios.md` con `npm run generate:services`.
- * El markdown es la fuente que se edita; el JSON, el resultado que lee el
- * sitio. Editarlo a mano se pierde en la próxima regeneración.
+ * Se generan desde `docs/data/rubros_especialidades_servicios.md` con
+ * `npm run generate:services`. El markdown es la fuente que se edita; el JSON,
+ * el resultado que lee el sitio (TR-021).
  *
- * La taxonomía del catálogo no es la del sitio: la correspondencia está en
- * `scripts/generate-services.ts`. Acá ya llega resuelta, con cada servicio
- * colgado de una subcategoría real.
+ * Cada sugerencia cuelga de una especialidad, y la especialidad de un rubro.
+ * Lo que se guarda en el perfil es el texto confirmado, no el id de esta
+ * lista: el catálogo puede cambiar sin arrastrar los perfiles (TR-022).
  */
-export type Service = {
-  id: string;
-  subcategoryId: string;
-  name: string;
-  /** Sinónimos y términos regionales. Sólo para buscar: nunca se muestran. */
-  aliases: string[];
-};
 
-export const SERVICES = rawServices as Service[];
+export type Service = ServiceSuggestion;
+
+export const SERVICES: Service[] = SERVICE_SUGGESTIONS;
 
 /**
  * Texto normalizado para comparar: sin tildes, en minúsculas y con los
@@ -32,50 +31,50 @@ export const SERVICES = rawServices as Service[];
 export function normalize(value: string): string {
   return value
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/\s+/g, " ")
     .trim();
 }
 
 /**
- * Un servicio con todo lo que hace falta para buscarlo y para mostrarlo,
+ * Una sugerencia con todo lo que hace falta para buscarla y para mostrarla,
  * calculado una vez al cargar el módulo.
  *
- * El contexto —subcategoría y categoría— se resuelve acá y no en cada
- * teclazo: son 633 servicios y hacerlo en el filtro significaría dos búsquedas
- * por servicio por letra tipeada.
+ * El contexto —especialidad y rubro— se resuelve acá y no en cada teclazo: son
+ * 1174 servicios y hacerlo en el filtro significaría dos búsquedas por
+ * servicio por letra tipeada.
  */
 export type IndexedService = Service & {
-  subcategoryName: string;
-  categoryName: string;
+  specialtyName: string;
+  sectorName: string;
   /** "Climatización · Hogar y mantenimiento", para mostrar bajo el nombre. */
   context: string;
   search: {
     name: string;
     aliases: string[];
-    subcategory: string;
-    category: string;
+    specialty: string;
+    sector: string;
   };
 };
 
 export const SERVICE_INDEX: IndexedService[] = SERVICES.map((service) => {
-  const subcategory = getSubcategory(service.subcategoryId);
-  const category = getCategoryOfSubcategory(service.subcategoryId);
+  const specialty = getSpecialty(service.specialtyId);
+  const sector = getServiceSector(service.serviceSectorId);
 
-  const subcategoryName = subcategory?.name ?? "";
-  const categoryName = category?.short ?? "";
+  const specialtyName = specialty?.name ?? "";
+  const sectorName = sector?.short ?? "";
 
   return {
     ...service,
-    subcategoryName,
-    categoryName,
-    context: [subcategoryName, categoryName].filter(Boolean).join(" · "),
+    specialtyName,
+    sectorName,
+    context: [specialtyName, sectorName].filter(Boolean).join(" · "),
     search: {
       name: normalize(service.name),
       aliases: service.aliases.map(normalize),
-      subcategory: normalize(subcategoryName),
-      category: normalize(categoryName),
+      specialty: normalize(specialtyName),
+      sector: normalize(sectorName),
     },
   };
 });
@@ -107,10 +106,10 @@ function score(service: IndexedService, query: string): number | null {
   if (search.name.includes(query)) return 50;
   if (search.aliases.some((alias) => alias.includes(query))) return 40;
 
-  // El rubro va último: coincide para todos los servicios que cuelgan de él,
-  // así que como señal vale menos que cualquier coincidencia propia.
-  if (search.subcategory.includes(query)) return 30;
-  if (search.category.includes(query)) return 20;
+  // La especialidad va última: coincide para todos los servicios que cuelgan
+  // de ella, así que como señal vale menos que una coincidencia propia.
+  if (search.specialty.includes(query)) return 30;
+  if (search.sector.includes(query)) return 20;
 
   return null;
 }
@@ -164,24 +163,26 @@ function scoreWords(service: IndexedService, words: string[]): number | null {
  * Busca servicios. Sin texto devuelve el catálogo entero desde el principio:
  * la lista completa es una opción válida, no un caso de error.
  *
- * `limit` corta el resultado porque la lista se rinde en el DOM: 633 opciones
- * a la vez cuestan más de lo que aportan cuando ya casi ninguna sirve.
+ * `limit` corta el resultado porque la lista se rinde en el DOM: 1174
+ * opciones a la vez cuestan más de lo que aportan cuando ya casi ninguna
+ * sirve.
  */
 export function searchServices(
   query: string,
   {
     limit = 50,
     exclude = [],
-    preferSubcategories = [],
+    preferSpecialties = [],
   }: {
     limit?: number;
     exclude?: string[];
     /**
-     * Los rubros que el proveedor ya declaró. Lo que cuelga de ellos va
-     * primero: es lo que casi siempre está por agregar, y hacérselo buscar
-     * entre 633 teniendo el rubro dicho sería pedirle que repita el dato.
+     * Las especialidades que el proveedor ya declaró. Lo que cuelga de ellas
+     * va primero: es lo que casi siempre está por agregar, y hacérselo buscar
+     * entre 1174 teniendo la especialidad dicha sería pedirle que repita el
+     * dato.
      */
-    preferSubcategories?: string[];
+    preferSpecialties?: string[];
   } = {},
 ): IndexedService[] {
   const taken = new Set(exclude.map(normalize));
@@ -189,17 +190,17 @@ export function searchServices(
     (service) => !taken.has(service.search.name),
   );
 
-  const preferred = new Set(preferSubcategories);
+  const preferred = new Set(preferSpecialties);
   const isPreferred = (service: IndexedService): boolean =>
-    preferred.has(service.subcategoryId);
+    preferred.has(service.specialtyId);
 
   const normalized = normalize(query);
 
   /*
-   * Sin texto: primero los rubros elegidos y después el resto.
+   * Sin texto: primero las especialidades elegidas y después el resto.
    *
    * El corte por `limit` va al final y no antes de ordenar. Cortando primero
-   * quedaban los 633 recortados a los 60 alfabéticamente iniciales, y recién
+   * quedaban los 1174 recortados a los 60 alfabéticamente iniciales, y recién
    * ahí se priorizaba: un cerrajero abría la lista y no veía ni uno de sus
    * servicios, porque los suyos no entraban en ese recorte.
    */
@@ -232,8 +233,9 @@ export function searchServices(
 
     /*
      * Un empujón, no un atajo: entre dos servicios que coinciden parecido
-     * gana el del rubro declarado, pero una coincidencia clara de otro rubro
-     * sigue ganándole a una floja del propio. Por eso suma y no multiplica.
+     * gana el de la especialidad declarada, pero una coincidencia clara de
+     * otra especialidad sigue ganándole a una floja de la propia. Por eso
+     * suma y no multiplica.
      */
     scored.push({
       service,
@@ -250,12 +252,12 @@ export function searchServices(
 }
 
 /**
- * Los servicios de un rubro, para ofrecer primero lo que corresponde a lo que
- * el proveedor ya eligió.
+ * Las sugerencias de unas especialidades, para ofrecer primero lo que
+ * corresponde a lo que el proveedor ya eligió.
  */
-export function servicesForSubcategories(
-  subcategoryIds: string[],
+export function servicesForSpecialties(
+  specialtyIds: string[],
 ): IndexedService[] {
-  const wanted = new Set(subcategoryIds);
-  return SERVICE_INDEX.filter((service) => wanted.has(service.subcategoryId));
+  const wanted = new Set(specialtyIds);
+  return SERVICE_INDEX.filter((service) => wanted.has(service.specialtyId));
 }

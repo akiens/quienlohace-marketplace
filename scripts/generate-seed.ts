@@ -9,9 +9,16 @@
  * El JSON es la fuente: el SQL se deriva de él. Así los datos se pueden
  * inspeccionar, versionar o cargar desde otro lado sin volver a generarlos.
  *
- * Los nombres, empresas y teléfonos salen de Faker con locale español; el
- * rubro y la ubicación salen de la taxonomía y del Master Data geográfico
- * reales, de modo que toda referencia existe por construcción.
+ * Los catálogos —geografía, taxonomía y horarios— no se inventan acá: salen de
+ * `src/data/*.json`, que a su vez generan los otros scripts desde `docs/data`.
+ * El seed carga esos catálogos en sus tablas y después cuelga los perfiles de
+ * ellos, así toda referencia existe por construcción.
+ *
+ * Los perfiles respetan las reglas de negocio que el propio formulario aplica:
+ * los cupos del plan (BR-006), la normalización de áreas (TR-018), la
+ * ubicación física sólo cuando se atiende en el negocio (BR-015) y los
+ * servicios colgados de una especialidad ya elegida (BR-010). Un seed que las
+ * violara mostraría estados que la aplicación no puede producir.
  *
  * Es determinista: con la misma semilla, dos corridas dan archivos idénticos
  * y el seed no ensucia los diffs.
@@ -22,16 +29,21 @@ import { writeFileSync } from "node:fs";
 
 import { Faker, base, en, es } from "@faker-js/faker";
 
-import { CATEGORIES } from "../src/data/categories";
-import { LOCATIONS, listAreas, locationLabel } from "../src/data/locations";
+import { LOCATIONS, listLocalities, locationLabel } from "../src/data/locations";
+import { SCHEDULE_SUGGESTIONS } from "../src/data/schedules";
+import {
+  SERVICE_SECTORS,
+  SPECIALTIES,
+  suggestionsFor,
+} from "../src/data/taxonomy";
 import { hashPasswordWithSalt } from "../src/lib/password";
 import { slugify } from "../src/lib/slug";
 import type {
   PaymentMethod,
   PlanId,
-  ProviderKind,
-  ProviderStatus,
-  ServiceMode,
+  ProfileStatus,
+  ProfileType,
+  ServiceModeCode,
 } from "../src/types";
 
 const SEED = 20260831;
@@ -47,7 +59,7 @@ const SEED = 20260831;
 const SEED_PASSWORD = "admin.123";
 
 /**
- * Sal fija: el generador es determinista y una sal al azar cambiaría las 910
+ * Sal fija: el generador es determinista y una sal al azar cambiaría todas las
  * líneas de `users` en cada corrida. Reusar la sal es inaceptable en
  * producción, pero aquí la contraseña ya es pública de todos modos.
  */
@@ -59,8 +71,7 @@ const SEED_PASSWORD_SALT = new Uint8Array(
  * Reparto de planes en los datos de prueba.
  *
  * Se mezclan los tres para poder ver el comportamiento de los límites y del
- * upsell; sin variedad no habría forma de probar la degradación de RF-053.
- * Los topes coinciden con los de la migración 0002.
+ * upsell; sin variedad no habría forma de probar la degradación de BR-009.
  */
 const PLAN_WEIGHTS: { weight: number; value: PlanId }[] = [
   { weight: 60, value: "cobre" },
@@ -68,21 +79,47 @@ const PLAN_WEIGHTS: { weight: number; value: PlanId }[] = [
   { weight: 12, value: "platinum" },
 ];
 
-const PLAN_CAPS: Record<PlanId, { services: number; areas: number }> = {
-  cobre: { services: 5, areas: 5 },
-  gold: { services: 15, areas: 15 },
-  platinum: { services: 30, areas: 30 },
+/**
+ * Los cupos de BR-006. `null` es "sin límite" y por eso el tipo lo admite: no
+ * es lo mismo que un número grande.
+ *
+ * Están acá y no leídos de la base porque el seed genera el SQL sin conectarse
+ * a nada. Si la matriz cambia, cambia en la migración y acá.
+ */
+const PLAN_CAPS: Record<
+  PlanId,
+  {
+    sectors: number;
+    specialties: number;
+    services: number;
+    locations: number | null;
+    gallery: number;
+  }
+> = {
+  cobre: { sectors: 1, specialties: 2, services: 10, locations: 1, gallery: 0 },
+  gold: { sectors: 2, specialties: 6, services: 25, locations: 5, gallery: 5 },
+  platinum: {
+    sectors: 3,
+    specialties: 12,
+    services: 50,
+    locations: null,
+    gallery: 20,
+  },
 };
 
-const SERVICE_MODES: ServiceMode[] = [
-  "on_site",
-  "at_business",
-  "remote",
-  "hybrid",
+const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"];
+
+const PAYMENTS: PaymentMethod[] = [
+  "cash",
+  "bank_transfer",
+  "debit_card",
+  "credit_card",
+  "other",
 ];
 
-const MIN_PER_SUBCATEGORY = 5;
-const MAX_PER_SUBCATEGORY = 10;
+/** Cuántos perfiles se generan por especialidad. */
+const MIN_PER_SPECIALTY = 3;
+const MAX_PER_SPECIALTY = 6;
 /** Proporción de perfiles que son empresas; el resto, independientes. */
 const BUSINESS_RATIO = 0.35;
 
@@ -90,27 +127,6 @@ const BUSINESS_RATIO = 0.35;
 // no define (Faker cae al siguiente de la lista).
 const faker = new Faker({ locale: [es, en, base] });
 faker.seed(SEED);
-
-const PAYMENTS: PaymentMethod[] = [
-  "Efectivo", "Transferencia", "Débito", "Crédito", "Otros",
-];
-
-const SCHEDULES = [
-  "Lunes a viernes · 9:00 a 18:00",
-  "Lunes a sábado · 8:00 a 20:00",
-  "Lunes a viernes · 8:00 a 17:00 · Sábados hasta 13:00",
-  "Todos los días · 7:00 a 22:00",
-  "24 horas, todos los días",
-  "Martes a sábado · 10:00 a 19:00",
-  "Lunes a viernes · 10:00 a 19:00 · También remoto",
-  "Con hora previa",
-];
-
-/** Complementos de servicio, para que no todos ofrezcan lo mismo. */
-const SERVICE_QUALIFIERS = [
-  "a domicilio", "para empresas", "de urgencia", "con garantía",
-  "presupuesto sin cargo", "en el día",
-];
 
 const REVIEW_COMMENTS = [
   "Excelente trabajo, muy prolijo y en el plazo que había dicho.",
@@ -132,40 +148,55 @@ type SeedReview = {
   createdAt: string;
 };
 
-type SeedProvider = {
+type SeedProfileLocation = {
+  id: string;
+  locationId: string;
+  name: string | null;
+  address: string | null;
+  isPrimary: boolean;
+};
+
+type SeedService = {
+  id: string;
+  specialtyId: string;
+  name: string;
+  sortOrder: number;
+};
+
+type SeedProfile = {
   userId: string;
   email: string;
-  providerId: string;
+  profileId: string;
   slug: string;
   name: string;
-  kind: ProviderKind;
+  type: ProfileType;
   description: string;
   icon: string;
-  categoryId: string;
-  subcategoryId: string;
-  locationId: string;
-  serviceAreaIds: string[];
-  services: string[];
-  paymentMethods: PaymentMethod[];
+  contactEmail: string;
   phone: string;
-  whatsapp: string;
-  schedule: string;
-  status: ProviderStatus;
-  featured: boolean;
-  verified: boolean;
+  phoneE164: string;
+  whatsappEnabled: boolean;
+  /** Las especialidades elegidas; los rubros se derivan de ellas (BR-010). */
+  specialtyIds: string[];
+  services: SeedService[];
+  serviceModes: ServiceModeCode[];
+  serviceAreaIds: string[];
+  locations: SeedProfileLocation[];
+  paymentMethods: PaymentMethod[];
+  scheduleEntries: string[];
+  profileStatus: ProfileStatus;
+  verificationStatus: "not_requested" | "verified";
   planId: PlanId;
-  serviceMode: ServiceMode;
   reviews: SeedReview[];
 };
 
-/** Se prefieren ubicaciones con barrio: dan etiquetas más específicas. */
-const LOCATION_POOL = [
-  ...LOCATIONS.filter((location) => location.area),
-  ...LOCATIONS.filter((location) => !location.area),
-];
+/** Departamentos y localidades: el país no es una ubicación física (BR-015). */
+const DEPARTMENTS = LOCATIONS.filter((l) => l.type === "department");
+const LOCALITIES = LOCATIONS.filter((l) => l.type === "locality");
 
 const usedSlugs = new Set<string>();
 
+/** BR-005: si dos perfiles generan el mismo slug, se desambigua con sufijo. */
 function uniqueSlug(base: string): string {
   const root = slugify(base) || "profesional";
   let candidate = root;
@@ -184,53 +215,139 @@ function uruguayanMobile(): string {
   return `0${digits}`;
 }
 
-/** Zonas de trabajo: la propia más otras de la misma localidad. */
-function serviceAreasFor(locationId: string): string[] {
-  const own = LOCATIONS.find((location) => location.id === locationId)!;
+/**
+ * Áreas de servicio ya normalizadas (TR-018): o el país solo, o un
+ * departamento con localidades de otros departamentos.
+ *
+ * Se arma directamente en forma válida en vez de generar cualquier cosa y
+ * después normalizar: así el JSON del seed muestra exactamente lo que quedaría
+ * guardado.
+ */
+function serviceAreasFor(locality: (typeof LOCALITIES)[number]): string[] {
+  // Cobertura nacional: reemplaza cualquier otra selección.
+  if (faker.datatype.boolean({ probability: 0.08 })) return ["uruguay"];
 
-  // La semilla siempre parte de una localidad o un barrio; los niveles más
-  // generales no tienen hermanos que sumar.
-  const siblings =
-    own.department && own.locality
-      ? listAreas(own.department, own.locality)
-          .filter((location) => location.id !== locationId)
-          .map((location) => location.id)
-      : [];
+  const department = locality.parentId!;
 
+  // El departamento entero: sus localidades serían redundantes.
+  if (faker.datatype.boolean({ probability: 0.3 })) {
+    const others = faker.helpers.arrayElements(
+      LOCALITIES.filter((l) => l.parentId !== department),
+      { min: 0, max: 2 },
+    );
+    return [department, ...others.map((l) => l.id)];
+  }
+
+  // Localidades sueltas del mismo departamento, empezando por la propia.
+  const siblings = listLocalities(department).filter(
+    (l) => l.id !== locality.id,
+  );
   return [
-    locationId,
-    ...faker.helpers.arrayElements(siblings, { min: 0, max: 3 }),
+    locality.id,
+    ...faker.helpers.arrayElements(siblings, { min: 0, max: 3 }).map((l) => l.id),
   ];
 }
 
-function buildProvider(
-  category: (typeof CATEGORIES)[number],
-  subcategory: (typeof CATEGORIES)[number]["subcategories"][number],
+function buildProfile(
+  specialty: (typeof SPECIALTIES)[number],
   index: number,
-): SeedProvider {
+): SeedProfile {
+  const sector = SERVICE_SECTORS.find((s) => s.id === specialty.serviceSectorId)!;
   const isBusiness = faker.datatype.boolean({ probability: BUSINESS_RATIO });
 
-  // Para empresas, el nombre de Faker se acorta y se ancla al rubro: sale algo
-  // como "Peluquería Angulo" en vez de una razón social larguísima.
+  // Para empresas, el nombre de Faker se acorta y se ancla a la especialidad:
+  // sale algo como "Peluquería Angulo" en vez de una razón social larguísima.
   const name = isBusiness
-    ? `${subcategory.name.split(/[ ,]/)[0]} ${faker.person.lastName()}${
+    ? `${specialty.name.split(/[ ,]/)[0]} ${faker.person.lastName()}${
         faker.datatype.boolean({ probability: 0.3 }) ? " S.R.L." : ""
       }`
-    // Nombre y apellido, sin los tratamientos ("Sr.", "Sta.") que agrega el
-    // locale español: en un directorio de servicios suenan fuera de lugar.
-    : `${faker.person.firstName()} ${faker.person.lastName()}`;
+    : // Nombre y apellido, sin los tratamientos ("Sr.", "Sta.") que agrega el
+      // locale español: en un directorio de servicios suenan fuera de lugar.
+      `${faker.person.firstName()} ${faker.person.lastName()}`;
 
   const slug = uniqueSlug(name);
-  const location = faker.helpers.arrayElement(LOCATION_POOL);
+  const locality = faker.helpers.arrayElement(LOCALITIES);
   const planId = faker.helpers.weightedArrayElement(PLAN_WEIGHTS);
   const caps = PLAN_CAPS[planId];
 
-  const services = [
-    subcategory.name,
+  /*
+   * Especialidades: la propia y, si el plan da, otras del mismo rubro.
+   *
+   * Quedarse dentro del rubro no es casual: el tope de rubros de Cobre es 1, y
+   * tomar especialidades de cualquier lado lo pasaría al primer intento.
+   */
+  const specialtyIds = [
+    specialty.id,
     ...faker.helpers
-      .arrayElements(SERVICE_QUALIFIERS, { min: 1, max: 3 })
-      .map((qualifier) => `${subcategory.name} ${qualifier}`),
-  ];
+      .arrayElements(
+        SPECIALTIES.filter(
+          (s) => s.serviceSectorId === sector.id && s.id !== specialty.id,
+        ),
+        { min: 0, max: Math.max(0, caps.specialties - 1) },
+      )
+      .map((s) => s.id),
+  ].slice(0, caps.specialties);
+
+  /*
+   * Los servicios salen del catálogo de la especialidad y se reparten entre
+   * las elegidas. Cada uno cuelga de una especialidad que el perfil tiene, que
+   * es lo que exige la FK compuesta de `services`.
+   */
+  const services: SeedService[] = [];
+  for (const specialtyId of specialtyIds) {
+    const catalog = suggestionsFor(specialtyId);
+    if (catalog.length === 0) continue;
+
+    const picked = faker.helpers.arrayElements(catalog, {
+      min: 2,
+      max: Math.min(6, catalog.length),
+    });
+
+    for (const suggestion of picked) {
+      if (services.length >= caps.services) break;
+      services.push({
+        id: `seed-svc-${slug}-${services.length}`,
+        specialtyId,
+        name: suggestion.name,
+        sortOrder: services.length,
+      });
+    }
+  }
+
+  // BR-017: una o varias. Con más de una, la ficha muestra atención híbrida.
+  const serviceModes = faker.helpers.arrayElements(SERVICE_MODES, {
+    min: 1,
+    max: 3,
+  });
+
+  /*
+   * BR-015: la ubicación física sólo tiene sentido si se atiende en el
+   * negocio, y ahí es obligatoria para publicar (BR-003). Quien trabaja a
+   * domicilio o a distancia se publica sin local.
+   */
+  const atBusiness = serviceModes.includes("at_business");
+  const locationCount = atBusiness
+    ? Math.min(
+        faker.number.int({ min: 1, max: 3 }),
+        caps.locations ?? Number.MAX_SAFE_INTEGER,
+      )
+    : 0;
+
+  const locations: SeedProfileLocation[] = Array.from(
+    { length: locationCount },
+    (_, i) => ({
+      id: `seed-loc-${slug}-${i}`,
+      // La primera queda en la localidad del perfil; las demás, donde sea.
+      locationId:
+        i === 0
+          ? locality.id
+          : faker.helpers.arrayElement([...LOCALITIES, ...DEPARTMENTS]).id,
+      name: i === 0 ? null : `Sucursal ${i + 1}`,
+      address: `${faker.location.street()} ${faker.number.int({ min: 100, max: 4999 })}`,
+      // BR-015: una sola principal.
+      isPrimary: i === 0,
+    }),
+  );
 
   const reviewCount = faker.datatype.boolean({ probability: 0.2 })
     ? 0
@@ -246,70 +363,78 @@ function buildProvider(
     ]),
     comment: faker.helpers.arrayElement(REVIEW_COMMENTS),
     createdAt: faker.date
-      .between({ from: "2026-01-01T00:00:00.000Z", to: "2026-08-25T00:00:00.000Z" })
+      .between({
+        from: "2026-01-01T00:00:00.000Z",
+        to: "2026-08-25T00:00:00.000Z",
+      })
       .toISOString(),
   }));
 
+  const where = locationLabel(locality);
   const description = isBusiness
-    ? `${name} ofrece servicios de ${subcategory.name.toLowerCase()} en ${locationLabel(location)} y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.`
-    : `${subcategory.name} en ${locationLabel(location)}. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.`;
+    ? `${name} ofrece servicios de ${specialty.name.toLowerCase()} en ${where} y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.`
+    : `${specialty.name} en ${where}. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.`;
 
   const mobile = uruguayanMobile();
+
+  /*
+   * BR-019: sólo Oro y Platino pueden pedir la insignia, y sólo se muestra
+   * aprobada. En Cobre ni siquiera se solicita.
+   */
+  const verified =
+    planId !== "cobre" && faker.datatype.boolean({ probability: 0.5 });
 
   return {
     userId: `seed-user-${slug}`,
     email: `${slug}@ejemplo.uy`,
-    providerId: `seed-prov-${slug}`,
+    profileId: `seed-prof-${slug}`,
     slug,
     name,
-    kind: isBusiness ? "business" : "individual",
+    type: isBusiness ? "business" : "individual",
     description,
-    icon: category.icon,
-    categoryId: category.id,
-    subcategoryId: subcategory.id,
-    locationId: location.id,
-    // Se recortan al tope del plan: el seed no debe generar perfiles que
-    // el propio formulario rechazaría al guardar.
-    serviceAreaIds: serviceAreasFor(location.id).slice(0, caps.areas),
-    services: services.slice(0, caps.services),
-    paymentMethods: faker.helpers.arrayElements(PAYMENTS, { min: 1, max: 4 }),
+    icon: sector.icon,
+    contactEmail: `${slug}@ejemplo.uy`,
     phone: mobile,
-    whatsapp: `598${mobile.slice(1)}`,
-    schedule: faker.helpers.arrayElement(SCHEDULES),
-    // El primero de cada subcategoría siempre se publica, así ninguna queda
+    phoneE164: `+598${mobile.slice(1)}`,
+    whatsappEnabled: faker.datatype.boolean({ probability: 0.8 }),
+    specialtyIds,
+    services,
+    serviceModes,
+    serviceAreaIds: serviceAreasFor(locality),
+    locations,
+    paymentMethods: faker.helpers.arrayElements(PAYMENTS, { min: 1, max: 4 }),
+    // BR-024: hasta diez líneas, tomadas de las sugerencias canónicas.
+    scheduleEntries: faker.helpers.arrayElements(SCHEDULE_SUGGESTIONS, {
+      min: 1,
+      max: 4,
+    }),
+    // El primero de cada especialidad siempre se publica, así ninguna queda
     // vacía; del resto, unos pocos quedan en borrador para probar ese estado.
-    status:
+    profileStatus:
       index === 0 || !faker.datatype.boolean({ probability: 0.08 })
         ? "active"
         : "draft",
-    // Sólo Platinum participa de los destacados (RF-061).
-    featured:
-      planId === "platinum" && faker.datatype.boolean({ probability: 0.35 }),
-    verified:
-      planId !== "cobre" && faker.datatype.boolean({ probability: 0.5 }),
+    verificationStatus: verified ? "verified" : "not_requested",
     planId,
-    serviceMode: faker.helpers.arrayElement(SERVICE_MODES),
     reviews,
   };
 }
 
-const providers: SeedProvider[] = [];
+const profiles: SeedProfile[] = [];
 
-for (const category of CATEGORIES) {
-  for (const subcategory of category.subcategories) {
-    const total = faker.number.int({
-      min: MIN_PER_SUBCATEGORY,
-      max: MAX_PER_SUBCATEGORY,
-    });
-    for (let index = 0; index < total; index += 1) {
-      providers.push(buildProvider(category, subcategory, index));
-    }
+for (const specialty of SPECIALTIES) {
+  const total = faker.number.int({
+    min: MIN_PER_SPECIALTY,
+    max: MAX_PER_SPECIALTY,
+  });
+  for (let index = 0; index < total; index += 1) {
+    profiles.push(buildProfile(specialty, index));
   }
 }
 
 writeFileSync(
   "seeds/providers.json",
-  `${JSON.stringify(providers, null, 2)}\n`,
+  `${JSON.stringify(profiles, null, 2)}\n`,
   "utf8",
 );
 
@@ -320,67 +445,139 @@ function sql(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-const businesses = providers.filter((p) => p.kind === "business").length;
-const NOW = "2026-08-31T12:00:00.000Z";
+function nullable(value: string | null): string {
+  return value === null ? "NULL" : sql(value);
+}
+
+const businesses = profiles.filter((p) => p.type === "business").length;
+const NOW = "2026-09-05T12:00:00.000Z";
 
 function buildSql(passwordHash: string): string {
-const lines: string[] = [
-  "-- Datos de prueba para desarrollo local. GENERADO: no editar a mano.",
-  "-- Regenerar con: npm run seed:generate",
-  "--",
-  `-- ${providers.length} proveedores sobre ${CATEGORIES.flatMap((c) => c.subcategories).length} subcategorías`,
-  `-- ${businesses} empresas · ${providers.length - businesses} independientes`,
-  "--",
-  `-- Todas las cuentas usan la contraseña ${SEED_PASSWORD} (sólo para pruebas).`,
-  "--",
-  "-- NO debe ejecutarse en producción: borra el contenido de las tablas.",
-  "",
-  "DELETE FROM provider_payment_methods;",
-  "DELETE FROM provider_service_areas;",
-  "DELETE FROM provider_services;",
-  "DELETE FROM provider_images;",
-  "DELETE FROM reviews;",
-  "DELETE FROM providers;",
-  "DELETE FROM sessions;",
-  "DELETE FROM users;",
-  "",
-];
+  const lines: string[] = [
+    "-- Datos de prueba para desarrollo local. GENERADO: no editar a mano.",
+    "-- Regenerar con: npm run seed:generate",
+    "--",
+    `-- ${profiles.length} perfiles sobre ${SPECIALTIES.length} especialidades`,
+    `-- ${businesses} empresas · ${profiles.length - businesses} independientes`,
+    "--",
+    "-- Incluye los catálogos (ubicaciones, rubros y especialidades): los",
+    "-- perfiles los referencian por clave foránea y sin ellos no entran.",
+    "--",
+    `-- Todas las cuentas usan la contraseña ${SEED_PASSWORD} (sólo para pruebas).`,
+    "--",
+    "-- NO debe ejecutarse en producción: borra el contenido de las tablas.",
+    "",
+    // El orden importa: primero lo que depende, después lo dependido.
+    "DELETE FROM review_reports;",
+    "DELETE FROM reviews;",
+    "DELETE FROM profile_schedule_entries;",
+    "DELETE FROM profile_images;",
+    "DELETE FROM services;",
+    "DELETE FROM professional_credentials;",
+    "DELETE FROM profile_specialties;",
+    "DELETE FROM profile_service_areas;",
+    "DELETE FROM profile_locations;",
+    "DELETE FROM profile_payment_methods;",
+    "DELETE FROM profile_social_links;",
+    "DELETE FROM profile_service_modes;",
+    "DELETE FROM profiles;",
+    "DELETE FROM sessions;",
+    "DELETE FROM users;",
+    "DELETE FROM specialties;",
+    "DELETE FROM service_sectors;",
+    "DELETE FROM locations;",
+    "",
+    "-- Catálogo geográfico (BR-014). Los padres van antes que los hijos.",
+  ];
 
-for (const provider of providers) {
-  lines.push(
-    `INSERT INTO users (id, email, password_hash, name, role, email_verified, created_at, updated_at) VALUES (${sql(provider.userId)}, ${sql(provider.email)}, ${sql(passwordHash)}, ${sql(provider.name)}, 'provider', 1, ${sql(NOW)}, ${sql(NOW)});`,
-  );
+  /*
+   * Las ubicaciones se insertan por nivel: `parent_id` es una FK contra la
+   * misma tabla, así que una localidad antes que su departamento fallaría.
+   */
+  for (const type of ["country", "department", "locality"] as const) {
+    for (const location of LOCATIONS.filter((l) => l.type === type)) {
+      lines.push(
+        `INSERT INTO locations (id, parent_id, type, name, slug, is_active, created_at, updated_at) VALUES (${sql(location.id)}, ${nullable(location.parentId)}, ${sql(location.type)}, ${sql(location.name)}, ${sql(location.slug)}, 1, ${sql(NOW)}, ${sql(NOW)});`,
+      );
+    }
+  }
 
-  const ratingSum = provider.reviews.reduce((total, r) => total + r.rating, 0);
+  lines.push("", "-- Taxonomía: rubros y especialidades (BR-010).");
 
-  lines.push(
-    `INSERT INTO providers (id, user_id, slug, name, kind, description, icon, category_id, subcategory_id, location_id, phone, whatsapp, schedule, status, featured, verified, rating_sum, review_count, created_at, updated_at, plan_id, service_mode, phone_e164, whatsapp_enabled, verification_status) VALUES (${sql(provider.providerId)}, ${sql(provider.userId)}, ${sql(provider.slug)}, ${sql(provider.name)}, ${sql(provider.kind)}, ${sql(provider.description)}, ${sql(provider.icon)}, ${sql(provider.categoryId)}, ${sql(provider.subcategoryId)}, ${sql(provider.locationId)}, ${sql(provider.phone)}, ${sql(provider.whatsapp)}, ${sql(provider.schedule)}, ${sql(provider.status)}, ${provider.featured ? 1 : 0}, ${provider.verified ? 1 : 0}, ${ratingSum}, ${provider.reviews.length}, ${sql(NOW)}, ${sql(NOW)}, ${sql(provider.planId)}, ${sql(provider.serviceMode)}, ${sql(`+${provider.whatsapp}`)}, 1, ${sql(provider.verified ? "verified" : "unverified")});`,
-  );
-
-  provider.services.forEach((service, position) => {
+  for (const sector of SERVICE_SECTORS) {
     lines.push(
-      `INSERT INTO provider_services (provider_id, name, position) VALUES (${sql(provider.providerId)}, ${sql(service)}, ${position});`,
-    );
-  });
-
-  for (const areaId of provider.serviceAreaIds) {
-    lines.push(
-      `INSERT INTO provider_service_areas (provider_id, location_id) VALUES (${sql(provider.providerId)}, ${sql(areaId)});`,
+      `INSERT INTO service_sectors (id, name, slug, description, icon, is_active, sort_order, created_at, updated_at) VALUES (${sql(sector.id)}, ${sql(sector.name)}, ${sql(sector.slug)}, NULL, ${sql(sector.icon)}, 1, ${sector.sortOrder}, ${sql(NOW)}, ${sql(NOW)});`,
     );
   }
 
-  for (const method of provider.paymentMethods) {
+  for (const specialty of SPECIALTIES) {
     lines.push(
-      `INSERT INTO provider_payment_methods (provider_id, method) VALUES (${sql(provider.providerId)}, ${sql(method)});`,
+      `INSERT INTO specialties (id, service_sector_id, name, slug, description, requires_professional_credential, is_active, sort_order, created_at, updated_at) VALUES (${sql(specialty.id)}, ${sql(specialty.serviceSectorId)}, ${sql(specialty.name)}, ${sql(specialty.slug)}, NULL, ${specialty.requiresProfessionalCredential ? 1 : 0}, 1, ${specialty.sortOrder}, ${sql(NOW)}, ${sql(NOW)});`,
     );
   }
 
-  provider.reviews.forEach((review, index) => {
+  lines.push("", "-- Perfiles.");
+
+  for (const profile of profiles) {
     lines.push(
-      `INSERT INTO reviews (id, provider_id, author_id, author_name, rating, comment, status, created_at) VALUES (${sql(`${provider.providerId}-r${index}`)}, ${sql(provider.providerId)}, NULL, ${sql(review.authorName)}, ${review.rating}, ${sql(review.comment)}, 'published', ${sql(review.createdAt)});`,
+      `INSERT INTO users (id, email, email_verified, role, password_hash, is_active, created_at, updated_at) VALUES (${sql(profile.userId)}, ${sql(profile.email)}, 1, 'provider', ${sql(passwordHash)}, 1, ${sql(NOW)}, ${sql(NOW)});`,
     );
-  });
-}
+
+    const ratingSum = profile.reviews.reduce((total, r) => total + r.rating, 0);
+
+    lines.push(
+      `INSERT INTO profiles (id, user_id, contact_email, phone, phone_e164, phone_verified_at, whatsapp_enabled, phone_public, name, slug, type, description, icon, profile_status, verification_status, plan_id, subscription_status, plan_expires_at, downgrade_plan_id, purge_excess_after, rating_sum, review_count, created_at, updated_at) VALUES (${sql(profile.profileId)}, ${sql(profile.userId)}, ${sql(profile.contactEmail)}, ${sql(profile.phone)}, ${sql(profile.phoneE164)}, NULL, ${profile.whatsappEnabled ? 1 : 0}, 1, ${sql(profile.name)}, ${sql(profile.slug)}, ${sql(profile.type)}, ${sql(profile.description)}, ${sql(profile.icon)}, ${sql(profile.profileStatus)}, ${sql(profile.verificationStatus)}, ${sql(profile.planId)}, 'active', NULL, NULL, NULL, ${ratingSum}, ${profile.reviews.length}, ${sql(NOW)}, ${sql(NOW)});`,
+    );
+
+    for (const mode of profile.serviceModes) {
+      lines.push(
+        `INSERT INTO profile_service_modes (profile_id, service_mode_id) VALUES (${sql(profile.profileId)}, ${sql(mode)});`,
+      );
+    }
+
+    profile.specialtyIds.forEach((specialtyId, order) => {
+      lines.push(
+        `INSERT INTO profile_specialties (profile_id, specialty_id, is_active, sort_order, created_at, updated_at) VALUES (${sql(profile.profileId)}, ${sql(specialtyId)}, 1, ${order}, ${sql(NOW)}, ${sql(NOW)});`,
+      );
+    });
+
+    // Después de `profile_specialties`: la FK compuesta las exige presentes.
+    for (const service of profile.services) {
+      lines.push(
+        `INSERT INTO services (id, profile_id, specialty_id, name, is_active, sort_order, created_at, updated_at) VALUES (${sql(service.id)}, ${sql(profile.profileId)}, ${sql(service.specialtyId)}, ${sql(service.name)}, 1, ${service.sortOrder}, ${sql(NOW)}, ${sql(NOW)});`,
+      );
+    }
+
+    for (const areaId of profile.serviceAreaIds) {
+      lines.push(
+        `INSERT INTO profile_service_areas (profile_id, location_id) VALUES (${sql(profile.profileId)}, ${sql(areaId)});`,
+      );
+    }
+
+    for (const location of profile.locations) {
+      lines.push(
+        `INSERT INTO profile_locations (id, profile_id, location_id, name, address, is_primary, is_active, created_at, updated_at) VALUES (${sql(location.id)}, ${sql(profile.profileId)}, ${sql(location.locationId)}, ${nullable(location.name)}, ${nullable(location.address)}, ${location.isPrimary ? 1 : 0}, 1, ${sql(NOW)}, ${sql(NOW)});`,
+      );
+    }
+
+    for (const method of profile.paymentMethods) {
+      lines.push(
+        `INSERT INTO profile_payment_methods (profile_id, method) VALUES (${sql(profile.profileId)}, ${sql(method)});`,
+      );
+    }
+
+    profile.scheduleEntries.forEach((text, order) => {
+      lines.push(
+        `INSERT INTO profile_schedule_entries (id, profile_id, text, sort_order, created_at, updated_at) VALUES (${sql(`${profile.profileId}-h${order}`)}, ${sql(profile.profileId)}, ${sql(text)}, ${order}, ${sql(NOW)}, ${sql(NOW)});`,
+      );
+    });
+
+    profile.reviews.forEach((review, index) => {
+      lines.push(
+        `INSERT INTO reviews (id, profile_id, consumer_user_id, author_name, rating, comment, status, created_at, updated_at) VALUES (${sql(`${profile.profileId}-r${index}`)}, ${sql(profile.profileId)}, NULL, ${sql(review.authorName)}, ${review.rating}, ${sql(review.comment)}, 'published', ${sql(review.createdAt)}, ${sql(review.createdAt)});`,
+      );
+    });
+  }
 
   return `${lines.join("\n")}\n`;
 }
@@ -417,24 +614,40 @@ async function main(): Promise<void> {
     "utf8",
   );
 
+  const services = profiles.reduce((t, p) => t + p.services.length, 0);
+
   console.log("Generado:");
   console.log("  seeds/providers.json");
   console.log("  seeds/dev-seed.sql");
   console.log("  seeds/set-dev-password.sql");
   console.log();
-  console.log(`  proveedores:     ${providers.length}`);
+  console.log(`  ubicaciones:     ${LOCATIONS.length}`);
+  console.log(`  rubros:          ${SERVICE_SECTORS.length}`);
+  console.log(`  especialidades:  ${SPECIALTIES.length}`);
+  console.log(`  perfiles:        ${profiles.length}`);
   console.log(`  empresas:        ${businesses}`);
-  console.log(`  independientes:  ${providers.length - businesses}`);
-  console.log(`  publicados:      ${providers.filter((p) => p.status === "active").length}`);
-  console.log(`  destacados:      ${providers.filter((p) => p.featured).length}`);
-  console.log(`  verificados:     ${providers.filter((p) => p.verified).length}`);
-  console.log(`  sin opiniones:   ${providers.filter((p) => p.reviews.length === 0).length}`);
-  console.log(`  opiniones:       ${providers.reduce((t, p) => t + p.reviews.length, 0)}`);
+  console.log(`  independientes:  ${profiles.length - businesses}`);
+  console.log(
+    `  publicados:      ${profiles.filter((p) => p.profileStatus === "active").length}`,
+  );
+  console.log(
+    `  verificados:     ${profiles.filter((p) => p.verificationStatus === "verified").length}`,
+  );
+  console.log(`  servicios:       ${services}`);
+  console.log(
+    `  con local:       ${profiles.filter((p) => p.locations.length > 0).length}`,
+  );
+  console.log(
+    `  sin opiniones:   ${profiles.filter((p) => p.reviews.length === 0).length}`,
+  );
+  console.log(
+    `  opiniones:       ${profiles.reduce((t, p) => t + p.reviews.length, 0)}`,
+  );
   console.log(
     `  sentencias SQL:  ${seedSql.split("\n").filter((l) => l.startsWith("INSERT")).length}`,
   );
   for (const id of ["cobre", "gold", "platinum"] as PlanId[]) {
-    const total = providers.filter((p) => p.planId === id).length;
+    const total = profiles.filter((p) => p.planId === id).length;
     console.log(`  plan ${id.padEnd(11)} ${total}`);
   }
   console.log(`  contraseña:      ${SEED_PASSWORD}`);

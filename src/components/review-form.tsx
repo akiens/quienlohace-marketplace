@@ -21,10 +21,10 @@ type ReviewContext = {
 };
 
 export function ReviewForm({
-  providerId,
+  profileId,
   providerSlug,
 }: {
-  providerId: string;
+  profileId: string;
   providerSlug: string;
 }) {
   // El perfil se sirve desde caché, así que la identidad no puede venir en el
@@ -36,7 +36,7 @@ export function ReviewForm({
 
   useEffect(() => {
     let active = true;
-    fetch(`/api/review-context?providerId=${encodeURIComponent(providerId)}`)
+    fetch(`/api/review-context?profileId=${encodeURIComponent(profileId)}`)
       .then((response) =>
         response.ok ? (response.json() as Promise<ReviewContext>) : null,
       )
@@ -55,7 +55,7 @@ export function ReviewForm({
     return () => {
       active = false;
     };
-  }, [providerId]);
+  }, [profileId]);
 
   const [state, action, pending] = useActionState<FormState, FormData>(
     submitReview,
@@ -129,7 +129,7 @@ export function ReviewForm({
       action={action}
       className="flex flex-col gap-4 rounded-input border border-line bg-white p-4"
     >
-      <input type="hidden" name="providerId" value={providerId} />
+      <input type="hidden" name="profileId" value={profileId} />
       <input type="hidden" name="slug" value={providerSlug} />
       <input type="hidden" name="rating" value={rating} />
 

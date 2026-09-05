@@ -6,8 +6,8 @@ import type { PlanId, PlanLimits } from "@/types";
 /**
  * Adapter D1 de los planes.
  *
- * Los límites y precios se leen de la base y no del código: RF-096 pide
- * poder cambiarlos sin desplegar. Como cambian muy poco y se consultan en
+ * Los límites y precios se leen de la base y no del código: TR-014 pide
+ * leerlos de persistencia y no de condicionales dispersos. Como cambian muy poco y se consultan en
  * casi todas las páginas del panel, se cachean por request.
  */
 
@@ -18,16 +18,18 @@ type PlanRow = {
   currency: string;
   period: string;
   rank: number;
-  max_services: number;
-  max_subcategories: number;
-  max_service_areas: number;
-  max_gallery_images: number;
-  max_team_members: number;
+  /** Los topes admiten NULL: es "sin límite comercial" (TR-002). */
+  max_service_sectors: number | null;
+  max_specialties: number | null;
+  max_services: number | null;
+  max_locations: number | null;
+  max_gallery_images: number | null;
   allows_social_links: number;
-  allows_landing: number;
-  allows_featured: number;
-  allows_contact_form: number;
   allows_verification_request: number;
+  allows_featured_placement: number;
+  allows_contact_form: number;
+  allows_custom_landing: number;
+  allows_subdomain: number;
   metrics_level: string;
 };
 
@@ -39,24 +41,26 @@ function toPlan(row: PlanRow): PlanLimits {
     currency: row.currency,
     period: row.period as PlanLimits["period"],
     rank: row.rank,
+    maxServiceSectors: row.max_service_sectors,
+    maxSpecialties: row.max_specialties,
     maxServices: row.max_services,
-    maxSubcategories: row.max_subcategories,
-    maxServiceAreas: row.max_service_areas,
+    maxLocations: row.max_locations,
     maxGalleryImages: row.max_gallery_images,
-    maxTeamMembers: row.max_team_members,
     allowsSocialLinks: row.allows_social_links === 1,
-    allowsLanding: row.allows_landing === 1,
-    allowsFeatured: row.allows_featured === 1,
-    allowsContactForm: row.allows_contact_form === 1,
     allowsVerificationRequest: row.allows_verification_request === 1,
+    allowsFeaturedPlacement: row.allows_featured_placement === 1,
+    allowsContactForm: row.allows_contact_form === 1,
+    allowsCustomLanding: row.allows_custom_landing === 1,
+    allowsSubdomain: row.allows_subdomain === 1,
     metricsLevel: row.metrics_level as PlanLimits["metricsLevel"],
   };
 }
 
 const COLUMNS = `id, name, price_cents, currency, period, rank,
-  max_services, max_subcategories, max_service_areas, max_gallery_images,
-  max_team_members, allows_social_links, allows_landing, allows_featured,
-  allows_contact_form, allows_verification_request, metrics_level`;
+  max_service_sectors, max_specialties, max_services, max_locations,
+  max_gallery_images, allows_social_links, allows_verification_request,
+  allows_featured_placement, allows_contact_form, allows_custom_landing,
+  allows_subdomain, metrics_level`;
 
 export class D1PlanRepository {
   async list(): Promise<PlanLimits[]> {

@@ -1,17 +1,18 @@
 import { EMPTY_FILTERS, type PaymentMethod, type SearchFilters } from "@/types";
-import { MAX_LOCATIONS, MAX_SUBCATEGORIES } from "@/types";
+import { MAX_LOCATIONS, MAX_SPECIALTIES } from "@/types";
 
 /**
  * Los filtros viven en la URL: así una búsqueda se puede compartir, volver
  * atrás funciona y el estado sobrevive a un refresh.
  */
 
+/** Los códigos que persiste la base (TR-001), no sus etiquetas en español. */
 const PAYMENT_METHODS: PaymentMethod[] = [
-  "Efectivo",
-  "Transferencia",
-  "Débito",
-  "Crédito",
-  "Otros",
+  "cash",
+  "bank_transfer",
+  "debit_card",
+  "credit_card",
+  "other",
 ];
 
 function list(value: string | null | undefined): string[] {
@@ -33,7 +34,7 @@ export function filtersFromParams(
   return {
     query: read("q") ?? "",
     locationIds: list(read("loc")).slice(0, MAX_LOCATIONS),
-    subcategoryIds: list(read("sub")).slice(0, MAX_SUBCATEGORIES),
+    specialtyIds: list(read("esp")).slice(0, MAX_SPECIALTIES),
     minRating: Number.isFinite(rating) && rating > 0 ? rating : null,
     paymentMethods: list(read("pago")).filter((p): p is PaymentMethod =>
       PAYMENT_METHODS.includes(p as PaymentMethod),
@@ -48,8 +49,8 @@ export function filtersToQuery(filters: SearchFilters): string {
 
   if (filters.query.trim()) params.set("q", filters.query.trim());
   if (filters.locationIds.length) params.set("loc", filters.locationIds.join(","));
-  if (filters.subcategoryIds.length)
-    params.set("sub", filters.subcategoryIds.join(","));
+  if (filters.specialtyIds.length)
+    params.set("esp", filters.specialtyIds.join(","));
   if (filters.minRating !== null) params.set("rating", String(filters.minRating));
   if (filters.paymentMethods.length)
     params.set("pago", filters.paymentMethods.join(","));

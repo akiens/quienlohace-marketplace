@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { HomeHero } from "@/components/home-hero";
-import { ProviderCard } from "@/components/provider-card";
+import { ProfileCard } from "@/components/profile-card";
 import {
   AdSlot,
   ButtonLink,
@@ -9,9 +9,17 @@ import {
   PROVIDER_GRID,
   SectionHeading,
 } from "@/components/ui";
-import { CATEGORIES } from "@/data/categories";
-import { listFeatured, listTopRated } from "@/application/providers";
+import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
+import { listFeatured, listTopRated } from "@/application/profiles";
 import { HOME_SECTION_SIZE } from "@/types";
+
+/**
+ * Los destacados y los mejor puntuados salen de la base, que no existe durante
+ * el build: la portada se arma por pedido. Además cambia sola al publicarse un
+ * perfil o al sumarse una opinión, así que congelarla mostraría un recorte
+ * viejo.
+ */
+export const dynamic = "force-dynamic";
 
 const STEPS = [
   {
@@ -33,8 +41,16 @@ const STEPS = [
 
 export default async function HomePage() {
   const featured = (await listFeatured()).slice(0, HOME_SECTION_SIZE);
+
+  /*
+   * Los destacados ya tienen su sección: repetirlos acá le sacaría el lugar a
+   * un perfil que no aparece en ninguna otra parte. "Destacado" ahora es una
+   * capacidad del plan (BR-006) y no una marca del perfil, así que se compara
+   * contra la lista y no contra un campo suyo.
+   */
+  const featuredIds = new Set(featured.map((profile) => profile.id));
   const topRated = (await listTopRated())
-    .filter((provider) => !provider.featured)
+    .filter((profile) => !featuredIds.has(profile.id))
     .slice(0, HOME_SECTION_SIZE);
 
   return (
@@ -49,7 +65,7 @@ export default async function HomePage() {
             subtitle="20 rubros con profesionales y empresas en todo el país."
           />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {CATEGORIES.map((category) => (
+            {SERVICE_SECTORS.map((category) => (
               <Link
                 key={category.id}
                 href={`/categorias/${category.slug}`}
@@ -61,8 +77,13 @@ export default async function HomePage() {
                 <span className="text-[14.5px] font-semibold leading-tight text-ink">
                   {category.short}
                 </span>
+                {/*
+                  Cuántas especialidades tiene el rubro, que es un dato real del
+                  catálogo. Antes decía "N profesionales" con un número fijo
+                  escrito a mano, que no salía de ningún lado y envejecía mal.
+                */}
                 <span className="text-[12.5px] text-ink-soft">
-                  {category.providerCount} profesionales
+                  {listSpecialties(category.id).length} especialidades
                 </span>
               </Link>
             ))}
@@ -81,7 +102,7 @@ export default async function HomePage() {
           />
           <div className={PROVIDER_GRID}>
             {featured.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} />
+              <ProfileCard key={provider.id} profile={provider} />
             ))}
           </div>
         </section>
@@ -121,7 +142,7 @@ export default async function HomePage() {
           />
           <div className={PROVIDER_GRID}>
             {topRated.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} />
+              <ProfileCard key={provider.id} profile={provider} />
             ))}
           </div>
         </section>

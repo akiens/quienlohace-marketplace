@@ -43,8 +43,8 @@ export async function submitReview(
     return { errors: { form: "Iniciá sesión con Google para opinar." } };
   }
 
-  const providerId = String(formData.get("providerId") ?? "");
-  if (!providerId) {
+  const profileId = String(formData.get("profileId") ?? "");
+  if (!profileId) {
     return { errors: { form: "No pudimos identificar el perfil." } };
   }
 
@@ -60,7 +60,7 @@ export async function submitReview(
     return { errors: fieldErrors(parsed.error) };
   }
 
-  const existing = await reviews.findByConsumer(providerId, consumer.id);
+  const existing = await reviews.findByConsumer(profileId, consumer.id);
 
   if (existing) {
     await reviews.updateOwn({
@@ -71,7 +71,7 @@ export async function submitReview(
     });
   } else {
     await reviews.create({
-      providerId,
+      profileId,
       authorId: null,
       consumerId: consumer.id,
       authorName: parsed.data.authorName,

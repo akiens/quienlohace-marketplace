@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
  * para SEO (RF-121).
  */
 export async function GET(request: Request): Promise<Response> {
-  const providerId = new URL(request.url).searchParams.get("providerId");
+  const profileId = new URL(request.url).searchParams.get("profileId");
 
   const empty = {
     consumer: null,
@@ -24,7 +24,7 @@ export async function GET(request: Request): Promise<Response> {
     googleEnabled: isGoogleEnabled(),
   };
 
-  if (!hasCloudflareRuntime() || !providerId) {
+  if (!hasCloudflareRuntime() || !profileId) {
     return Response.json(empty, {
       headers: { "cache-control": "no-store" },
     });
@@ -38,7 +38,7 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const existing = await new D1ReviewRepository().findByConsumer(
-    providerId,
+    profileId,
     consumer.id,
   );
 

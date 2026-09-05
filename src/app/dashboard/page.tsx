@@ -12,8 +12,8 @@ import {
 } from "@/domain/plan-changes";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
-import { listImagesForUser } from "@/infrastructure/d1-provider-images";
-import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
+import { listImagesForUser } from "@/infrastructure/d1-profile-images";
+import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
 import { getCurrentUser } from "@/lib/session";
 import type { PlanId } from "@/types";
 
@@ -39,10 +39,10 @@ export default async function DashboardPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/entrar");
 
-  const provider = await new D1ProviderRepository().findByUserId(user.id);
+  const profile = await new D1ProfileRepository().findByUserId(user.id);
 
   // Sin perfil todavía no hay nada que mirar: se va al alta.
-  if (!provider) redirect("/dashboard/crear");
+  if (!profile) redirect("/dashboard/crear");
 
   /*
    * Las imágenes se piden por usuario y no por perfil: es la misma consulta
@@ -60,9 +60,9 @@ export default async function DashboardPage() {
    * cobrando un período que ya no se puede usar.
    */
   const planState = {
-    planId: provider.planId ?? "cobre",
-    downgradePlanId: provider.downgradePlanId,
-    planExpiresAt: provider.planExpiresAt,
+    planId: profile.planId ?? "cobre",
+    downgradePlanId: profile.downgradePlanId,
+    planExpiresAt: profile.planExpiresAt,
   };
   const planId: PlanId = effectivePlanId(planState);
 
@@ -78,7 +78,7 @@ export default async function DashboardPage() {
    * existe.
    */
   if (downgradeIsDue(planState)) {
-    await new D1ProviderRepository().applyDueDowngrade(provider.id, planId);
+    await new D1ProfileRepository().applyDueDowngrade(profile.id, planId);
   }
   const plan =
     allPlans.find((p) => p.id === planId) ??
@@ -88,7 +88,7 @@ export default async function DashboardPage() {
 
   // Baja agendada que todavía no entró en vigencia: hay que avisarlo.
   const downgrade = hasScheduledDowngrade(planState)
-    ? allPlans.find((p) => p.id === provider.downgradePlanId)
+    ? allPlans.find((p) => p.id === profile.downgradePlanId)
     : undefined;
 
   return (
@@ -107,8 +107,8 @@ export default async function DashboardPage() {
         <p className="flex flex-wrap items-center gap-2 rounded-card border border-accent bg-accent-soft p-4 text-[14px] leading-relaxed text-accent-ink">
           <Icon name="schedule" className="text-[18px]" />
           Vas a pasar al plan {downgrade.name}
-          {provider.planExpiresAt ? (
-            <> el {formatDate(provider.planExpiresAt)}</>
+          {profile.planExpiresAt ? (
+            <> el {formatDate(profile.planExpiresAt)}</>
           ) : null}
           . Hasta entonces seguís usando todo lo de {plan.name}; lo que no
           entre en {downgrade.name} se guarda por si volvés.
@@ -117,7 +117,7 @@ export default async function DashboardPage() {
 
       <PlanSwitcher plan={plan} plans={allPlans} persist />
 
-      <ProfileView provider={provider} plan={plan} images={images} />
+      <ProfileView profile={profile} plan={plan} images={images} />
     </div>
   );
 }

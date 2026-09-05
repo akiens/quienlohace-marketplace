@@ -7,6 +7,7 @@ import { useActionState, useState, useSyncExternalStore } from "react";
 import { login, signup, type FormState } from "@/app/actions/auth";
 import { Button, Icon } from "@/components/ui";
 import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
+import { clearProfileDraft } from "@/lib/profile-draft";
 import { PLAN_BADGES, PLAN_RIBBONS } from "@/domain/plans";
 import {
   selectedPlanServerSnapshot,
@@ -70,10 +71,16 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
 
   /** Valida el formulario entero y devuelve los errores por campo. */
   function validate(formData: FormData): Record<string, string> {
-    const values = {
-      email: formData.get("email"),
-      password: formData.get("password"),
-    };
+    const values = isSignup
+      ? {
+          email: formData.get("email"),
+          password: formData.get("password"),
+          passwordConfirm: formData.get("passwordConfirm"),
+        }
+      : {
+          email: formData.get("email"),
+          password: formData.get("password"),
+        };
     const parsed = schema.safeParse(values);
     return parsed.success ? {} : fieldErrors(parsed.error);
   }
@@ -108,6 +115,19 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
         prev[field] ? { ...prev, [field]: "" } : prev,
       );
     }
+
+    /*
+     * La repetición no habla de sí misma sino del par: al corregir la
+     * contraseña de arriba, "Las contraseñas no coinciden." puede haber
+     * dejado de ser cierto sin que se toque el campo de abajo. Si ya no lo
+     * es, se quita; agregarlo mientras se escribe sería marcar en rojo una
+     * repetición a medio tipear.
+     */
+    if (field === "password" && !found.passwordConfirm) {
+      setClientErrors((prev) =>
+        prev.passwordConfirm ? { ...prev, passwordConfirm: "" } : prev,
+      );
+    }
   }
 
   /**
@@ -121,12 +141,21 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
     if (Object.keys(found).length > 0) {
       event.preventDefault();
       setClientErrors(found);
-      setTouched({ email: true, password: true });
+      setTouched({ email: true, password: true, passwordConfirm: true });
       return;
     }
 
-    // Se envía: la respuesta que venga es sobre estos valores, así que los
-    // errores del servidor vuelven a ser vigentes.
+    /*
+     * Se envía el alta: lo que haya quedado del asistente de perfil es de
+     * quien usó este navegador antes, no de la cuenta que se está creando
+     * (`docs/ui/register_form.md`). El borrador lleva anotado su dueño y no se
+     * leería igual, pero borrarlo acá evita arrastrar datos de otra persona
+     * hasta el primer paso del alta.
+     */
+    if (isSignup) clearProfileDraft();
+
+    // La respuesta que venga es sobre estos valores, así que los errores del
+    // servidor vuelven a ser vigentes.
     setStaleServerFields({});
   }
 
@@ -231,6 +260,32 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
               </p>
             ) : null}
           </Field>
+
+          {/*
+            Repetir la contraseña sólo tiene sentido al crear la cuenta: al
+            entrar, la contraseña ya se sabe si sirve o no.
+          */}
+          {isSignup ? (
+            <Field
+              label="Repetir contraseña"
+              htmlFor="passwordConfirm"
+              error={errors.passwordConfirm}
+            >
+              <input
+                id="passwordConfirm"
+                name="passwordConfirm"
+                type="password"
+                required
+                minLength={8}
+                autoComplete="new-password"
+                aria-invalid={errors.passwordConfirm ? true : undefined}
+                aria-describedby={
+                  errors.passwordConfirm ? "passwordConfirm-error" : undefined
+                }
+                className={inputClass(errors.passwordConfirm)}
+              />
+            </Field>
+          ) : null}
 
           <Button type="submit" disabled={pending}>
             {pending

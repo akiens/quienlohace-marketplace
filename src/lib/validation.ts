@@ -1,7 +1,12 @@
 import { z } from "zod";
 
-import { CATEGORIES } from "@/data/categories";
-import { getLocation } from "@/data/locations";
+import { COUNTRY_ID, locationExists } from "@/data/locations";
+import {
+  MAX_SCHEDULE_ENTRIES,
+  MAX_SCHEDULE_LENGTH,
+  MIN_SCHEDULE_LENGTH,
+} from "@/data/schedules";
+import { specialtyExists } from "@/data/taxonomy";
 import { toE164 } from "@/domain/phone";
 
 
@@ -17,11 +22,10 @@ import { toE164 } from "@/domain/phone";
  */
 const ABSOLUTE_MAX_ITEMS = 60;
 
-const SUBCATEGORY_IDS = new Set(
-  CATEGORIES.flatMap((category) =>
-    category.subcategories.map((sub) => sub.id),
-  ),
-);
+/** Una especialidad sólo es válida si existe en el catálogo (BR-011). */
+const specialtyId = z
+  .string()
+  .refine(specialtyExists, "Elegí una especialidad válida.");
 
 /** Las redes que acepta el esquema de la base. */
 const SOCIAL_PLATFORMS = [
@@ -34,18 +38,20 @@ const SOCIAL_PLATFORMS = [
   "website",
 ] as const;
 
+/** Los códigos que persiste la base (TR-001). */
 const PAYMENT_METHODS = [
-  "Efectivo",
-  "Transferencia",
-  "Débito",
-  "Crédito",
-  "Otros",
+  "cash",
+  "bank_transfer",
+  "debit_card",
+  "credit_card",
+  "other",
 ] as const;
 
-/** Un id de ubicación sólo es válido si existe en el Master Data. */
-const locationId = z
-  .string()
-  .refine((id) => getLocation(id) !== undefined, "Ubicación desconocida.");
+/** BR-017: las tres modalidades. "Híbrida" se deriva de elegir varias. */
+const SERVICE_MODES = ["at_customer", "at_business", "remote"] as const;
+
+/** Un id de ubicación sólo es válido si existe en el catálogo (BR-014). */
+const locationId = z.string().refine(locationExists, "Ubicación desconocida.");
 
 /**
  * Nombre de una persona: nombre, nombre compuesto, apellido paterno y
@@ -133,50 +139,78 @@ export const credentialsSchema = z.object({
 });
 
 /**
- * Alta de cuenta: sólo correo y contraseña.
+ * Alta de cuenta: correo, contraseña y su repetición.
  *
  * El nombre se pide en la creación del perfil y no acá: en el registro es
  * fricción para un dato que todavía no se usa, y el perfil lo vuelve a pedir
  * igual. `nameSchema` sigue exportado porque lo usa ese formulario.
+ *
+ * La repetición se compara en los dos lados (`docs/ui/register_form.md`). El
+ * error se cuelga de `passwordConfirm` y no del formulario entero: es ese
+ * campo el que hay que corregir, y así el mensaje aparece debajo de él.
  */
-export const signupSchema = credentialsSchema;
+export const signupSchema = credentialsSchema
+  .extend({
+    passwordConfirm: z
+      .string({ error: "Debe repetir la contraseña." })
+      .min(1, "Debe repetir la contraseña."),
+  })
+  .refine((data) => data.password === data.passwordConfirm, {
+    message: "Las contraseñas no coinciden.",
+    path: ["passwordConfirm"],
+  });
 
-export const providerProfileSchema = z
+/**
+ * Horario en texto libre (BR-024, TR-005).
+ *
+ * No admite teléfonos, correos, URLs ni HTML: el horario es cuándo se atiende,
+ * y colar ahí un contacto sortea las reglas de BR-004 sobre qué canal es
+ * público.
+ */
+const scheduleEntrySchema = z
+  .string()
+  .trim()
+  .min(MIN_SCHEDULE_LENGTH, `Mínimo ${MIN_SCHEDULE_LENGTH} caracteres.`)
+  .max(MAX_SCHEDULE_LENGTH, `Máximo ${MAX_SCHEDULE_LENGTH} caracteres.`)
+  .refine((value) => !/<[^>]*>/.test(value), "No se admiten etiquetas HTML.")
+  .refine(
+    (value) => !/https?:\/\/|www\./i.test(value),
+    "No se admiten direcciones web en el horario.",
+  )
+  .refine(
+    (value) => !/[\w.+-]+@[\w-]+\.[\w.]+/.test(value),
+    "No se admiten correos en el horario.",
+  )
+  .refine(
+    // Siete dígitos o más seguidos, con separadores, es un teléfono.
+    (value) => !/(?:\d[\s.-]?){7,}/.test(value),
+    "No se admiten teléfonos en el horario.",
+  );
+
+export const profileSchema = z
   .object({
     name: z
       .string()
       .trim()
       .min(2, "Escribí el nombre de tu perfil.")
       .max(80, "Máximo 80 caracteres."),
-    kind: z.enum(["individual", "business"]),
+    type: z.enum(["individual", "business"]),
     description: z
       .string()
       .trim()
       .min(20, "Contá en pocas líneas qué hacés (mínimo 20 caracteres).")
       .max(600, "Máximo 600 caracteres."),
-    subcategoryId: z
-      .string()
-      .refine((id) => SUBCATEGORY_IDS.has(id), "Elegí una subcategoría válida."),
+    icon: z.string().trim().max(60).default("work"),
+
     /*
-     * Subcategorías adicionales (RF-011). `subcategoryId` sigue siendo la
-     * principal; éstas son las otras en las que también trabaja. El tope real
-     * lo pone el plan y se comprueba en la acción.
+     * BR-004: el correo de contacto puede ser distinto del de acceso. Es
+     * opcional acá porque alcanza con tener un canal público, y el teléfono
+     * puede ser ése; que quede al menos uno lo comprueba el refine de abajo.
      */
-    subcategoryIds: z
-      .array(
-        z
-          .string()
-          .refine((id) => SUBCATEGORY_IDS.has(id), "Elegí una subcategoría válida."),
-      )
-      .max(ABSOLUTE_MAX_ITEMS, "Demasiadas subcategorías.")
-      .default([]),
-    locationId,
-    /* Estaba en el formulario pero no en el schema: se perdía en cada guardado. */
-    serviceMode: z
-      .enum(["on_site", "at_business", "remote", "hybrid"])
-      .default("on_site"),
+    contactEmail: z.union([emailSchema, z.literal("")]).default(""),
+
     /*
-     * Un solo teléfono (RF-013). De acá se derivan el enlace `tel:` y el de
+     * Un solo teléfono (BR-004). De acá se derivan el enlace `tel:` y el de
      * `wa.me`: se valida que sea un número marcable, no su formato exacto,
      * porque cada quien lo escribe a su manera y `toE164` lo normaliza.
      */
@@ -190,21 +224,70 @@ export const providerProfileSchema = z
         "El teléfono entrado no es válido.",
       ),
     whatsappEnabled: z.coerce.boolean().default(false),
-    schedule: z.string().trim().max(160).default(""),
-    // El tope real lo pone el plan contratado, que se comprueba en la acción
-    // (RF-053). Acá sólo queda un techo defensivo, común a todos los planes,
-    // para que un envío manipulado no llegue con miles de elementos.
+    phonePublic: z.coerce.boolean().default(true),
+
+    /*
+     * Las especialidades elegidas del catálogo. Los rubros no se piden: se
+     * derivan de ellas (BR-010). El tope real lo pone el plan y se comprueba
+     * en la acción; acá sólo queda un techo defensivo.
+     */
+    specialtyIds: z
+      .array(specialtyId)
+      .min(1, "Elegí al menos una especialidad.")
+      .max(ABSOLUTE_MAX_ITEMS, "Demasiadas especialidades."),
+
+    /*
+     * Cada servicio dice a qué especialidad pertenece: la base lo exige con
+     * una FK compuesta, así que mandarlo suelto no alcanzaría (BR-010).
+     */
     services: z
-      .array(z.string().trim().min(1).max(60))
-      .min(1, "Agregá al menos un servicio.")
-      .max(ABSOLUTE_MAX_ITEMS, "Demasiados servicios."),
+      .array(
+        z.object({
+          specialtyId,
+          name: z
+            .string()
+            .trim()
+            .min(3, "El servicio necesita al menos 3 caracteres.")
+            .max(80, "Máximo 80 caracteres."),
+        }),
+      )
+      .max(ABSOLUTE_MAX_ITEMS, "Demasiados servicios.")
+      .default([]),
+
+    // BR-017: una o varias. "Híbrida" no se elige, se deriva.
+    serviceModes: z
+      .array(z.enum(SERVICE_MODES))
+      .min(1, "Elegí al menos una forma de prestar el servicio."),
+
     serviceAreaIds: z
       .array(locationId)
       .min(1, "Elegí al menos una zona donde trabajás.")
       .max(ABSOLUTE_MAX_ITEMS, "Demasiadas zonas."),
+
+    /* BR-015: el local. Uruguay no sirve como dirección. */
+    locations: z
+      .array(
+        z.object({
+          locationId: locationId.refine(
+            (id) => id !== COUNTRY_ID,
+            "Elegí un departamento o una localidad.",
+          ),
+          name: z.string().trim().max(80).nullable().default(null),
+          address: z.string().trim().max(160).nullable().default(null),
+          isPrimary: z.coerce.boolean().default(false),
+        }),
+      )
+      .max(ABSOLUTE_MAX_ITEMS, "Demasiadas ubicaciones.")
+      .default([]),
+
     paymentMethods: z.array(z.enum(PAYMENT_METHODS)).default([]),
 
-    /* Redes sociales (RF-171). Sólo con plan que las habilite. */
+    scheduleEntries: z
+      .array(scheduleEntrySchema)
+      .max(MAX_SCHEDULE_ENTRIES, `Hasta ${MAX_SCHEDULE_ENTRIES} horarios.`)
+      .default([]),
+
+    /* Redes sociales (BR-022). Sólo con plan que las habilite. */
     socialLinks: z
       .array(
         z.object({
@@ -218,24 +301,52 @@ export const providerProfileSchema = z
       )
       .max(SOCIAL_PLATFORMS.length, "Demasiadas redes.")
       .default([]),
-
-    /* Equipo (RF-016). Sólo Platino; el tope lo comprueba la acción. */
-    teamMembers: z
-      .array(
-        z.object({
-          name: nameSchema,
-          role: z.string().trim().max(80, "Máximo 80 caracteres.").default(""),
-          subtitle: z
-            .string()
-            .trim()
-            .max(80, "Máximo 80 caracteres.")
-            .default(""),
-          bio: z.string().trim().max(300, "Máximo 300 caracteres.").default(""),
-        }),
-      )
-      .max(ABSOLUTE_MAX_ITEMS, "Demasiados integrantes.")
-      .default([]),
-  });
+  })
+  .refine(
+    // BR-010: un servicio no puede colgar de una especialidad no elegida.
+    (data) =>
+      data.services.every((service) =>
+        data.specialtyIds.includes(service.specialtyId),
+      ),
+    {
+      message: "Hay servicios de una especialidad que no seleccionaste.",
+      path: ["services"],
+    },
+  )
+  .refine(
+    // BR-011: no se repite un servicio dentro de la misma especialidad.
+    (data) => {
+      const seen = new Set<string>();
+      for (const service of data.services) {
+        const key = `${service.specialtyId}|${service.name.toLowerCase()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+      }
+      return true;
+    },
+    { message: "Hay servicios repetidos.", path: ["services"] },
+  )
+  .refine(
+    // BR-015: si se atiende en el negocio, hace falta un local.
+    (data) =>
+      !data.serviceModes.includes("at_business") || data.locations.length > 0,
+    {
+      message: "Agregá la dirección de tu local para atender ahí.",
+      path: ["locations"],
+    },
+  )
+  .refine((data) => data.locations.filter((l) => l.isPrimary).length <= 1, {
+    message: "Sólo una ubicación puede ser la principal.",
+    path: ["locations"],
+  })
+  .refine(
+    // BR-004: al menos un canal de contacto público.
+    (data) => data.contactEmail !== "" || data.phonePublic,
+    {
+      message: "Dejá un correo de contacto o hacé público tu teléfono.",
+      path: ["contactEmail"],
+    },
+  );
 
 export const reviewSchema = z.object({
   rating: z.coerce
@@ -262,7 +373,7 @@ export const reviewReportSchema = z.object({
   detail: z.string().trim().max(500, "Máximo 500 caracteres.").default(""),
 });
 
-export type ProviderProfileInput = z.infer<typeof providerProfileSchema>;
+export type ProfileInput = z.infer<typeof profileSchema>;
 
 /** Convierte los errores de Zod al shape que usan los formularios. */
 export function fieldErrors(

@@ -1,0 +1,3308 @@
+{
+  "locations": [
+    {
+      "id": "uruguay",
+      "parentId": null,
+      "type": "country",
+      "name": "Uruguay",
+      "slug": "uruguay"
+    },
+    {
+      "id": "montevideo",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Montevideo",
+      "slug": "montevideo"
+    },
+    {
+      "id": "montevideo-montevideo",
+      "parentId": "montevideo",
+      "type": "locality",
+      "name": "Montevideo",
+      "slug": "montevideo"
+    },
+    {
+      "id": "montevideo-santiago-vazquez",
+      "parentId": "montevideo",
+      "type": "locality",
+      "name": "Santiago Vázquez",
+      "slug": "santiago-vazquez"
+    },
+    {
+      "id": "montevideo-abayuba",
+      "parentId": "montevideo",
+      "type": "locality",
+      "name": "Abayubá",
+      "slug": "abayuba"
+    },
+    {
+      "id": "montevideo-punta-espinillo",
+      "parentId": "montevideo",
+      "type": "locality",
+      "name": "Punta Espinillo",
+      "slug": "punta-espinillo"
+    },
+    {
+      "id": "montevideo-colonia-nicolich-oeste",
+      "parentId": "montevideo",
+      "type": "locality",
+      "name": "Colonia Nicolich Oeste",
+      "slug": "colonia-nicolich-oeste"
+    },
+    {
+      "id": "montevideo-pajas-blancas",
+      "parentId": "montevideo",
+      "type": "locality",
+      "name": "Pajas Blancas",
+      "slug": "pajas-blancas"
+    },
+    {
+      "id": "montevideo-santa-catalina",
+      "parentId": "montevideo",
+      "type": "locality",
+      "name": "Santa Catalina",
+      "slug": "santa-catalina"
+    },
+    {
+      "id": "canelones",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Canelones",
+      "slug": "canelones"
+    },
+    {
+      "id": "canelones-canelones",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Canelones (Guadalupe)",
+      "slug": "canelones"
+    },
+    {
+      "id": "canelones-las-piedras",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Las Piedras",
+      "slug": "las-piedras"
+    },
+    {
+      "id": "canelones-la-paz",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "La Paz",
+      "slug": "la-paz"
+    },
+    {
+      "id": "canelones-progreso",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Progreso",
+      "slug": "progreso"
+    },
+    {
+      "id": "canelones-juanico",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Juanicó",
+      "slug": "juanico"
+    },
+    {
+      "id": "canelones-barros-blancos",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Barros Blancos",
+      "slug": "barros-blancos"
+    },
+    {
+      "id": "canelones-toledo",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Toledo",
+      "slug": "toledo"
+    },
+    {
+      "id": "canelones-suarez",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Suárez (Villa Nueva de Suárez)",
+      "slug": "suarez"
+    },
+    {
+      "id": "canelones-sauce",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Sauce",
+      "slug": "sauce"
+    },
+    {
+      "id": "canelones-pando",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Pando",
+      "slug": "pando"
+    },
+    {
+      "id": "canelones-empalme-olmos",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Empalme Olmos",
+      "slug": "empalme-olmos"
+    },
+    {
+      "id": "canelones-joaquin-suarez",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Joaquín Suárez",
+      "slug": "joaquin-suarez"
+    },
+    {
+      "id": "canelones-colonia-nicolich",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Colonia Nicolich",
+      "slug": "colonia-nicolich"
+    },
+    {
+      "id": "canelones-paso-carrasco",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Paso Carrasco",
+      "slug": "paso-carrasco"
+    },
+    {
+      "id": "canelones-villa-aeroparque",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Villa Aeroparque",
+      "slug": "villa-aeroparque"
+    },
+    {
+      "id": "canelones-canada-grande",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Cañada Grande",
+      "slug": "canada-grande"
+    },
+    {
+      "id": "canelones-los-cerrillos",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Los Cerrillos",
+      "slug": "los-cerrillos"
+    },
+    {
+      "id": "canelones-santa-lucia",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Santa Lucía",
+      "slug": "santa-lucia"
+    },
+    {
+      "id": "canelones-aguas-corrientes",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Aguas Corrientes",
+      "slug": "aguas-corrientes"
+    },
+    {
+      "id": "canelones-villa-felicidad",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Villa Felicidad",
+      "slug": "villa-felicidad"
+    },
+    {
+      "id": "canelones-paso-palomeque",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Paso Palomeque",
+      "slug": "paso-palomeque"
+    },
+    {
+      "id": "canelones-ciudad-de-la-costa",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Ciudad de la Costa",
+      "slug": "ciudad-de-la-costa"
+    },
+    {
+      "id": "canelones-neptunia",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Neptunia",
+      "slug": "neptunia"
+    },
+    {
+      "id": "canelones-pinamar",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Pinamar",
+      "slug": "pinamar"
+    },
+    {
+      "id": "canelones-salinas",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Salinas",
+      "slug": "salinas"
+    },
+    {
+      "id": "canelones-marindia",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Marindia",
+      "slug": "marindia"
+    },
+    {
+      "id": "canelones-fortin-de-santa-rosa",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Fortín de Santa Rosa",
+      "slug": "fortin-de-santa-rosa"
+    },
+    {
+      "id": "canelones-villa-argentina",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Villa Argentina",
+      "slug": "villa-argentina"
+    },
+    {
+      "id": "canelones-atlantida",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Atlántida",
+      "slug": "atlantida"
+    },
+    {
+      "id": "canelones-las-toscas",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Las Toscas",
+      "slug": "las-toscas"
+    },
+    {
+      "id": "canelones-parque-del-plata",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Parque del Plata",
+      "slug": "parque-del-plata"
+    },
+    {
+      "id": "canelones-la-floresta",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "La Floresta",
+      "slug": "la-floresta"
+    },
+    {
+      "id": "canelones-costa-azul",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Costa Azul",
+      "slug": "costa-azul"
+    },
+    {
+      "id": "canelones-bello-horizonte",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Bello Horizonte",
+      "slug": "bello-horizonte"
+    },
+    {
+      "id": "canelones-guazuvira",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Guazuvirá",
+      "slug": "guazuvira"
+    },
+    {
+      "id": "canelones-san-luis",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "San Luis",
+      "slug": "san-luis"
+    },
+    {
+      "id": "canelones-los-titanes",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Los Titanes",
+      "slug": "los-titanes"
+    },
+    {
+      "id": "canelones-biarritz",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Biarritz",
+      "slug": "biarritz"
+    },
+    {
+      "id": "canelones-cuchilla-alta",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Cuchilla Alta",
+      "slug": "cuchilla-alta"
+    },
+    {
+      "id": "canelones-santa-lucia-del-este",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Santa Lucía del Este",
+      "slug": "santa-lucia-del-este"
+    },
+    {
+      "id": "canelones-balneario-argentino",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Balneario Argentino",
+      "slug": "balneario-argentino"
+    },
+    {
+      "id": "canelones-jaureguiberry",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Jaureguiberry",
+      "slug": "jaureguiberry"
+    },
+    {
+      "id": "canelones-araminda",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Araminda",
+      "slug": "araminda"
+    },
+    {
+      "id": "canelones-santa-ana",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Santa Ana",
+      "slug": "santa-ana"
+    },
+    {
+      "id": "canelones-el-galeon",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "El Galeón",
+      "slug": "el-galeon"
+    },
+    {
+      "id": "canelones-tala",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Tala",
+      "slug": "tala"
+    },
+    {
+      "id": "canelones-san-ramon",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "San Ramón",
+      "slug": "san-ramon"
+    },
+    {
+      "id": "canelones-san-bautista",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "San Bautista",
+      "slug": "san-bautista"
+    },
+    {
+      "id": "canelones-san-antonio",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "San Antonio",
+      "slug": "san-antonio"
+    },
+    {
+      "id": "canelones-santa-rosa",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Santa Rosa",
+      "slug": "santa-rosa"
+    },
+    {
+      "id": "canelones-castellanos",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Castellanos",
+      "slug": "castellanos"
+    },
+    {
+      "id": "canelones-migues",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Migues",
+      "slug": "migues"
+    },
+    {
+      "id": "canelones-montes",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Montes",
+      "slug": "montes"
+    },
+    {
+      "id": "canelones-san-jacinto",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "San Jacinto",
+      "slug": "san-jacinto"
+    },
+    {
+      "id": "canelones-soca",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Soca",
+      "slug": "soca"
+    },
+    {
+      "id": "canelones-estacion-tapia",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Estación Tapia",
+      "slug": "estacion-tapia"
+    },
+    {
+      "id": "canelones-bolivar",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Bolívar",
+      "slug": "bolivar"
+    },
+    {
+      "id": "canelones-cerrillos",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Cerrillos",
+      "slug": "cerrillos"
+    },
+    {
+      "id": "canelones-villa-san-cono",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Villa San Cono",
+      "slug": "villa-san-cono"
+    },
+    {
+      "id": "canelones-capilla-de-cella",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Capilla de Cella",
+      "slug": "capilla-de-cella"
+    },
+    {
+      "id": "canelones-aguas-blancas",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Aguas Blancas",
+      "slug": "aguas-blancas"
+    },
+    {
+      "id": "canelones-costa-y-guillamon",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Costa y Guillamón",
+      "slug": "costa-y-guillamon"
+    },
+    {
+      "id": "canelones-olmos",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Olmos",
+      "slug": "olmos"
+    },
+    {
+      "id": "canelones-totoral-del-sauce",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Totoral del Sauce",
+      "slug": "totoral-del-sauce"
+    },
+    {
+      "id": "canelones-piedra-del-toro",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Piedra del Toro",
+      "slug": "piedra-del-toro"
+    },
+    {
+      "id": "canelones-curtina-de-guerra",
+      "parentId": "canelones",
+      "type": "locality",
+      "name": "Curtina de Guerra",
+      "slug": "curtina-de-guerra"
+    },
+    {
+      "id": "maldonado",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Maldonado",
+      "slug": "maldonado"
+    },
+    {
+      "id": "maldonado-maldonado",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Maldonado",
+      "slug": "maldonado"
+    },
+    {
+      "id": "maldonado-punta-del-este",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Punta del Este",
+      "slug": "punta-del-este"
+    },
+    {
+      "id": "maldonado-punta-ballena",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Punta Ballena",
+      "slug": "punta-ballena"
+    },
+    {
+      "id": "maldonado-solanas",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Solanas",
+      "slug": "solanas"
+    },
+    {
+      "id": "maldonado-la-barra",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "La Barra",
+      "slug": "la-barra"
+    },
+    {
+      "id": "maldonado-manantiales",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Manantiales",
+      "slug": "manantiales"
+    },
+    {
+      "id": "maldonado-jose-ignacio",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "José Ignacio",
+      "slug": "jose-ignacio"
+    },
+    {
+      "id": "maldonado-balneario-buenos-aires",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Balneario Buenos Aires",
+      "slug": "balneario-buenos-aires"
+    },
+    {
+      "id": "maldonado-el-chorro",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "El Chorro",
+      "slug": "el-chorro"
+    },
+    {
+      "id": "maldonado-santa-monica",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Santa Mónica",
+      "slug": "santa-monica"
+    },
+    {
+      "id": "maldonado-sauce-de-portezuelo",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Sauce de Portezuelo",
+      "slug": "sauce-de-portezuelo"
+    },
+    {
+      "id": "maldonado-ocean-park",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Ocean Park",
+      "slug": "ocean-park"
+    },
+    {
+      "id": "maldonado-san-carlos",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "San Carlos",
+      "slug": "san-carlos"
+    },
+    {
+      "id": "maldonado-la-aguada",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "La Aguada",
+      "slug": "la-aguada"
+    },
+    {
+      "id": "maldonado-guardia-vieja",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Guardia Vieja",
+      "slug": "guardia-vieja"
+    },
+    {
+      "id": "maldonado-partido-norte",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Partido Norte",
+      "slug": "partido-norte"
+    },
+    {
+      "id": "maldonado-garzon",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Garzón",
+      "slug": "garzon"
+    },
+    {
+      "id": "maldonado-pueblo-eden",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Pueblo Edén",
+      "slug": "pueblo-eden"
+    },
+    {
+      "id": "maldonado-piriapolis",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Piriápolis",
+      "slug": "piriapolis"
+    },
+    {
+      "id": "maldonado-pan-de-azucar",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Pan de Azúcar",
+      "slug": "pan-de-azucar"
+    },
+    {
+      "id": "maldonado-playa-verde",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Playa Verde",
+      "slug": "playa-verde"
+    },
+    {
+      "id": "maldonado-las-flores",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Las Flores",
+      "slug": "las-flores"
+    },
+    {
+      "id": "maldonado-bella-vista-de-piriapolis",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Bella Vista de Piriápolis",
+      "slug": "bella-vista-de-piriapolis"
+    },
+    {
+      "id": "maldonado-punta-colorada",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Punta Colorada",
+      "slug": "punta-colorada"
+    },
+    {
+      "id": "maldonado-punta-negra",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Punta Negra",
+      "slug": "punta-negra"
+    },
+    {
+      "id": "maldonado-portezuelo",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Portezuelo",
+      "slug": "portezuelo"
+    },
+    {
+      "id": "maldonado-gregorio-aznarez",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Gregorio Aznárez",
+      "slug": "gregorio-aznarez"
+    },
+    {
+      "id": "maldonado-cerro-pelado-de-pan-de-azucar",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Cerro Pelado de Pan de Azúcar",
+      "slug": "cerro-pelado-de-pan-de-azucar"
+    },
+    {
+      "id": "maldonado-estacion-las-flores",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Estación Las Flores",
+      "slug": "estacion-las-flores"
+    },
+    {
+      "id": "maldonado-aigua",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Aiguá",
+      "slug": "aigua"
+    },
+    {
+      "id": "maldonado-los-talas",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Los Talas",
+      "slug": "los-talas"
+    },
+    {
+      "id": "maldonado-nueva-carrara",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Nueva Carrara",
+      "slug": "nueva-carrara"
+    },
+    {
+      "id": "maldonado-cerros-azules",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Cerros Azules",
+      "slug": "cerros-azules"
+    },
+    {
+      "id": "maldonado-estacion-aigua",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Estación Aiguá",
+      "slug": "estacion-aigua"
+    },
+    {
+      "id": "maldonado-las-canas",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Las Cañas",
+      "slug": "las-canas"
+    },
+    {
+      "id": "maldonado-puntas-de-pan-de-azucar",
+      "parentId": "maldonado",
+      "type": "locality",
+      "name": "Puntas de Pan de Azúcar",
+      "slug": "puntas-de-pan-de-azucar"
+    },
+    {
+      "id": "rocha",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Rocha",
+      "slug": "rocha"
+    },
+    {
+      "id": "rocha-rocha",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Rocha",
+      "slug": "rocha"
+    },
+    {
+      "id": "rocha-chuy",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Chuy",
+      "slug": "chuy"
+    },
+    {
+      "id": "rocha-castillos",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Castillos",
+      "slug": "castillos"
+    },
+    {
+      "id": "rocha-lascano",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Lascano",
+      "slug": "lascano"
+    },
+    {
+      "id": "rocha-velazquez",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Velázquez",
+      "slug": "velazquez"
+    },
+    {
+      "id": "rocha-cebollati",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Cebollatí",
+      "slug": "cebollati"
+    },
+    {
+      "id": "rocha-san-luis-al-medio",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "San Luis al Medio",
+      "slug": "san-luis-al-medio"
+    },
+    {
+      "id": "rocha-dieciocho-de-julio",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Dieciocho de Julio",
+      "slug": "dieciocho-de-julio"
+    },
+    {
+      "id": "rocha-la-coronilla",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "La Coronilla",
+      "slug": "la-coronilla"
+    },
+    {
+      "id": "rocha-puerto-de-los-botes",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Puerto de los Botes",
+      "slug": "puerto-de-los-botes"
+    },
+    {
+      "id": "rocha-la-paloma",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "La Paloma",
+      "slug": "la-paloma"
+    },
+    {
+      "id": "rocha-la-pedrera",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "La Pedrera",
+      "slug": "la-pedrera"
+    },
+    {
+      "id": "rocha-cabo-polonio",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Cabo Polonio",
+      "slug": "cabo-polonio"
+    },
+    {
+      "id": "rocha-valizas",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Valizas (Barra de Valizas)",
+      "slug": "valizas"
+    },
+    {
+      "id": "rocha-aguas-dulces",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Aguas Dulces",
+      "slug": "aguas-dulces"
+    },
+    {
+      "id": "rocha-punta-del-diablo",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Punta del Diablo",
+      "slug": "punta-del-diablo"
+    },
+    {
+      "id": "rocha-santa-teresa",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Santa Teresa",
+      "slug": "santa-teresa"
+    },
+    {
+      "id": "rocha-punta-rubia",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Punta Rubia",
+      "slug": "punta-rubia"
+    },
+    {
+      "id": "rocha-san-antonio",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "San Antonio",
+      "slug": "san-antonio"
+    },
+    {
+      "id": "rocha-oceania-del-polonio",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Oceanía del Polonio",
+      "slug": "oceania-del-polonio"
+    },
+    {
+      "id": "rocha-arachania",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Arachania",
+      "slug": "arachania"
+    },
+    {
+      "id": "rocha-anaconda",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Anaconda",
+      "slug": "anaconda"
+    },
+    {
+      "id": "rocha-la-esmeralda",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "La Esmeralda",
+      "slug": "la-esmeralda"
+    },
+    {
+      "id": "rocha-balneario-costa-azul",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Balneario Costa Azul",
+      "slug": "balneario-costa-azul"
+    },
+    {
+      "id": "rocha-punta-rubia-norte",
+      "parentId": "rocha",
+      "type": "locality",
+      "name": "Punta Rubia Norte",
+      "slug": "punta-rubia-norte"
+    },
+    {
+      "id": "colonia",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Colonia",
+      "slug": "colonia"
+    },
+    {
+      "id": "colonia-colonia-del-sacramento",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia del Sacramento",
+      "slug": "colonia-del-sacramento"
+    },
+    {
+      "id": "colonia-carmelo",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Carmelo",
+      "slug": "carmelo"
+    },
+    {
+      "id": "colonia-juan-lacaze",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Juan Lacaze",
+      "slug": "juan-lacaze"
+    },
+    {
+      "id": "colonia-nueva-helvecia",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Nueva Helvecia",
+      "slug": "nueva-helvecia"
+    },
+    {
+      "id": "colonia-nueva-palmira",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Nueva Palmira",
+      "slug": "nueva-palmira"
+    },
+    {
+      "id": "colonia-rosario",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Rosario",
+      "slug": "rosario"
+    },
+    {
+      "id": "colonia-tarariras",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Tarariras",
+      "slug": "tarariras"
+    },
+    {
+      "id": "colonia-ombues-de-lavalle",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Ombúes de Lavalle",
+      "slug": "ombues-de-lavalle"
+    },
+    {
+      "id": "colonia-colonia-valdense",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Valdense",
+      "slug": "colonia-valdense"
+    },
+    {
+      "id": "colonia-florencio-sanchez",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Florencio Sánchez",
+      "slug": "florencio-sanchez"
+    },
+    {
+      "id": "colonia-conchillas",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Conchillas",
+      "slug": "conchillas"
+    },
+    {
+      "id": "colonia-riachuelo",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Riachuelo",
+      "slug": "riachuelo"
+    },
+    {
+      "id": "colonia-colonia-miguelete",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Miguelete",
+      "slug": "colonia-miguelete"
+    },
+    {
+      "id": "colonia-colonia-cosmopolita",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Cosmopolita",
+      "slug": "colonia-cosmopolita"
+    },
+    {
+      "id": "colonia-colonia-estrella",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Estrella",
+      "slug": "colonia-estrella"
+    },
+    {
+      "id": "colonia-colonia-suiza",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Suiza",
+      "slug": "colonia-suiza"
+    },
+    {
+      "id": "colonia-la-paz",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "La Paz",
+      "slug": "la-paz"
+    },
+    {
+      "id": "colonia-barker",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Barker",
+      "slug": "barker"
+    },
+    {
+      "id": "colonia-campana",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Campana",
+      "slug": "campana"
+    },
+    {
+      "id": "colonia-cufre",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Cufré",
+      "slug": "cufre"
+    },
+    {
+      "id": "colonia-el-semillero",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "El Semillero",
+      "slug": "el-semillero"
+    },
+    {
+      "id": "colonia-puerto-ingles",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Puerto Inglés",
+      "slug": "puerto-ingles"
+    },
+    {
+      "id": "colonia-radial-hernandez",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Radial Hernández",
+      "slug": "radial-hernandez"
+    },
+    {
+      "id": "colonia-san-pedro",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "San Pedro",
+      "slug": "san-pedro"
+    },
+    {
+      "id": "colonia-santa-ana",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Santa Ana",
+      "slug": "santa-ana"
+    },
+    {
+      "id": "colonia-colonia-belgrano",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Belgrano",
+      "slug": "colonia-belgrano"
+    },
+    {
+      "id": "colonia-blanquillo",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Blanquillo",
+      "slug": "blanquillo"
+    },
+    {
+      "id": "colonia-minuano",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Minuano",
+      "slug": "minuano"
+    },
+    {
+      "id": "colonia-los-pinos",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Los Pinos",
+      "slug": "los-pinos"
+    },
+    {
+      "id": "colonia-artilleros",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Artilleros",
+      "slug": "artilleros"
+    },
+    {
+      "id": "colonia-playa-fomento",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Playa Fomento",
+      "slug": "playa-fomento"
+    },
+    {
+      "id": "colonia-puerto-platero",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Puerto Platero",
+      "slug": "puerto-platero"
+    },
+    {
+      "id": "colonia-colonia-concordia",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Concordia",
+      "slug": "colonia-concordia"
+    },
+    {
+      "id": "colonia-estanzuela",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Estanzuela",
+      "slug": "estanzuela"
+    },
+    {
+      "id": "colonia-paraje-cerros-de-san-juan",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Paraje Cerros de San Juan",
+      "slug": "paraje-cerros-de-san-juan"
+    },
+    {
+      "id": "colonia-colonia-braso-oriental",
+      "parentId": "colonia",
+      "type": "locality",
+      "name": "Colonia Braso Oriental",
+      "slug": "colonia-braso-oriental"
+    },
+    {
+      "id": "san-jose",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "San José",
+      "slug": "san-jose"
+    },
+    {
+      "id": "san-jose-san-jose-de-mayo",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "San José de Mayo",
+      "slug": "san-jose-de-mayo"
+    },
+    {
+      "id": "san-jose-ciudad-del-plata",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Ciudad del Plata",
+      "slug": "ciudad-del-plata"
+    },
+    {
+      "id": "san-jose-libertad",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Libertad",
+      "slug": "libertad"
+    },
+    {
+      "id": "san-jose-rodriguez",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Rodríguez",
+      "slug": "rodriguez"
+    },
+    {
+      "id": "san-jose-ecilda-paullier",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Ecilda Paullier",
+      "slug": "ecilda-paullier"
+    },
+    {
+      "id": "san-jose-rafael-perazza",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Rafael Perazza",
+      "slug": "rafael-perazza"
+    },
+    {
+      "id": "san-jose-kiyu",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Kiyú",
+      "slug": "kiyu"
+    },
+    {
+      "id": "san-jose-ordeig",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Ordeig",
+      "slug": "ordeig"
+    },
+    {
+      "id": "san-jose-boca-del-cufre",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Boca del Cufré",
+      "slug": "boca-del-cufre"
+    },
+    {
+      "id": "san-jose-playa-pascual-sur",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Playa Pascual Sur",
+      "slug": "playa-pascual-sur"
+    },
+    {
+      "id": "san-jose-arazati",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Arazatí",
+      "slug": "arazati"
+    },
+    {
+      "id": "san-jose-mauricio",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Mauricio",
+      "slug": "mauricio"
+    },
+    {
+      "id": "san-jose-puntas-de-valdez",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Puntas de Valdez",
+      "slug": "puntas-de-valdez"
+    },
+    {
+      "id": "san-jose-villa-maria",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Villa María",
+      "slug": "villa-maria"
+    },
+    {
+      "id": "san-jose-capurro",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Capurro",
+      "slug": "capurro"
+    },
+    {
+      "id": "san-jose-juan-soler",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Juan Soler",
+      "slug": "juan-soler"
+    },
+    {
+      "id": "san-jose-raigon",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Raigón",
+      "slug": "raigon"
+    },
+    {
+      "id": "san-jose-san-gregorio",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "San Gregorio",
+      "slug": "san-gregorio"
+    },
+    {
+      "id": "san-jose-colonia-italia",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Colonia Italia",
+      "slug": "colonia-italia"
+    },
+    {
+      "id": "san-jose-ituzaingo",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Ituzaingó",
+      "slug": "ituzaingo"
+    },
+    {
+      "id": "san-jose-scavino",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Scavino",
+      "slug": "scavino"
+    },
+    {
+      "id": "san-jose-canada-grande",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Cañada Grande",
+      "slug": "canada-grande"
+    },
+    {
+      "id": "san-jose-estacion-gonzalez",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Estación González",
+      "slug": "estacion-gonzalez"
+    },
+    {
+      "id": "san-jose-bella-vista",
+      "parentId": "san-jose",
+      "type": "locality",
+      "name": "Bella Vista",
+      "slug": "bella-vista"
+    },
+    {
+      "id": "soriano",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Soriano",
+      "slug": "soriano"
+    },
+    {
+      "id": "soriano-mercedes",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Mercedes",
+      "slug": "mercedes"
+    },
+    {
+      "id": "soriano-dolores",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Dolores",
+      "slug": "dolores"
+    },
+    {
+      "id": "soriano-cardona",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Cardona",
+      "slug": "cardona"
+    },
+    {
+      "id": "soriano-jose-enrique-rodo",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "José Enrique Rodó",
+      "slug": "jose-enrique-rodo"
+    },
+    {
+      "id": "soriano-palmitas",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Palmitas",
+      "slug": "palmitas"
+    },
+    {
+      "id": "soriano-villa-soriano",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Villa Soriano",
+      "slug": "villa-soriano"
+    },
+    {
+      "id": "soriano-santa-catalina",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Santa Catalina",
+      "slug": "santa-catalina"
+    },
+    {
+      "id": "soriano-egana",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Egaña",
+      "slug": "egana"
+    },
+    {
+      "id": "soriano-risso",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Risso",
+      "slug": "risso"
+    },
+    {
+      "id": "soriano-agraciada",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Agraciada",
+      "slug": "agraciada"
+    },
+    {
+      "id": "soriano-canada-nieto",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Cañada Nieto",
+      "slug": "canada-nieto"
+    },
+    {
+      "id": "soriano-castillos-de-soriano",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Castillos de Soriano",
+      "slug": "castillos-de-soriano"
+    },
+    {
+      "id": "soriano-colonia-concordia",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Colonia Concordia",
+      "slug": "colonia-concordia"
+    },
+    {
+      "id": "soriano-sacachispas",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Sacachispas",
+      "slug": "sacachispas"
+    },
+    {
+      "id": "soriano-palo-solo",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Palo Solo",
+      "slug": "palo-solo"
+    },
+    {
+      "id": "soriano-perseverano",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Perseverano",
+      "slug": "perseverano"
+    },
+    {
+      "id": "soriano-rincon-del-pino",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Rincón del Pino",
+      "slug": "rincon-del-pino"
+    },
+    {
+      "id": "soriano-zanja-honda",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Zanja Honda",
+      "slug": "zanja-honda"
+    },
+    {
+      "id": "soriano-coquimbo",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Coquimbo",
+      "slug": "coquimbo"
+    },
+    {
+      "id": "soriano-chacras-de-dolores",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Chacras de Dolores",
+      "slug": "chacras-de-dolores"
+    },
+    {
+      "id": "soriano-balneario-las-canas",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Balneario Las Cañas",
+      "slug": "balneario-las-canas"
+    },
+    {
+      "id": "soriano-pueblo-gil",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Pueblo Gil",
+      "slug": "pueblo-gil"
+    },
+    {
+      "id": "soriano-muelle-concordia",
+      "parentId": "soriano",
+      "type": "locality",
+      "name": "Muelle Concordia",
+      "slug": "muelle-concordia"
+    },
+    {
+      "id": "rio-negro",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Río Negro",
+      "slug": "rio-negro"
+    },
+    {
+      "id": "rio-negro-fray-bentos",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Fray Bentos",
+      "slug": "fray-bentos"
+    },
+    {
+      "id": "rio-negro-young",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Young",
+      "slug": "young"
+    },
+    {
+      "id": "rio-negro-nuevo-berlin",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Nuevo Berlín",
+      "slug": "nuevo-berlin"
+    },
+    {
+      "id": "rio-negro-san-javier",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "San Javier",
+      "slug": "san-javier"
+    },
+    {
+      "id": "rio-negro-grecco",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Grecco",
+      "slug": "grecco"
+    },
+    {
+      "id": "rio-negro-sarandi-de-navarro",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Sarandí de Navarro",
+      "slug": "sarandi-de-navarro"
+    },
+    {
+      "id": "rio-negro-menafra",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Menafra",
+      "slug": "menafra"
+    },
+    {
+      "id": "rio-negro-algorta",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Algorta",
+      "slug": "algorta"
+    },
+    {
+      "id": "rio-negro-paso-de-los-mellizos",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Paso de los Mellizos",
+      "slug": "paso-de-los-mellizos"
+    },
+    {
+      "id": "rio-negro-bellaco",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Bellaco",
+      "slug": "bellaco"
+    },
+    {
+      "id": "rio-negro-sanchez-grande",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Sánchez Grande",
+      "slug": "sanchez-grande"
+    },
+    {
+      "id": "rio-negro-los-arrayanes",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Los Arrayanes",
+      "slug": "los-arrayanes"
+    },
+    {
+      "id": "rio-negro-colonia-ofir",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Colonia Ofir",
+      "slug": "colonia-ofir"
+    },
+    {
+      "id": "rio-negro-villa-maria-de-rio-negro",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Villa María de Río Negro",
+      "slug": "villa-maria-de-rio-negro"
+    },
+    {
+      "id": "rio-negro-tres-quintas",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Tres Quintas",
+      "slug": "tres-quintas"
+    },
+    {
+      "id": "rio-negro-balneario-las-canas-de-rio-negro",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Balneario Las Cañas de Río Negro",
+      "slug": "balneario-las-canas-de-rio-negro"
+    },
+    {
+      "id": "rio-negro-paraje-bopicua",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Paraje Bopicuá",
+      "slug": "paraje-bopicua"
+    },
+    {
+      "id": "rio-negro-merinos",
+      "parentId": "rio-negro",
+      "type": "locality",
+      "name": "Merinos",
+      "slug": "merinos"
+    },
+    {
+      "id": "paysandu",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Paysandú",
+      "slug": "paysandu"
+    },
+    {
+      "id": "paysandu-paysandu",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Paysandú",
+      "slug": "paysandu"
+    },
+    {
+      "id": "paysandu-guichon",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Guichón",
+      "slug": "guichon"
+    },
+    {
+      "id": "paysandu-quebracho",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Quebracho",
+      "slug": "quebracho"
+    },
+    {
+      "id": "paysandu-porvenir",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Porvenir",
+      "slug": "porvenir"
+    },
+    {
+      "id": "paysandu-chapicuy",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Chapicuy",
+      "slug": "chapicuy"
+    },
+    {
+      "id": "paysandu-lorenzo-geyres",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Lorenzo Geyres",
+      "slug": "lorenzo-geyres"
+    },
+    {
+      "id": "paysandu-piedras-coloradas",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Piedras Coloradas",
+      "slug": "piedras-coloradas"
+    },
+    {
+      "id": "paysandu-tambores",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Tambores",
+      "slug": "tambores"
+    },
+    {
+      "id": "paysandu-beisso",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Beisso",
+      "slug": "beisso"
+    },
+    {
+      "id": "paysandu-cerro-chato-de-paysandu",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Cerro Chato de Paysandú",
+      "slug": "cerro-chato-de-paysandu"
+    },
+    {
+      "id": "paysandu-constancia",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Constancia",
+      "slug": "constancia"
+    },
+    {
+      "id": "paysandu-gallinal",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Gallinal",
+      "slug": "gallinal"
+    },
+    {
+      "id": "paysandu-merinos-de-paysandu",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Merinos de Paysandú",
+      "slug": "merinos-de-paysandu"
+    },
+    {
+      "id": "paysandu-morato",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Morató",
+      "slug": "morato"
+    },
+    {
+      "id": "paysandu-nuevo-berlin-chico",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Nuevo Berlín Chico",
+      "slug": "nuevo-berlin-chico"
+    },
+    {
+      "id": "paysandu-orgoroso",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Orgoroso",
+      "slug": "orgoroso"
+    },
+    {
+      "id": "paysandu-pandule",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Pandule",
+      "slug": "pandule"
+    },
+    {
+      "id": "paysandu-san-felix",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "San Félix",
+      "slug": "san-felix"
+    },
+    {
+      "id": "paysandu-termas-de-almiron",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Termas de Almirón",
+      "slug": "termas-de-almiron"
+    },
+    {
+      "id": "paysandu-termas-de-guaviyu",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Termas de Guaviyú",
+      "slug": "termas-de-guaviyu"
+    },
+    {
+      "id": "paysandu-colonia-nuevo-paysandu",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Colonia Nuevo Paysandú",
+      "slug": "colonia-nuevo-paysandu"
+    },
+    {
+      "id": "paysandu-casa-blanca",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Casa Blanca",
+      "slug": "casa-blanca"
+    },
+    {
+      "id": "paysandu-esperanza",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Esperanza",
+      "slug": "esperanza"
+    },
+    {
+      "id": "paysandu-arbolito",
+      "parentId": "paysandu",
+      "type": "locality",
+      "name": "Arbolito",
+      "slug": "arbolito"
+    },
+    {
+      "id": "salto",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Salto",
+      "slug": "salto"
+    },
+    {
+      "id": "salto-salto",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Salto",
+      "slug": "salto"
+    },
+    {
+      "id": "salto-constitucion",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Constitución",
+      "slug": "constitucion"
+    },
+    {
+      "id": "salto-belen",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Belén",
+      "slug": "belen"
+    },
+    {
+      "id": "salto-villa-constitucion",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Villa Constitución",
+      "slug": "villa-constitucion"
+    },
+    {
+      "id": "salto-termas-del-dayman",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Termas del Daymán",
+      "slug": "termas-del-dayman"
+    },
+    {
+      "id": "salto-termas-del-arapey",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Termas del Arapey",
+      "slug": "termas-del-arapey"
+    },
+    {
+      "id": "salto-salto-grande",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Salto Grande",
+      "slug": "salto-grande"
+    },
+    {
+      "id": "salto-colonia-lavalleja",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Colonia Lavalleja",
+      "slug": "colonia-lavalleja"
+    },
+    {
+      "id": "salto-rincon-de-valentin",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Rincón de Valentín",
+      "slug": "rincon-de-valentin"
+    },
+    {
+      "id": "salto-san-antonio-de-salto",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "San Antonio de Salto",
+      "slug": "san-antonio-de-salto"
+    },
+    {
+      "id": "salto-chacras-de-salto",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Chacras de Salto",
+      "slug": "chacras-de-salto"
+    },
+    {
+      "id": "salto-cerros-de-vera",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Cerros de Vera",
+      "slug": "cerros-de-vera"
+    },
+    {
+      "id": "salto-colonia-itapebi",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Colonia Itapebí",
+      "slug": "colonia-itapebi"
+    },
+    {
+      "id": "salto-palomas",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Palomas",
+      "slug": "palomas"
+    },
+    {
+      "id": "salto-pueblo-fernandez",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Pueblo Fernández",
+      "slug": "pueblo-fernandez"
+    },
+    {
+      "id": "salto-albisu",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Albisu",
+      "slug": "albisu"
+    },
+    {
+      "id": "salto-garibaldi",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Garibaldi",
+      "slug": "garibaldi"
+    },
+    {
+      "id": "salto-migliaro",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Migliaro",
+      "slug": "migliaro"
+    },
+    {
+      "id": "salto-sarandi-de-arapey",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Sarandí de Arapey",
+      "slug": "sarandi-de-arapey"
+    },
+    {
+      "id": "salto-mataojo",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Mataojo",
+      "slug": "mataojo"
+    },
+    {
+      "id": "salto-corralito",
+      "parentId": "salto",
+      "type": "locality",
+      "name": "Corralito",
+      "slug": "corralito"
+    },
+    {
+      "id": "artigas",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Artigas",
+      "slug": "artigas"
+    },
+    {
+      "id": "artigas-artigas",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Artigas",
+      "slug": "artigas"
+    },
+    {
+      "id": "artigas-bella-union",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Bella Unión",
+      "slug": "bella-union"
+    },
+    {
+      "id": "artigas-tomas-gomensoro",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Tomás Gomensoro",
+      "slug": "tomas-gomensoro"
+    },
+    {
+      "id": "artigas-baltasar-brum",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Baltasar Brum",
+      "slug": "baltasar-brum"
+    },
+    {
+      "id": "artigas-bernabe-rivera",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Bernabé Rivera",
+      "slug": "bernabe-rivera"
+    },
+    {
+      "id": "artigas-sequeira",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Sequeira",
+      "slug": "sequeira"
+    },
+    {
+      "id": "artigas-javier-de-viana",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Javier de Viana",
+      "slug": "javier-de-viana"
+    },
+    {
+      "id": "artigas-cuareim",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Cuareim",
+      "slug": "cuareim"
+    },
+    {
+      "id": "artigas-colonia-palma",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Colonia Palma",
+      "slug": "colonia-palma"
+    },
+    {
+      "id": "artigas-coronado",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Coronado",
+      "slug": "coronado"
+    },
+    {
+      "id": "artigas-diego-lamas",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Diego Lamas",
+      "slug": "diego-lamas"
+    },
+    {
+      "id": "artigas-franquia",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Franquía",
+      "slug": "franquia"
+    },
+    {
+      "id": "artigas-paso-farias",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Paso Farías",
+      "slug": "paso-farias"
+    },
+    {
+      "id": "artigas-topador",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Topador",
+      "slug": "topador"
+    },
+    {
+      "id": "artigas-pueblo-cuaro",
+      "parentId": "artigas",
+      "type": "locality",
+      "name": "Pueblo Cuaró",
+      "slug": "pueblo-cuaro"
+    },
+    {
+      "id": "rivera",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Rivera",
+      "slug": "rivera"
+    },
+    {
+      "id": "rivera-rivera",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Rivera",
+      "slug": "rivera"
+    },
+    {
+      "id": "rivera-tranqueras",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Tranqueras",
+      "slug": "tranqueras"
+    },
+    {
+      "id": "rivera-vichadero",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Vichadero",
+      "slug": "vichadero"
+    },
+    {
+      "id": "rivera-minas-de-corrales",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Minas de Corrales",
+      "slug": "minas-de-corrales"
+    },
+    {
+      "id": "rivera-cerro-pelado-de-rivera",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Cerro Pelado de Rivera",
+      "slug": "cerro-pelado-de-rivera"
+    },
+    {
+      "id": "rivera-lapuente",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Lapuente",
+      "slug": "lapuente"
+    },
+    {
+      "id": "rivera-amarillo",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Amarillo",
+      "slug": "amarillo"
+    },
+    {
+      "id": "rivera-cerrillada",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Cerrillada",
+      "slug": "cerrillada"
+    },
+    {
+      "id": "rivera-moirones",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Moirones",
+      "slug": "moirones"
+    },
+    {
+      "id": "rivera-paso-ataques",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Paso Ataques",
+      "slug": "paso-ataques"
+    },
+    {
+      "id": "rivera-rincon-de-pacheco",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Rincón de Pacheco",
+      "slug": "rincon-de-pacheco"
+    },
+    {
+      "id": "rivera-santa-teresa-de-rivera",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Santa Teresa de Rivera",
+      "slug": "santa-teresa-de-rivera"
+    },
+    {
+      "id": "rivera-cunapiru",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Cuñapirú",
+      "slug": "cunapiru"
+    },
+    {
+      "id": "rivera-la-puente",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "La Puente",
+      "slug": "la-puente"
+    },
+    {
+      "id": "rivera-masoller",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Masoller",
+      "slug": "masoller"
+    },
+    {
+      "id": "rivera-curticeiras",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Curticeiras",
+      "slug": "curticeiras"
+    },
+    {
+      "id": "rivera-banado-del-chuy",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Bañado del Chuy",
+      "slug": "banado-del-chuy"
+    },
+    {
+      "id": "rivera-cerro-chato-de-rivera",
+      "parentId": "rivera",
+      "type": "locality",
+      "name": "Cerro Chato de Rivera",
+      "slug": "cerro-chato-de-rivera"
+    },
+    {
+      "id": "tacuarembo",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Tacuarembó",
+      "slug": "tacuarembo"
+    },
+    {
+      "id": "tacuarembo-tacuarembo",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Tacuarembó",
+      "slug": "tacuarembo"
+    },
+    {
+      "id": "tacuarembo-paso-de-los-toros",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Paso de los Toros",
+      "slug": "paso-de-los-toros"
+    },
+    {
+      "id": "tacuarembo-san-gregorio-de-polanco",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "San Gregorio de Polanco",
+      "slug": "san-gregorio-de-polanco"
+    },
+    {
+      "id": "tacuarembo-ansina",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Ansina",
+      "slug": "ansina"
+    },
+    {
+      "id": "tacuarembo-curtina",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Curtina",
+      "slug": "curtina"
+    },
+    {
+      "id": "tacuarembo-achar",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Achar",
+      "slug": "achar"
+    },
+    {
+      "id": "tacuarembo-tambores-de-tacuarembo",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Tambores de Tacuarembó",
+      "slug": "tambores-de-tacuarembo"
+    },
+    {
+      "id": "tacuarembo-caraguata",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Caraguatá",
+      "slug": "caraguata"
+    },
+    {
+      "id": "tacuarembo-las-toscas-de-caraguata",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Las Toscas de Caraguatá",
+      "slug": "las-toscas-de-caraguata"
+    },
+    {
+      "id": "tacuarembo-piedra-sola",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Piedra Sola",
+      "slug": "piedra-sola"
+    },
+    {
+      "id": "tacuarembo-rincon-de-pereira",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Rincón de Pereira",
+      "slug": "rincon-de-pereira"
+    },
+    {
+      "id": "tacuarembo-cuchilla-de-peralta",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Cuchilla de Peralta",
+      "slug": "cuchilla-de-peralta"
+    },
+    {
+      "id": "tacuarembo-peralta",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Peralta",
+      "slug": "peralta"
+    },
+    {
+      "id": "tacuarembo-pueblo-del-barro",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Pueblo del Barro",
+      "slug": "pueblo-del-barro"
+    },
+    {
+      "id": "tacuarembo-batovi",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Batoví",
+      "slug": "batovi"
+    },
+    {
+      "id": "tacuarembo-clara",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Clara",
+      "slug": "clara"
+    },
+    {
+      "id": "tacuarembo-cerro-de-pastoreo",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Cerro de Pastoreo",
+      "slug": "cerro-de-pastoreo"
+    },
+    {
+      "id": "tacuarembo-laureles",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Laureles",
+      "slug": "laureles"
+    },
+    {
+      "id": "tacuarembo-punta-de-carretera",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Punta de Carretera",
+      "slug": "punta-de-carretera"
+    },
+    {
+      "id": "tacuarembo-balneario-ipora",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Balneario Iporá",
+      "slug": "balneario-ipora"
+    },
+    {
+      "id": "tacuarembo-chamberlain",
+      "parentId": "tacuarembo",
+      "type": "locality",
+      "name": "Chamberlain",
+      "slug": "chamberlain"
+    },
+    {
+      "id": "cerro-largo",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Cerro Largo",
+      "slug": "cerro-largo"
+    },
+    {
+      "id": "cerro-largo-melo",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Melo",
+      "slug": "melo"
+    },
+    {
+      "id": "cerro-largo-rio-branco",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Río Branco",
+      "slug": "rio-branco"
+    },
+    {
+      "id": "cerro-largo-fraile-muerto",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Fraile Muerto",
+      "slug": "fraile-muerto"
+    },
+    {
+      "id": "cerro-largo-acegua",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Aceguá",
+      "slug": "acegua"
+    },
+    {
+      "id": "cerro-largo-tupambae",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Tupambaé",
+      "slug": "tupambae"
+    },
+    {
+      "id": "cerro-largo-isidoro-noblia",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Isidoro Noblía",
+      "slug": "isidoro-noblia"
+    },
+    {
+      "id": "cerro-largo-placido-rosas",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Plácido Rosas",
+      "slug": "placido-rosas"
+    },
+    {
+      "id": "cerro-largo-arevalo",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Arévalo",
+      "slug": "arevalo"
+    },
+    {
+      "id": "cerro-largo-banado-de-medina",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Bañado de Medina",
+      "slug": "banado-de-medina"
+    },
+    {
+      "id": "cerro-largo-cerro-de-las-cuentas",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Cerro de las Cuentas",
+      "slug": "cerro-de-las-cuentas"
+    },
+    {
+      "id": "cerro-largo-arbolito-de-cerro-largo",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Arbolito de Cerro Largo",
+      "slug": "arbolito-de-cerro-largo"
+    },
+    {
+      "id": "cerro-largo-centurion",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Centurión",
+      "slug": "centurion"
+    },
+    {
+      "id": "cerro-largo-la-pedrera-de-cerro-largo",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "La Pedrera de Cerro Largo",
+      "slug": "la-pedrera-de-cerro-largo"
+    },
+    {
+      "id": "cerro-largo-poblado-uruguay",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Poblado Uruguay",
+      "slug": "poblado-uruguay"
+    },
+    {
+      "id": "cerro-largo-ramon-trigo",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Ramón Trigo",
+      "slug": "ramon-trigo"
+    },
+    {
+      "id": "cerro-largo-getulio-vargas",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Getulio Vargas",
+      "slug": "getulio-vargas"
+    },
+    {
+      "id": "cerro-largo-quebracho-de-cerro-largo",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Quebracho de Cerro Largo",
+      "slug": "quebracho-de-cerro-largo"
+    },
+    {
+      "id": "cerro-largo-santa-clara-de-olimar",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Santa Clara de Olimar",
+      "slug": "santa-clara-de-olimar"
+    },
+    {
+      "id": "cerro-largo-tres-islas",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Tres Islas",
+      "slug": "tres-islas"
+    },
+    {
+      "id": "cerro-largo-nando",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Nando",
+      "slug": "nando"
+    },
+    {
+      "id": "cerro-largo-toledo-de-cerro-largo",
+      "parentId": "cerro-largo",
+      "type": "locality",
+      "name": "Toledo de Cerro Largo",
+      "slug": "toledo-de-cerro-largo"
+    },
+    {
+      "id": "durazno",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Durazno",
+      "slug": "durazno"
+    },
+    {
+      "id": "durazno-durazno",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Durazno",
+      "slug": "durazno"
+    },
+    {
+      "id": "durazno-sarandi-del-yi",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Sarandí del Yí",
+      "slug": "sarandi-del-yi"
+    },
+    {
+      "id": "durazno-villa-del-carmen",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Villa del Carmen",
+      "slug": "villa-del-carmen"
+    },
+    {
+      "id": "durazno-blanquillo-de-durazno",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Blanquillo de Durazno",
+      "slug": "blanquillo-de-durazno"
+    },
+    {
+      "id": "durazno-la-paloma-de-durazno",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "La Paloma de Durazno",
+      "slug": "la-paloma-de-durazno"
+    },
+    {
+      "id": "durazno-carlos-reyles",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Carlos Reyles",
+      "slug": "carlos-reyles"
+    },
+    {
+      "id": "durazno-cerro-chato-de-durazno",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Cerro Chato de Durazno",
+      "slug": "cerro-chato-de-durazno"
+    },
+    {
+      "id": "durazno-aguas-buenas",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Aguas Buenas",
+      "slug": "aguas-buenas"
+    },
+    {
+      "id": "durazno-baygorria",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Baygorria",
+      "slug": "baygorria"
+    },
+    {
+      "id": "durazno-centenario",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Centenario",
+      "slug": "centenario"
+    },
+    {
+      "id": "durazno-feliciano",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Feliciano",
+      "slug": "feliciano"
+    },
+    {
+      "id": "durazno-la-concordia",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "La Concordia",
+      "slug": "la-concordia"
+    },
+    {
+      "id": "durazno-las-palmas",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Las Palmas",
+      "slug": "las-palmas"
+    },
+    {
+      "id": "durazno-ombues-de-oribe",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Ombúes de Oribe",
+      "slug": "ombues-de-oribe"
+    },
+    {
+      "id": "durazno-parish",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Parish",
+      "slug": "parish"
+    },
+    {
+      "id": "durazno-rossell-y-rius",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Rossell y Rius",
+      "slug": "rossell-y-rius"
+    },
+    {
+      "id": "durazno-san-jorge",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "San Jorge",
+      "slug": "san-jorge"
+    },
+    {
+      "id": "durazno-santa-bernardina-norte",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Santa Bernardina Norte",
+      "slug": "santa-bernardina-norte"
+    },
+    {
+      "id": "durazno-puntas-de-herrera",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Puntas de Herrera",
+      "slug": "puntas-de-herrera"
+    },
+    {
+      "id": "durazno-molles-de-porrua",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Molles de Porrúa",
+      "slug": "molles-de-porrua"
+    },
+    {
+      "id": "durazno-chileno",
+      "parentId": "durazno",
+      "type": "locality",
+      "name": "Chileno",
+      "slug": "chileno"
+    },
+    {
+      "id": "flores",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Flores",
+      "slug": "flores"
+    },
+    {
+      "id": "flores-trinidad",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Trinidad",
+      "slug": "trinidad"
+    },
+    {
+      "id": "flores-ismael-cortinas",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Ismael Cortinas",
+      "slug": "ismael-cortinas"
+    },
+    {
+      "id": "flores-andresito",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Andresito",
+      "slug": "andresito"
+    },
+    {
+      "id": "flores-juan-jose-castro",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Juan José Castro",
+      "slug": "juan-jose-castro"
+    },
+    {
+      "id": "flores-cerro-colorado-de-flores",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Cerro Colorado de Flores",
+      "slug": "cerro-colorado-de-flores"
+    },
+    {
+      "id": "flores-la-casilla",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "La Casilla",
+      "slug": "la-casilla"
+    },
+    {
+      "id": "flores-puntas-de-maciel",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Puntas de Maciel",
+      "slug": "puntas-de-maciel"
+    },
+    {
+      "id": "flores-san-antonio-de-flores",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "San Antonio de Flores",
+      "slug": "san-antonio-de-flores"
+    },
+    {
+      "id": "flores-canada-nieto-de-flores",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Cañada Nieto de Flores",
+      "slug": "canada-nieto-de-flores"
+    },
+    {
+      "id": "flores-porvenir-de-flores",
+      "parentId": "flores",
+      "type": "locality",
+      "name": "Porvenir de Flores",
+      "slug": "porvenir-de-flores"
+    },
+    {
+      "id": "florida",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Florida",
+      "slug": "florida"
+    },
+    {
+      "id": "florida-florida",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Florida",
+      "slug": "florida"
+    },
+    {
+      "id": "florida-sarandi-grande",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Sarandí Grande",
+      "slug": "sarandi-grande"
+    },
+    {
+      "id": "florida-casupa",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Casupá",
+      "slug": "casupa"
+    },
+    {
+      "id": "florida-fray-marcos",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Fray Marcos",
+      "slug": "fray-marcos"
+    },
+    {
+      "id": "florida-veinticinco-de-mayo",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Veinticinco de Mayo",
+      "slug": "veinticinco-de-mayo"
+    },
+    {
+      "id": "florida-veinticinco-de-agosto",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Veinticinco de Agosto",
+      "slug": "veinticinco-de-agosto"
+    },
+    {
+      "id": "florida-cardal",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Cardal",
+      "slug": "cardal"
+    },
+    {
+      "id": "florida-nico-perez",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Nico Pérez",
+      "slug": "nico-perez"
+    },
+    {
+      "id": "florida-capilla-del-sauce",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Capilla del Sauce",
+      "slug": "capilla-del-sauce"
+    },
+    {
+      "id": "florida-mendoza-chico",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Mendoza Chico",
+      "slug": "mendoza-chico"
+    },
+    {
+      "id": "florida-mendoza-grande",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Mendoza Grande",
+      "slug": "mendoza-grande"
+    },
+    {
+      "id": "florida-alejandro-gallinal",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Alejandro Gallinal",
+      "slug": "alejandro-gallinal"
+    },
+    {
+      "id": "florida-chamizo",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Chamizo",
+      "slug": "chamizo"
+    },
+    {
+      "id": "florida-independencia",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Independencia",
+      "slug": "independencia"
+    },
+    {
+      "id": "florida-la-cruz",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "La Cruz",
+      "slug": "la-cruz"
+    },
+    {
+      "id": "florida-montecoral",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Montecoral",
+      "slug": "montecoral"
+    },
+    {
+      "id": "florida-polanco-del-yi",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Polanco del Yí",
+      "slug": "polanco-del-yi"
+    },
+    {
+      "id": "florida-puntas-de-maciel-de-florida",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Puntas de Maciel de Florida",
+      "slug": "puntas-de-maciel-de-florida"
+    },
+    {
+      "id": "florida-reboledo",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Reboledo",
+      "slug": "reboledo"
+    },
+    {
+      "id": "florida-san-gabriel",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "San Gabriel",
+      "slug": "san-gabriel"
+    },
+    {
+      "id": "florida-berrondo",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Berrondo",
+      "slug": "berrondo"
+    },
+    {
+      "id": "florida-goni",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Goñi",
+      "slug": "goni"
+    },
+    {
+      "id": "florida-illescas",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Illescas",
+      "slug": "illescas"
+    },
+    {
+      "id": "florida-pintado",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Pintado",
+      "slug": "pintado"
+    },
+    {
+      "id": "florida-talita",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Talita",
+      "slug": "talita"
+    },
+    {
+      "id": "florida-valentines",
+      "parentId": "florida",
+      "type": "locality",
+      "name": "Valentines",
+      "slug": "valentines"
+    },
+    {
+      "id": "lavalleja",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Lavalleja",
+      "slug": "lavalleja"
+    },
+    {
+      "id": "lavalleja-minas",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Minas",
+      "slug": "minas"
+    },
+    {
+      "id": "lavalleja-jose-pedro-varela",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "José Pedro Varela",
+      "slug": "jose-pedro-varela"
+    },
+    {
+      "id": "lavalleja-solis-de-mataojo",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Solís de Mataojo",
+      "slug": "solis-de-mataojo"
+    },
+    {
+      "id": "lavalleja-mariscala",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Mariscala",
+      "slug": "mariscala"
+    },
+    {
+      "id": "lavalleja-batlle-y-ordonez",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Batlle y Ordóñez",
+      "slug": "batlle-y-ordonez"
+    },
+    {
+      "id": "lavalleja-piraraja",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Pirarajá",
+      "slug": "piraraja"
+    },
+    {
+      "id": "lavalleja-zapican",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Zapicán",
+      "slug": "zapican"
+    },
+    {
+      "id": "lavalleja-villa-serrana",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Villa Serrana",
+      "slug": "villa-serrana"
+    },
+    {
+      "id": "lavalleja-polanco",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Polanco",
+      "slug": "polanco"
+    },
+    {
+      "id": "lavalleja-aramendia",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Aramendía",
+      "slug": "aramendia"
+    },
+    {
+      "id": "lavalleja-blanes-viale",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Blanes Viale",
+      "slug": "blanes-viale"
+    },
+    {
+      "id": "lavalleja-colon-de-lavalleja",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Colón de Lavalleja",
+      "slug": "colon-de-lavalleja"
+    },
+    {
+      "id": "lavalleja-estacion-solis",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Estación Solís",
+      "slug": "estacion-solis"
+    },
+    {
+      "id": "lavalleja-illescas-de-lavalleja",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Illescas de Lavalleja",
+      "slug": "illescas-de-lavalleja"
+    },
+    {
+      "id": "lavalleja-jose-batlle-y-ordonez-norte",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "José Batlle y Ordóñez Norte",
+      "slug": "jose-batlle-y-ordonez-norte"
+    },
+    {
+      "id": "lavalleja-la-plata",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "La Plata",
+      "slug": "la-plata"
+    },
+    {
+      "id": "lavalleja-los-talas-de-lavalleja",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Los Talas de Lavalleja",
+      "slug": "los-talas-de-lavalleja"
+    },
+    {
+      "id": "lavalleja-puntas-de-villanueva",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Puntas de Villanueva",
+      "slug": "puntas-de-villanueva"
+    },
+    {
+      "id": "lavalleja-retamosa",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Retamosa",
+      "slug": "retamosa"
+    },
+    {
+      "id": "lavalleja-san-francisco-de-las-sierras",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "San Francisco de las Sierras",
+      "slug": "san-francisco-de-las-sierras"
+    },
+    {
+      "id": "lavalleja-cerro-pelado-de-lavalleja",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Cerro Pelado de Lavalleja",
+      "slug": "cerro-pelado-de-lavalleja"
+    },
+    {
+      "id": "lavalleja-estacion-pedrera",
+      "parentId": "lavalleja",
+      "type": "locality",
+      "name": "Estación Pedrera",
+      "slug": "estacion-pedrera"
+    },
+    {
+      "id": "treinta-y-tres",
+      "parentId": "uruguay",
+      "type": "department",
+      "name": "Treinta y Tres",
+      "slug": "treinta-y-tres"
+    },
+    {
+      "id": "treinta-y-tres-treinta-y-tres",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Treinta y Tres",
+      "slug": "treinta-y-tres"
+    },
+    {
+      "id": "treinta-y-tres-vergara",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Vergara",
+      "slug": "vergara"
+    },
+    {
+      "id": "treinta-y-tres-santa-clara-de-olimar-sur",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Santa Clara de Olimar Sur",
+      "slug": "santa-clara-de-olimar-sur"
+    },
+    {
+      "id": "treinta-y-tres-jose-pedro-varela-norte",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "José Pedro Varela Norte",
+      "slug": "jose-pedro-varela-norte"
+    },
+    {
+      "id": "treinta-y-tres-cerro-chato-de-treinta-y-tres",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Cerro Chato de Treinta y Tres",
+      "slug": "cerro-chato-de-treinta-y-tres"
+    },
+    {
+      "id": "treinta-y-tres-isla-patrulla",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Isla Patrulla",
+      "slug": "isla-patrulla"
+    },
+    {
+      "id": "treinta-y-tres-rincon",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Rincón",
+      "slug": "rincon"
+    },
+    {
+      "id": "treinta-y-tres-arrozal-treinta-y-tres",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Arrozal Treinta y Tres",
+      "slug": "arrozal-treinta-y-tres"
+    },
+    {
+      "id": "treinta-y-tres-charqueada",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Charqueada (La Charqueada)",
+      "slug": "charqueada"
+    },
+    {
+      "id": "treinta-y-tres-general-enrique-martinez",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "General Enrique Martínez",
+      "slug": "general-enrique-martinez"
+    },
+    {
+      "id": "treinta-y-tres-poblado-villa-sara",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Poblado Villa Sara",
+      "slug": "poblado-villa-sara"
+    },
+    {
+      "id": "treinta-y-tres-sierras-de-rios",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Sierras de Ríos",
+      "slug": "sierras-de-rios"
+    },
+    {
+      "id": "treinta-y-tres-valentines-de-treinta-y-tres",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Valentines de Treinta y Tres",
+      "slug": "valentines-de-treinta-y-tres"
+    },
+    {
+      "id": "treinta-y-tres-maria-albina",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "María Albina",
+      "slug": "maria-albina"
+    },
+    {
+      "id": "treinta-y-tres-placeres",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Placeres",
+      "slug": "placeres"
+    },
+    {
+      "id": "treinta-y-tres-ejido-de-treinta-y-tres",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Ejido de Treinta y Tres",
+      "slug": "ejido-de-treinta-y-tres"
+    },
+    {
+      "id": "treinta-y-tres-las-canas-de-treinta-y-tres",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Las Cañas de Treinta y Tres",
+      "slug": "las-canas-de-treinta-y-tres"
+    },
+    {
+      "id": "treinta-y-tres-mendizabal",
+      "parentId": "treinta-y-tres",
+      "type": "locality",
+      "name": "Mendizábal",
+      "slug": "mendizabal"
+    }
+  ]
+}

@@ -15,9 +15,9 @@ import type { PlanId, PlanLimits } from "@/types";
 
 /** Gancho de una línea por plan. El nombre y el precio salen de la base. */
 const HOOKS: Record<PlanId, string> = {
-  cobre: "Tu perfil publicado",
+  cobre: "Perfil básico",
   gold: "Galería y más rubros",
-  platinum: "Destacados y landing",
+  platinum: "Perfil completo",
 };
 
 /**

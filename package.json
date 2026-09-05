@@ -22,7 +22,10 @@
     "db:query": "node scripts/db-query.mjs",
     "db:password:local": "wrangler d1 execute quienlohace --local --file=./seeds/set-dev-password.sql",
     "db:password:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/set-dev-password.sql",
-    "db:reset:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/truncate.sql"
+    "db:reset:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/truncate.sql",
+    "generate:locations": "tsx scripts/generate-locations.ts",
+    "generate:schedules": "tsx scripts/generate-schedules.ts",
+    "generate:data": "npm run generate:locations && npm run generate:services && npm run generate:schedules"
   },
   "dependencies": {
     "next": "^16.3.4",

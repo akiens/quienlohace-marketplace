@@ -9,35 +9,40 @@ import type { PlanId, PlanLimits } from "@/types";
  * decidan igual y no se contradigan.
  */
 
-/** Qué campo del perfil consume qué límite. */
+/** Qué campo del perfil consume qué límite (BR-007). */
 export type LimitedField =
+  | "serviceSectors"
+  | "specialties"
   | "services"
-  | "subcategories"
-  | "serviceAreas"
-  | "galleryImages"
-  | "teamMembers";
+  | "locations"
+  | "galleryImages";
 
-/** Sólo las claves numéricas: así el índice no puede apuntar a un booleano. */
+/** Sólo las claves de tope: así el índice no puede apuntar a un booleano. */
 type NumericLimitKey = {
-  [K in keyof PlanLimits]: PlanLimits[K] extends number ? K : never;
+  [K in keyof PlanLimits]: PlanLimits[K] extends number | null ? K : never;
 }[keyof PlanLimits];
 
 const LIMIT_KEYS: Record<LimitedField, NumericLimitKey> = {
+  serviceSectors: "maxServiceSectors",
+  specialties: "maxSpecialties",
   services: "maxServices",
-  subcategories: "maxSubcategories",
-  serviceAreas: "maxServiceAreas",
+  locations: "maxLocations",
   galleryImages: "maxGalleryImages",
-  teamMembers: "maxTeamMembers",
 };
 
-export function limitFor(plan: PlanLimits, field: LimitedField): number {
+/**
+ * El tope del plan para una capacidad. `null` es "sin límite comercial" y `0`
+ * es "capacidad no incluida" (TR-002): son cosas distintas y por eso no se
+ * colapsan en un número.
+ */
+export function limitFor(plan: PlanLimits, field: LimitedField): number | null {
   return plan[LIMIT_KEYS[field]];
 }
 
 /**
  * Recorta una lista al límite del plan.
  *
- * RF-053: al bajar de plan no se borra información. Se conserva lo que entra
+ * BR-009: al bajar de plan no se borra información. Se conserva lo que entra
  * y se informa cuánto queda fuera, para que el proveedor elija qué publicar
  * en vez de perderlo en silencio.
  */
@@ -45,8 +50,12 @@ export function applyLimit<T>(
   items: T[],
   plan: PlanLimits,
   field: LimitedField,
-): { kept: T[]; excess: T[]; limit: number } {
+): { kept: T[]; excess: T[]; limit: number | null } {
   const limit = limitFor(plan, field);
+
+  // Sin límite no hay nada que recortar: todo entra.
+  if (limit === null) return { kept: items, excess: [], limit };
+
   return {
     kept: items.slice(0, limit),
     excess: items.slice(limit),
@@ -60,7 +69,9 @@ export function isAtLimit(
   plan: PlanLimits,
   field: LimitedField,
 ): boolean {
-  return current >= limitFor(plan, field);
+  const limit = limitFor(plan, field);
+  if (limit === null) return false;
+  return current >= limit;
 }
 
 /**
@@ -74,6 +85,9 @@ export function limitMessage(
   label: string,
 ): string {
   const limit = limitFor(plan, field);
+  // "Sin límite" no produce este mensaje, pero la función tiene que contestar
+  // algo si se la llama igual.
+  if (limit === null) return `Tu plan ${plan.name} no limita ${label}.`;
   if (limit === 0) {
     return `Tu plan ${plan.name} no incluye ${label}.`;
   }
@@ -86,11 +100,18 @@ export function limitMessage(
  * Toma sólo el importe y no un `PlanLimits` entero para que también sirva
  * donde se muestra un adelanto del plan sin sus límites.
  */
-export function formatPrice(plan: Pick<PlanLimits, "priceCents">): string {
+export function formatPrice(
+  plan: Pick<PlanLimits, "priceCents"> & Partial<Pick<PlanLimits, "currency">>,
+): string {
+  /*
+   * Precio 0 en Cobre es "Gratis"; en Oro y Platino es "todavía sin definir"
+   * (BR-008 y TR-014), y quien los muestra tiene que distinguirlo. Acá se
+   * contesta lo mismo para los dos: el que sabe cuál es cuál es quien llama.
+   */
   if (plan.priceCents === 0) return "Gratis";
   const amount = plan.priceCents / 100;
   const shown = Number.isInteger(amount) ? amount.toFixed(0) : amount.toFixed(2);
-  return `USD ${shown}/mes`;
+  return `${plan.currency ?? "UYU"} ${shown}/mes`;
 }
 
 /**
@@ -99,19 +120,41 @@ export function formatPrice(plan: Pick<PlanLimits, "priceCents">): string {
  * Los topes viven en la base (`plans`) porque cambian sin desplegar; esto es
  * distinto: es la forma del formulario, y define qué pasos se muestran.
  */
-export type PlanFeature = "gallery" | "social" | "team" | "verification";
+export type PlanFeature =
+  | "gallery"
+  | "social"
+  | "verification"
+  | "featured"
+  | "contactForm"
+  | "customLanding"
+  | "subdomain";
 
 export function allowsFeature(plan: PlanLimits, feature: PlanFeature): boolean {
   switch (feature) {
     case "gallery":
-      return plan.maxGalleryImages > 0;
+      // `null` es sin límite, que también es tenerla habilitada.
+      return plan.maxGalleryImages === null || plan.maxGalleryImages > 0;
     case "social":
       return plan.allowsSocialLinks;
-    case "team":
-      return plan.maxTeamMembers > 0;
     case "verification":
       return plan.allowsVerificationRequest;
+    case "featured":
+      return plan.allowsFeaturedPlacement;
+    case "contactForm":
+      return plan.allowsContactForm;
+    case "customLanding":
+      return plan.allowsCustomLanding;
+    case "subdomain":
+      return plan.allowsSubdomain;
   }
+}
+
+/**
+ * BR-008 y TR-014: Oro y Platino no se pueden contratar mientras no tengan un
+ * precio válido. Cobre es gratis de verdad, así que su 0 no lo bloquea.
+ */
+export function isPurchasable(plan: PlanLimits): boolean {
+  return plan.id === "cobre" || plan.priceCents > 0;
 }
 
 /** Orden de presentación y comparación: Cobre < Oro < Platino. */

@@ -58,11 +58,12 @@ La regla corta: **`dev` para construir, `preview` para confirmar.**
 | `npm run deploy` | Build + deploy a Cloudflare |
 | `npm run build` | Build de Next |
 | `npm run lint` / `typecheck` | ESLint / TypeScript |
-| `npm run check:data` | Integridad del dataset y de la búsqueda |
+| `npm run check:data` | Catálogos, esquema, seed y reglas de negocio |
 | `npm run check:backend` | Contraseñas y schemas de validación |
 | `npm run cf-typegen` | Regenera los tipos de los bindings |
 | `npm run db:migrate:local` / `:remote` | Aplica migraciones |
 | `npm run db:query` | Consulta la D1 local en formato tabla (sólo lectura) |
+| `npm run generate:data` | Regenera los catálogos desde `docs/data` |
 | `npm run seed:generate` | Genera los datos de prueba |
 | `npm run db:seed:local` | Los carga en la D1 local |
 | `npm run db:password:local` / `:remote` | Repone la contraseña de prueba |
@@ -83,15 +84,19 @@ seeds/dev-seed.sql          lo mismo, listo para D1 (derivado del JSON)
 seeds/set-dev-password.sql  sólo la contraseña, para una base ya cargada
 ```
 
-Son ~900 proveedores, entre 5 y 10 por subcategoría, con una mezcla de
-empresas e independientes, algunos destacados, otros verificados, unos en
-borrador y otros sin opiniones — para poder ver todos los estados de la UI.
-Los nombres y teléfonos salen de Faker con locale español; el rubro y la
-ubicación, del código, así toda referencia existe por construcción.
+Son ~500 perfiles, entre 3 y 6 por especialidad, con una mezcla de empresas e
+independientes, algunos verificados, unos en borrador y otros sin opiniones —
+para poder ver todos los estados de la UI. Los nombres y teléfonos salen de
+Faker con locale español; las especialidades, las ubicaciones y los horarios,
+de los catálogos generados desde `docs/data`, así toda referencia existe por
+construcción.
 
-Los perfiles se reparten entre los tres planes (≈60% Cobre, 28% Gold, 12%
-Platinum), cada uno dentro de sus propios límites, para poder probar el
-comportamiento de los topes y del upsell.
+El seed carga también esos catálogos (ubicaciones, rubros y especialidades):
+los perfiles los referencian por clave foránea y sin ellos no entrarían.
+
+Los perfiles se reparten entre los tres planes (≈60% Cobre, 28% Oro, 12%
+Platino), cada uno dentro de sus propios límites (BR-006), para poder probar
+el comportamiento de los topes y del upsell.
 
 **Todas las cuentas usan la contraseña `admin.123`.** Es sólo para pruebas:
 está en el repositorio y estos usuarios no deben existir en producción.
@@ -281,9 +286,14 @@ seeds/                    Datos de prueba — nunca en producción
 
 ## Decisiones
 
-**La base guarda referencias, no copias.** Un proveedor referencia su
-`location_id` y su `subcategory_id`; la geografía y la taxonomía viven en el
-código como Master Data y no tienen CRUD.
+**La base guarda referencias, no copias.** Un perfil referencia sus
+especialidades y sus ubicaciones; la geografía y la taxonomía son catálogos
+generados desde `docs/data` y no tienen CRUD.
+
+**Los valores derivados no se persisten.** Los rubros del perfil salen de sus
+especialidades (BR-010), la atención híbrida de tener más de una modalidad
+(BR-017) y el promedio de la suma de estrellas (BR-026). Guardarlos crearía un
+segundo lugar donde la misma verdad puede quedar desactualizada.
 
 **La calificación está desnormalizada.** `rating_sum` y `review_count` se
 actualizan junto con la opinión, en un mismo `batch()`. Evita un `AVG` por
@@ -319,11 +329,13 @@ Pendiente:
   pero sin `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` el botón no se muestra
   y las opiniones quedan de sólo lectura. Ver
   [Login con Google](#login-con-google-opiniones).
-- **Campos con schema pero sin UI** — horarios por día, integrantes del
-  equipo, redes sociales y subcategorías múltiples tienen tablas y tipos
-  (migración `0002`), falta el formulario que los edite.
-- **Subida de imágenes desde el panel** — el backend está
-  (`addProviderImage`, R2, `/media/...`), falta el control en el formulario.
+- **Habilitaciones profesionales** — `professional_credentials` existe con sus
+  estados e índices (BR-020), pero falta el flujo que permita presentarlas y el
+  panel administrativo que las resuelva. Hasta entonces, las especialidades
+  reguladas quedan marcadas en el catálogo pero no se bloquea su publicación.
+- **Verificación de teléfono** — `phone_verified_at` existe, pero no hay flujo
+  que lo complete: hasta que lo haya, BR-018 sólo puede cumplirse con el correo
+  verificado (TR-010).
 - **Cobro de suscripciones** — los planes y sus límites se aplican, pero no
   hay pasarela de pago: el plan se asigna en la base.
 - **Turnstile y rate limiting** en formularios sensibles (RF-155 a RF-162).

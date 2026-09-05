@@ -1,14 +1,14 @@
 import type {
   PaymentMethod,
   PlanId,
-  Provider,
-  ServiceMode,
-  SocialLink,
-  ProviderKind,
-  ProviderStatus,
+  Profile,
+  ProfileStatus,
+  ProfileType,
   Review,
   ReviewReportReason,
   SearchFilters,
+  ServiceModeCode,
+  SocialLink,
   User,
   UserRole,
 } from "@/types";
@@ -20,105 +20,126 @@ import type {
  * reescribir casos de uso.
  */
 
-export type ProviderDraft = {
+/**
+ * Lo que el formulario de perfil manda para crear o actualizar.
+ *
+ * No trae rubros: se derivan de las especialidades (BR-010). Tampoco trae
+ * estado ni plan, que no se cambian desde el formulario.
+ */
+export type ProfileDraft = {
   name: string;
-  kind: ProviderKind;
+  type: ProfileType;
   description: string;
-  categoryId: string;
-  subcategoryId: string;
-  locationId: string;
+  icon: string;
+  contactEmail: string;
   phone: string;
-  whatsapp: string;
-  /** Derivado de `phone`; lo usan `tel:` y el orden de búsqueda. */
+  /** Derivado de `phone`; lo usan `tel:` y `wa.me`. */
   phoneE164: string;
   whatsappEnabled: boolean;
-  schedule: string;
-  serviceMode: ServiceMode;
-  services: string[];
+  phonePublic: boolean;
+  /** Las especialidades elegidas del catálogo, en orden de prioridad. */
+  specialtyIds: string[];
+  services: ServiceDraft[];
+  /** BR-017: una o varias. Con más de una, la ficha muestra atención híbrida. */
+  serviceModes: ServiceModeCode[];
+  /** Ya normalizadas según TR-018 antes de llegar acá. */
   serviceAreaIds: string[];
-  /** Subcategorías adicionales; `subcategoryId` es la principal. */
-  subcategoryIds: string[];
+  locations: ProfileLocationDraft[];
   paymentMethods: PaymentMethod[];
-  socialLinks: SocialLink[];
-  teamMembers: TeamMemberDraft[];
+  /** Hasta 10 líneas de texto libre (BR-024). */
+  scheduleEntries: string[];
+  /*
+   * Sin `isActive`: si la red se muestra o no lo decide el plan (BR-022) y lo
+   * aplica el repositorio, no el formulario.
+   */
+  socialLinks: Array<Omit<SocialLink, "isActive">>;
 };
 
-/** Un integrante todavía sin id: lo asigna el repositorio. */
-export type TeamMemberDraft = {
+/** Un servicio todavía sin id: lo asigna el repositorio. */
+export type ServiceDraft = {
+  /** La especialidad a la que pertenece. Debe estar en `specialtyIds`. */
+  specialtyId: string;
   name: string;
-  role: string;
-  subtitle: string;
-  bio: string;
+};
+
+/** Una ubicación física todavía sin id: lo asigna el repositorio. */
+export type ProfileLocationDraft = {
+  locationId: string;
+  name: string | null;
+  address: string | null;
+  isPrimary: boolean;
 };
 
 /**
- * Elementos que exceden el plan y quedan guardados pero inactivos (RF-053).
+ * Cuántos elementos de cada tipo quedan activos según el plan (BR-009). El
+ * resto se guarda inactivo. `null` es "sin límite": entran todos.
+ *
  * La acción los calcula; el repositorio sólo obedece.
  */
 export type DraftLimits = {
-  services: number;
-  serviceAreas: number;
-  subcategories: number;
-  teamMembers: number;
-  galleryImages: number;
+  specialties: number | null;
+  services: number | null;
+  locations: number | null;
+  galleryImages: number | null;
   /** Las redes son todo o nada: el plan las permite o no. */
   social: boolean;
 };
 
-export interface ProviderRepository {
-  findBySlug(slug: string): Promise<Provider | null>;
+export interface ProfileRepository {
+  findBySlug(slug: string): Promise<Profile | null>;
   /** Perfiles publicados con nombre parecido, para sugerir ante un 404. */
-  findSimilarByName(slug: string, limit: number): Promise<Provider[]>;
-  findByUserId(userId: string): Promise<Provider | null>;
-  search(filters: SearchFilters, limit: number, offset: number): Promise<Provider[]>;
+  findSimilarByName(slug: string, limit: number): Promise<Profile[]>;
+  findByUserId(userId: string): Promise<Profile | null>;
+  search(filters: SearchFilters, limit: number, offset: number): Promise<Profile[]>;
   countForSearch(filters: SearchFilters): Promise<number>;
-  listByCategory(categoryId: string): Promise<Provider[]>;
-  listBySubcategory(subcategoryId: string): Promise<Provider[]>;
-  listFeatured(): Promise<Provider[]>;
+  /** Perfiles de un rubro, resuelto a través de sus especialidades. */
+  listByServiceSector(serviceSectorId: string): Promise<Profile[]>;
+  listBySpecialty(specialtyId: string): Promise<Profile[]>;
+  listFeatured(): Promise<Profile[]>;
   listPublishedSlugs(): Promise<string[]>;
   create(
     userId: string,
-    draft: ProviderDraft,
+    draft: ProfileDraft,
     planId?: PlanId,
     limits?: DraftLimits,
-  ): Promise<Provider>;
+  ): Promise<Profile>;
   update(
-    providerId: string,
-    draft: ProviderDraft,
+    profileId: string,
+    draft: ProfileDraft,
     limits?: DraftLimits,
-  ): Promise<Provider>;
+  ): Promise<Profile>;
   /** Activa un plan de inmediato y corre el vencimiento (subir de plan). */
   setPlan(
-    providerId: string,
+    profileId: string,
     planId: PlanId,
     expiresAt?: string | null,
     subscriptionStatus?: "active" | "past_due",
   ): Promise<void>;
   /** Marca el plan como pago: cierra el paso pendiente del asistente. */
-  markPlanPaid(providerId: string): Promise<void>;
+  markPlanPaid(profileId: string): Promise<void>;
   /** Agenda una baja para el fin del período pago (no toca el plan vigente). */
   scheduleDowngrade(input: {
-    providerId: string;
+    profileId: string;
     downgradePlanId: PlanId;
     expiresAt: string | null;
     purgeAfter: string;
   }): Promise<void>;
   /** Deja sin efecto una baja agendada. */
-  cancelDowngrade(providerId: string): Promise<void>;
+  cancelDowngrade(profileId: string): Promise<void>;
   /** Consolida una baja ya vencida en la fila. */
-  applyDueDowngrade(providerId: string, planId: PlanId): Promise<void>;
-  setStatus(providerId: string, status: ProviderStatus): Promise<void>;
+  applyDueDowngrade(profileId: string, planId: PlanId): Promise<void>;
+  setStatus(profileId: string, status: ProfileStatus): Promise<void>;
 }
 
 export interface ReviewRepository {
-  /** `viewerConsumerId` marca la opinión propia de quien mira (RF-151). */
-  listForProvider(
-    providerId: string,
+  /** `viewerConsumerId` marca la opinión propia de quien mira. */
+  listForProfile(
+    profileId: string,
     viewerConsumerId?: string | null,
   ): Promise<Review[]>;
-  findByConsumer(providerId: string, consumerId: string): Promise<Review | null>;
+  findByConsumer(profileId: string, consumerId: string): Promise<Review | null>;
   create(input: {
-    providerId: string;
+    profileId: string;
     authorId: string | null;
     consumerId?: string | null;
     authorName: string;
@@ -141,15 +162,18 @@ export interface ReviewRepository {
   }): Promise<void>;
 }
 
+/**
+ * Alta de cuenta. No lleva nombre: el nombre es del perfil, no de la cuenta, y
+ * el registro sólo pide correo y contraseña (`docs/ui/register_form.md`).
+ */
 export type NewUser = {
   email: string;
-  name: string;
-  passwordHash: string | null;
+  passwordHash: string;
   role?: UserRole;
 };
 
 export interface UserRepository {
-  findByEmail(email: string): Promise<(User & { passwordHash: string | null }) | null>;
+  findByEmail(email: string): Promise<(User & { passwordHash: string }) | null>;
   findById(id: string): Promise<User | null>;
   create(input: NewUser): Promise<User>;
 }

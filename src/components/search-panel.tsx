@@ -3,17 +3,21 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { CATEGORIES } from "@/data/categories";
 import {
-  listAreas,
+  SERVICE_SECTORS,
+  getSpecialty,
+  listSpecialties,
+} from "@/data/taxonomy";
+import {
+  COUNTRY_ID,
+  COUNTRY_LABEL,
   listDepartments,
   listLocalities,
   locationLabelById,
-  localityId,
 } from "@/data/locations";
 import { searchHref } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
-import { MAX_LOCATIONS, MAX_SUBCATEGORIES, type SearchFilters } from "@/types";
+import { MAX_LOCATIONS, MAX_SPECIALTIES, type SearchFilters } from "@/types";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 
 const QUICK_SEARCHES = [
@@ -86,14 +90,11 @@ export function SearchPanel({
         : `${locationLabelById(filters.locationIds[0]!)} +${filters.locationIds.length - 1}`;
 
   const categoryLabel = (() => {
-    if (filters.subcategoryIds.length === 0) return "Todas las categorías";
-    const first = CATEGORIES.flatMap((c) => c.subcategories).find(
-      (s) => s.id === filters.subcategoryIds[0],
-    );
-    const name = first?.name ?? "Categoría";
-    return filters.subcategoryIds.length === 1
+    if (filters.specialtyIds.length === 0) return "Todos los rubros";
+    const name = getSpecialty(filters.specialtyIds[0]!)?.name ?? "Especialidad";
+    return filters.specialtyIds.length === 1
       ? name
-      : `${name} +${filters.subcategoryIds.length - 1}`;
+      : `${name} +${filters.specialtyIds.length - 1}`;
   })();
 
   return (
@@ -149,9 +150,9 @@ export function SearchPanel({
               }
             />
             <PopoverButton
-              icon={filters.subcategoryIds.length ? "check_circle" : "category"}
+              icon={filters.specialtyIds.length ? "check_circle" : "category"}
               label={categoryLabel}
-              active={filters.subcategoryIds.length > 0}
+              active={filters.specialtyIds.length > 0}
               open={openPopover === "category"}
               onClick={() =>
                 setOpenPopover(openPopover === "category" ? null : "category")
@@ -309,10 +310,8 @@ function LocationPopover({
   onClose: () => void;
 }) {
   const departments = listDepartments();
-  const [department, setDepartment] = useState(departments[0] ?? "Montevideo");
+  const [department, setDepartment] = useState(departments[0]?.id ?? "");
   const localities = listLocalities(department);
-  const [locality, setLocality] = useState(localities[0] ?? "");
-  const areas = listAreas(department, locality);
 
   function toggle(id: string) {
     const selected = filters.locationIds;
@@ -327,7 +326,9 @@ function LocationPopover({
   return (
     <PopoverShell
       title={`Ubicación · máximo ${MAX_LOCATIONS}`}
-      onClear={() => onChange({ ...filters, locationIds: [], useMyLocation: false })}
+      onClear={() =>
+        onChange({ ...filters, locationIds: [], useMyLocation: false })
+      }
       onClose={onClose}
     >
       {filters.locationIds.length > 0 ? (
@@ -350,81 +351,84 @@ function LocationPopover({
         </div>
       ) : null}
 
-      <div className="grid max-h-[300px] grid-cols-1 sm:grid-cols-3">
+      {/*
+        Dos columnas y no tres: el catálogo llega hasta la localidad, que es su
+        nivel más preciso (BR-014). Los barrios salieron del modelo.
+      */}
+      <div className="grid max-h-[300px] grid-cols-1 sm:grid-cols-2">
         <ColumnList label="Departamento">
-          {departments.map((item) => (
-            <button
-              key={item}
-              type="button"
-              onClick={() => {
-                setDepartment(item);
-                setLocality(listLocalities(item)[0] ?? "");
-              }}
-              className={`flex w-full items-center gap-1.5 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
-                item === department ? "bg-surface-sunken font-bold" : "font-medium"
-              }`}
-            >
-              {item}
-              <Icon
-                name="chevron_right"
-                className="ml-auto text-[17px] text-ink-faint"
-              />
-            </button>
-          ))}
-        </ColumnList>
+          {/*
+            Buscar en todo el país es una opción explícita: encuentra a quien
+            tiene cobertura nacional y a cualquiera más abajo (TR-019).
+          */}
+          <button
+            type="button"
+            onClick={() => toggle(COUNTRY_ID)}
+            className={`flex w-full items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
+              filters.locationIds.includes(COUNTRY_ID)
+                ? "font-bold"
+                : "font-medium"
+            }`}
+          >
+            <Checkbox checked={filters.locationIds.includes(COUNTRY_ID)} />
+            Todo {COUNTRY_LABEL}
+          </button>
 
-        <ColumnList label="Ciudad / Localidad">
-          {localities.map((item) => {
-            const id = localityId(department, item);
-            const selected = filters.locationIds.includes(id);
+          {departments.map((item) => {
+            const selected = filters.locationIds.includes(item.id);
             return (
-              <div key={item} className="flex items-center gap-1">
+              <div key={item.id} className="flex items-center gap-1">
+                {/*
+                  El departamento se puede elegir entero: quien trabaja en todo
+                  Canelones no tiene por qué nombrar sus localidades (BR-016).
+                */}
                 <button
                   type="button"
-                  onClick={() => toggle(id)}
+                  onClick={() => toggle(item.id)}
                   className={`flex flex-1 items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
                     selected ? "font-bold" : "font-medium"
                   }`}
                 >
                   <Checkbox checked={selected} />
-                  {item}
+                  {item.name}
                 </button>
-                {listAreas(department, item).length > 0 ? (
-                  <button
-                    type="button"
-                    onClick={() => setLocality(item)}
-                    aria-label={`Ver barrios de ${item}`}
-                    className="rounded p-1 hover:bg-surface-sunken"
-                  >
-                    <Icon
-                      name="chevron_right"
-                      className="text-[17px] text-ink-faint"
-                    />
-                  </button>
-                ) : null}
+                <button
+                  type="button"
+                  onClick={() => setDepartment(item.id)}
+                  aria-label={`Ver localidades de ${item.name}`}
+                  className={`rounded p-1 hover:bg-surface-sunken ${
+                    item.id === department ? "bg-surface-sunken" : ""
+                  }`}
+                >
+                  <Icon
+                    name="chevron_right"
+                    className="text-[17px] text-ink-faint"
+                  />
+                </button>
               </div>
             );
           })}
         </ColumnList>
 
-        <ColumnList label="Barrio / Zona">
-          {areas.length === 0 ? (
+        <ColumnList label="Ciudad / Localidad">
+          {localities.length === 0 ? (
             <p className="p-2 text-[13px] leading-relaxed text-ink-faint">
-              Elegí una localidad para ver sus zonas. También podés quedarte en el
-              nivel anterior.
+              Elegí un departamento para ver sus localidades.
             </p>
           ) : (
-            areas.map((area) => {
-              const selected = filters.locationIds.includes(area.id);
+            localities.map((item) => {
+              const selected = filters.locationIds.includes(item.id);
               return (
                 <button
-                  key={area.id}
+                  key={item.id}
                   type="button"
-                  onClick={() => toggle(area.id)}
-                  className="flex w-full items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken"
+                  onClick={() => toggle(item.id)}
+                  className={`flex w-full items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
+                    selected ? "font-bold" : "font-medium"
+                  }`}
                 >
                   <Checkbox checked={selected} />
-                  {area.area}
+                  {item.name}
                 </button>
               );
             })
@@ -445,27 +449,27 @@ function CategoryPopover({
   onClose: () => void;
 }) {
   const [categoryIndex, setCategoryIndex] = useState(0);
-  const category = CATEGORIES[categoryIndex] ?? CATEGORIES[0]!;
+  const category = SERVICE_SECTORS[categoryIndex] ?? SERVICE_SECTORS[0]!;
 
   function toggle(id: string) {
-    const selected = filters.subcategoryIds;
+    const selected = filters.specialtyIds;
     if (selected.includes(id)) {
-      onChange({ ...filters, subcategoryIds: selected.filter((x) => x !== id) });
+      onChange({ ...filters, specialtyIds: selected.filter((x) => x !== id) });
       return;
     }
-    if (selected.length >= MAX_SUBCATEGORIES) return;
-    onChange({ ...filters, subcategoryIds: [...selected, id] });
+    if (selected.length >= MAX_SPECIALTIES) return;
+    onChange({ ...filters, specialtyIds: [...selected, id] });
   }
 
   return (
     <PopoverShell
-      title={`Categoría · máximo ${MAX_SUBCATEGORIES}`}
-      onClear={() => onChange({ ...filters, subcategoryIds: [] })}
+      title={`Categoría · máximo ${MAX_SPECIALTIES}`}
+      onClear={() => onChange({ ...filters, specialtyIds: [] })}
       onClose={onClose}
     >
       <div className="grid max-h-[320px] grid-cols-1 sm:grid-cols-2">
         <ColumnList>
-          {CATEGORIES.map((item, index) => (
+          {SERVICE_SECTORS.map((item, index) => (
             <button
               key={item.id}
               type="button"
@@ -491,8 +495,8 @@ function CategoryPopover({
         </ColumnList>
 
         <ColumnList>
-          {category.subcategories.map((sub) => {
-            const selected = filters.subcategoryIds.includes(sub.id);
+          {listSpecialties(category.id).map((sub) => {
+            const selected = filters.specialtyIds.includes(sub.id);
             return (
               <button
                 key={sub.id}

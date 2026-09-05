@@ -3,7 +3,7 @@
 import { useRef, useState, useTransition } from "react";
 
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
-import type { ImageKind, ProviderImage } from "@/types";
+import type { ImageKind, ProfileImage } from "@/types";
 
 /**
  * Carga de imágenes del perfil (RF-167).
@@ -44,7 +44,7 @@ const UPLOAD_FAILED =
 
 /** Respuesta de la ruta de imágenes. */
 type UploadResult =
-  | { ok: true; image: ProviderImage }
+  | { ok: true; image: ProfileImage }
   | { ok: false; error: string };
 
 /**
@@ -99,11 +99,11 @@ export function SingleImageField({
   onChange,
 }: {
   kind: Extract<ImageKind, "avatar" | "cover">;
-  image: ProviderImage | null;
+  image: ProfileImage | null;
   shape: "circle" | "wide";
   label: string;
   hint: string;
-  onChange: (image: ProviderImage | null) => void;
+  onChange: (image: ProfileImage | null) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -275,10 +275,10 @@ export function GalleryField({
   planName,
   onChange,
 }: {
-  images: ProviderImage[];
+  images: ProfileImage[];
   max: number;
   planName: string;
-  onChange: (images: ProviderImage[]) => void;
+  onChange: (images: ProfileImage[]) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -311,7 +311,7 @@ export function GalleryField({
     setUploading(sendable.length);
 
     startTransition(async () => {
-      const added: ProviderImage[] = [];
+      const added: ProfileImage[] = [];
 
       // De a una y en orden: así la posición que asigna el servidor coincide
       // con el orden en que se eligieron.

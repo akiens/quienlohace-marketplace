@@ -1,8 +1,13 @@
 import type { Metadata } from "next";
 
 import { Breadcrumbs } from "@/components/breadcrumbs";
-import { ProviderGrid } from "@/components/provider-grid";
-import { listFeatured } from "@/application/providers";
+import { ProfileGrid } from "@/components/profile-grid";
+import { listFeatured } from "@/application/profiles";
+
+/**
+ * Los destacados salen de la base y rotan (BR-006): se resuelve por pedido.
+ */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Profesionales destacados",
@@ -29,7 +34,7 @@ export default async function FeaturedPage() {
         </p>
       </header>
 
-      <ProviderGrid providers={providers} showAd />
+      <ProfileGrid profiles={providers} showAd />
     </div>
   );
 }

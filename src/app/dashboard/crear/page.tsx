@@ -7,8 +7,8 @@ import { WizardReset } from "@/components/dashboard/wizard-reset";
 import { Icon } from "@/components/ui";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
-import { listImagesForUser } from "@/infrastructure/d1-provider-images";
-import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
+import { listImagesForUser } from "@/infrastructure/d1-profile-images";
+import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
 import { getCurrentUser } from "@/lib/session";
 
 export const metadata: Metadata = {
@@ -35,7 +35,7 @@ export default async function CreateProfilePage() {
   const user = await getCurrentUser();
   if (!user) redirect("/entrar");
 
-  const provider = await new D1ProviderRepository().findByUserId(user.id);
+  const profile = await new D1ProfileRepository().findByUserId(user.id);
 
   const allPlans = await new D1PlanRepository().list();
 
@@ -52,7 +52,7 @@ export default async function CreateProfilePage() {
    * leerlo, así que pone el más restrictivo como piso.
    */
   const plan =
-    (provider ? allPlans.find((p) => p.id === provider.planId) : undefined) ??
+    (profile ? allPlans.find((p) => p.id === profile.planId) : undefined) ??
     allPlans.find((p) => p.id === "cobre");
   if (!plan) return <SetupNotice />;
 
@@ -69,9 +69,9 @@ export default async function CreateProfilePage() {
    * parámetro de la URL, así un enlace guardado no lo reabre.
    */
   const settlingUpgrade =
-    provider !== null && provider.subscriptionStatus === "past_due";
+    profile !== null && profile.subscriptionStatus === "past_due";
 
-  if (provider && !settlingUpgrade) redirect("/dashboard");
+  if (profile && !settlingUpgrade) redirect("/dashboard");
 
   /*
    * Las imágenes se piden por usuario y no por perfil: durante el alta se
@@ -102,7 +102,7 @@ export default async function CreateProfilePage() {
 
       <ProfileWorkspace
         userId={user.id}
-        provider={provider}
+        profile={profile}
         plan={plan}
         plans={allPlans}
         images={images}

@@ -2,7 +2,10 @@ import type { Metadata } from "next";
 
 import { SearchExperience } from "@/components/search-experience";
 import { filtersFromParams } from "@/lib/query";
-import { countProviders, searchProviders } from "@/application/providers";
+import { countProfiles, searchProfiles } from "@/application/profiles";
+
+/** Los resultados dependen de los filtros y de la base: siempre por pedido. */
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Buscar profesionales",
@@ -26,8 +29,8 @@ export default async function SearchPage({
   // `results` trae sólo la primera tanda; `total` es cuántos coinciden de
   // verdad, para no informar el tamaño de la página como si fuera el total.
   const [results, total] = await Promise.all([
-    searchProviders(filters),
-    countProviders(filters),
+    searchProfiles(filters),
+    countProfiles(filters),
   ]);
 
   return <SearchExperience filters={filters} results={results} total={total} />;

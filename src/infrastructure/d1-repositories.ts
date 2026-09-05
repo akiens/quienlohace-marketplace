@@ -15,32 +15,42 @@ import { newId } from "@/lib/id";
 type UserRow = {
   id: string;
   email: string;
-  name: string;
   role: string;
   email_verified: number;
+  is_active: number;
   created_at: string;
-  password_hash: string | null;
+  password_hash: string;
 };
 
 function toUser(row: UserRow): User {
   return {
     id: row.id,
     email: row.email,
-    name: row.name,
     role: row.role as UserRole,
     emailVerified: row.email_verified === 1,
+    isActive: row.is_active === 1,
     createdAt: row.created_at,
   };
 }
 
+/** Las columnas que arman un `User`, para no repetirlas en cada consulta. */
+const USER_COLUMNS =
+  "id, email, role, email_verified, is_active, created_at, password_hash";
+
 export class D1UserRepository implements UserRepository {
   async findByEmail(
     email: string,
-  ): Promise<(User & { passwordHash: string | null }) | null> {
+  ): Promise<(User & { passwordHash: string }) | null> {
+    /*
+     * `COLLATE NOCASE` es el mismo criterio del índice único: si acá se
+     * comparara distinguiendo mayúsculas, un correo guardado como "Ana@x.com"
+     * no se encontraría y el alta lo dejaría pasar hasta chocar contra el
+     * índice (TR-007).
+     */
     const row = await getDb()
       .prepare(
-        `SELECT id, email, name, role, email_verified, created_at, password_hash
-         FROM users WHERE email = ?`,
+        `SELECT ${USER_COLUMNS}
+         FROM users WHERE email = ? COLLATE NOCASE`,
       )
       .bind(email.trim().toLowerCase())
       .first<UserRow>();
@@ -51,10 +61,7 @@ export class D1UserRepository implements UserRepository {
 
   async findById(id: string): Promise<User | null> {
     const row = await getDb()
-      .prepare(
-        `SELECT id, email, name, role, email_verified, created_at, password_hash
-         FROM users WHERE id = ?`,
-      )
+      .prepare(`SELECT ${USER_COLUMNS} FROM users WHERE id = ?`)
       .bind(id)
       .first<UserRow>();
 
@@ -65,21 +72,22 @@ export class D1UserRepository implements UserRepository {
     const id = newId();
     const now = new Date().toISOString();
     const email = input.email.trim().toLowerCase();
+    const role = input.role ?? "provider";
 
     await getDb()
       .prepare(
-        `INSERT INTO users (id, email, password_hash, name, role, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO users (id, email, password_hash, role, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
       )
-      .bind(id, email, input.passwordHash, input.name, input.role ?? "provider", now, now)
+      .bind(id, email, input.passwordHash, role, now, now)
       .run();
 
     return {
       id,
       email,
-      name: input.name,
-      role: input.role ?? "provider",
+      role,
       emailVerified: false,
+      isActive: true,
       createdAt: now,
     };
   }
@@ -130,40 +138,40 @@ export class D1ReviewRepository implements ReviewRepository {
    * Opiniones publicadas de un proveedor.
    *
    * `viewerConsumerId` marca cuál es la del cliente que mira, para poder
-   * ofrecerle editar o borrar la suya (RF-151) sin exponer esa acción al
-   * resto. Leerlas nunca requiere sesión (RF-147).
+   * ofrecerle editar o borrar la suya (BR-026) sin exponer esa acción al
+   * resto. Leerlas nunca requiere sesión (BR-025).
    */
-  async listForProvider(
-    providerId: string,
+  async listForProfile(
+    profileId: string,
     viewerConsumerId?: string | null,
   ): Promise<Review[]> {
     const { results } = await getDb()
       .prepare(
-        `SELECT r.id, r.provider_id, r.author_name, r.rating, r.comment,
-                r.created_at, r.updated_at, r.consumer_id,
+        `SELECT r.id, r.profile_id, r.author_name, r.rating, r.comment,
+                r.created_at, r.updated_at, r.consumer_user_id,
                 c.display_name AS consumer_name, c.avatar_url AS consumer_avatar
          FROM reviews r
-         LEFT JOIN consumer_users c ON c.id = r.consumer_id
-         WHERE r.provider_id = ? AND r.status = 'published'
+         LEFT JOIN consumer_users c ON c.id = r.consumer_user_id
+         WHERE r.profile_id = ? AND r.status = 'published'
          ORDER BY r.created_at DESC`,
       )
-      .bind(providerId)
+      .bind(profileId)
       .all<{
         id: string;
-        provider_id: string;
+        profile_id: string;
         author_name: string;
         rating: number;
         comment: string;
         created_at: string;
         updated_at: string | null;
-        consumer_id: string | null;
+        consumer_user_id: string | null;
         consumer_name: string | null;
         consumer_avatar: string | null;
       }>();
 
     return results.map((row) => ({
       id: row.id,
-      providerId: row.provider_id,
+      profileId: row.profile_id,
       // El nombre actual de Google gana sobre la copia guardada: si la
       // persona lo cambió, sus opiniones muestran el dato vigente.
       authorName: row.consumer_name || row.author_name,
@@ -172,27 +180,27 @@ export class D1ReviewRepository implements ReviewRepository {
       comment: row.comment,
       createdAt: row.created_at,
       updatedAt: row.updated_at ?? undefined,
-      identified: row.consumer_id !== null,
+      identified: row.consumer_user_id !== null,
       isMine:
-        viewerConsumerId != null && row.consumer_id === viewerConsumerId,
+        viewerConsumerId != null && row.consumer_user_id === viewerConsumerId,
     }));
   }
 
   /** La opinión que un cliente ya dejó sobre un proveedor, si existe. */
   async findByConsumer(
-    providerId: string,
+    profileId: string,
     consumerId: string,
   ): Promise<Review | null> {
     const row = await getDb()
       .prepare(
-        `SELECT id, provider_id, author_name, rating, comment, created_at, updated_at
+        `SELECT id, profile_id, author_name, rating, comment, created_at, updated_at
          FROM reviews
-         WHERE provider_id = ? AND consumer_id = ?`,
+         WHERE profile_id = ? AND consumer_user_id = ?`,
       )
-      .bind(providerId, consumerId)
+      .bind(profileId, consumerId)
       .first<{
         id: string;
-        provider_id: string;
+        profile_id: string;
         author_name: string;
         rating: number;
         comment: string;
@@ -204,7 +212,7 @@ export class D1ReviewRepository implements ReviewRepository {
 
     return {
       id: row.id,
-      providerId: row.provider_id,
+      profileId: row.profile_id,
       authorName: row.author_name,
       rating: row.rating,
       comment: row.comment,
@@ -216,7 +224,7 @@ export class D1ReviewRepository implements ReviewRepository {
   }
 
   async create(input: {
-    providerId: string;
+    profileId: string;
     authorId: string | null;
     consumerId?: string | null;
     authorName: string;
@@ -232,14 +240,13 @@ export class D1ReviewRepository implements ReviewRepository {
     await db.batch([
       db
         .prepare(
-          `INSERT INTO reviews (id, provider_id, author_id, consumer_id, author_name,
-                                rating, comment, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO reviews (id, profile_id, consumer_user_id, author_name,
+                                rating, comment, status, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'published', ?, ?)`,
         )
         .bind(
           id,
-          input.providerId,
-          input.authorId,
+          input.profileId,
           input.consumerId ?? null,
           input.authorName,
           input.rating,
@@ -249,16 +256,16 @@ export class D1ReviewRepository implements ReviewRepository {
         ),
       db
         .prepare(
-          `UPDATE providers
+          `UPDATE profiles
            SET rating_sum = rating_sum + ?, review_count = review_count + 1
            WHERE id = ?`,
         )
-        .bind(input.rating, input.providerId),
+        .bind(input.rating, input.profileId),
     ]);
 
     return {
       id,
-      providerId: input.providerId,
+      profileId: input.profileId,
       authorName: input.authorName,
       rating: input.rating,
       comment: input.comment,
@@ -270,7 +277,7 @@ export class D1ReviewRepository implements ReviewRepository {
   }
 
   /**
-   * Edita la opinión propia (RF-151).
+   * Edita la opinión propia (BR-026).
    *
    * El WHERE incluye al autor: aunque la acción ya verificó identidad, la
    * consulta no puede tocar una opinión ajena ni por error de programación.
@@ -286,11 +293,11 @@ export class D1ReviewRepository implements ReviewRepository {
 
     const current = await db
       .prepare(
-        `SELECT provider_id, rating FROM reviews
-         WHERE id = ? AND consumer_id = ?`,
+        `SELECT profile_id, rating FROM reviews
+         WHERE id = ? AND consumer_user_id = ?`,
       )
       .bind(input.reviewId, input.consumerId)
-      .first<{ provider_id: string; rating: number }>();
+      .first<{ profile_id: string; rating: number }>();
 
     if (!current) return false;
 
@@ -300,7 +307,7 @@ export class D1ReviewRepository implements ReviewRepository {
       db
         .prepare(
           `UPDATE reviews SET rating = ?, comment = ?, updated_at = ?
-           WHERE id = ? AND consumer_id = ?`,
+           WHERE id = ? AND consumer_user_id = ?`,
         )
         .bind(
           input.rating,
@@ -310,44 +317,44 @@ export class D1ReviewRepository implements ReviewRepository {
           input.consumerId,
         ),
       db
-        .prepare(`UPDATE providers SET rating_sum = rating_sum + ? WHERE id = ?`)
-        .bind(delta, current.provider_id),
+        .prepare(`UPDATE profiles SET rating_sum = rating_sum + ? WHERE id = ?`)
+        .bind(delta, current.profile_id),
     ]);
 
     return true;
   }
 
-  /** Borra la opinión propia y descuenta el agregado (RF-151, RF-179). */
+  /** Borra la opinión propia y descuenta el agregado (BR-026, BR-026). */
   async deleteOwn(reviewId: string, consumerId: string): Promise<boolean> {
     const db = getDb();
 
     const current = await db
       .prepare(
-        `SELECT provider_id, rating, status FROM reviews
-         WHERE id = ? AND consumer_id = ?`,
+        `SELECT profile_id, rating, status FROM reviews
+         WHERE id = ? AND consumer_user_id = ?`,
       )
       .bind(reviewId, consumerId)
-      .first<{ provider_id: string; rating: number; status: string }>();
+      .first<{ profile_id: string; rating: number; status: string }>();
 
     if (!current) return false;
 
     const statements = [
       db
-        .prepare(`DELETE FROM reviews WHERE id = ? AND consumer_id = ?`)
+        .prepare(`DELETE FROM reviews WHERE id = ? AND consumer_user_id = ?`)
         .bind(reviewId, consumerId),
     ];
 
     // Sólo las publicadas cuentan para el promedio: descontar una oculta
-    // dejaría el agregado por debajo de la realidad (RF-179).
+    // dejaría el agregado por debajo de la realidad (BR-026).
     if (current.status === "published") {
       statements.push(
         db
           .prepare(
-            `UPDATE providers
+            `UPDATE profiles
              SET rating_sum = rating_sum - ?, review_count = review_count - 1
              WHERE id = ?`,
           )
-          .bind(current.rating, current.provider_id),
+          .bind(current.rating, current.profile_id),
       );
     }
 
@@ -355,7 +362,7 @@ export class D1ReviewRepository implements ReviewRepository {
     return true;
   }
 
-  /** RF-154: reportar no borra; abre una revisión. */
+  /** BR-027: reportar no borra; abre una revisión. */
   async report(input: {
     reviewId: string;
     consumerId: string | null;
@@ -366,7 +373,7 @@ export class D1ReviewRepository implements ReviewRepository {
     await getDb()
       .prepare(
         `INSERT INTO review_reports
-           (id, review_id, consumer_id, user_id, reason, detail, status, created_at)
+           (id, review_id, consumer_user_id, user_id, reason, detail, status, created_at)
          VALUES (?, ?, ?, ?, ?, ?, 'open', ?)`,
       )
       .bind(

@@ -129,36 +129,45 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
 
       <ul className="flex flex-col gap-2.5">
         <Feature>Perfil público en el marketplace</Feature>
-        <Feature>Hasta {plan.maxServices} servicios</Feature>
-        <Feature>Hasta {plan.maxSubcategories} subcategorías</Feature>
-        <Feature>Hasta {plan.maxServiceAreas} zonas de trabajo</Feature>
-        <Feature>Teléfono, WhatsApp y email público</Feature>
+        <Feature>{cap(plan.maxServiceSectors, "rubro", "rubros")}</Feature>
+        <Feature>
+          {cap(plan.maxSpecialties, "especialidad", "especialidades")}
+        </Feature>
+        <Feature>{cap(plan.maxServices, "servicio", "servicios")}</Feature>
+        <Feature>
+          {cap(plan.maxLocations, "ubicación física", "ubicaciones físicas")}
+        </Feature>
+        <Feature>Zonas de trabajo sin límite</Feature>
+        <Feature>Teléfono con WhatsApp y correo de contacto</Feature>
+        <Feature>Foto de perfil, portada, horarios y medios de pago</Feature>
 
-        <Feature enabled={plan.maxGalleryImages > 0}>
-          {plan.maxGalleryImages > 0
-            ? `Galería de ${plan.maxGalleryImages} imágenes`
-            : "Galería de trabajos"}
+        {/*
+          `0` es "no incluida" y `null` sería "sin límite": son cosas distintas
+          (TR-002), así que la galería se apaga sólo con el 0.
+        */}
+        <Feature enabled={plan.maxGalleryImages !== 0}>
+          {plan.maxGalleryImages === 0
+            ? "Galería de trabajos"
+            : cap(plan.maxGalleryImages, "imagen en galería", "imágenes en galería")}
         </Feature>
         <Feature enabled={plan.allowsSocialLinks}>Redes sociales</Feature>
         <Feature enabled={plan.allowsVerificationRequest}>
-          Solicitud de verificación
+          Solicitud de verificación del perfil
         </Feature>
-        <Feature enabled={plan.allowsFeatured}>Posiciones destacadas</Feature>
+        <Feature enabled={plan.allowsFeaturedPlacement}>
+          Posiciones destacadas y rotativas
+        </Feature>
         <Feature enabled={plan.allowsContactForm}>
           Formulario de contacto
         </Feature>
-        <Feature enabled={plan.allowsLanding}>
-          Landing page y subdominio propio
+        <Feature enabled={plan.allowsCustomLanding}>
+          Landing page personalizada
         </Feature>
-        <Feature enabled={plan.maxTeamMembers > 0}>
-          {plan.maxTeamMembers > 0
-            ? `Equipo de hasta ${plan.maxTeamMembers} integrantes`
-            : "Integrantes del equipo"}
-        </Feature>
+        <Feature enabled={plan.allowsSubdomain}>Subdominio propio</Feature>
         <Feature>
           Métricas{" "}
-          {plan.metricsLevel === "full"
-            ? "completas"
+          {plan.metricsLevel === "advanced"
+            ? "avanzadas"
             : plan.metricsLevel === "intermediate"
               ? "intermedias"
               : "básicas"}
@@ -176,7 +185,7 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         {plan.priceCents === 0 ? "Crear mi perfil" : `Elegir ${plan.name}`}
       </Link>
 
-      {plan.allowsLanding ? (
+      {plan.allowsCustomLanding ? (
         <p className="text-[12.5px] leading-relaxed text-ink-faint">
           La landing page se habilitará cuando el módulo esté disponible.
         </p>
@@ -241,6 +250,16 @@ function PlanRibbonName({ plan }: { plan: PlanLimits }) {
 }
 
 /** `enabled` en false marca lo que el plan no incluye, sin ocultarlo. */
+/**
+ * Cómo se lee un tope del plan. `null` es "sin límite comercial" y no un
+ * número grande (TR-002), así que se dice con palabras en vez de mostrar un
+ * vacío o un cero engañoso.
+ */
+function cap(limit: number | null, singular: string, plural: string): string {
+  if (limit === null) return `${plural.charAt(0).toUpperCase()}${plural.slice(1)} sin límite`;
+  return `Hasta ${limit} ${limit === 1 ? singular : plural}`;
+}
+
 function Feature({
   children,
   enabled = true,

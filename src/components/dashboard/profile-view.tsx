@@ -6,14 +6,16 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
-import { CATEGORIES } from "@/data/categories";
+import { getSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import { allowsFeature } from "@/domain/plans";
 import {
+  PAYMENT_METHOD_LABELS,
   SERVICE_MODE_LABELS,
+  type PaymentMethod,
   type PlanLimits,
-  type Provider,
-  type ProviderImage,
+  type Profile,
+  type ProfileImage,
 } from "@/types";
 
 /**
@@ -27,13 +29,13 @@ import {
  * de lugar, y navegar perdería el punto de la pantalla en el que se estaba.
  */
 export function ProfileView({
-  provider,
+  profile,
   plan,
   images,
 }: {
-  provider: Provider;
+  profile: Profile;
   plan: PlanLimits;
-  images: ProviderImage[];
+  images: ProfileImage[];
 }) {
   /*
    * El modo edición vive en la URL (`?editar=1`) y no en un estado local.
@@ -76,7 +78,7 @@ export function ProfileView({
           en vez de dos que se desincronizan.
         */}
         <ProfileForm
-          provider={provider}
+          profile={profile}
           plan={plan}
           images={images}
           mode="edicion"
@@ -86,7 +88,7 @@ export function ProfileView({
     );
   }
 
-  const published = provider.status === "active";
+  const published = profile.profileStatus === "active";
 
   return (
     <div className="flex flex-col gap-5">
@@ -115,7 +117,7 @@ export function ProfileView({
 
         <div className="ml-auto flex flex-wrap items-center gap-2.5">
           <Link
-            href={`/profesionales/${provider.slug}`}
+            href={`/profesionales/${profile.slug}`}
             className={`flex h-10 items-center gap-1.5 rounded-input px-4 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
           >
             <Icon name="open_in_new" className="text-[17px] text-brand-800" />
@@ -131,7 +133,7 @@ export function ProfileView({
             Editar
           </button>
 
-          <PublishToggle status={provider.status ?? "draft"} />
+          <PublishToggle status={profile.profileStatus ?? "draft"} />
         </div>
       </div>
 
@@ -151,22 +153,27 @@ export function ProfileView({
         </Section>
 
         <Section title="Identidad">
-          <Row label="Nombre">{provider.name}</Row>
+          <Row label="Nombre">{profile.name}</Row>
           <Row label="Tipo">
-            {provider.kind === "business"
+            {profile.type === "business"
               ? "Empresa / equipo"
               : "Profesional independiente"}
           </Row>
-          <Row label="Descripción">{provider.description}</Row>
+          <Row label="Descripción">{profile.description}</Row>
         </Section>
 
         <Section title="Rubro">
-          <Row label="Subcategoría">
-            {subcategoryLabel(provider.subcategoryId)}
+          {/* Los rubros se derivan de las especialidades (BR-010). */}
+          <Row label="Especialidades">
+            {profile.specialtyIds.length > 0 ? (
+              <Chips values={profile.specialtyIds.map(subcategoryLabel)} />
+            ) : (
+              <Empty />
+            )}
           </Row>
           <Row label="Servicios">
-            {provider.services.length > 0 ? (
-              <Chips values={provider.services} />
+            {profile.services.length > 0 ? (
+              <Chips values={profile.services.map((item) => item.name)} />
             ) : (
               <Empty />
             )}
@@ -174,32 +181,60 @@ export function ProfileView({
         </Section>
 
         <Section title="Ubicación">
+          {/*
+            El local es opcional: quien trabaja a domicilio o a distancia no
+            tiene uno, y el perfil se publica igual (BR-015).
+          */}
           <Row label="Dónde estás">
-            {locationLabelById(provider.locationId)}
-          </Row>
-          <Row label="Dónde trabajás">
-            {provider.serviceAreaIds.length > 0 ? (
-              <Chips values={provider.serviceAreaIds.map(locationLabelById)} />
+            {profile.locations.length > 0 ? (
+              <Chips
+                values={profile.locations.map((item) =>
+                  locationLabelById(item.locationId),
+                )}
+              />
             ) : (
               <Empty />
             )}
           </Row>
-          {provider.serviceMode ? (
-            <Row label="Modalidad">
-              {SERVICE_MODE_LABELS[provider.serviceMode]}
+          <Row label="Dónde trabajás">
+            {profile.serviceAreaIds.length > 0 ? (
+              <Chips values={profile.serviceAreaIds.map(locationLabelById)} />
+            ) : (
+              <Empty />
+            )}
+          </Row>
+          {/* BR-017: con más de una, la atención es híbrida. */}
+          {profile.serviceModes.length > 0 ? (
+            <Row label="Cómo atendés">
+              {profile.serviceModes
+                .map((mode) => SERVICE_MODE_LABELS[mode])
+                .join(" · ")}
             </Row>
           ) : null}
         </Section>
 
         <Section title="Contacto">
-          <Row label="Teléfono">{provider.phone || <Empty />}</Row>
+          <Row label="Teléfono">{profile.phone || <Empty />}</Row>
           <Row label="WhatsApp">
-            {provider.whatsappEnabled ? "Sí, este número recibe WhatsApp" : "No"}
+            {profile.whatsappEnabled ? "Sí, este número recibe WhatsApp" : "No"}
           </Row>
-          <Row label="Horarios">{provider.schedule || <Empty />}</Row>
+          <Row label="Correo de contacto">
+            {profile.contactEmail || <Empty />}
+          </Row>
+          <Row label="Horarios">
+            {profile.scheduleEntries.length > 0 ? (
+              <Chips values={profile.scheduleEntries.map((e) => e.text)} />
+            ) : (
+              <Empty />
+            )}
+          </Row>
           <Row label="Formas de pago">
-            {provider.paymentMethods.length > 0 ? (
-              <Chips values={provider.paymentMethods} />
+            {profile.paymentMethods.length > 0 ? (
+              <Chips
+                values={profile.paymentMethods.map(
+                  (method: PaymentMethod) => PAYMENT_METHOD_LABELS[method],
+                )}
+              />
             ) : (
               <Empty />
             )}
@@ -208,8 +243,8 @@ export function ProfileView({
 
         {allowsFeature(plan, "social") ? (
           <Section title="Redes">
-            {provider.socialLinks && provider.socialLinks.length > 0 ? (
-              provider.socialLinks.map((link) => (
+            {profile.socialLinks && profile.socialLinks.length > 0 ? (
+              profile.socialLinks.map((link) => (
                 <Row key={link.platform} label={link.platform}>
                   {link.url}
                 </Row>
@@ -220,31 +255,14 @@ export function ProfileView({
           </Section>
         ) : null}
 
-        {allowsFeature(plan, "team") ? (
-          <Section title="Equipo">
-            {provider.teamMembers && provider.teamMembers.length > 0 ? (
-              provider.teamMembers.map((member, index) => (
-                <Row key={index} label={member.name}>
-                  {member.role || <Empty />}
-                </Row>
-              ))
-            ) : (
-              <Empty />
-            )}
-          </Section>
-        ) : null}
       </div>
     </div>
   );
 }
 
-/** Nombre legible de una subcategoría; su id si no se encuentra. */
+/** Nombre legible de una especialidad; su id si no se encuentra. */
 function subcategoryLabel(id: string): string {
-  for (const category of CATEGORIES) {
-    const found = category.subcategories.find((sub) => sub.id === id);
-    if (found) return found.name;
-  }
-  return id;
+  return getSpecialty(id)?.name ?? id;
 }
 
 function Section({
@@ -305,7 +323,7 @@ function Thumb({
   label,
   round = false,
 }: {
-  image: ProviderImage | null;
+  image: ProfileImage | null;
   label: string;
   round?: boolean;
 }) {

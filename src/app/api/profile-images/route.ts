@@ -1,11 +1,11 @@
 import { limitFor } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import {
-  deleteProviderImage,
+  deleteProfileImage,
   listImagesForUser,
-  putProviderImage,
-} from "@/infrastructure/d1-provider-images";
-import { D1ProviderRepository } from "@/infrastructure/d1-provider-repository";
+  putProfileImage,
+} from "@/infrastructure/d1-profile-images";
+import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
 import { getCurrentUser } from "@/lib/session";
 import type { ImageKind, PlanId } from "@/types";
 
@@ -27,7 +27,7 @@ import type { ImageKind, PlanId } from "@/types";
 /** Depende de la cookie de quien sube: nunca se cachea. */
 export const dynamic = "force-dynamic";
 
-const providers = new D1ProviderRepository();
+const providers = new D1ProfileRepository();
 const plans = new D1PlanRepository();
 
 /**
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
     return fail("La imagen no puede pesar más de 5 MB.");
   }
 
-  const provider = await providers.findByUserId(user.id);
+  const profile = await providers.findByUserId(user.id);
 
   /*
    * El tope de galería se cuenta sobre lo que el usuario ya subió, no sobre
@@ -92,31 +92,38 @@ export async function POST(request: Request) {
    * cuenta daría cero, dejando pasar cuantas imágenes se quisieran.
    */
   if (kind === "gallery") {
-    const planId: PlanId = provider?.planId ?? "cobre";
+    const planId: PlanId = profile?.planId ?? "cobre";
     const plan =
       (await plans.findById(planId)) ?? (await plans.findById("cobre"));
+    /*
+     * `null` es "sin límite" y `0` es "no incluida" (TR-002): sin distinguirlos,
+     * Platino —que no tiene tope de ubicaciones— caería en la misma rama que
+     * Cobre, que no tiene galería.
+     */
     const max = plan ? limitFor(plan, "galleryImages") : 0;
 
     if (max === 0) {
       return fail("Tu plan no incluye galería de trabajos.");
     }
 
-    const current = (await listImagesForUser(user.id)).filter(
-      (image) => image.kind === "gallery",
-    );
-
-    if (current.length >= max) {
-      return fail(
-        plan
-          ? `Tu plan ${plan.name} permite hasta ${max} imágenes.`
-          : `Podés subir hasta ${max} imágenes.`,
+    if (max !== null) {
+      const current = (await listImagesForUser(user.id)).filter(
+        (image) => image.kind === "gallery",
       );
+
+      if (current.length >= max) {
+        return fail(
+          plan
+            ? `Tu plan ${plan.name} permite hasta ${max} imágenes.`
+            : `Podés subir hasta ${max} imágenes.`,
+        );
+      }
     }
   }
 
-  const image = await putProviderImage({
+  const image = await putProfileImage({
     userId: user.id,
-    providerId: provider?.id ?? null,
+    profileId: profile?.id ?? null,
     kind: kind as ImageKind,
     body: await file.arrayBuffer(),
     contentType: file.type,
@@ -139,7 +146,7 @@ export async function DELETE(request: Request) {
   const imageId = new URL(request.url).searchParams.get("id");
   if (!imageId) return fail("Falta el id de la imagen.");
 
-  const removed = await deleteProviderImage(imageId, user.id);
+  const removed = await deleteProfileImage(imageId, user.id);
   if (!removed) return fail("No encontramos esa imagen.", 404);
 
   return Response.json({ ok: true });

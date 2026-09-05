@@ -10,7 +10,7 @@ import {
   subscribeSelectedPlan,
   writeSelectedPlan,
 } from "@/lib/selected-plan";
-import type { PlanLimits, Provider, ProviderImage } from "@/types";
+import type { PlanLimits, Profile, ProfileImage } from "@/types";
 
 /**
  * Une el bloque de plan con el formulario.
@@ -26,17 +26,17 @@ import type { PlanLimits, Provider, ProviderImage } from "@/types";
  */
 export function ProfileWorkspace({
   userId,
-  provider,
+  profile,
   plan,
   plans,
   images,
 }: {
   /** Dueño del borrador: sin esto se leería el de quien usó antes el navegador. */
   userId: string;
-  provider: Provider | null;
+  profile: Profile | null;
   plan: PlanLimits;
   plans: PlanLimits[];
-  images: ProviderImage[];
+  images: ProfileImage[];
 }) {
   const storedPlanId = useSyncExternalStore(
     subscribeSelectedPlan,
@@ -65,7 +65,7 @@ export function ProfileWorkspace({
   const effectivePlanId =
     picked && picked.from === plan.id ? picked.planId : plan.id;
 
-  const current = provider
+  const current = profile
     ? (plans.find((p) => p.id === effectivePlanId) ?? plan)
     : (plans.find((p) => p.id === storedPlanId) ?? plan);
 
@@ -76,7 +76,7 @@ export function ProfileWorkspace({
         plans={plans}
         // Con perfil hay fila que actualizar; sin perfil el plan sólo se
         // recuerda hasta que se cree.
-        persist={provider !== null}
+        persist={profile !== null}
         onPlanChange={(planId) => {
           setPicked({ planId, from: plan.id });
           // Se recuerda siempre: con perfil no decide nada, pero deja el
@@ -86,7 +86,7 @@ export function ProfileWorkspace({
       />
       <ProfileForm
         userId={userId}
-        provider={provider}
+        profile={profile}
         plan={current}
         images={images}
       />

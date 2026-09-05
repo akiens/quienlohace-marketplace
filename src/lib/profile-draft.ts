@@ -1,4 +1,4 @@
-import type { ServiceMode } from "@/types";
+import type { ServiceModeCode } from "@/types";
 
 /**
  * Borrador del formulario de alta de perfil, guardado en el navegador.
@@ -26,8 +26,12 @@ const KEY = "qlh.profileDraft";
 /**
  * Sube cuando cambia la forma del borrador. Uno viejo se descarta en vez de
  * rehidratar campos que ya no existen o cambiaron de significado.
+ *
+ * La 3 acompaña el paso a especialidades y horarios en lista: un borrador de
+ * la 2 traía `subcategoryId` y un `schedule` de una línea, que en el modelo
+ * nuevo no significan lo mismo.
  */
-const VERSION = 2;
+const VERSION = 3;
 
 /** Lo que se recuerda. Todo opcional: un borrador es, por definición, parcial. */
 export type ProfileDraft = {
@@ -40,14 +44,19 @@ export type ProfileDraft = {
   /** El paso donde estaba, para volver ahí y no al principio. */
   step?: string;
   name?: string;
-  kind?: string;
+  type?: string;
   description?: string;
-  subcategoryId?: string;
-  subcategoryIds?: string[];
-  services?: string[];
-  locationId?: string;
-  serviceMode?: ServiceMode;
+  specialtyIds?: string[];
+  /** Cada servicio recuerda de qué especialidad es (BR-010). */
+  services?: Array<{ specialtyId: string; name: string }>;
+  serviceModes?: ServiceModeCode[];
   serviceAreaIds?: string[];
+  locations?: Array<{
+    locationId: string;
+    name: string | null;
+    address: string | null;
+    isPrimary: boolean;
+  }>;
   phone?: string;
   whatsappEnabled?: boolean;
   /**
@@ -55,8 +64,10 @@ export type ProfileDraft = {
    * que se dio por revisado, para no perder el tilde al recargar.
    */
   paymentAcknowledged?: boolean;
-  schedule?: string;
+  scheduleEntries?: string[];
   paymentMethods?: string[];
+  contactEmail?: string;
+  phonePublic?: boolean;
   socialLinks?: Record<string, string>;
   teamMembers?: Array<{
     name?: string;
@@ -95,8 +106,8 @@ export function readProfileDraft(ownerId: string): ProfileDraft | null {
 /**
  * Si el borrador no tiene nada que valga la pena recordar.
  *
- * `locationId` no cuenta: arranca en Uruguay sin que nadie lo elija, así que
- * un formulario recién montado ya lo trae. Tomarlo como dato hacía que el
+ * No se miran los campos que el formulario trae puestos de fábrica: un
+ * formulario recién montado ya los tiene, y tomarlos como dato hacía que el
  * borrador en blanco del primer render pareciera lleno y pisara al guardado
  * antes de que llegara a leerse.
  */
@@ -104,14 +115,15 @@ function isEmpty(draft: Omit<ProfileDraft, "version">): boolean {
   return (
     !draft.name?.trim() &&
     !draft.description?.trim() &&
-    !draft.subcategoryId &&
     !draft.phone?.trim() &&
-    !draft.schedule?.trim() &&
+    !draft.contactEmail?.trim() &&
+    !draft.specialtyIds?.length &&
     !draft.services?.length &&
-    !draft.subcategoryIds?.length &&
+    !draft.serviceModes?.length &&
     !draft.serviceAreaIds?.length &&
+    !draft.locations?.length &&
+    !draft.scheduleEntries?.length &&
     !draft.paymentMethods?.length &&
-    !draft.teamMembers?.length &&
     !Object.keys(draft.socialLinks ?? {}).length
   );
 }

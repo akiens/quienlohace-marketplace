@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { logout } from "@/app/actions/auth";
-import { CATEGORIES } from "@/data/categories";
+import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
 import { Icon } from "@/components/ui";
 
 const NAV_LINKS = [
@@ -78,7 +78,7 @@ function Header({ signedIn }: { signedIn: boolean }) {
     };
   }, [drawerOpen]);
 
-  const activeCategory = CATEGORIES[hoveredCategory] ?? CATEGORIES[0]!;
+  const activeCategory = SERVICE_SECTORS[hoveredCategory] ?? SERVICE_SECTORS[0]!;
 
   return (
     <header
@@ -259,7 +259,7 @@ function MegaMenu({
 }: {
   activeIndex: number;
   onHover: (index: number) => void;
-  activeCategory: (typeof CATEGORIES)[number];
+  activeCategory: (typeof SERVICE_SECTORS)[number];
   onClose: () => void;
 }) {
   return (
@@ -283,7 +283,7 @@ function MegaMenu({
               </Link>
             </div>
 
-            {CATEGORIES.map((category, index) => (
+            {SERVICE_SECTORS.map((category, index) => (
               <Link
                 key={category.id}
                 href={`/categorias/${category.slug}`}
@@ -328,8 +328,7 @@ function MegaMenu({
                   {activeCategory.name}
                 </p>
                 <p className="text-[13px] text-ink-soft">
-                  {activeCategory.providerCount} profesionales ·{" "}
-                  {activeCategory.subcategories.length} subcategorías
+                  {listSpecialties(activeCategory.id).length} especialidades
                 </p>
               </div>
               <Link
@@ -341,7 +340,7 @@ function MegaMenu({
             </div>
 
             <div className="h-[330px] [column-fill:auto] [column-gap:24px] [column-width:220px]">
-              {activeCategory.subcategories.map((sub) => (
+              {listSpecialties(activeCategory.id).map((sub) => (
                 <Link
                   key={sub.id}
                   href={`/categorias/${activeCategory.slug}/${sub.slug}`}
@@ -375,7 +374,7 @@ function MobileDrawer({
 }) {
   const [level, setLevel] = useState<DrawerLevel>("root");
   const [categoryIndex, setCategoryIndex] = useState(0);
-  const category = CATEGORIES[categoryIndex] ?? CATEGORIES[0]!;
+  const category = SERVICE_SECTORS[categoryIndex] ?? SERVICE_SECTORS[0]!;
 
   const title =
     level === "root" ? "Menú" : level === "categories" ? "Categorías" : category.name;
@@ -464,7 +463,7 @@ function MobileDrawer({
                 <Icon name="arrow_back" className="text-[20px]" />
                 Menú
               </button>
-              {CATEGORIES.map((item, index) => (
+              {SERVICE_SECTORS.map((item, index) => (
                 <button
                   key={item.id}
                   type="button"
@@ -512,7 +511,7 @@ function MobileDrawer({
                   Todas · {category.short}
                 </span>
               </Link>
-              {category.subcategories.map((sub) => (
+              {listSpecialties(category.id).map((sub) => (
                 <Link
                   key={sub.id}
                   href={`/categorias/${category.slug}/${sub.slug}`}

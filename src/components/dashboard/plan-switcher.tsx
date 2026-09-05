@@ -144,6 +144,11 @@ export function PlanSwitcher({
   );
 }
 
+/** Un tope del plan en palabras. `null` es "sin límite" (TR-002). */
+function cap(limit: number | null, plural: string): string {
+  return limit === null ? `${plural} sin límite` : `${limit} ${plural}`;
+}
+
 function PlanDialog({
   plans,
   current,
@@ -267,19 +272,19 @@ function PlanOption({
         </span>
       </div>
 
+      {/*
+        Un tope en `null` es "sin límite" y no un número (TR-002): se dice con
+        palabras, porque mostrarlo vacío o como 0 diría lo contrario.
+      */}
       <ul className="flex flex-col gap-1 text-[13px] leading-relaxed text-ink-muted">
-        <li>{option.maxServices} servicios</li>
-        <li>{option.maxSubcategories} subcategorías</li>
-        <li>{option.maxServiceAreas} zonas</li>
+        <li>{cap(option.maxServiceSectors, "rubros")}</li>
+        <li>{cap(option.maxSpecialties, "especialidades")}</li>
+        <li>{cap(option.maxServices, "servicios")}</li>
+        <li>{cap(option.maxLocations, "ubicaciones")}</li>
         <li>
-          {option.maxGalleryImages > 0
-            ? `${option.maxGalleryImages} imágenes`
-            : "Sin galería"}
-        </li>
-        <li>
-          {option.maxTeamMembers > 0
-            ? `${option.maxTeamMembers} integrantes`
-            : "Sin equipo"}
+          {option.maxGalleryImages === 0
+            ? "Sin galería"
+            : cap(option.maxGalleryImages, "imágenes")}
         </li>
       </ul>
 

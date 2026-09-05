@@ -1,246 +1,141 @@
 /** Contratos de dominio compartidos por el marketplace. */
 
-/**
- * Ubicación como Master Data: colección plana, IDs estables y slugs
- * predefinidos. La jerarquía se deriva en la UI, no en los datos.
- */
-/**
- * Una ubicación seleccionable, en cualquiera de sus cuatro niveles: país,
- * departamento, localidad o barrio. Cada nivel existe como fila propia con su
- * id, así quien se registra elige hasta donde quiera precisar y no se le
- * obliga a bajar a un barrio que no le corresponde (RF-117).
- *
- * Los campos se van llenando de lo general a lo particular: el país siempre,
- * el resto según el nivel. `level` dice cuál es el último con valor.
- */
-export type LocationLevel = "country" | "department" | "locality" | "area";
+// ---------------------------------------------------------------------------
+// Geografía (BR-014 a BR-016)
+// ---------------------------------------------------------------------------
 
+/**
+ * Los tres niveles del catálogo: Uruguay → departamento → localidad. No hay un
+ * cuarto: los barrios se eliminaron del modelo y la localidad es el nivel más
+ * preciso (BR-014).
+ */
+export type LocationType = "country" | "department" | "locality";
+
+/**
+ * Una ubicación del catálogo. El árbol se arma con `parentId`, que es null
+ * únicamente en Uruguay.
+ *
+ * Las filas las genera `npm run generate:locations` desde
+ * `docs/data/locations.md` y son las mismas que pueblan la tabla `locations`.
+ */
 export type Location = {
   id: string;
-  level: LocationLevel;
-  department?: string;
-  departmentSlug?: string;
-  locality?: string;
-  localitySlug?: string;
-  area?: string;
-  areaSlug?: string;
+  parentId: string | null;
+  type: LocationType;
+  name: string;
+  slug: string;
 };
 
-export type Category = {
+// ---------------------------------------------------------------------------
+// Taxonomía (BR-010 a BR-013)
+// ---------------------------------------------------------------------------
+
+/** Un rubro: agrupa especialidades. En persistencia, `service_sector`. */
+export type ServiceSector = {
   id: string;
-  slug: string;
-  /** Nombre completo, para títulos y SEO. */
   name: string;
-  /** Nombre corto, para navegación y menús. */
+  slug: string;
+  /** Nombre corto, del que se deriva el id (TR-020). */
   short: string;
-  /** Material Symbols: un icono propio y constante por categoría. */
+  /** Material Symbols: un icono propio y constante por rubro. */
   icon: string;
-  providerCount: number;
-  subcategories: Subcategory[];
+  sortOrder: number;
 };
 
-export type Subcategory = {
+/** Una especialidad dentro de un rubro. */
+export type Specialty = {
   id: string;
-  slug: string;
+  serviceSectorId: string;
   name: string;
+  slug: string;
+  /** BR-020: exige una habilitación aprobada y vigente para publicarse. */
+  requiresProfessionalCredential: boolean;
+  sortOrder: number;
 };
 
-export type ProviderKind = "individual" | "business";
+/**
+ * Una sugerencia de servicio del catálogo. No es lo mismo que un servicio del
+ * perfil: esto es lo que se ofrece al autocompletar, y lo que se guarda es el
+ * texto que la persona confirmó (BR-011).
+ */
+export type ServiceSuggestion = {
+  id: string;
+  serviceSectorId: string;
+  specialtyId: string;
+  name: string;
+  /** Sinónimos y términos regionales. Sólo para buscar: nunca se muestran. */
+  aliases: string[];
+};
 
-export type ProviderStatus =
-  | "draft"
-  | "active"
-  | "pending_verification"
-  | "suspended"
-  | "inactive";
+/** Un servicio ya guardado en un perfil. */
+export type ProfileService = {
+  id: string;
+  specialtyId: string;
+  name: string;
+  /** false cuando quedó fuera del plan contratado (BR-009). */
+  isActive: boolean;
+  sortOrder: number;
+};
+
+// ---------------------------------------------------------------------------
+// Cuentas y perfiles
+// ---------------------------------------------------------------------------
 
 export type UserRole = "provider" | "admin" | "superadmin";
 
+/**
+ * Cuenta con acceso a la plataforma. No tiene nombre: el nombre es del perfil.
+ * El registro sólo pide correo y contraseña (`docs/ui/register_form.md`).
+ */
 export type User = {
   id: string;
   email: string;
-  name: string;
   role: UserRole;
   emailVerified: boolean;
+  isActive: boolean;
   createdAt: string;
 };
 
-/** Rol de una imagen del perfil: foto, portada o galería. */
-export type ImageKind = "avatar" | "cover" | "gallery";
+export type ProfileType = "individual" | "business";
 
-export type ProviderImage = {
-  id: string;
-  storageKey: string;
-  url: string;
-  alt: string;
-  kind: ImageKind;
-  /** false cuando quedó fuera del plan contratado (RF-053). */
-  active: boolean;
-};
+/** BR-003: sólo `active` es visible públicamente. */
+export type ProfileStatus = "draft" | "active" | "suspended" | "inactive";
 
-export type PaymentMethod =
-  | "Efectivo"
-  | "Transferencia"
-  | "Débito"
-  | "Crédito"
-  | "Otros";
-
-export type Provider = {
-  id: string;
-  /**
-   * Dueño del perfil. Permite saber si quien mira es quien lo creó, que es lo
-   * que habilita a ver en vista previa un perfil todavía sin publicar.
-   */
-  userId: string;
-  slug: string;
-  name: string;
-  kind: ProviderKind;
-  icon: string;
-  /** null cuando el proveedor todavía no tiene opiniones. */
-  rating: number | null;
-  reviewCount: number;
-  categoryId: string;
-  subcategoryId: string;
-  /** Dónde está ubicado el proveedor. */
-  locationId: string;
-  /** Dónde presta servicio: distinto de su ubicación física. */
-  serviceAreaIds: string[];
-  services: string[];
-  description: string;
-  featured: boolean;
-  verified: boolean;
-  phone: string;
-  whatsapp: string;
-  schedule: string;
-  paymentMethods: PaymentMethod[];
-  /** Presentes cuando el proveedor viene de la base; opcionales en datos de ejemplo. */
-  status?: ProviderStatus;
-  images?: ProviderImage[];
-
-  /** Plan contratado. Los datos de ejemplo no lo traen. */
-  planId?: PlanId;
-  /** Plan al que se baja al vencer el período, o null si no hay baja. */
-  downgradePlanId?: PlanId | null;
-  /** Fin del período pago (ISO). NULL en Cobre, que no vence. */
-  planExpiresAt?: string | null;
-  subscriptionStatus?: SubscriptionStatus;
-  verificationStatus?: VerificationStatus;
-
-  /** RF-013: el teléfono normalizado; de acá salen tel: y wa.me. */
-  phoneE164?: string;
-  whatsappEnabled?: boolean;
-  phonePublic?: boolean;
-  publicEmail?: string;
-  serviceMode?: ServiceMode;
-
-  /** RF-011: subcategorías adicionales; `subcategoryId` sigue siendo la principal. */
-  subcategoryIds?: string[];
-  /** RF-170: horarios por día. `schedule` queda como resumen legible. */
-  hours?: DayHours[];
-  socialLinks?: SocialLink[];
-  teamMembers?: TeamMember[];
-};
-
-/** Estado de moderación de una opinión (RF-176). */
-export type ReviewStatus = "pending" | "published" | "hidden" | "reported";
-
-export type Review = {
-  id: string;
-  providerId: string;
-  authorName: string;
-  /** Avatar de Google, cuando la opinión viene de un cliente identificado. */
-  authorAvatarUrl?: string;
-  rating: number;
-  comment: string;
-  /** ISO date, para poder formatear en el servidor sin desajustes. */
-  createdAt: string;
-  updatedAt?: string;
-  /**
-   * true cuando el autor es el cliente que está mirando: habilita editar y
-   * borrar su propia opinión (RF-151) sin exponer esa acción a los demás.
-   */
-  isMine?: boolean;
-  /** RF-178: se indica que hay identidad, no que hubo contratación. */
-  identified?: boolean;
-};
-
-/** Motivos de reporte de una opinión (RF-154). */
-export type ReviewReportReason =
-  | "spam"
-  | "offensive"
-  | "false_info"
-  | "personal_info"
-  | "conflict"
-  | "other";
-
-// ---------------------------------------------------------------------------
-// Planes (RF-050 a RF-053)
-// ---------------------------------------------------------------------------
-
-export type PlanId = "cobre" | "gold" | "platinum";
-
-export type MetricsLevel = "basic" | "intermediate" | "full";
-
-/**
- * Plan con sus límites. Se lee de la base: RF-096 pide que precios y topes
- * sean configurables sin desplegar código.
- */
-export type PlanLimits = {
-  id: PlanId;
-  name: string;
-  priceCents: number;
-  currency: string;
-  period: "month" | "year";
-  rank: number;
-  maxServices: number;
-  maxSubcategories: number;
-  maxServiceAreas: number;
-  maxGalleryImages: number;
-  maxTeamMembers: number;
-  allowsSocialLinks: boolean;
-  allowsLanding: boolean;
-  allowsFeatured: boolean;
-  allowsContactForm: boolean;
-  allowsVerificationRequest: boolean;
-  metricsLevel: MetricsLevel;
-};
-
-export type SubscriptionStatus =
-  | "trial"
-  | "active"
-  | "past_due"
-  | "cancelled"
-  | "expired";
-
-/** RF-084: la verificación se otorga tras validar, no por pagar. */
+/** BR-019: la insignia comercial del perfil. Sólo `verified` la muestra. */
 export type VerificationStatus =
-  | "unverified"
+  | "not_requested"
   | "pending"
   | "verified"
   | "rejected";
 
-/** RF-029: dónde presta el servicio. */
-export type ServiceMode = "on_site" | "at_business" | "remote" | "hybrid";
+/**
+ * BR-017: las tres modalidades. "Híbrida" no está acá porque no es una cuarta
+ * modalidad: se deriva de haber elegido más de una, y los valores derivados no
+ * se persisten (TR-001).
+ */
+export type ServiceModeCode = "at_customer" | "at_business" | "remote";
 
-export const SERVICE_MODE_LABELS: Record<ServiceMode, string> = {
-  on_site: "A domicilio",
-  at_business: "En mi local",
-  remote: "Remoto",
-  hybrid: "Combinado",
+export const SERVICE_MODE_LABELS: Record<ServiceModeCode, string> = {
+  at_customer: "En el domicilio del cliente",
+  at_business: "En el negocio",
+  remote: "A distancia",
 };
 
-/** RF-170: horario de un día. `null` en las horas cuando cierra o es 24h. */
-export type DayHours = {
-  weekday: number;
-  opensAt: string | null;
-  closesAt: string | null;
-  closed: boolean;
-  open24h: boolean;
-};
+/** Códigos en inglés (TR-001); las etiquetas en español son de la UI. */
+export type PaymentMethod =
+  | "cash"
+  | "bank_transfer"
+  | "debit_card"
+  | "credit_card"
+  | "other";
 
-export const WEEKDAY_LABELS = [
-  "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado",
-];
+export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
+  cash: "Efectivo",
+  bank_transfer: "Transferencia",
+  debit_card: "Débito",
+  credit_card: "Crédito",
+  other: "Otros",
+};
 
 export type SocialPlatform =
   | "instagram"
@@ -251,27 +146,170 @@ export type SocialPlatform =
   | "youtube"
   | "website";
 
-export type SocialLink = { platform: SocialPlatform; url: string };
+export type SocialLink = {
+  platform: SocialPlatform;
+  url: string;
+  /** BR-022: en Cobre se conservan, pero inactivos. */
+  isActive: boolean;
+};
 
-export type TeamMember = {
+/** Rol de una imagen del perfil: foto, portada o galería. */
+export type ImageKind = "avatar" | "cover" | "gallery";
+
+export type ProfileImage = {
   id: string;
+  storageKey: string;
+  url: string;
+  alt: string;
+  kind: ImageKind;
+  sortOrder: number;
+  /** false cuando excede el cupo del plan (BR-009). */
+  isActive: boolean;
+};
+
+/**
+ * Una ubicación física del perfil: local, consultorio o sucursal (BR-015). Es
+ * distinta del área donde presta servicio.
+ */
+export type ProfileLocation = {
+  id: string;
+  locationId: string;
+  name: string | null;
+  address: string | null;
+  isPrimary: boolean;
+  isActive: boolean;
+};
+
+/** Una línea de horario en texto libre (BR-024). */
+export type ScheduleEntry = {
+  id: string;
+  text: string;
+  sortOrder: number;
+};
+
+/** BR-020: habilitación profesional de una especialidad regulada. */
+export type CredentialStatus =
+  | "pending"
+  | "verified"
+  | "rejected"
+  | "revoked"
+  | "expired";
+
+export type ProfessionalCredential = {
+  id: string;
+  specialtyId: string;
+  credentialName: string;
+  credentialNumber: string;
+  issuingAuthority: string;
+  status: CredentialStatus;
+  expiresAt: string | null;
+  submittedAt: string;
+  rejectionReason: string;
+};
+
+/**
+ * El profesional o empresa que ofrece servicios.
+ *
+ * Los rubros no son un campo: se derivan de las especialidades activas
+ * (BR-010). Tampoco lo son el promedio ni la modalidad híbrida, que se
+ * calculan al mostrar (TR-001).
+ */
+export type Profile = {
+  id: string;
+  /**
+   * Dueño del perfil. Permite saber si quien mira es quien lo creó, que es lo
+   * que habilita a ver en vista previa un perfil todavía sin publicar.
+   */
+  userId: string;
+  slug: string;
   name: string;
-  /** Cargo. En el formulario se muestra como «Título». */
-  role: string;
-  subtitle: string;
-  bio: string;
-  photoKey: string;
-  position: number;
-  active: boolean;
+  type: ProfileType;
+  description: string;
+  icon: string;
+
+  contactEmail: string;
+  phone: string;
+  phoneE164: string;
+  /** null mientras no se verificó el teléfono actual (TR-010). */
+  phoneVerifiedAt: string | null;
+  whatsappEnabled: boolean;
+  phonePublic: boolean;
+
+  profileStatus: ProfileStatus;
+  verificationStatus: VerificationStatus;
+
+  planId: PlanId;
+  subscriptionStatus: SubscriptionStatus;
+  /** Fin del período pago (ISO). null en Cobre, que no vence. */
+  planExpiresAt: string | null;
+  /** Plan al que se baja al vencer, o null si no hay baja agendada. */
+  downgradePlanId: PlanId | null;
+
+  /** null cuando el perfil todavía no tiene opiniones (BR-026). */
+  rating: number | null;
+  reviewCount: number;
+
+  specialtyIds: string[];
+  services: ProfileService[];
+  serviceModes: ServiceModeCode[];
+  serviceAreaIds: string[];
+  locations: ProfileLocation[];
+  paymentMethods: PaymentMethod[];
+  scheduleEntries: ScheduleEntry[];
+  socialLinks: SocialLink[];
+  images: ProfileImage[];
 };
 
 // ---------------------------------------------------------------------------
-// Clientes (RF-123, RF-125, RF-175)
+// Planes (BR-006 a BR-009)
+// ---------------------------------------------------------------------------
+
+export type PlanId = "cobre" | "gold" | "platinum";
+
+export type MetricsLevel = "basic" | "intermediate" | "advanced";
+
+/**
+ * Plan con sus límites y capacidades. Se lee de la base, no de condicionales
+ * repartidos por el código (TR-014).
+ *
+ * Un tope en `null` es "sin límite comercial"; en `0`, "capacidad no incluida"
+ * (TR-002). Son cosas distintas y por eso no se colapsan en un número.
+ */
+export type PlanLimits = {
+  id: PlanId;
+  name: string;
+  priceCents: number;
+  currency: string;
+  period: "month" | "year";
+  rank: number;
+  maxServiceSectors: number | null;
+  maxSpecialties: number | null;
+  maxServices: number | null;
+  maxLocations: number | null;
+  maxGalleryImages: number | null;
+  allowsSocialLinks: boolean;
+  allowsVerificationRequest: boolean;
+  allowsFeaturedPlacement: boolean;
+  allowsContactForm: boolean;
+  allowsCustomLanding: boolean;
+  allowsSubdomain: boolean;
+  metricsLevel: MetricsLevel;
+};
+
+export type SubscriptionStatus =
+  | "trial"
+  | "active"
+  | "past_due"
+  | "cancelled"
+  | "expired";
+
+// ---------------------------------------------------------------------------
+// Clientes y opiniones (BR-025 a BR-027)
 // ---------------------------------------------------------------------------
 
 /**
  * Cliente que busca servicios. No tiene contraseña propia: la identidad la
- * aporta Google y sólo se pide cuando quiere participar (RF-124).
+ * aporta Google y sólo se pide cuando quiere opinar (BR-025).
  */
 export type ConsumerUser = {
   id: string;
@@ -282,13 +320,48 @@ export type ConsumerUser = {
   createdAt: string;
 };
 
+/** BR-026: sólo `published` se muestra y suma a la calificación. */
+export type ReviewStatus = "published" | "hidden";
+
+export type Review = {
+  id: string;
+  profileId: string;
+  authorName: string;
+  /** Avatar de Google, cuando la opinión viene de un cliente identificado. */
+  authorAvatarUrl?: string;
+  rating: number;
+  comment: string;
+  /** ISO date, para poder formatear en el servidor sin desajustes. */
+  createdAt: string;
+  updatedAt?: string;
+  /**
+   * true cuando el autor es el cliente que está mirando: habilita editar su
+   * propia opinión sin exponer esa acción a los demás.
+   */
+  isMine?: boolean;
+  /** Se indica que hay identidad, no que hubo contratación. */
+  identified?: boolean;
+};
+
+export type ReviewReportReason =
+  | "spam"
+  | "offensive"
+  | "false_info"
+  | "personal_info"
+  | "conflict"
+  | "other";
+
+// ---------------------------------------------------------------------------
+// Búsqueda
+// ---------------------------------------------------------------------------
+
 /** Estado de búsqueda compartido entre el buscador y el panel de filtros. */
 export type SearchFilters = {
   query: string;
   /** IDs de ubicación seleccionados. Máximo 5. */
   locationIds: string[];
-  /** IDs de subcategoría seleccionados. Máximo 5. */
-  subcategoryIds: string[];
+  /** IDs de especialidad seleccionados. Máximo 5. */
+  specialtyIds: string[];
   minRating: number | null;
   paymentMethods: PaymentMethod[];
   useMyLocation: boolean;
@@ -297,7 +370,7 @@ export type SearchFilters = {
 export const EMPTY_FILTERS: SearchFilters = {
   query: "",
   locationIds: [],
-  subcategoryIds: [],
+  specialtyIds: [],
   minRating: null,
   paymentMethods: [],
   useMyLocation: false,
@@ -305,7 +378,7 @@ export const EMPTY_FILTERS: SearchFilters = {
 
 /** Reglas de producto expresadas como constantes. */
 export const MAX_LOCATIONS = 5;
-export const MAX_SUBCATEGORIES = 5;
+export const MAX_SPECIALTIES = 5;
 /** 12 divide exacto por 1, 2, 3 y 4 columnas: nunca deja una fila coja. */
 export const PAGE_SIZE = 12;
 /** 8 completa dos filas de 4 y cuatro de 2, sin huecos en ningún ancho. */

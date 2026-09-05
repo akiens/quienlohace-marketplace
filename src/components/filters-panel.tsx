@@ -2,12 +2,13 @@
 
 import { useEffect } from "react";
 
-import { CATEGORIES } from "@/data/categories";
+import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import { countActiveFilters } from "@/lib/search";
 import {
   EMPTY_FILTERS,
-  MAX_SUBCATEGORIES,
+  MAX_SPECIALTIES,
+  PAYMENT_METHOD_LABELS,
   type PaymentMethod,
   type SearchFilters,
 } from "@/types";
@@ -21,11 +22,11 @@ const RATING_OPTIONS: { label: string; value: number | null }[] = [
 ];
 
 const PAYMENT_OPTIONS: PaymentMethod[] = [
-  "Efectivo",
-  "Transferencia",
-  "Débito",
-  "Crédito",
-  "Otros",
+  "cash",
+  "bank_transfer",
+  "debit_card",
+  "credit_card",
+  "other",
 ];
 
 /**
@@ -66,14 +67,14 @@ export function FiltersPanel({
 
   const activeCount = countActiveFilters(filters);
 
-  function toggleSubcategory(id: string) {
-    const selected = filters.subcategoryIds;
+  function toggleSpecialty(id: string) {
+    const selected = filters.specialtyIds;
     if (selected.includes(id)) {
-      onChange({ ...filters, subcategoryIds: selected.filter((x) => x !== id) });
+      onChange({ ...filters, specialtyIds: selected.filter((x) => x !== id) });
       return;
     }
-    if (selected.length >= MAX_SUBCATEGORIES) return;
-    onChange({ ...filters, subcategoryIds: [...selected, id] });
+    if (selected.length >= MAX_SPECIALTIES) return;
+    onChange({ ...filters, specialtyIds: [...selected, id] });
   }
 
   function togglePayment(method: PaymentMethod) {
@@ -201,9 +202,9 @@ export function FiltersPanel({
             </div>
           </Group>
 
-          <Group title={`Servicios · máximo ${MAX_SUBCATEGORIES}`}>
+          <Group title={`Servicios · máximo ${MAX_SPECIALTIES}`}>
             <div className="flex flex-col gap-2">
-              {CATEGORIES.slice(0, 6).map((category) => (
+              {SERVICE_SECTORS.slice(0, 6).map((category) => (
                 <details
                   key={category.id}
                   className="rounded-input border border-line"
@@ -216,8 +217,8 @@ export function FiltersPanel({
                     {category.short}
                   </summary>
                   <div className="flex flex-col gap-0.5 border-t border-line-soft p-1.5">
-                    {category.subcategories.map((sub) => {
-                      const selected = filters.subcategoryIds.includes(sub.id);
+                    {listSpecialties(category.id).map((sub) => {
+                      const selected = filters.specialtyIds.includes(sub.id);
                       return (
                         <label
                           key={sub.id}
@@ -226,7 +227,7 @@ export function FiltersPanel({
                           <input
                             type="checkbox"
                             checked={selected}
-                            onChange={() => toggleSubcategory(sub.id)}
+                            onChange={() => toggleSpecialty(sub.id)}
                             className="h-4 w-4 accent-brand-800"
                           />
                           {sub.name}
@@ -252,7 +253,7 @@ export function FiltersPanel({
                     onChange={() => togglePayment(method)}
                     className="h-4 w-4 accent-brand-800"
                   />
-                  {method}
+                  {PAYMENT_METHOD_LABELS[method]}
                 </label>
               ))}
             </div>

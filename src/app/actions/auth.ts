@@ -45,6 +45,7 @@ export async function signup(
   const parsed = signupSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
+    passwordConfirm: formData.get("passwordConfirm"),
   });
 
   /*
@@ -70,10 +71,7 @@ export async function signup(
 
   try {
     const user = await users.create({
-      // `users.name` es NOT NULL y todavía no se pregunta: queda vacío hasta
-      // que la creación del perfil lo complete.
       email: parsed.data.email,
-      name: "",
       passwordHash: await hashPassword(parsed.data.password),
     });
     await createSession(user.id);
@@ -92,13 +90,18 @@ export async function signup(
     return { errors: { form: SIGNUP_FAILED } };
   }
 
-  // Fuera del `try`: `redirect` corta el flujo lanzando una excepción y el
-  // catch de arriba la tomaría por un fallo del registro.
-  //
-  // Sin plan en la URL: el navegador ya lo recuerda y el panel lo lee de
-  // ahí. En la URL quedaba desactualizado al cambiar de plan y era editable
-  // a mano.
-  redirect("/dashboard");
+  /*
+   * Fuera del `try`: `redirect` corta el flujo lanzando una excepción y el
+   * catch de arriba la tomaría por un fallo del registro.
+   *
+   * Va directo a crear el perfil (`docs/ui/register_form.md`): quien se acaba
+   * de registrar todavía no tiene nada que administrar, y el panel lo único
+   * que haría es mostrarle un botón para venir acá.
+   *
+   * Sin plan en la URL: el navegador ya lo recuerda. En la URL quedaba
+   * desactualizado al cambiar de plan y era editable a mano.
+   */
+  redirect("/dashboard/crear");
 }
 
 export async function login(

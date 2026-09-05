@@ -1,205 +1,150 @@
-import type { Location, LocationLevel } from "@/types";
-import { slugify } from "@/lib/slug";
+import type { Location, LocationType } from "@/types";
+
+import data from "./locations.json";
 
 /**
- * Fuente única de verdad de la geografía uruguaya.
- * Se escribe como árbol por comodidad de mantenimiento y se deriva a una
- * colección plana: departamentos, localidades y zonas salen todos de acá.
- * No existe CRUD para estos datos (ver RF-118 / RF-119).
+ * Catálogo geográfico de Uruguay: país, 19 departamentos y sus localidades
+ * (BR-014).
+ *
+ * El árbol lo genera `npm run generate:locations` desde `docs/data/locations.md`,
+ * que es la fuente de la verdad (TR-032). Acá no se escribe geografía a mano:
+ * agregar una localidad es editar el documento y regenerar.
+ *
+ * En la base estos mismos datos viven en la tabla `locations`; el JSON es lo
+ * que la puebla y lo que la UI usa para armar los selectores sin ir a la base.
  */
-const GEO_SOURCE: Record<string, Record<string, string[]>> = {
-  Montevideo: {
-    Montevideo: [
-      "Aguada", "Bella Vista", "Buceo", "Carrasco", "Centro", "Ciudad Vieja",
-      "Cordón", "La Blanqueada", "Malvín", "Palermo", "Parque Batlle",
-      "Parque Rodó", "Paso Molino", "Pocitos", "Prado", "Punta Carretas",
-      "Punta Gorda", "Reducto", "Sayago", "Tres Cruces", "Unión",
-    ],
-  },
-  Canelones: {
-    "Ciudad de la Costa": [
-      "Shangrilá", "San José de Carrasco", "Lagomar", "Solymar",
-      "Lomas de Solymar", "El Pinar",
-    ],
-    "Las Piedras": [], Pando: [], Atlántida: [], "La Paz": [],
-    Canelones: [], Toledo: [], Salinas: [],
-  },
-  Maldonado: {
-    Maldonado: [],
-    "Punta del Este": [
-      "Península", "Aidy Grill", "Roosevelt", "Cantegril", "Beverly Hills",
-    ],
-    "San Carlos": [], Piriápolis: [], "La Barra": [],
-  },
-  Colonia: {
-    "Colonia del Sacramento": [], Carmelo: [], "Nueva Helvecia": [], Rosario: [],
-  },
-  "San José": {
-    "San José de Mayo": [],
-    "Ciudad del Plata": ["Delta del Tigre", "Playa Pascual", "Safici"],
-    Libertad: [],
-  },
-  Rocha: { Rocha: [], "La Paloma": [], Chuy: [], Castillos: [] },
-  Salto: { Salto: [] },
-  Paysandú: { Paysandú: [], Guichón: [] },
-  Rivera: { Rivera: [], Tranqueras: [] },
-  Soriano: { Mercedes: [], Dolores: [] },
-  Flores: { Trinidad: [] },
-  Florida: { Florida: [], "Sarandí Grande": [] },
-  Durazno: { Durazno: [] },
-  Lavalleja: { Minas: [] },
-  Artigas: { Artigas: [], "Bella Unión": [] },
-  "Cerro Largo": { Melo: [], "Río Branco": [] },
-  "Río Negro": { "Fray Bentos": [], Young: [] },
-  Tacuarembó: { Tacuarembó: [], "Paso de los Toros": [] },
-  "Treinta y Tres": { "Treinta y Tres": [] },
-};
 
-/** El país entero, para quien trabaja en todo el territorio o no precisa. */
+export const LOCATIONS: Location[] = data.locations as Location[];
+
+/** Uruguay: la raíz del árbol y la cobertura nacional (BR-016). */
 export const COUNTRY_ID = "uruguay";
 export const COUNTRY_LABEL = "Uruguay";
 
-function buildLocations(): Location[] {
-  // Todo el país: el nivel más general y el que se usa como respaldo cuando
-  // no se eligió nada.
-  const out: Location[] = [{ id: COUNTRY_ID, level: "country" }];
+const BY_ID = new Map(LOCATIONS.map((location) => [location.id, location]));
 
-  for (const [department, localities] of Object.entries(GEO_SOURCE)) {
-    const departmentSlug = slugify(department);
-
-    // El departamento entero, sin bajar a localidad.
-    out.push({
-      id: departmentSlug,
-      level: "department",
-      department,
-      departmentSlug,
-    });
-
-    for (const [locality, areas] of Object.entries(localities)) {
-      const localitySlug = slugify(locality);
-      const base = `${departmentSlug}-${localitySlug}`;
-
-      // La localidad siempre existe como ubicación seleccionable, tenga o no
-      // barrios. Así "Flores → Trinidad" no necesita un tercer nivel artificial.
-      out.push({
-        id: base,
-        level: "locality",
-        department, departmentSlug,
-        locality, localitySlug,
-      });
-
-      for (const area of areas) {
-        const areaSlug = slugify(area);
-        out.push({
-          id: `${base}-${areaSlug}`,
-          level: "area",
-          department, departmentSlug,
-          locality, localitySlug,
-          area, areaSlug,
-        });
-      }
-    }
-  }
-
-  return out;
+const CHILDREN = new Map<string, Location[]>();
+for (const location of LOCATIONS) {
+  if (location.parentId === null) continue;
+  const siblings = CHILDREN.get(location.parentId);
+  if (siblings) siblings.push(location);
+  else CHILDREN.set(location.parentId, [location]);
 }
-
-export const LOCATIONS: Location[] = buildLocations();
-
-const BY_ID = new Map(LOCATIONS.map((l) => [l.id, l]));
 
 export function getLocation(id: string): Location | undefined {
   return BY_ID.get(id);
 }
 
-/**
- * Etiqueta legible, del nivel elegido hacia arriba: "Pocitos, Montevideo",
- * "Trinidad, Flores", "Canelones" o "Uruguay".
- */
-export function locationLabel(location: Location): string {
-  switch (location.level) {
-    case "country":
-      return COUNTRY_LABEL;
-    case "department":
-      return location.department!;
-    case "locality":
-      return `${location.locality}, ${location.department}`;
-    case "area":
-      return `${location.area}, ${location.locality}`;
-  }
+export function locationExists(id: string): boolean {
+  return BY_ID.has(id);
+}
+
+/** Los 19 departamentos, en el orden del documento. */
+export function listDepartments(): Location[] {
+  return CHILDREN.get(COUNTRY_ID) ?? [];
+}
+
+/** Localidades de un departamento. Vacío si el id no es un departamento. */
+export function listLocalities(departmentId: string): Location[] {
+  return CHILDREN.get(departmentId) ?? [];
+}
+
+/** El departamento de una localidad; el propio, si ya es un departamento. */
+export function departmentOf(id: string): Location | undefined {
+  const location = BY_ID.get(id);
+  if (!location) return undefined;
+  if (location.type === "department") return location;
+  if (location.type === "locality") return BY_ID.get(location.parentId!);
+  return undefined;
 }
 
 /**
- * Cómo nombrar el nivel de una ubicación, para que la etiqueta diga qué se
- * está mirando en vez de dejarlo a la adivinanza.
+ * Etiqueta legible del nivel elegido hacia arriba: "Trinidad, Flores",
+ * "Canelones" o "Uruguay".
  */
-export const LEVEL_LABELS: Record<LocationLevel, string> = {
-  country: "País",
-  department: "Departamento",
-  locality: "Localidad",
-  area: "Barrio o zona",
-};
-
-export function locationLevelLabel(id: string): string {
-  const location = getLocation(id);
-  return location ? LEVEL_LABELS[location.level] : LEVEL_LABELS.country;
+export function locationLabel(location: Location): string {
+  if (location.type === "locality") {
+    const department = BY_ID.get(location.parentId!);
+    return department ? `${location.name}, ${department.name}` : location.name;
+  }
+  return location.name;
 }
 
 export function locationLabelById(id: string): string {
-  const location = getLocation(id);
+  const location = BY_ID.get(id);
   return location ? locationLabel(location) : id;
 }
 
-/** Departamentos derivados del dataset maestro (RF-114). */
-export function listDepartments(): string[] {
-  return [
-    ...new Set(
-      LOCATIONS.filter((l) => l.department).map((l) => l.department!),
-    ),
-  ];
-}
+export const TYPE_LABELS: Record<LocationType, string> = {
+  country: "País",
+  department: "Departamento",
+  locality: "Localidad",
+};
 
-/** Localidades de un departamento (RF-115). */
-export function listLocalities(department: string): string[] {
-  return [
-    ...new Set(
-      LOCATIONS.filter((l) => l.department === department && l.locality).map(
-        (l) => l.locality!,
-      ),
-    ),
-  ];
-}
-
-/** Zonas de una localidad (RF-116). Vacío = no mostrar el tercer selector. */
-export function listAreas(department: string, locality: string): Location[] {
-  return LOCATIONS.filter(
-    (l) => l.department === department && l.locality === locality && l.area,
-  );
-}
-
-/** ID de la localidad sin barrio, para seleccionarla como zona completa. */
-export function localityId(department: string, locality: string): string {
-  return `${slugify(department)}-${slugify(locality)}`;
-}
-
-/** ID del departamento entero, sin bajar a localidad. */
-export function departmentId(department: string): string {
-  return slugify(department);
+export function locationTypeLabel(id: string): string {
+  const location = BY_ID.get(id);
+  return location ? TYPE_LABELS[location.type] : TYPE_LABELS.country;
 }
 
 /**
- * El id que corresponde a lo que se haya elegido, parando en el nivel más
- * preciso con valor. Sin nada elegido, el país: es la lectura honesta de
- * "no lo dijo" y evita inventar un departamento que nadie marcó.
+ * BR-015: una ubicación física es un local, y el país no dice dónde está. Sólo
+ * departamento o localidad sirven como dirección.
  */
-export function resolveLocationId(selection: {
-  department?: string;
-  locality?: string;
-  area?: string;
-}): string {
-  const { department, locality, area } = selection;
-  if (!department) return COUNTRY_ID;
-  if (!locality) return departmentId(department);
-  if (!area) return localityId(department, locality);
-  return area;
+export function isPhysicalLocation(id: string): boolean {
+  const location = BY_ID.get(id);
+  return location?.type === "department" || location?.type === "locality";
+}
+
+/**
+ * Normaliza las áreas de servicio elegidas (TR-018).
+ *
+ * Elegir Uruguay es cobertura nacional y reemplaza todo lo demás; elegir un
+ * departamento vuelve redundantes sus localidades y las quita. Así no quedan
+ * dos filas diciendo lo mismo, que después haría contar de más y buscar mal.
+ */
+export function normalizeServiceAreas(ids: string[]): string[] {
+  const valid = ids.filter((id) => BY_ID.has(id));
+
+  if (valid.includes(COUNTRY_ID)) return [COUNTRY_ID];
+
+  const departments = new Set(
+    valid.filter((id) => BY_ID.get(id)?.type === "department"),
+  );
+
+  const kept: string[] = [];
+  for (const id of valid) {
+    if (kept.includes(id)) continue;
+    const location = BY_ID.get(id)!;
+    // La localidad sobra si su departamento ya cubre todo el territorio.
+    if (location.type === "locality" && departments.has(location.parentId!)) {
+      continue;
+    }
+    kept.push(id);
+  }
+
+  return kept;
+}
+
+/**
+ * Ubicaciones que hacen aparecer a un perfil al buscar en `id` (TR-019).
+ *
+ * Buscar en una localidad encuentra a quien cubre el país entero, a quien
+ * cubre su departamento y a quien cubre esa localidad exacta. Buscar en un
+ * departamento encuentra además a quien sólo cubre alguna de sus localidades:
+ * cubre parte del departamento, y esconderlo sería peor que mostrarlo.
+ */
+export function coveringLocationIds(id: string): string[] {
+  const location = BY_ID.get(id);
+  if (!location) return [COUNTRY_ID];
+
+  if (location.type === "country") return [COUNTRY_ID];
+
+  if (location.type === "locality") {
+    return [COUNTRY_ID, location.parentId!, location.id];
+  }
+
+  return [
+    COUNTRY_ID,
+    location.id,
+    ...listLocalities(location.id).map((child) => child.id),
+  ];
 }

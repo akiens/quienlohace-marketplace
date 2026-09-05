@@ -1,6 +1,6 @@
 import { ButtonLink, Icon, PROVIDER_GRID } from "@/components/ui";
-import { ProviderCard } from "@/components/provider-card";
-import type { Provider } from "@/types";
+import { ProfileCard } from "@/components/profile-card";
+import type { Profile } from "@/types";
 
 /**
  * Página de "no encontramos esto", reutilizable.
@@ -22,7 +22,7 @@ export function NotFoundPage({
 }: {
   title: string;
   message: string;
-  suggestions?: Provider[];
+  suggestions?: Profile[];
   suggestionsTitle?: string;
 }) {
   return (
@@ -54,7 +54,7 @@ export function NotFoundPage({
           </h2>
           <div className={PROVIDER_GRID}>
             {suggestions.map((provider) => (
-              <ProviderCard key={provider.id} provider={provider} />
+              <ProfileCard key={provider.id} profile={provider} />
             ))}
           </div>
         </section>

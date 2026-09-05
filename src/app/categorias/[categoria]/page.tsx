@@ -2,17 +2,29 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { ProviderGrid } from "@/components/provider-grid";
+import { ProfileGrid } from "@/components/profile-grid";
 import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Icon } from "@/components/ui";
-import { CATEGORIES, getCategoryBySlug } from "@/data/categories";
-import { listByCategory } from "@/application/providers";
+import {
+  SERVICE_SECTORS,
+  getServiceSectorBySlug,
+  listSpecialties,
+} from "@/data/taxonomy";
+import { listByServiceSector } from "@/application/profiles";
 
 type Params = { categoria: string };
 
-/** Las páginas de categoría se pregeneran: son la base del SEO del marketplace. */
+/**
+ * Las rutas se pregeneran —salen del catálogo y son la base del SEO— pero el
+ * contenido se resuelve por pedido: los perfiles viven en D1, y el binding no
+ * existe durante el build. `force-dynamic` es lo que separa una cosa de la
+ * otra: `generateStaticParams` sigue enumerando las URLs y cada visita lee la
+ * base.
+ */
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams(): Params[] {
-  return CATEGORIES.map((category) => ({ categoria: category.slug }));
+  return SERVICE_SECTORS.map((sector) => ({ categoria: sector.slug }));
 }
 
 export async function generateMetadata({
@@ -21,7 +33,7 @@ export async function generateMetadata({
   params: Promise<Params>;
 }): Promise<Metadata> {
   const { categoria } = await params;
-  const category = getCategoryBySlug(categoria);
+  const category = getServiceSectorBySlug(categoria);
   if (!category) return {};
 
   return {
@@ -37,10 +49,11 @@ export default async function CategoryPage({
   params: Promise<Params>;
 }) {
   const { categoria } = await params;
-  const category = getCategoryBySlug(categoria);
+  const category = getServiceSectorBySlug(categoria);
   if (!category) notFound();
 
-  const providers = await listByCategory(category.id);
+  const profiles = await listByServiceSector(category.id);
+  const specialties = listSpecialties(category.id);
 
   return (
     <div className="shell flex flex-col gap-7 py-8">
@@ -61,16 +74,17 @@ export default async function CategoryPage({
               {category.name}
             </h1>
             <p className="text-[14.5px] text-ink-soft">
-              {category.providerCount} profesionales ·{" "}
-              {category.subcategories.length} subcategorías
+              {profiles.length}{" "}
+              {profiles.length === 1 ? "profesional" : "profesionales"} ·{" "}
+              {specialties.length} especialidades
             </p>
           </div>
         </div>
       </header>
 
-      {/* Navegación interna: enlaza categoría con subcategorías para indexación. */}
-      <nav aria-label="Subcategorías" className="flex flex-wrap gap-2">
-        {category.subcategories.map((sub) => (
+      {/* Navegación interna: enlaza el rubro con sus especialidades para indexación. */}
+      <nav aria-label="Especialidades" className="flex flex-wrap gap-2">
+        {specialties.map((sub) => (
           <Link
             key={sub.id}
             href={`/categorias/${category.slug}/${sub.slug}`}
@@ -81,8 +95,8 @@ export default async function CategoryPage({
         ))}
       </nav>
 
-      <ProviderGrid
-        providers={providers}
+      <ProfileGrid
+        profiles={profiles}
         showAd
         emptyTitle={`Todavía no hay profesionales en ${category.short}`}
         emptyBody="Estamos sumando perfiles en este rubro. Si ofrecés este servicio, publicá tu perfil gratis y aparecé entre los primeros."

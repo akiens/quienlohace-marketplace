@@ -1,8 +1,13 @@
 import type { MetadataRoute } from "next";
 
-import { CATEGORIES } from "@/data/categories";
-import { listProviderSlugs } from "@/application/providers";
+import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
+import { listProfileSlugs } from "@/application/profiles";
 import { siteUrl } from "@/lib/site-url";
+
+/**
+ * Los perfiles publicados salen de la base, que no existe durante el build.
+ */
+export const dynamic = "force-dynamic";
 
 const BASE_URL = siteUrl();
 
@@ -28,20 +33,20 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route.priority,
   }));
 
-  const categoryRoutes = CATEGORIES.flatMap((category) => [
+  const categoryRoutes = SERVICE_SECTORS.flatMap((sector) => [
     {
-      url: `${BASE_URL}/categorias/${category.slug}`,
+      url: `${BASE_URL}/categorias/${sector.slug}`,
       lastModified: new Date(),
       priority: 0.8,
     },
-    ...category.subcategories.map((sub) => ({
-      url: `${BASE_URL}/categorias/${category.slug}/${sub.slug}`,
+    ...listSpecialties(sector.id).map((specialty) => ({
+      url: `${BASE_URL}/categorias/${sector.slug}/${specialty.slug}`,
       lastModified: new Date(),
       priority: 0.7,
     })),
   ]);
 
-  const providerRoutes = (await listProviderSlugs()).map((slug) => ({
+  const providerRoutes = (await listProfileSlugs()).map((slug) => ({
     url: `${BASE_URL}/profesionales/${slug}`,
     lastModified: new Date(),
     priority: 0.6,

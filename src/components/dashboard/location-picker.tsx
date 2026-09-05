@@ -4,33 +4,41 @@ import { useId, useState } from "react";
 
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import {
+  COUNTRY_ID,
   COUNTRY_LABEL,
   getLocation,
-  listAreas,
   listDepartments,
   listLocalities,
-  resolveLocationId,
 } from "@/data/locations";
 
 /**
- * Selectores dependientes País → Departamento → Localidad → Barrio.
+ * Selectores dependientes País → Departamento → Localidad (BR-014).
  *
- * El modelo de datos es plano; la jerarquía se arma acá (RF-117). Cada nivel
- * es opcional: se precisa hasta donde se quiera y el id resultante es el del
- * último nivel elegido. Quien trabaja en todo un departamento no tiene por
- * qué nombrar una localidad, y quien no elige nada queda en todo el país.
+ * Son tres niveles y no cuatro: los barrios salieron del catálogo, y la
+ * localidad es lo más preciso que se puede elegir.
+ *
+ * Cada nivel es opcional: se precisa hasta donde se quiera y el id resultante
+ * es el del último elegido. Quien trabaja en todo un departamento no tiene por
+ * qué nombrar una localidad, y quien no elige nada queda en todo el país —que
+ * como área de servicio es cobertura nacional (BR-016).
+ *
+ * `allowCountry` en false es para las ubicaciones físicas: Uruguay no dice
+ * dónde está el local, así que ahí no es una opción válida (BR-015).
  */
 export function LocationPicker({
   name,
   value,
   onChange,
   addMode = false,
+  allowCountry = true,
 }: {
   name?: string;
   value: string;
   onChange: (locationId: string) => void;
   /** En modo alta, el botón confirma y los selectores vuelven a vacío. */
   addMode?: boolean;
+  /** BR-015: las ubicaciones físicas no admiten el país. */
+  allowCountry?: boolean;
 }) {
   // Ids propios: puede haber más de un selector en la misma página.
   const fieldId = useId();
@@ -38,29 +46,27 @@ export function LocationPicker({
   const selected = value ? getLocation(value) : undefined;
 
   /*
-   * Vacío es una respuesta válida, no un estado a completar: significa "no
-   * bajo a este nivel". Por eso los selectores arrancan sin elegir en vez de
-   * con el primer departamento de la lista.
+   * El departamento vigente: el propio si lo elegido es un departamento, o el
+   * padre si es una localidad. Vacío es una respuesta válida —"no bajo a este
+   * nivel"—, así que los selectores arrancan sin elegir en vez de con el
+   * primer departamento de la lista.
    */
-  const [department, setDepartment] = useState(selected?.department ?? "");
-  const [locality, setLocality] = useState(selected?.locality ?? "");
-  const [area, setArea] = useState(selected?.area ? value : "");
+  const [department, setDepartment] = useState(() => {
+    if (selected?.type === "department") return selected.id;
+    if (selected?.type === "locality") return selected.parentId ?? "";
+    return "";
+  });
+  const [locality, setLocality] = useState(
+    selected?.type === "locality" ? selected.id : "",
+  );
 
+  const departments = listDepartments();
   const localities = department ? listLocalities(department) : [];
-  const areas = department && locality ? listAreas(department, locality) : [];
 
-  /** El id de lo elegido ahora mismo, parando donde se haya dejado de precisar. */
-  function currentId(next?: {
-    department?: string;
-    locality?: string;
-    area?: string;
-  }): string {
-    const pick = { department, locality, area, ...next };
-    return resolveLocationId({
-      department: pick.department || undefined,
-      locality: pick.locality || undefined,
-      area: pick.area || undefined,
-    });
+  /** El id de lo elegido ahora mismo, parando donde se dejó de precisar. */
+  function currentId(next?: { department?: string; locality?: string }): string {
+    const pick = { department, locality, ...next };
+    return pick.locality || pick.department || COUNTRY_ID;
   }
 
   /** Fuera del modo alta cada cambio se refleja al toque en el formulario. */
@@ -71,15 +77,10 @@ export function LocationPicker({
   function reset() {
     setDepartment("");
     setLocality("");
-    setArea("");
   }
 
   return (
     <div className="flex flex-col gap-2">
-      {/*
-        Tres selectores no entran en media columna hasta que la pantalla es
-        ancha de verdad: hasta ahí van apilados.
-      */}
       <div className="flex flex-col gap-2 lg:flex-row">
         {name && !addMode ? (
           <input type="hidden" name={name} value={value} />
@@ -94,15 +95,21 @@ export function LocationPicker({
               // Lo elegido más abajo deja de aplicar al cambiar de rama.
               setDepartment(next);
               setLocality("");
-              setArea("");
-              sync({ department: next, locality: "", area: "" });
+              sync({ department: next, locality: "" });
             }}
             className={selectClass}
           >
-            <option value="">Todo {COUNTRY_LABEL}</option>
-            {listDepartments().map((item) => (
-              <option key={item} value={item}>
-                {item}
+            {/*
+              Sin país no hay opción neutra: elegir un departamento es
+              obligatorio, y el texto lo dice en vez de dejar un vacío que
+              parece un dato sin cargar.
+            */}
+            <option value="">
+              {allowCountry ? `Todo ${COUNTRY_LABEL}` : "Elegí un departamento"}
+            </option>
+            {departments.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name}
               </option>
             ))}
           </select>
@@ -116,44 +123,18 @@ export function LocationPicker({
             onChange={(event) => {
               const next = event.target.value;
               setLocality(next);
-              setArea("");
-              sync({ locality: next, area: "" });
+              sync({ locality: next });
             }}
             className={selectClass}
           >
             <option value="">
-              {department ? `Todo ${department}` : "Elegí un departamento"}
+              {department
+                ? `Todo ${getLocation(department)?.name ?? "el departamento"}`
+                : "Elegí un departamento"}
             </option>
             {localities.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </Level>
-
-        <Level id={`${fieldId}-area`} label="Barrio o zona">
-          <select
-            id={`${fieldId}-area`}
-            value={area}
-            disabled={areas.length === 0}
-            onChange={(event) => {
-              const next = event.target.value;
-              setArea(next);
-              sync({ area: next });
-            }}
-            className={selectClass}
-          >
-            <option value="">
-              {locality
-                ? `Todo ${locality}`
-                : areas.length === 0
-                  ? "Sin barrios cargados"
-                  : "Elegí una localidad"}
-            </option>
-            {areas.map((item) => (
               <option key={item.id} value={item.id}>
-                {item.area}
+                {item.name}
               </option>
             ))}
           </select>
@@ -163,6 +144,8 @@ export function LocationPicker({
       {addMode ? (
         <button
           type="button"
+          // Sin país no se puede confirmar "todo Uruguay" (BR-015).
+          disabled={!allowCountry && !department}
           onClick={() => {
             onChange(currentId());
             reset();
@@ -174,7 +157,7 @@ export function LocationPicker({
            * un campo para llenar—, que es el problema que se estaba evitando
            * al revés.
            */
-          className={`flex h-8 items-center gap-1 self-start rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold ${SECONDARY_SURFACE}`}
+          className={`flex h-8 items-center gap-1 self-start rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold disabled:opacity-50 ${SECONDARY_SURFACE}`}
         >
           <Icon name="add" className="text-[16px]" />
           Agregar zona
@@ -202,10 +185,7 @@ function Level({
 }) {
   return (
     <div className="flex w-full flex-col gap-1.5">
-      <label
-        htmlFor={id}
-        className="text-[12.5px] font-semibold text-ink-muted"
-      >
+      <label htmlFor={id} className="text-[12.5px] font-semibold text-ink-muted">
         {label}
       </label>
       {children}

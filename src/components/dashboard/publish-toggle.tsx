@@ -4,19 +4,24 @@ import { useTransition } from "react";
 
 import { setProfileStatus } from "@/app/actions/profile";
 import { Icon } from "@/components/ui";
-import type { ProviderStatus } from "@/types";
+import type { ProfileStatus } from "@/types";
 
 /** Publica o despublica el perfil. La autorización se verifica en el servidor. */
-export function PublishToggle({ status }: { status: ProviderStatus }) {
+export function PublishToggle({ status }: { status: ProfileStatus }) {
   const [pending, startTransition] = useTransition();
   const published = status === "active";
 
-  // Los estados de moderación no los cambia el proveedor.
-  if (status === "suspended" || status === "pending_verification") {
+  /*
+    Suspender es una decisión de moderación y no la revierte el proveedor
+    (BR-029). `pending_verification` ya no existe como estado del perfil: la
+    verificación comercial vive en `verification_status`, que es otra cosa
+    (BR-019).
+  */
+  if (status === "suspended") {
     return (
       <span className="flex h-10 items-center gap-2 rounded-input bg-surface-sunken px-4 text-[14px] font-semibold text-ink-soft">
         <Icon name="gavel" className="text-[17px]" />
-        {status === "suspended" ? "Perfil suspendido" : "En revisión"}
+        Perfil suspendido
       </span>
     );
   }

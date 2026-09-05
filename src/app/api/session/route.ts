@@ -19,8 +19,12 @@ export async function GET() {
 
   const user = await getCurrentUser();
 
+  /*
+   * Sólo si hay sesión: la cuenta ya no tiene nombre —es del perfil— y el
+   * header no necesita más que saber si mostrar "Entrar" o el acceso al panel.
+   */
   return Response.json(
-    { signedIn: user !== null, name: user?.name ?? null },
+    { signedIn: user !== null },
     { headers: { "cache-control": "no-store" } },
   );
 }

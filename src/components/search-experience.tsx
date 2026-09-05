@@ -4,14 +4,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { FiltersPanel } from "@/components/filters-panel";
-import { ProviderGrid } from "@/components/provider-grid";
+import { ProfileGrid } from "@/components/profile-grid";
 import { SearchPanel } from "@/components/search-panel";
-import { getSubcategory } from "@/data/categories";
+import { getSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import { filtersToQuery } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
 import { Icon } from "@/components/ui";
-import type { Provider, SearchFilters } from "@/types";
+import type { Profile, SearchFilters } from "@/types";
 
 /**
  * Página de resultados. Los filtros viven en la URL: la búsqueda se puede
@@ -24,7 +24,7 @@ export function SearchExperience({
   total,
 }: {
   filters: SearchFilters;
-  results: Provider[];
+  results: Profile[];
   /** Coincidencias totales, que pueden ser más que las cargadas. */
   total: number;
 }) {
@@ -79,14 +79,14 @@ export function SearchExperience({
                 }
               />
             ))}
-            {filters.subcategoryIds.map((id) => (
+            {filters.specialtyIds.map((id) => (
               <FilterChip
                 key={id}
-                label={getSubcategory(id)?.name ?? id}
+                label={getSpecialty(id)?.name ?? id}
                 onRemove={() =>
                   update({
                     ...filters,
-                    subcategoryIds: filters.subcategoryIds.filter((x) => x !== id),
+                    specialtyIds: filters.specialtyIds.filter((x) => x !== id),
                   })
                 }
               />
@@ -122,7 +122,7 @@ export function SearchExperience({
           </div>
         ) : null}
 
-        <ProviderGrid providers={results} showAd />
+        <ProfileGrid profiles={results} showAd />
       </div>
 
       <FiltersPanel
@@ -140,7 +140,7 @@ export function SearchExperience({
 function emptyExceptQuery(filters: SearchFilters): Partial<SearchFilters> {
   return {
     locationIds: [],
-    subcategoryIds: [],
+    specialtyIds: [],
     minRating: null,
     paymentMethods: [],
     useMyLocation: false,

@@ -20,11 +20,18 @@ import {
 } from "@/lib/profile-draft";
 import { clearSelectedPlan } from "@/lib/selected-plan";
 import type { FormState } from "@/app/actions/auth";
-import { CATEGORIES } from "@/data/categories";
+import {
+  SERVICE_SECTORS,
+  getSpecialty,
+  listSpecialties,
+  sectorOfSpecialty,
+} from "@/data/taxonomy";
+import { MAX_SCHEDULE_ENTRIES, searchSchedules } from "@/data/schedules";
 import {
   COUNTRY_ID,
   locationLabelById,
-  locationLevelLabel,
+  locationTypeLabel,
+  normalizeServiceAreas,
 } from "@/data/locations";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon } from "@/components/ui";
@@ -32,7 +39,16 @@ import {
   SearchSelect,
   type SearchOption,
 } from "@/components/dashboard/search-select";
+import { SERVICE_SUGGESTIONS } from "@/data/taxonomy";
 import { searchServices } from "@/data/services";
+
+/**
+ * De qué especialidad es cada sugerencia del catálogo. Se arma una vez: al
+ * elegir una de la lista hay que saber dónde colgarla (BR-010).
+ */
+const SERVICE_SUGGESTION_SPECIALTY = new Map(
+  SERVICE_SUGGESTIONS.map((item) => [item.id, item.specialtyId]),
+);
 import {
   SocialLinksEditor,
   type SocialLinkDraft,
@@ -43,29 +59,30 @@ import {
 } from "@/components/dashboard/image-uploader";
 import { LocationPicker } from "@/components/dashboard/location-picker";
 import {
+  PAYMENT_METHOD_LABELS,
   SERVICE_MODE_LABELS,
   type PaymentMethod,
   type PlanLimits,
-  type Provider,
-  type ProviderImage,
+  type Profile,
+  type ProfileImage,
+  type ServiceModeCode,
   type SocialPlatform,
-  type ServiceMode,
 } from "@/types";
 
+/** Los códigos que persiste la base; la etiqueta en español es de la UI. */
 const PAYMENT_OPTIONS: PaymentMethod[] = [
-  "Efectivo",
-  "Transferencia",
-  "Débito",
-  "Crédito",
-  "Otros",
+  "cash",
+  "bank_transfer",
+  "debit_card",
+  "credit_card",
+  "other",
 ];
 
-const SERVICE_MODES: ServiceMode[] = [
-  "on_site",
-  "at_business",
-  "remote",
-  "hybrid",
-];
+/**
+ * BR-017: las tres modalidades. "Híbrida" no está: se deriva de elegir más de
+ * una, y por eso el control es de selección múltiple y no una lista de radios.
+ */
+const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"];
 
 /**
  * Etapas del onboarding (RF-166 a RF-171).
@@ -77,7 +94,8 @@ const SERVICE_MODES: ServiceMode[] = [
  */
 const ALL_STEPS = [
   { id: "identidad", label: "Identidad", icon: "badge", feature: null },
-  { id: "rubro", label: "Rubro", icon: "category", feature: null },
+  { id: "rubro", label: "Especialidades", icon: "category", feature: null },
+  { id: "servicios", label: "Servicios", icon: "build", feature: null },
   { id: "zonas", label: "Ubicación", icon: "location_on", feature: null },
   { id: "contacto", label: "Contacto", icon: "call", feature: null },
   /*
@@ -92,7 +110,6 @@ const ALL_STEPS = [
    */
   { id: "imagenes", label: "Imágenes", icon: "photo_camera", feature: null },
   { id: "redes", label: "Redes", icon: "share", feature: "social" },
-  { id: "equipo", label: "Equipo", icon: "groups", feature: "team" },
   { id: "pago", label: "Pago", icon: "credit_card", feature: "paid" },
 ] as const;
 
@@ -139,7 +156,7 @@ export type ProfileFormMode = "alta" | "edicion";
 
 export function ProfileForm({
   userId,
-  provider,
+  profile,
   plan,
   images,
   mode = "alta",
@@ -153,13 +170,13 @@ export function ProfileForm({
    * borrador no se toca ni para leer ni para escribir.
    */
   userId?: string;
-  provider: Provider | null;
+  profile: Profile | null;
   plan: PlanLimits;
   /**
    * Las imágenes ya subidas, del usuario y no del perfil: durante el alta
    * todavía no hay perfil al que pertenezcan.
    */
-  images: ProviderImage[];
+  images: ProfileImage[];
   mode?: ProfileFormMode;
   /** Sólo en edición: salir sin guardar. */
   onCancel?: () => void;
@@ -181,13 +198,13 @@ export function ProfileForm({
   );
 
   // Con perfil manda la base y el borrador no interviene.
-  const draft = provider ? null : stored;
+  const draft = profile ? null : stored;
 
   return (
     <ProfileFormFields
       key={draft ? "con-borrador" : "sin-borrador"}
       userId={userId}
-      provider={provider}
+      profile={profile}
       plan={plan}
       draft={draft}
       images={images}
@@ -199,14 +216,14 @@ export function ProfileForm({
 
 function ProfileFormFields(props: {
   userId?: string;
-  provider: Provider | null;
+  profile: Profile | null;
   plan: PlanLimits;
   draft: ProfileDraft | null;
-  images: ProviderImage[];
+  images: ProfileImage[];
   mode: ProfileFormMode;
   onCancel?: () => void;
 }) {
-  const { userId, provider, plan, mode } = props;
+  const { userId, profile, plan, mode } = props;
 
   /** En edición todo se muestra junto: no hay recorrido que seguir. */
   const editing = mode === "edicion";
@@ -268,8 +285,13 @@ function ProfileFormFields(props: {
   );
   // Sólo servicios confirmados: la fila en blanco dejó de existir cuando
   // pasaron a agregarse de a uno, como las zonas.
-  const [services, setServices] = useState<string[]>(
-    draft?.services ?? provider?.services ?? [],
+  const [services, setServices] = useState<ServiceRow[]>(
+    draft?.services ??
+      profile?.services.map((item) => ({
+        specialtyId: item.specialtyId,
+        name: item.name,
+      })) ??
+      [],
   );
   /**
    * Lo tipeado en el buscador de servicios. Vive acá y no adentro del
@@ -277,30 +299,58 @@ function ProfileFormFields(props: {
    * orden depende del rubro ya elegido.
    */
   const [serviceQuery, setServiceQuery] = useState("");
-  const [subcategoryId, setSubcategoryId] = useState(
-    draft?.subcategoryId ?? provider?.subcategoryId ?? "",
+  /*
+   * Las especialidades elegidas, en orden de prioridad: la primera es la
+   * principal y ese orden es el que después usan los cupos del plan (TR-016).
+   * Los rubros no se eligen — se derivan de acá (BR-010).
+   */
+  const [specialtyIds, setSpecialtyIds] = useState<string[]>(
+    draft?.specialtyIds ?? profile?.specialtyIds ?? [],
   );
   /*
-   * Arranca en Uruguay y no vacío: el selector nunca devuelve nada sin
-   * elegir —parar en el país es una respuesta válida— y dejarlo vacío
-   * fingía que faltaba un dato que en realidad ya estaba.
+   * Las ubicaciones físicas: locales o sucursales (BR-015). Son opcionales —
+   * quien trabaja a domicilio no tiene ninguna— y sólo se vuelven obligatorias
+   * al declarar que se atiende en el negocio.
    */
-  const [locationId, setLocationId] = useState(
-    draft?.locationId ?? provider?.locationId ?? COUNTRY_ID,
+  const [locations, setLocations] = useState<LocationRow[]>(
+    draft?.locations ??
+      profile?.locations.map((item) => ({
+        locationId: item.locationId,
+        name: item.name,
+        address: item.address,
+        isPrimary: item.isPrimary,
+      })) ??
+      [],
   );
-  const [extraSubcategoryIds, setExtraSubcategoryIds] = useState<string[]>(
-    draft?.subcategoryIds ?? provider?.subcategoryIds ?? [],
-  );
+  /** Lo elegido en el selector de local, a la espera de confirmarse. */
+  const [pendingLocation, setPendingLocation] = useState("");
   const [serviceAreaIds, setServiceAreaIds] = useState<string[]>(
-    draft?.serviceAreaIds ?? provider?.serviceAreaIds ?? [],
+    draft?.serviceAreaIds ?? profile?.serviceAreaIds ?? [],
+  );
+  /* BR-017: una o varias; con más de una la atención es híbrida. */
+  const [serviceModes, setServiceModes] = useState<ServiceModeCode[]>(
+    draft?.serviceModes ?? profile?.serviceModes ?? ["at_customer"],
+  );
+  /* BR-024: hasta diez líneas de texto libre. */
+  const [scheduleEntries, setScheduleEntries] = useState<string[]>(
+    draft?.scheduleEntries ??
+      profile?.scheduleEntries.map((entry) => entry.text) ??
+      [],
+  );
+  const [scheduleQuery, setScheduleQuery] = useState("");
+  const [contactEmail, setContactEmail] = useState(
+    draft?.contactEmail ?? profile?.contactEmail ?? "",
+  );
+  const [phonePublic, setPhonePublic] = useState(
+    draft?.phonePublic ?? profile?.phonePublic ?? true,
   );
   /** La última zona repetida que se intentó agregar, para avisarlo. */
   const [duplicateArea, setDuplicateArea] = useState<string | null>(null);
-  const [name, setName] = useState(draft?.name ?? provider?.name ?? "");
+  const [name, setName] = useState(draft?.name ?? profile?.name ?? "");
   const [description, setDescription] = useState(
-    draft?.description ?? provider?.description ?? "",
+    draft?.description ?? profile?.description ?? "",
   );
-  const [phone, setPhone] = useState(draft?.phone ?? provider?.phone ?? "");
+  const [phone, setPhone] = useState(draft?.phone ?? profile?.phone ?? "");
   /*
    * Las redes cargadas, con su dirección. Antes alcanzaba con saber si había
    * alguna —los campos vivían en el DOM—, pero ahora la lista es la fuente:
@@ -315,39 +365,24 @@ function ProfileFormFields(props: {
       }));
     if (fromDraft.length > 0) return fromDraft;
 
-    return (provider?.socialLinks ?? []).map((link) => ({
+    return (profile?.socialLinks ?? []).map((link) => ({
       platform: link.platform,
       url: link.url,
     }));
   });
-  const [teamMembers, setTeamMembers] = useState<TeamRow[]>(
-    draft?.teamMembers?.map((member) => ({
-      name: member.name ?? "",
-      role: member.role ?? "",
-      subtitle: member.subtitle ?? "",
-      bio: member.bio ?? "",
-    })) ??
-      provider?.teamMembers?.map((member) => ({
-        name: member.name,
-        role: member.role,
-        subtitle: member.subtitle,
-        bio: member.bio,
-      })) ??
-      [],
-  );
   /*
    * Las imágenes no salen del borrador: no viajan en el envío del formulario
    * sino en su propia acción, así que ya están guardadas en el servidor. Lo
    * que llega por `images` es la verdad, y el estado local sólo evita tener
    * que volver a pedir la página entera después de cada subida.
    */
-  const [avatar, setAvatar] = useState<ProviderImage | null>(
+  const [avatar, setAvatar] = useState<ProfileImage | null>(
     () => props.images.find((image) => image.kind === "avatar") ?? null,
   );
-  const [cover, setCover] = useState<ProviderImage | null>(
+  const [cover, setCover] = useState<ProfileImage | null>(
     () => props.images.find((image) => image.kind === "cover") ?? null,
   );
-  const [gallery, setGallery] = useState<ProviderImage[]>(() =>
+  const [gallery, setGallery] = useState<ProfileImage[]>(() =>
     props.images.filter((image) => image.kind === "gallery"),
   );
 
@@ -365,13 +400,18 @@ function ProfileFormFields(props: {
 
   // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
   const [whatsappEnabled, setWhatsappEnabled] = useState(
-    draft?.whatsappEnabled ?? provider?.whatsappEnabled ?? true,
+    draft?.whatsappEnabled ?? profile?.whatsappEnabled ?? true,
   );
 
   const errors = state.errors ?? {};
+  /*
+   * Los topes del plan. `null` es "sin límite" (TR-002), y por eso las ayudas
+   * de más abajo lo comprueban antes de comparar contra un número.
+   */
   const maxServices = limitFor(plan, "services");
-  const maxAreas = limitFor(plan, "serviceAreas");
-  const maxSubcategories = limitFor(plan, "subcategories");
+  const maxSpecialties = limitFor(plan, "specialties");
+  const maxLocations = limitFor(plan, "locations");
+  const maxSectors = limitFor(plan, "serviceSectors");
 
   /**
    * Qué falta para poder publicar (RF-172). Se calcula acá para que el
@@ -401,9 +441,7 @@ function ProfileFormFields(props: {
       }
     };
 
-    if (draft.kind) setField("kind", draft.kind);
-    if (draft.serviceMode) setField("serviceMode", draft.serviceMode);
-    if (draft.schedule) setField("schedule", draft.schedule);
+    if (draft.type) setField("type", draft.type);
 
     if (draft.paymentMethods?.length) {
       const chosen = new Set(draft.paymentMethods);
@@ -415,41 +453,57 @@ function ProfileFormFields(props: {
     }
   }, [draft]);
 
-  /*
-   * Los rubros como una sola lista. El principal va primero: para quien
-   * completa el formulario "el primero" y "el principal" son lo mismo, y
-   * mantener ese orden hace que quitar y volver a agregar se comporte como
-   * se ve.
-   */
-  const allSubcategoryIds = useMemo(
-    () => (subcategoryId ? [subcategoryId, ...extraSubcategoryIds] : []),
-    [subcategoryId, extraSubcategoryIds],
-  );
-
-  const selectedSubcategories: SearchOption[] = useMemo(
+  const selectedSpecialties: SearchOption[] = useMemo(
     () =>
-      allSubcategoryIds.map((id) => ({
+      specialtyIds.map((id) => ({
         value: id,
         label: subcategoryLabel(id),
+        context: sectorOfSpecialty(id)?.short,
       })),
-    [allSubcategoryIds],
+    [specialtyIds],
   );
 
-  /** Todos los rubros, con su categoría debajo para distinguir homónimos. */
-  const subcategoryOptions: SearchOption[] = useMemo(
+  /**
+   * Todas las especialidades, con su rubro debajo para distinguir homónimas
+   * ("Veterinaria" existe en Mascotas y en Servicios rurales).
+   */
+  const specialtyOptions: SearchOption[] = useMemo(
     () =>
-      CATEGORIES.flatMap((category) =>
-        category.subcategories.map((sub) => ({
-          value: sub.id,
-          label: sub.name,
-          context: category.short,
+      SERVICE_SECTORS.flatMap((sector) =>
+        listSpecialties(sector.id).map((specialty) => ({
+          value: specialty.id,
+          label: specialty.name,
+          context: sector.short,
         })),
       ),
     [],
   );
 
+  /**
+   * Los rubros que se derivan de las especialidades elegidas (BR-010). Se
+   * muestran para que se vea cuántos consume el plan, pero no se eligen.
+   */
+  const derivedSectors = useMemo(() => {
+    const sectors = new Map<string, string>();
+    for (const id of specialtyIds) {
+      const sector = sectorOfSpecialty(id);
+      if (sector) sectors.set(sector.id, sector.short);
+    }
+    return [...sectors.values()];
+  }, [specialtyIds]);
+
+  /*
+   * El servicio se identifica por su especialidad más su nombre: el mismo
+   * texto puede existir en dos especialidades del perfil y son dos servicios
+   * distintos (BR-011 sólo prohíbe repetirlo dentro de una).
+   */
   const selectedServices: SearchOption[] = useMemo(
-    () => services.map((service) => ({ value: service, label: service })),
+    () =>
+      services.map((service) => ({
+        value: `${service.specialtyId}|${service.name}`,
+        label: service.name,
+        context: getSpecialty(service.specialtyId)?.name,
+      })),
     [services],
   );
 
@@ -464,8 +518,9 @@ function ProfileFormFields(props: {
   const serviceOptions: SearchOption[] = useMemo(() => {
     const matches = searchServices(serviceQuery, {
       limit: 60,
-      exclude: services,
-      preferSubcategories: allSubcategoryIds,
+      // Se excluye lo ya agregado, comparando por nombre dentro del perfil.
+      exclude: services.map((service) => service.name),
+      preferSpecialties: specialtyIds,
     });
 
     /*
@@ -481,18 +536,34 @@ function ProfileFormFields(props: {
       label: service.name,
       context: service.context,
     }));
-  }, [serviceQuery, services, allSubcategoryIds]);
+  }, [serviceQuery, services, specialtyIds]);
+
+  /**
+   * Sugerencias de horario, filtradas por lo tipeado (TR-024). Se muestran
+   * pocas de entrada: son un punto de partida, y el texto final se puede
+   * editar antes de confirmarlo (BR-024).
+   */
+  const scheduleOptions: SearchOption[] = useMemo(
+    () =>
+      searchSchedules(scheduleQuery, 8)
+        .filter((text) => !scheduleEntries.includes(text))
+        .map((text) => ({ value: text, label: text })),
+    [scheduleQuery, scheduleEntries],
+  );
 
   const completion = useMemo(() => {
     return {
       identidad: name.trim().length >= 2 && description.trim().length >= 20,
-      rubro: subcategoryId !== "" && services.length > 0,
+      rubro: specialtyIds.length > 0,
+      servicios: services.length > 0,
       /*
-       * Ubicación queda hecha al visitarla: sus dos campos ya vienen con un
-       * valor válido —Uruguay, y las zonas que de ahí salen—, así que no hay
-       * nada que la persona tenga que completar para que el paso sea válido.
+       * BR-016: todo perfil activo declara al menos un área, así que el paso
+       * no está hecho hasta que haya una. Y si se atiende en el negocio hace
+       * falta además un local (BR-015).
        */
-      zonas: visited.has("zonas"),
+      zonas:
+        serviceAreaIds.length > 0 &&
+        (!serviceModes.includes("at_business") || locations.length > 0),
       contacto: phone.trim().length > 0,
       /*
        * Estos pasos son opcionales, pero el tilde verde tiene que querer
@@ -504,7 +575,6 @@ function ProfileFormFields(props: {
        */
       imagenes: avatar !== null,
       redes: socialLinks.length > 0,
-      equipo: teamMembers.length > 0,
       /*
        * Mientras no haya cobro, lo marca la persona: es un marcador de que
        * el paso se revisó, no una confirmación de que se pagó.
@@ -514,19 +584,20 @@ function ProfileFormFields(props: {
   }, [
     name,
     description,
-    subcategoryId,
+    specialtyIds,
     services,
-    visited,
+    serviceAreaIds,
+    serviceModes,
+    locations,
     phone,
     socialLinks,
-    teamMembers,
     avatar,
     paymentDone,
   ]);
 
   /*
    * Al bajar de plan el paso donde se estaba puede dejar de existir (por
-   * ejemplo Equipo al pasar de Platino a Cobre). En ese caso se retrocede al
+   * ejemplo Redes al pasar de Oro a Cobre). En ese caso se retrocede al
    * anterior que siga disponible y que todavía no esté completo; si están
    * todos completos, al último disponible.
    *
@@ -571,7 +642,7 @@ function ProfileFormFields(props: {
     // Con perfil no hay borrador que llevar; sin dueño no habría a nombre de
     // quién guardarlo, y uno anónimo es justamente el que se arrastra entre
     // cuentas.
-    if (provider || !userId) return;
+    if (profile || !userId) return;
 
     const form = formRef.current;
     const read = (name: string): string => {
@@ -592,42 +663,47 @@ function ProfileFormFields(props: {
         )
       : [];
 
-    writeProfileDraft({
-      step,
-      name,
-      kind: read("kind"),
-      description,
-      subcategoryId,
-      subcategoryIds: extraSubcategoryIds,
-      services,
-      locationId,
-      serviceMode: read("serviceMode") as ServiceMode,
-      serviceAreaIds,
-      phone,
-      whatsappEnabled,
-      schedule: read("schedule"),
-      paymentMethods,
-      paymentAcknowledged: paymentDone,
-      socialLinks: Object.fromEntries(
-        socialLinks.map((link) => [link.platform, link.url]),
-      ),
-      teamMembers,
-    }, userId);
+    writeProfileDraft(
+      {
+        step,
+        name,
+        type: read("type"),
+        description,
+        contactEmail,
+        specialtyIds,
+        services,
+        serviceModes,
+        serviceAreaIds,
+        locations,
+        phone,
+        phonePublic,
+        whatsappEnabled,
+        scheduleEntries,
+        paymentMethods,
+        paymentAcknowledged: paymentDone,
+        socialLinks: Object.fromEntries(
+          socialLinks.map((link) => [link.platform, link.url]),
+        ),
+      },
+      userId,
+    );
   }, [
     userId,
-    provider,
+    profile,
     step,
     name,
     description,
-    subcategoryId,
-    extraSubcategoryIds,
+    contactEmail,
+    specialtyIds,
     services,
-    locationId,
+    serviceModes,
     serviceAreaIds,
+    locations,
     phone,
+    phonePublic,
     whatsappEnabled,
+    scheduleEntries,
     paymentDone,
-    teamMembers,
     socialLinks,
   ]);
 
@@ -653,9 +729,9 @@ function ProfileFormFields(props: {
   /*
    * Los pasos que hay que completar para poder guardar.
    *
-   * Identidad, rubro, zonas y contacto son los datos con los que un perfil
-   * puede publicarse. Imágenes, redes y equipo quedan afuera: son opcionales
-   * y se pueden completar después.
+   * Identidad, especialidades, servicios, zonas y contacto son los datos con
+   * los que un perfil puede publicarse (BR-003). Imágenes y redes quedan
+   * afuera: son opcionales y se pueden completar después.
    *
    * El pago entra sólo al crear o al cambiar de plan, y sólo si el plan
    * cuesta: ahí no se puede seguir sin resolverlo. Editando no corresponde —
@@ -665,6 +741,7 @@ function ProfileFormFields(props: {
   const REQUIRED_STEPS: StepId[] = [
     "identidad",
     "rubro",
+    "servicios",
     "zonas",
     "contacto",
     ...(plan.priceCents > 0 && !editing ? (["pago"] as StepId[]) : []),
@@ -749,9 +826,10 @@ function ProfileFormFields(props: {
   };
 
   /*
-   * Las listas (servicios, zonas, subcategorías, equipo) viajan en campos
-   * ocultos que React agrega y quita. Eso no dispara `input` ni `change` —no
-   * los tocó nadie, aparecieron—, así que se recalcula cuando cambian.
+   * Las listas (servicios, zonas, especialidades, locales, horarios) viajan
+   * en campos ocultos que React agrega y quita. Eso no dispara `input` ni
+   * `change` —no los tocó nadie, aparecieron—, así que se recalcula cuando
+   * cambian.
    *
    * `whatsappEnabled` y la ubicación también entran acá: son controlados y su
    * valor cambia sin que el evento llegue a burbujear en todos los casos.
@@ -762,11 +840,13 @@ function ProfileFormFields(props: {
   }, [
     services,
     serviceAreaIds,
-    extraSubcategoryIds,
-    teamMembers,
-    subcategoryId,
-    locationId,
+    specialtyIds,
+    serviceModes,
+    locations,
+    scheduleEntries,
     whatsappEnabled,
+    phonePublic,
+    contactEmail,
     name,
     description,
     phone,
@@ -782,15 +862,20 @@ function ProfileFormFields(props: {
   // Un error del servidor puede referirse a un paso que no está a la vista;
   // este mapa permite señalarlo en la barra de pasos.
   const stepHasError: Record<StepId, boolean> = {
-    identidad: Boolean(errors.name || errors.description || errors.kind),
-    rubro: Boolean(errors.subcategoryId || errors.services),
-    zonas: Boolean(errors.locationId || errors.serviceAreaIds),
+    identidad: Boolean(errors.name || errors.description || errors.type),
+    rubro: Boolean(errors.specialtyIds),
+    servicios: Boolean(errors.services),
+    zonas: Boolean(
+      errors.serviceModes || errors.locations || errors.serviceAreaIds,
+    ),
     contacto: Boolean(
-      errors.phone || errors.whatsapp || errors.schedule || errors.paymentMethods,
+      errors.phone ||
+        errors.contactEmail ||
+        errors.scheduleEntries ||
+        errors.paymentMethods,
     ),
     imagenes: false,
     redes: Boolean(errors.socialLinks),
-    equipo: Boolean(errors.teamMembers),
     pago: false,
   };
 
@@ -860,11 +945,11 @@ function ProfileFormFields(props: {
               />
             </Field>
 
-            <Field label="Tipo" error={errors.kind} half>
+            <Field label="Tipo" error={errors.type} half>
               <select
-                name="kind"
-                defaultValue={provider?.kind ?? "individual"}
-                className={inputClass(errors.kind)}
+                name="type"
+                defaultValue={profile?.type ?? "individual"}
+                className={inputClass(errors.type)}
               >
                 <option value="individual">Profesional independiente</option>
                 <option value="business">Empresa / equipo</option>
@@ -891,90 +976,112 @@ function ProfileFormFields(props: {
           </Field>
         </Panel>
 
-        <Panel active={step === "rubro"} editing={editing} title="Rubro">
+        <Panel
+          active={step === "rubro"}
+          editing={editing}
+          title="Especialidades"
+        >
           <Field
-            label="Rubros"
-            error={errors.subcategoryId ?? errors.subcategoryIds}
+            label="Especialidades"
+            error={errors.specialtyIds}
             hint={
-              maxSubcategories > 1
-                ? `En qué trabajás. El primero es el principal y define tu categoría; tu plan ${plan.name} permite hasta ${maxSubcategories}.`
-                : "En qué trabajás. Define la categoría en la que aparecés."
+              maxSpecialties === null
+                ? "En qué trabajás. La primera es la principal."
+                : `En qué trabajás. La primera es la principal; tu plan ${plan.name} permite hasta ${maxSpecialties}.`
             }
             required
-            counter={`${allSubcategoryIds.length}/${maxSubcategories}`}
+            counter={`${specialtyIds.length}/${maxSpecialties ?? "∞"}`}
             group
           >
             {/*
-              El principal viaja aparte porque el servidor lo espera aparte:
-              `subcategoryId` decide la categoría del perfil y los demás son
-              adicionales. Para quien completa son una sola lista —el primero
-              que elige es el principal—, que es como se piensa el rubro.
+              No hay campo de rubro: el rubro se deriva de la especialidad
+              (BR-010). Elegir las dos cosas permitiría decir que se trabaja
+              en un rubro sin ninguna especialidad suya.
             */}
-            <input type="hidden" name="subcategoryId" value={subcategoryId} />
-
             <SearchSelect
-              label="Rubros"
-              name="subcategoryIds"
-              /*
-               * El principal ya viaja en `subcategoryId`: si además saliera
-               * acá, el servidor lo contaría dos veces contra el tope del
-               * plan y avisaría de un exceso que no existe.
-               */
-              omitFromSubmit={subcategoryId ? [subcategoryId] : []}
-              options={subcategoryOptions}
-              selected={selectedSubcategories}
-              max={maxSubcategories}
-              error={errors.subcategoryId ?? errors.subcategoryIds}
-              placeholder="Buscá tu rubro…"
-              emptyLabel="No encontramos ese rubro."
+              label="Especialidades"
+              name="specialtyIds"
+              options={specialtyOptions}
+              selected={selectedSpecialties}
+              max={maxSpecialties ?? undefined}
+              error={errors.specialtyIds}
+              placeholder="Buscá tu especialidad…"
+              emptyLabel="No encontramos esa especialidad."
               onSelect={(option) => {
-                if (subcategoryId === "") {
-                  setSubcategoryId(option.value);
-                  return;
-                }
-                setExtraSubcategoryIds([...extraSubcategoryIds, option.value]);
+                if (specialtyIds.includes(option.value)) return;
+                setSpecialtyIds([...specialtyIds, option.value]);
               }}
               onRemove={(value) => {
-                if (value === subcategoryId) {
-                  /*
-                   * Sacar el principal asciende al siguiente: dejar el perfil
-                   * sin principal teniendo otros cargados lo dejaría sin
-                   * categoría, que es dato obligatorio.
-                   */
-                  const [next, ...rest] = extraSubcategoryIds;
-                  setSubcategoryId(next ?? "");
-                  setExtraSubcategoryIds(rest);
-                  return;
-                }
-                setExtraSubcategoryIds(
-                  extraSubcategoryIds.filter((id) => id !== value),
+                setSpecialtyIds(specialtyIds.filter((id) => id !== value));
+                /*
+                 * BR-010: al quitar una especialidad se van sus servicios.
+                 * Dejarlos huérfanos los haría rechazar por la FK compuesta
+                 * al guardar, con un error que no explicaría nada.
+                 */
+                setServices(
+                  services.filter((service) => service.specialtyId !== value),
                 );
               }}
             />
 
-            {allSubcategoryIds.length >= maxSubcategories ? (
+            {maxSpecialties !== null && specialtyIds.length >= maxSpecialties ? (
               <PlanHint
                 planName={plan.name}
-                what="rubros"
-                limit={maxSubcategories}
+                what="especialidades"
+                limit={maxSpecialties}
               />
             ) : null}
-          </Field>
 
+            {/*
+              Los rubros que salen de lo elegido. Se muestran porque el plan
+              los limita (BR-006) y sin verlos el tope sería inexplicable.
+            */}
+            {derivedSectors.length > 0 ? (
+              <p className="text-[12.5px] text-ink-soft">
+                Rubros: {derivedSectors.join(" · ")}
+                {maxSectors !== null
+                  ? ` (${derivedSectors.length}/${maxSectors})`
+                  : ""}
+              </p>
+            ) : null}
+          </Field>
+        </Panel>
+
+        <Panel active={step === "servicios"} editing={editing} title="Servicios">
           <Field
             label="Servicios"
             error={errors.services}
-            hint={`Lo que ofrecés concretamente. Tu plan ${plan.name} permite hasta ${maxServices}.`}
+            hint={
+              specialtyIds.length === 0
+                ? "Primero elegí al menos una especialidad."
+                : maxServices === null
+                  ? "Lo que ofrecés concretamente."
+                  : `Lo que ofrecés concretamente. Tu plan ${plan.name} permite hasta ${maxServices}.`
+            }
             required
-            counter={`${services.length}/${maxServices}`}
+            counter={`${services.length}/${maxServices ?? "∞"}`}
             group
           >
+            {/*
+              Cada servicio viaja con su especialidad en listas paralelas: la
+              base exige que pertenezca a una que el perfil ya eligió (BR-010),
+              así que el nombre solo no alcanza.
+            */}
+            {services.map((service, index) => (
+              <input
+                key={`${service.specialtyId}-${service.name}-${index}`}
+                type="hidden"
+                name="serviceSpecialty"
+                value={service.specialtyId}
+              />
+            ))}
+
             <SearchSelect
               label="Servicios"
-              name="services"
+              name="serviceName"
               options={serviceOptions}
               selected={selectedServices}
-              max={maxServices}
+              max={maxServices ?? undefined}
               error={errors.services}
               placeholder="Buscá un servicio…"
               onQueryChange={setServiceQuery}
@@ -984,25 +1091,38 @@ function ProfileFormFields(props: {
               customHint="Si no está en la lista, escribilo y agregalo igual."
               onSelect={(option) => {
                 /*
-                 * Se guarda el nombre, no el id del catálogo: `services` es
-                 * una lista de textos libres, y así lo elegido de la lista y
-                 * lo escrito a mano son la misma clase de dato.
+                 * A qué especialidad se lo cuelga: la del catálogo si vino de
+                 * ahí, y si no la principal del perfil. Un servicio escrito a
+                 * mano tiene que colgar de alguna, y la primera es la que la
+                 * persona declaró como su actividad principal.
                  */
-                if (
-                  services.some(
-                    (s) => s.toLowerCase() === option.label.toLowerCase(),
-                  )
-                ) {
-                  return;
-                }
-                setServices([...services, option.label]);
+                const fromCatalog = option.value.includes("-")
+                  ? SERVICE_SUGGESTION_SPECIALTY.get(option.value)
+                  : undefined;
+                const specialtyId = fromCatalog ?? specialtyIds[0];
+                if (!specialtyId) return;
+
+                // BR-011: no se repite dentro de la misma especialidad.
+                const repeated = services.some(
+                  (service) =>
+                    service.specialtyId === specialtyId &&
+                    service.name.toLowerCase() === option.label.toLowerCase(),
+                );
+                if (repeated) return;
+
+                setServices([...services, { specialtyId, name: option.label }]);
               }}
               onRemove={(value) =>
-                setServices(services.filter((s) => s !== value))
+                setServices(
+                  services.filter(
+                    (service) =>
+                      `${service.specialtyId}|${service.name}` !== value,
+                  ),
+                )
               }
             />
 
-            {services.length >= maxServices ? (
+            {maxServices !== null && services.length >= maxServices ? (
               <PlanHint
                 planName={plan.name}
                 what="servicios"
@@ -1013,73 +1133,160 @@ function ProfileFormFields(props: {
         </Panel>
 
         <Panel active={step === "zonas"} editing={editing} title="Ubicación">
-          <Row>
+          <Field
+            label="Cómo prestás el servicio"
+            error={errors.serviceModes}
+            hint="Podés marcar más de una. Con varias, tu perfil se muestra como atención híbrida."
+            required
+            group
+          >
+            <div className="flex flex-col gap-1.5">
+              {SERVICE_MODES.map((mode) => (
+                <label
+                  key={mode}
+                  className="flex cursor-pointer items-center gap-2.5 text-[14px] text-ink-muted"
+                >
+                  <input
+                    type="checkbox"
+                    name="serviceModes"
+                    value={mode}
+                    checked={serviceModes.includes(mode)}
+                    onChange={(event) => {
+                      setServiceModes(
+                        event.target.checked
+                          ? [...serviceModes, mode]
+                          : serviceModes.filter((item) => item !== mode),
+                      );
+                    }}
+                    className="h-4 w-4 accent-brand-800"
+                  />
+                  {SERVICE_MODE_LABELS[mode]}
+                </label>
+              ))}
+            </div>
+          </Field>
+
+          {/*
+            BR-015: el local sólo hace falta si se atiende ahí. Quien trabaja a
+            domicilio o a distancia publica sin ninguno, así que el bloque
+            aparece únicamente cuando corresponde pedirlo.
+          */}
+          {serviceModes.includes("at_business") ? (
             <Field
-              label="Dónde estás ubicado"
-              error={errors.locationId}
-              hint="Precisá hasta donde quieras: alcanza con el departamento."
-              half
+              label="Dónde atendés"
+              error={errors.locations}
+              hint="La dirección de tu local o consultorio. Uruguay entero no sirve acá: tiene que decir dónde estás."
+              required
+              counter={`${locations.length}/${maxLocations ?? "∞"}`}
               group
             >
-              <LocationPicker
-                name="locationId"
-                value={locationId}
-                onChange={setLocationId}
-              />
-            </Field>
+              <div className="flex flex-col gap-2.5">
+                {locations.map((item, index) => (
+                  <div
+                    key={`${item.locationId}-${index}`}
+                    className="flex flex-col gap-2 rounded-input border border-line p-3"
+                  >
+                    <input type="hidden" name="locationId" value={item.locationId} />
+                    <input
+                      type="hidden"
+                      name="locationName"
+                      value={item.name ?? ""}
+                    />
 
-            <Field label="Modalidad" error={errors.serviceMode} half group>
-              {/*
-                El campo de al lado rotula cada selector por dentro
-                («Departamento», «Localidad»…). Sin un rótulo acá los dos
-                controles arrancarían a distinta altura, así que este dice
-                qué se elige y de paso empareja las filas.
-              */}
-              <label
-                htmlFor="serviceMode"
-                className="text-[12.5px] font-semibold text-ink-muted"
-              >
-                Cómo trabajás
-              </label>
-              <select
-                id="serviceMode"
-                name="serviceMode"
-                defaultValue={provider?.serviceMode ?? "on_site"}
-                className={inputClass(errors.serviceMode)}
-              >
-                {SERVICE_MODES.map((mode) => (
-                  <option key={mode} value={mode}>
-                    {SERVICE_MODE_LABELS[mode]}
-                  </option>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[14px] font-semibold text-ink">
+                        {locationLabelById(item.locationId)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLocations(locations.filter((_, i) => i !== index))
+                        }
+                        aria-label={`Quitar ${locationLabelById(item.locationId)}`}
+                        className="rounded p-1 hover:bg-surface-sunken"
+                      >
+                        <Icon name="close" className="text-[17px]" />
+                      </button>
+                    </div>
+
+                    <input
+                      name="locationAddress"
+                      value={item.address ?? ""}
+                      onChange={(event) => {
+                        const next = [...locations];
+                        next[index] = { ...item, address: event.target.value };
+                        setLocations(next);
+                      }}
+                      maxLength={160}
+                      placeholder="Dirección (opcional)"
+                      className={inputClass()}
+                    />
+
+                    {/* BR-015: sólo una principal. */}
+                    <label className="flex cursor-pointer items-center gap-2 text-[13px] text-ink-muted">
+                      <input
+                        type="radio"
+                        name="primaryLocation"
+                        value={index}
+                        checked={item.isPrimary}
+                        onChange={() =>
+                          setLocations(
+                            locations.map((row, i) => ({
+                              ...row,
+                              isPrimary: i === index,
+                            })),
+                          )
+                        }
+                        className="h-4 w-4 accent-brand-800"
+                      />
+                      Es mi ubicación principal
+                    </label>
+                  </div>
                 ))}
-              </select>
+
+                {maxLocations === null || locations.length < maxLocations ? (
+                  <LocationPicker
+                    value={pendingLocation}
+                    allowCountry={false}
+                    onChange={(id) => {
+                      if (!id || id === COUNTRY_ID) return;
+                      if (locations.some((item) => item.locationId === id)) {
+                        return;
+                      }
+                      setLocations([
+                        ...locations,
+                        {
+                          locationId: id,
+                          name: null,
+                          address: null,
+                          // La primera que se agrega es la principal.
+                          isPrimary: locations.length === 0,
+                        },
+                      ]);
+                      setPendingLocation("");
+                    }}
+                    addMode
+                  />
+                ) : (
+                  <PlanHint
+                    planName={plan.name}
+                    what="ubicaciones"
+                    limit={maxLocations}
+                  />
+                )}
+              </div>
             </Field>
-          </Row>
+          ) : null}
 
           <Field
             label="Zonas donde trabajás"
             error={errors.serviceAreaIds}
-            hint="Puede ser distinto de dónde estás ubicado. Si no agregás ninguna, se toma dónde estás ubicado."
-            required={false}
-            counter={`${serviceAreaIds.length}/${maxAreas}`}
+            hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Elegir Uruguay significa todo el país."
+            required
+            counter={`${serviceAreaIds.length}`}
             group
           >
             <div className="flex flex-col gap-2.5">
-              {/*
-                Sin zonas propias se manda dónde está ubicado. El servidor
-                sigue exigiendo al menos una (RF-163) y tiene razón —un perfil
-                sin zona no aparece en ninguna búsqueda—, pero no es algo que
-                haya que pedirle a la persona: si no dijo otra cosa, trabaja
-                donde está.
-              */}
-              {serviceAreaIds.length === 0 ? (
-                <input
-                  type="hidden"
-                  name="serviceAreaIds"
-                  value={locationId}
-                />
-              ) : null}
-
               {serviceAreaIds.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
                   {serviceAreaIds.map((id) => (
@@ -1088,12 +1295,11 @@ function ProfileFormFields(props: {
                       name="serviceAreaIds"
                       value={id}
                       label={locationLabelById(id)}
-                      detail={locationLevelLabel(id)}
+                      detail={locationTypeLabel(id)}
                       onRemove={() => {
                         setServiceAreaIds(
                           serviceAreaIds.filter((x) => x !== id),
                         );
-                        // Quitarla despeja el aviso: ya no está repetida.
                         if (duplicateArea === id) setDuplicateArea(null);
                       }}
                     />
@@ -1101,37 +1307,36 @@ function ProfileFormFields(props: {
                 </div>
               ) : null}
 
-              {serviceAreaIds.length < maxAreas ? (
-                <>
-                  <LocationPicker
-                    value=""
-                    onChange={(id) => {
-                      if (!id) return;
-                      /*
-                       * Repetir una zona no agrega nada y antes se descartaba
-                       * en silencio: se veía como si el botón no funcionara.
-                       */
-                      if (serviceAreaIds.includes(id)) {
-                        setDuplicateArea(id);
-                        return;
-                      }
-                      setDuplicateArea(null);
-                      setServiceAreaIds([...serviceAreaIds, id]);
-                    }}
-                    addMode
-                  />
-                  {duplicateArea ? (
-                    <p
-                      role="alert"
-                      className="text-[13px] font-medium text-[#B42318]"
-                    >
-                      Ya agregaste {locationLabelById(duplicateArea)}.
-                    </p>
-                  ) : null}
-                </>
-              ) : (
-                <PlanHint planName={plan.name} what="zonas" limit={maxAreas} />
-              )}
+              <LocationPicker
+                value=""
+                onChange={(id) => {
+                  if (!id) return;
+                  /*
+                   * Repetir una zona no agrega nada y antes se descartaba en
+                   * silencio: se veía como si el botón no funcionara.
+                   */
+                  if (serviceAreaIds.includes(id)) {
+                    setDuplicateArea(id);
+                    return;
+                  }
+                  setDuplicateArea(null);
+                  /*
+                   * TR-018: se normaliza al agregar. Elegir Uruguay reemplaza
+                   * lo demás y un departamento absorbe sus localidades, así
+                   * que lo que se ve es lo que se va a guardar.
+                   */
+                  setServiceAreaIds(
+                    normalizeServiceAreas([...serviceAreaIds, id]),
+                  );
+                }}
+                addMode
+              />
+
+              {duplicateArea ? (
+                <p role="alert" className="text-[13px] font-medium text-[#B42318]">
+                  Ya agregaste {locationLabelById(duplicateArea)}.
+                </p>
+              ) : null}
             </div>
           </Field>
         </Panel>
@@ -1170,13 +1375,76 @@ function ProfileFormFields(props: {
             Este número recibe WhatsApp
           </label>
 
-          <Field label="Horarios" error={errors.schedule}>
+          {/*
+            BR-004: ocultar el teléfono lo saca del perfil y también de
+            WhatsApp. Tiene que quedar algún canal público, y de eso avisa el
+            servidor si no queda ninguno.
+          */}
+          <label className="flex items-center gap-2.5 text-[14px] text-ink-muted">
             <input
-              name="schedule"
-              defaultValue={provider?.schedule ?? ""}
-              maxLength={160}
-              className={inputClass(errors.schedule)}
-              placeholder="Lunes a viernes · 9:00 a 18:00"
+              type="checkbox"
+              name="phonePublic"
+              checked={phonePublic}
+              onChange={(event) => setPhonePublic(event.target.checked)}
+              className="h-4 w-4 accent-brand-800"
+            />
+            Mostrar mi teléfono en el perfil público
+          </label>
+
+          <Field
+            label="Correo de contacto"
+            error={errors.contactEmail}
+            hint="Puede ser distinto del correo con el que entrás. Opcional si mostrás tu teléfono."
+          >
+            <input
+              name="contactEmail"
+              type="email"
+              value={contactEmail}
+              onChange={(event) => setContactEmail(event.target.value)}
+              maxLength={254}
+              autoComplete="email"
+              className={inputClass(errors.contactEmail)}
+              placeholder="contacto@ejemplo.uy"
+            />
+          </Field>
+
+          {/*
+            BR-024: hasta diez líneas de texto libre. El formato por día no
+            servía para "Atención solo con agenda previa" ni para un horario
+            cortado, que es como se escribe de verdad.
+          */}
+          <Field
+            label="Horarios"
+            error={errors.scheduleEntries}
+            hint="Una línea por horario. Elegí de la lista o escribí el tuyo."
+            counter={`${scheduleEntries.length}/${MAX_SCHEDULE_ENTRIES}`}
+            group
+          >
+            <SearchSelect
+              label="Horarios"
+              name="scheduleEntries"
+              options={scheduleOptions}
+              selected={scheduleEntries.map((text) => ({
+                value: text,
+                label: text,
+              }))}
+              max={MAX_SCHEDULE_ENTRIES}
+              error={errors.scheduleEntries}
+              placeholder="Ej.: Lunes a viernes de 08:00 a 17:00"
+              onQueryChange={setScheduleQuery}
+              externallyFiltered
+              emptyLabel="No está en la lista. Escribilo y agregalo igual."
+              allowCustom
+              customHint="Podés escribir tu propio horario."
+              onSelect={(option) => {
+                if (scheduleEntries.includes(option.label)) return;
+                setScheduleEntries([...scheduleEntries, option.label]);
+              }}
+              onRemove={(value) =>
+                setScheduleEntries(
+                  scheduleEntries.filter((text) => text !== value),
+                )
+              }
             />
           </Field>
 
@@ -1191,10 +1459,10 @@ function ProfileFormFields(props: {
                     type="checkbox"
                     name="paymentMethods"
                     value={method}
-                    defaultChecked={provider?.paymentMethods.includes(method)}
+                    defaultChecked={profile?.paymentMethods.includes(method)}
                     className="h-4 w-4 accent-brand-800"
                   />
-                  {method}
+                  {PAYMENT_METHOD_LABELS[method]}
                 </label>
               ))}
             </div>
@@ -1243,7 +1511,7 @@ function ProfileFormFields(props: {
           {allowsFeature(plan, "gallery") ? (
             <GalleryField
               images={gallery}
-              max={limitFor(plan, "galleryImages")}
+              max={limitFor(plan, "galleryImages") ?? Number.MAX_SAFE_INTEGER}
               planName={plan.name}
               onChange={setGallery}
             />
@@ -1266,17 +1534,6 @@ function ProfileFormFields(props: {
               value={socialLinks}
               onChange={setSocialLinks}
               error={(platform) => errors[`socialLinks.${platform}`]}
-            />
-          </Panel>
-        ) : null}
-
-        {allowsFeature(plan, "team") ? (
-          <Panel active={step === "equipo"} editing={editing} title="Equipo">
-            <TeamEditor
-              members={teamMembers}
-              onChange={setTeamMembers}
-              max={limitFor(plan, "teamMembers")}
-              planName={plan.name}
             />
           </Panel>
         ) : null}
@@ -1340,7 +1597,7 @@ function ProfileFormFields(props: {
             onStep={setStep}
             pending={pending}
             canSubmit={canSubmit}
-            isNew={provider === null}
+            isNew={profile === null}
             missing={missing.map((s) => s.label)}
           />
         )}
@@ -1349,130 +1606,23 @@ function ProfileFormFields(props: {
   );
 }
 
-/** Nombre legible de una subcategoría; su id si no se encuentra. */
+/** Nombre legible de una especialidad; su id si no se encuentra. */
 function subcategoryLabel(id: string): string {
-  for (const category of CATEGORIES) {
-    const found = category.subcategories.find((sub) => sub.id === id);
-    if (found) return found.name;
-  }
-  return id;
+  return getSpecialty(id)?.name ?? id;
 }
 
 /** Fila del editor de equipo: lo que se escribe, sin id todavía. */
-type TeamRow = { name: string; role: string; subtitle: string; bio: string };
+/** Un servicio del formulario: siempre sabe de qué especialidad es (BR-010). */
+type ServiceRow = { specialtyId: string; name: string };
 
-/**
- * Editor de integrantes (RF-016).
- *
- * Los campos van como listas paralelas (`teamName`, `teamRole`…): la acción
- * las vuelve a unir por posición. Es lo que permite mandar un número variable
- * de filas en un formulario normal.
- */
-function TeamEditor({
-  members,
-  onChange,
-  max,
-  planName,
-}: {
-  members: TeamRow[];
-  onChange: (rows: TeamRow[]) => void;
-  max: number;
-  planName: string;
-}) {
-  const update = (index: number, patch: Partial<TeamRow>) => {
-    onChange(members.map((m, i) => (i === index ? { ...m, ...patch } : m)));
-  };
+/** Una ubicación física del formulario (BR-015). */
+type LocationRow = {
+  locationId: string;
+  name: string | null;
+  address: string | null;
+  isPrimary: boolean;
+};
 
-  return (
-    <div className="flex flex-col gap-4">
-      <p className="text-[13.5px] leading-relaxed text-ink-soft">
-        Quiénes trabajan con vos. Tu plan {planName} permite hasta {max}.
-      </p>
-
-      {members.map((member, index) => (
-        <div
-          key={index}
-          className="flex flex-col gap-3 rounded-card border border-line bg-surface-muted p-4"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-[13px] font-bold uppercase tracking-wide text-ink-soft">
-              Integrante {index + 1}
-            </span>
-            <button
-              type="button"
-              onClick={() => onChange(members.filter((_, i) => i !== index))}
-              aria-label={`Quitar integrante ${index + 1}`}
-              className="rounded-input p-1 text-ink-soft hover:bg-white"
-            >
-              <Icon name="close" className="text-[18px]" />
-            </button>
-          </div>
-
-          <Row>
-            <Field label="Nombre" half required>
-              <input
-                name="teamName"
-                value={member.name}
-                onChange={(event) => update(index, { name: event.target.value })}
-                maxLength={80}
-                className={inputClass(undefined)}
-              />
-            </Field>
-            <Field label="Título" half>
-              <input
-                name="teamRole"
-                value={member.role}
-                onChange={(event) => update(index, { role: event.target.value })}
-                maxLength={80}
-                placeholder="Ej.: Electricista"
-                className={inputClass(undefined)}
-              />
-            </Field>
-          </Row>
-
-          <Field label="Subtítulo">
-            <input
-              name="teamSubtitle"
-              value={member.subtitle}
-              onChange={(event) =>
-                update(index, { subtitle: event.target.value })
-              }
-              maxLength={80}
-              placeholder="Ej.: 10 años de experiencia"
-              className={inputClass(undefined)}
-            />
-          </Field>
-
-          <Field label="Descripción">
-            <textarea
-              name="teamBio"
-              value={member.bio}
-              onChange={(event) => update(index, { bio: event.target.value })}
-              rows={2}
-              maxLength={300}
-              className={`${inputClass(undefined)} h-auto resize-y py-2.5 leading-relaxed`}
-            />
-          </Field>
-        </div>
-      ))}
-
-      {members.length < max ? (
-        <button
-          type="button"
-          onClick={() =>
-            onChange([...members, { name: "", role: "", subtitle: "", bio: "" }])
-          }
-          className="flex items-center gap-1.5 self-start text-[14px] font-semibold text-brand-800 hover:underline"
-        >
-          <Icon name="add" className="text-[18px]" />
-          Agregar integrante
-        </button>
-      ) : (
-        <PlanHint planName={planName} what="integrantes" limit={max} />
-      )}
-    </div>
-  );
-}
 
 /** Barra de pasos: dice dónde estás, qué falta y dónde hay un error. */
 function StepBar({
