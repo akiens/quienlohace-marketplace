@@ -156,13 +156,6 @@ dos cosas por separado.
    condición es que algo no entre, no que el plan haya bajado.
 
 ## Servicios
-- En el select de servicios vamos a tener 2 formas de listar las sugerencias:
-1. Si se seleccionaron especialidades en el paso anterior entonces vamos a mostrar como sugerencias los servicios que estan son partes de estas especialidades nada mas, los demas no los mostramos. La idea es ser lo mas precisos posible y ayudar al usuario sin crear demasiado ruido.
-2. Si no se selecciono ninguna especialidad en el paso anterior entonces simplemente muestra todas las sugerencias.
-
-Recerda que los servicios son libres al agregarlos, no tienen que estar en las sugerencias, las sugerencias solo son eso. Por lo tanto si se cambia a un plan menor simplemente hay que remover los ultimos servicios que no entren en la cantidad disponible del plan. Siempre se eliminan primero los ultimos que fueron agregados.
-
-## Servicios
 
 Las sugerencias salen de `src/data/taxonomy.json`, que es un catálogo fijo
 generado con `npm run generate:services` desde
@@ -223,6 +216,74 @@ Antes de ese corte se van los servicios cuya especialidad ya no está (BR-010),
 que se pierden con ella y no cuentan como decisión aparte. El orden completo
 del recorte está en la regla 4 de "Rubro y Especialidades".
 
+## Ubicación
+
+El paso tiene tres campos, y los dos últimos aparecen según lo que se marque
+en el primero.
+
+### 1. Modalidad
+
+`A domicilio`, `En el local`, `A distancia`. Es selección múltiple: quien
+atiende de varias formas marca varias (BR-017). No hay opción "híbrida" —
+nombrarla agregaría un cuarto concepto para decir lo que las tres casillas ya
+dicen.
+
+### 2. Zonas donde trabajás — con `a domicilio`, salvo que también atienda `a distancia`
+
+Las zonas son "hasta dónde vas", así que se preguntan únicamente a quien se
+traslada. Quien atiende sólo en su local no recorre ninguna zona, y pedírselas
+sería hacerle contestar una pregunta que no es sobre su trabajo.
+
+Atender `a distancia` también cancela la pregunta, incluso con `a domicilio`
+marcado: ya se llega a todo el país, y ofrecer elegir zonas invitaría a
+recortar algo que no se recorta. Marcar Montevideo no dejaría de atender a
+distancia al resto del país, así que la respuesta sería engañosa. En su lugar
+se avisa que se llega a todo Uruguay.
+
+Se normalizan al agregar (TR-018): elegir Uruguay reemplaza todo lo demás y un
+departamento absorbe sus localidades, así que lo que se ve es lo que se
+guarda.
+
+### 3. Dónde atendés — sólo con `en el local`
+
+La dirección del local o consultorio (BR-015). Uruguay entero no sirve acá:
+tiene que decir dónde está. La primera que se agrega queda como principal, y
+sólo puede haber una.
+
+Es opcional en las otras modalidades: quien trabaja a domicilio o a distancia
+publica sin ningún local.
+
+Atender a distancia **no** quita este campo. Son dos preguntas distintas
+—hasta dónde llego y dónde estoy— y sólo la primera queda contestada por
+atender a distancia: quien atiende a domicilio, a distancia y además en su
+local declara sus locales normalmente, y sus zonas son todo Uruguay.
+
+### `A distancia` significa todo el país
+
+Atender a distancia es llegar a todo Uruguay: el servicio viaja por teléfono o
+por internet y la ubicación del proveedor no lo limita.
+
+Cuando no se preguntan las zonas, el área se deduce y viaja en campos ocultos,
+porque BR-016 pide al menos un área en todo perfil activo —sin ella no
+aparecería en ninguna búsqueda—. El orden de la deducción es:
+
+1. **¿Atiende a distancia?** → todo el país (`COUNTRY_ID`).
+2. **¿Tiene locales?** → el departamento de cada uno. El departamento y no la
+   localidad exacta, porque quien busca en el departamento tiene que
+   encontrarlo.
+3. **Ninguna de las dos** → todo el país, que es la única respuesta que no
+   deja el perfil fuera de toda búsqueda.
+
+El paso 1 manda sobre el 2 a propósito: tener consultorio en Montevideo no
+achica hasta dónde llega lo que se presta a distancia. Antes la deducción
+miraba sólo los locales, así que marcar `a distancia` **y** `en el local`
+daba el departamento del local en vez de todo el país — quien atendía de las
+dos formas quedaba sin aparecer en búsquedas del resto del país.
+
+`A distancia` manda sobre `a domicilio` para la pregunta de zonas, pero no
+toca los locales: marcar las tres modalidades deja agregar locales y fija las
+zonas en todo Uruguay.
+
 ## Paso de pago
 
 Es un **placeholder**: no cobra nada ni consulta ninguna pasarela. Muestra el
@@ -263,6 +324,13 @@ Sólo aplica al alta. Un perfil que ya existe se sigue editando sin volver a
 pasar por esto, salvo el caso de una subida a medio resolver
 (`subscriptionStatus === "past_due"`), que mantiene el asistente abierto hasta
 que se marca el pago.
+
+## Ubicacion 
+En el paso ubicacion tendremos 3 campos importantes:
+1. Modalidad: `a domicilio`, `en el local`, `a distancia`.
+- Si se selecciona `a domicilio` tenemos que permitirle agregar `zonas donde trabaja`.
+- Si se seleciona `en local` le damos la opcion de agregar ubicacion donde atiende.
+- Si se seleciona `a distancia` entonces esto significa que atiende en todo uruguay.
 
 # General Rules
 

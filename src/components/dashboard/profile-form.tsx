@@ -721,25 +721,50 @@ function ProfileFormFields(props: {
   );
 
   /**
-   * Si el proveedor se mueve para trabajar. Sólo entonces tiene sentido
-   * preguntarle hasta dónde llega: quien atiende nada más que en su local o a
-   * distancia no recorre ninguna zona.
+   * Si atiende a distancia. Entonces llega a todo el país y no hay zona que
+   * preguntar: la respuesta ya la da la modalidad.
    */
-  const travels = serviceModes.includes("at_customer");
+  const remote = serviceModes.includes("remote");
 
   /**
-   * Las zonas de quien no se mueve, deducidas de dónde está.
+   * Si hay que preguntar hasta dónde llega.
+   *
+   * Sólo a quien se traslada —quien atiende nada más que en su local no
+   * recorre ninguna zona— y sólo si no atiende también a distancia: en ese
+   * caso ya alcanza todo el país, y preguntar zonas ofrecería recortar algo
+   * que no se recorta. Marcar Montevideo no dejaría de atender a distancia al
+   * resto del país, así que la respuesta sería engañosa.
+   *
+   * Esto no toca los locales: quien atiende a domicilio, a distancia y además
+   * en su local sigue declarando sus locales normalmente. Son dos preguntas
+   * distintas —hasta dónde llego y dónde estoy— y sólo la primera queda
+   * contestada por atender a distancia.
+   */
+  const travels = serviceModes.includes("at_customer") && !remote;
+
+  /**
+   * Las zonas de quien no se mueve, deducidas de lo que ya declaró.
    *
    * BR-016 pide al menos un área en todo perfil activo —sin ella no aparece
-   * en ninguna búsqueda—, pero el área no siempre hay que preguntarla: quien
-   * atiende en su local trabaja donde está, y eso ya lo dijo al declararlo.
-   * Se toma el departamento de cada local y no la localidad exacta, porque
-   * quien busca en el departamento tiene que encontrarlo.
+   * en ninguna búsqueda—, pero el área no siempre hay que preguntarla.
    *
-   * Sin ningún local —sólo a distancia— llega a cualquier parte, y el país
-   * entero es la respuesta correcta y no un valor de relleno.
+   * Atender a distancia es llegar a todo el país: el servicio viaja por
+   * teléfono o por internet y la ubicación del proveedor no lo limita. Manda
+   * sobre el local, porque tener consultorio en Montevideo no achica hasta
+   * dónde llega lo que se presta a distancia — quien atiende de las dos
+   * formas sigue alcanzando todo Uruguay.
+   *
+   * Sin atención a distancia, el área sale de dónde está: quien atiende en su
+   * local trabaja donde está, y eso ya lo dijo al declararlo. Se toma el
+   * departamento de cada local y no la localidad exacta, porque quien busca
+   * en el departamento tiene que encontrarlo.
+   *
+   * Sin local ni atención a distancia no queda de dónde deducir, y el país
+   * entero es la única respuesta que no deja al perfil fuera de toda
+   * búsqueda.
    */
   const derivedServiceAreas = useMemo(() => {
+    if (remote) return [COUNTRY_ID];
     if (locations.length === 0) return [COUNTRY_ID];
 
     const areas = locations
@@ -747,7 +772,7 @@ function ProfileFormFields(props: {
       .filter((id): id is string => Boolean(id));
 
     return areas.length > 0 ? normalizeServiceAreas(areas) : [COUNTRY_ID];
-  }, [locations]);
+  }, [locations, remote]);
 
   const completion = useMemo(() => {
     return {
@@ -1650,13 +1675,28 @@ function ProfileFormFields(props: {
           ) : (
             /*
               BR-016: todo perfil activo declara al menos un área igual, o no
-              aparecería en ninguna búsqueda. Sin la pregunta, sale de dónde
-              está: el departamento de cada local declarado. Y a distancia sin
-              local, el país entero, que es hasta dónde llega.
+              aparecería en ninguna búsqueda. Sin la pregunta, el área sale de
+              lo ya declarado: todo el país si atiende a distancia, y si no el
+              departamento de cada local.
             */
-            derivedServiceAreas.map((id) => (
-              <input key={id} type="hidden" name="serviceAreaIds" value={id} />
-            ))
+            <>
+              {derivedServiceAreas.map((id) => (
+                <input key={id} type="hidden" name="serviceAreaIds" value={id} />
+              ))}
+
+              {/*
+                Se dice cuál quedó y por qué. El campo desaparece al marcar "a
+                distancia", y sin explicación se lee como que la pregunta se
+                perdió en vez de como que ya está contestada.
+              */}
+              {remote ? (
+                <p className="flex flex-wrap items-center gap-1.5 rounded-input bg-surface-muted px-3 py-2 text-[12.5px] text-ink-soft">
+                  <Icon name="public" className="text-[15px] text-ink-faint" />
+                  Atendés a distancia, así que llegás a todo Uruguay. No hace
+                  falta elegir zonas.
+                </p>
+              ) : null}
+            </>
           )}
         </Panel>
 
