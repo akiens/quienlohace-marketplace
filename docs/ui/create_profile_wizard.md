@@ -223,6 +223,47 @@ Antes de ese corte se van los servicios cuya especialidad ya no está (BR-010),
 que se pierden con ella y no cuentan como decisión aparte. El orden completo
 del recorte está en la regla 4 de "Rubro y Especialidades".
 
+## Paso de pago
+
+Es un **placeholder**: no cobra nada ni consulta ninguna pasarela. Muestra el
+precio del plan, avisa que el cobro todavía no está disponible y ofrece un
+checkbox (`paymentAcknowledged`) que deja constancia de que el paso se revisó
+y da el tilde en la barra de pasos.
+
+Cuando exista el cobro de verdad, lo que se mire acá saldrá de la suscripción
+y el checkbox desaparece.
+
+### Cuándo se muestra
+
+Sólo si `plan.priceCents > 0`. La condición es el precio y no el plan: cobrar
+un paso de pago por un plan que todavía no se puede contratar no tendría
+sentido, y `isPurchasable()` bloquea justamente los planes pagos sin precio
+(BR-008, TR-014).
+
+Durante un tiempo los tres planes valieron 0, así que el paso no aparecía en
+ninguno —ni en Platino—. La migración `0009_provisional_plan_prices.sql` les
+puso precio a Oro y Platino y con eso volvió a verse.
+
+> **Los precios actuales son provisionales.** Oro 5 y Platino 20, cargados
+> para poder probar el flujo. Hay que reemplazarlos por los reales antes de
+> cobrarle a nadie.
+>
+> Se guardan en UYU porque es lo único que admite la columna
+> (`CHECK (currency IN ('UYU'))`). Los valores de referencia eran dólares; si
+> el precio definitivo va en USD hay que recrear la tabla para ampliar ese
+> CHECK, y conviene hacerlo junto con los precios reales y no antes.
+
+### Qué exige
+
+En un plan pago no se crea el perfil sin el tilde. Se comprueba en el
+servidor (`saveProfile`) y no sólo en el formulario: que el botón esté
+deshabilitado no impide mandar el envío a mano (TR-004).
+
+Sólo aplica al alta. Un perfil que ya existe se sigue editando sin volver a
+pasar por esto, salvo el caso de una subida a medio resolver
+(`subscriptionStatus === "past_due"`), que mantiene el asistente abierto hasta
+que se marca el pago.
+
 # General Rules
 
 1. En el step#4 Ubicación, si el proveedor no selecciona "A domicilio" entonces no se muestra "Zonas donde trabajás": no va a ninguna zona, atiende en su local o a distancia.
