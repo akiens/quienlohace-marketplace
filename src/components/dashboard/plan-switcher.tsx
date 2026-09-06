@@ -79,46 +79,62 @@ export function PlanSwitcher({
 
   return (
     <>
+      {/*
+       * En el teléfono la franja es más alta y el nombre del plan va sobre el
+       * precio, en dos líneas. En una sola —como en escritorio— la insignia,
+       * el nombre, el nivel, el precio y el botón no entran en 360px: o se
+       * salían del recuadro o el botón quedaba de tres píxeles.
+       *
+       * El nivel ("Básico", "Premium") se ve sólo desde `sm`: repite lo que ya
+       * dice el nombre del plan, y en el ancho que hay es lo primero que sobra.
+       */}
       <div
         style={{ backgroundImage: PLAN_RIBBONS[plan.id].face }}
-        className="relative flex h-9 items-center gap-x-5 rounded-card py-[3px] pr-[3px]"
+        className="relative mx-3 flex h-[52px] items-center gap-x-3 rounded-card py-[3px] pr-[3px] sm:mx-0 sm:h-9 sm:gap-x-5"
       >
-        <span className="flex items-center gap-3">
+        <span className="flex min-w-0 items-center gap-2 sm:gap-3">
           {/*
-           * La franja mide 36px y la insignia 64px: se sale por arriba y por
-           * abajo, así se lee como algo apoyado encima. Va corrida a la
-           * derecha, y el texto detrás de ella para que no quede tapado.
+           * La insignia se sale de la franja por arriba y por abajo, así se
+           * lee como algo apoyado encima. Va corrida a la derecha, y el texto
+           * detrás de ella para que no quede tapado.
            */}
           <Image
             src={PLAN_BADGES[plan.id]}
             alt=""
             width={96}
             height={96}
-            className="pointer-events-none -my-3 ml-[15px] h-16 w-16 shrink-0 object-contain drop-shadow-[0_3px_8px_rgba(16,24,40,.35)]"
+            className="pointer-events-none -my-3 ml-2.5 h-14 w-14 shrink-0 object-contain drop-shadow-[0_3px_8px_rgba(16,24,40,.35)] sm:ml-[15px] sm:h-16 sm:w-16"
           />
-          <span className="text-[15px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,.5)]">
-            Plan {plan.name}
-          </span>
-          <span className="rounded-full bg-black/25 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white">
-            {PLAN_TIERS[plan.id]}
-          </span>
-          <span className="text-[13px] text-white/80 [text-shadow:0_1px_2px_rgba(0,0,0,.5)]">
-            {formatPrice(plan)}
+          <span className="flex min-w-0 flex-col leading-tight sm:flex-row sm:items-center sm:gap-3">
+            <span className="truncate text-[14px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,.5)] sm:text-[15px]">
+              Plan {plan.name}
+            </span>
+            <span className="hidden rounded-full bg-black/25 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white sm:inline">
+              {PLAN_TIERS[plan.id]}
+            </span>
+            <span className="text-[12px] text-white/80 [text-shadow:0_1px_2px_rgba(0,0,0,.5)] sm:text-[13px]">
+              {formatPrice(plan)}
+            </span>
           </span>
         </span>
 
+        {/*
+         * En el teléfono el botón es sólo el icono con su etiqueta accesible:
+         * "Cambiar mi plan" se comía el ancho que necesita el nombre del plan.
+         */}
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="ml-auto flex h-[30px] items-center gap-1.5 rounded-input bg-white/95 px-3 text-[13px] font-semibold text-ink transition-colors hover:bg-white"
+          aria-label="Cambiar mi plan"
+          className="ml-auto mr-1 flex h-9 flex-none items-center gap-1.5 rounded-input bg-white/95 px-2.5 text-[13px] font-semibold text-ink transition-colors hover:bg-white sm:mr-0 sm:h-[30px] sm:px-3"
         >
-          <Icon name="swap_horiz" className="text-[16px]" />
-          Cambiar mi plan
+          <Icon name="swap_horiz" className="text-[18px] sm:text-[16px]" />
+          <span className="hidden sm:inline">Cambiar mi plan</span>
         </button>
       </div>
 
       {state.errors?.form ? (
-        <p role="alert" className="text-[13.5px] font-medium text-[#B42318]">
+        <p role="alert" className="px-4 text-[13.5px] font-medium text-[#B42318] sm:px-0">
           {state.errors.form}
         </p>
       ) : null}
@@ -171,18 +187,25 @@ function PlanDialog({
       role="dialog"
       aria-modal="true"
       aria-label="Cambiar de plan"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/50 p-4"
+      /*
+       * En el teléfono se apoya abajo y ocupa todo el ancho: un recuadro
+       * centrado con margen deja las tres tarjetas de plan en una columna
+       * angosta y obliga a estirar el pulgar hasta arriba para cerrarlo.
+       */
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 sm:items-center sm:p-4"
       // Cerrar tocando fuera: el clic dentro del panel no burbujea hasta acá.
       onClick={onClose}
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-card bg-white p-6"
+        className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-card bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[85vh] sm:rounded-card sm:p-6"
       >
-        <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="mb-4 flex items-start justify-between gap-4 sm:mb-5">
           <div className="flex flex-col gap-1">
-            <h2 className="text-[20px] font-bold text-ink">Cambiar de plan</h2>
-            <p className="text-[14px] text-ink-soft">
+            <h2 className="text-[18px] font-bold text-ink sm:text-[20px]">
+              Cambiar de plan
+            </h2>
+            <p className="text-[13.5px] text-ink-soft sm:text-[14px]">
               Si bajás de plan no perdés nada: lo que no entre queda guardado y
               vuelve si recontratás.
             </p>
@@ -191,13 +214,13 @@ function PlanDialog({
             type="button"
             onClick={onClose}
             aria-label="Cerrar"
-            className="rounded-input p-1.5 text-ink-soft hover:bg-surface-muted"
+            className="-mr-1 flex h-10 w-10 flex-none items-center justify-center rounded-input text-ink-soft hover:bg-surface-muted sm:mr-0 sm:h-auto sm:w-auto sm:p-1.5"
           >
             <Icon name="close" className="text-[20px]" />
           </button>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
           {plans.map((option) => (
             <PlanOption
               key={option.id}

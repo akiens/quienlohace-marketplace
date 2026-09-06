@@ -61,8 +61,8 @@ export function SiteFooter() {
                 height={44}
                 className="h-11 w-auto"
               />
-              <span className="whitespace-nowrap text-center text-[10.5px] tracking-[.2px] text-footer-text">
-                Conectamos clientes y profesionales
+              <span className="-mt-[7px] whitespace-nowrap text-center text-[10.5px] tracking-[.2px] text-footer-text">
+                Conectando clientes y profesionales
               </span>
             </span>
           </div>

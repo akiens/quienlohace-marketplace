@@ -87,15 +87,20 @@ function Header({ signedIn }: { signedIn: boolean }) {
     >
       <div className="shell flex h-[68px] items-center gap-7 lg:h-[88px]">
         <Link href="/" className="flex flex-none items-center gap-3">
+          {/*
+            En el teléfono el logo es sólo la palabra: la marca y su separador
+            se llevaban ancho que ahí hace falta para la navegación, y la
+            palabra sola ya identifica al sitio. Vuelven desde `lg`.
+          */}
           <Image
             src="/brand/logo-mark.svg"
             alt=""
             width={50}
             height={50}
             priority
-            className="h-10 w-auto lg:h-[50px]"
+            className="hidden h-10 w-auto lg:block lg:h-[50px]"
           />
-          <span className="h-8 w-[1.5px] flex-none rounded-full bg-[#DDDEE1]/55 lg:h-[42px]" />
+          <span className="hidden h-8 w-[1.5px] flex-none rounded-full bg-[#DDDEE1]/55 lg:block lg:h-[42px]" />
           <span className="flex flex-col items-center gap-[3px]">
             <Image
               src="/brand/logo-word.svg"
@@ -105,8 +110,13 @@ function Header({ signedIn }: { signedIn: boolean }) {
               priority
               className="mt-0.5 h-8 w-auto lg:h-10"
             />
-            <span className="whitespace-nowrap text-center text-[8px] tracking-[.2px] text-[#CBD6E8] lg:text-[9.5px]">
-              Conectamos clientes y profesionales
+            {/*
+              El subtítulo sube contra la palabra: el alto de línea del SVG
+              deja un hueco que lo despegaba del logo en vez de leerse como
+              parte de él.
+            */}
+            <span className="-mt-[7px] whitespace-nowrap text-center text-[8px] tracking-[.2px] text-[#CBD6E8] lg:text-[9.5px]">
+              Conectando clientes y profesionales
             </span>
           </span>
         </Link>
@@ -218,9 +228,20 @@ function Header({ signedIn }: { signedIn: boolean }) {
 
         {/* Acciones mobile */}
         <div className="ml-auto flex items-center gap-2 lg:hidden">
+          {/*
+            Con sesión, "Mi perfil" es el amarillo de la marca igual que en
+            escritorio: es la acción propia de quien ya entró, y verla de un
+            color acá y de otro allá hacía dudar de que fuera el mismo botón.
+            Sin sesión, "Entrar" queda delineado — el que pesa es "Publicar mi
+            perfil", que vive en el drawer.
+          */}
           <Link
             href={signedIn ? "/dashboard" : "/entrar"}
-            className="flex h-[38px] items-center rounded-[9px] border border-white/30 px-3.5 text-[14px] font-semibold text-white"
+            className={`flex h-[38px] items-center rounded-[9px] px-3.5 text-[14px] ${
+              signedIn
+                ? "bg-accent font-bold text-ink transition-colors hover:bg-accent-hover"
+                : "border border-white/30 font-semibold text-white"
+            }`}
           >
             {signedIn ? "Mi perfil" : "Entrar"}
           </Link>

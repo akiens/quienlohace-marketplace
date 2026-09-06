@@ -176,10 +176,22 @@ export function SingleImageField({
         {label}
       </legend>
 
-      <div className="flex w-full flex-wrap items-center gap-4">
+      {/*
+        La foto de perfil va al lado de sus botones —es un círculo chico y
+        sobra el ancho—, y la portada arriba de ellos: es una franja que ocupa
+        todo el ancho, y al lado dejaba los botones en una columna de cien
+        píxeles con el texto partido letra por letra.
+      */}
+      <div
+        className={`flex w-full gap-4 ${
+          shape === "circle"
+            ? "items-center"
+            : "flex-col sm:flex-row sm:items-center"
+        }`}
+      >
         <div
           className={`relative flex items-center justify-center overflow-hidden border border-dashed border-line-strong bg-surface-muted ${
-            shape === "circle" ? "flex-none" : "min-w-[200px] flex-1"
+            shape === "circle" ? "flex-none" : "w-full sm:min-w-[200px] sm:flex-1"
           } ${box}`}
         >
           {shown ? (
@@ -208,7 +220,7 @@ export function SingleImageField({
           ) : null}
         </div>
 
-        <div className="flex flex-col items-start gap-1.5">
+        <div className="flex min-w-0 flex-col items-start gap-1.5">
           <input
             ref={inputRef}
             type="file"
@@ -227,7 +239,7 @@ export function SingleImageField({
               type="button"
               disabled={pending}
               onClick={() => inputRef.current?.click()}
-              className={`flex h-8 items-center gap-1 rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold disabled:opacity-50 ${SECONDARY_SURFACE}`}
+              className={`flex h-11 items-center gap-1 rounded-input px-3 text-[14px] font-semibold disabled:opacity-50 sm:h-8 sm:pl-1.5 sm:pr-2.5 sm:text-[13px] ${SECONDARY_SURFACE}`}
             >
               <Icon name={shown ? "sync" : "upload"} className="text-[16px]" />
               {shown ? "Cambiar" : "Subir"}
@@ -238,7 +250,7 @@ export function SingleImageField({
                 type="button"
                 disabled={pending}
                 onClick={remove}
-                className="flex h-8 items-center gap-1 rounded-input px-2 text-[13px] font-semibold text-[#B42318] transition-colors hover:bg-[#FFFBFA] disabled:opacity-50"
+                className="flex h-11 items-center gap-1 rounded-input px-3 text-[14px] font-semibold text-[#B42318] transition-colors hover:bg-[#FFFBFA] disabled:opacity-50 sm:h-8 sm:px-2 sm:text-[13px]"
               >
                 <Icon name="delete" className="text-[16px]" />
                 Quitar
@@ -246,7 +258,7 @@ export function SingleImageField({
             ) : null}
           </div>
 
-          <span className="max-w-[240px] text-[12.5px] leading-relaxed text-ink-faint">
+          <span className="text-[12.5px] leading-relaxed text-ink-faint sm:max-w-[240px]">
             {hint}
           </span>
         </div>
@@ -381,9 +393,9 @@ export function GalleryField({
               aria-label="Quitar imagen"
               disabled={pending}
               onClick={() => remove(image.id)}
-              className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-[#B42318] shadow-card transition-colors hover:bg-white disabled:opacity-50"
+              className="absolute right-1.5 top-1.5 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-[#B42318] shadow-card transition-colors hover:bg-white disabled:opacity-50 sm:h-7 sm:w-7"
             >
-              <Icon name="delete" className="text-[16px]" />
+              <Icon name="delete" className="text-[18px] sm:text-[16px]" />
             </button>
           </div>
         ))}

@@ -81,12 +81,17 @@ export default async function CreateProfilePage() {
   const images = await listImagesForUser(user.id);
 
   return (
-    <div className="shell flex flex-col gap-7 py-8">
-      <header className="flex flex-col gap-1.5">
-        <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
+    /*
+     * En el teléfono el asistente ocupa el ancho completo: el margen del
+     * `shell` acá no protege nada —adentro no hay más que campos— y se lleva
+     * 40px de los 360 que suele haber. Vuelve desde `sm`, donde ya sobra.
+     */
+    <div className="mx-auto flex w-full max-w-shell flex-col gap-4 px-0 pb-8 pt-4 sm:gap-7 sm:px-6 sm:py-8">
+      <header className="flex flex-col gap-1 px-4 sm:gap-1.5 sm:px-0">
+        <h1 className="text-[22px] font-bold tracking-[-.4px] text-ink sm:text-[30px]">
           {settlingUpgrade ? `Completá tu plan ${plan.name}` : "Creá tu perfil"}
         </h1>
-        <p className="text-[15px] text-ink-soft">
+        <p className="text-[14px] text-ink-soft sm:text-[15px]">
           {settlingUpgrade
             ? "Tu plan ya está activo. Completá los pasos que habilita y el pago para terminar."
             : "Completá estos datos para aparecer en las búsquedas."}

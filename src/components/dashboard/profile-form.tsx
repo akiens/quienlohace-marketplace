@@ -398,6 +398,18 @@ function ProfileFormFields(props: {
     draft?.paymentAcknowledged ?? false,
   );
 
+  /*
+   * Las formas de pago son estado y no casillas sueltas del DOM.
+   *
+   * Antes iban con `defaultChecked`: al volver el servidor con un error el
+   * formulario se vuelve a pintar, y como `defaultChecked` sólo manda al
+   * montar, las casillas se caían a lo que tuviera el perfil —en el alta,
+   * nada— y se desmarcaban solas después de apretar "Crear perfil".
+   */
+  const [paymentMethods, setPaymentMethods] = useState<string[]>(
+    draft?.paymentMethods ?? profile?.paymentMethods ?? [],
+  );
+
   // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
   const [whatsappEnabled, setWhatsappEnabled] = useState(
     draft?.whatsappEnabled ?? profile?.whatsappEnabled ?? true,
@@ -442,15 +454,6 @@ function ProfileFormFields(props: {
     };
 
     if (draft.type) setField("type", draft.type);
-
-    if (draft.paymentMethods?.length) {
-      const chosen = new Set(draft.paymentMethods);
-      for (const box of form.querySelectorAll<HTMLInputElement>(
-        'input[name="paymentMethods"]',
-      )) {
-        box.checked = chosen.has(box.value);
-      }
-    }
   }, [draft]);
 
   const selectedSpecialties: SearchOption[] = useMemo(
@@ -654,15 +657,6 @@ function ProfileFormFields(props: {
         : "";
     };
 
-    const paymentMethods = form
-      ? Array.from(
-          form.querySelectorAll<HTMLInputElement>(
-            'input[name="paymentMethods"]:checked',
-          ),
-          (box) => box.value,
-        )
-      : [];
-
     writeProfileDraft(
       {
         step,
@@ -703,6 +697,7 @@ function ProfileFormFields(props: {
     phonePublic,
     whatsappEnabled,
     scheduleEntries,
+    paymentMethods,
     paymentDone,
     socialLinks,
   ]);
@@ -725,6 +720,49 @@ function ProfileFormFields(props: {
     }
   }, [state.message, state.errors]);
 
+  /*
+   * Un envío rechazado lleva al paso que lo rechazó.
+   *
+   * En el asistente sólo se ve un paso por vez, así que un error de otro
+   * quedaba fuera de la pantalla: se apretaba "Crear perfil", el servidor
+   * devolvía el error y desde afuera no pasaba nada —ni mensaje ni cambio de
+   * página—, como si el botón estuviera roto.
+   *
+   * Se ajusta durante el render y no desde un efecto, igual que `visited`:
+   * así el paso con el error se muestra en el mismo render que trae el error,
+   * sin uno intermedio mostrando todavía el paso viejo.
+   *
+   * `handledErrors` guarda de qué respuesta es el salto ya hecho, para que
+   * moverse a otro paso después no vuelva a arrastrar al del error. Dos
+   * envíos con el mismo error traen objetos `state` distintos, así que el
+   * segundo intento vuelve a saltar.
+   */
+  const [handledErrors, setHandledErrors] = useState<FormState | null>(null);
+
+  if (!editing && state.errors && handledErrors !== state) {
+    setHandledErrors(state);
+
+    /*
+     * Qué campos mira cada paso: la misma correspondencia que pinta el error
+     * en la barra de pasos.
+     */
+    const FIELDS_BY_STEP: Record<StepId, string[]> = {
+      identidad: ["name", "description", "type"],
+      rubro: ["specialtyIds"],
+      servicios: ["services"],
+      zonas: ["serviceModes", "locations", "serviceAreaIds"],
+      contacto: ["phone", "contactEmail", "scheduleEntries", "paymentMethods"],
+      imagenes: [],
+      redes: ["socialLinks"],
+      pago: [],
+    };
+
+    const errored = state.errors;
+    const failed = STEPS.find((s) =>
+      FIELDS_BY_STEP[s.id].some((field) => errored[field]),
+    );
+    if (failed) setRequestedStep(failed.id);
+  }
 
   /*
    * Los pasos que hay que completar para poder guardar.
@@ -879,11 +917,24 @@ function ProfileFormFields(props: {
     pago: false,
   };
 
+
   return (
     <form
       ref={formRef}
       action={action}
-      className="flex flex-col gap-5"
+      /*
+       * Sin validación nativa: en el asistente los pasos que no están a la
+       * vista se ocultan con `display:none`, y un `required` vacío dentro de
+       * uno de ellos aborta el envío sin decir nada —el navegador no puede
+       * enfocar ni mostrar el mensaje de un campo oculto—. Así "Crear perfil"
+       * no hacía nada y la página se quedaba donde estaba.
+       *
+       * Lo obligatorio se sigue exigiendo: `missing` deshabilita el envío
+       * hasta que esté completo, y el servidor revalida todo con Zod (TR-004),
+       * que es lo que pinta los errores por campo.
+       */
+      noValidate
+      className="flex flex-col gap-4 sm:gap-5"
       /*
        * Se escucha en el formulario y no en cada campo: `input` y `change`
        * burbujean, así que un solo par de manejadores alcanza para los
@@ -901,14 +952,20 @@ function ProfileFormFields(props: {
       {state.message ? (
         <p
           role="status"
-          className="flex items-center gap-2 rounded-card border border-[#D6EFE0] bg-[#F4FBF7] px-4 py-3 text-[14px] font-medium text-[#1E8C56]"
+          className={`flex items-center gap-2 rounded-card border border-[#D6EFE0] bg-[#F4FBF7] px-4 py-3 text-[14px] font-medium text-[#1E8C56] ${
+            editing ? "" : "mx-3 sm:mx-0"
+          }`}
         >
           <Icon name="check_circle" filled className="text-[18px]" />
           {state.message}
         </p>
       ) : null}
 
-      {errors.form ? <ErrorBanner>{errors.form}</ErrorBanner> : null}
+      {errors.form ? (
+        <ErrorBanner className={editing ? "" : "mx-3 sm:mx-0"}>
+          {errors.form}
+        </ErrorBanner>
+      ) : null}
 
       {/* La barra de pasos es del recorrido guiado: en edición no hay
           recorrido, están todos los campos a la vez. */}
@@ -928,7 +985,20 @@ function ProfileFormFields(props: {
         tarjetas chicas y a esta escala, con borde propio y sobre el gris del
         fondo, no se distinguía de no tener nada.
       */}
-      <div className="rounded-card border border-line bg-white shadow-panel">
+      {/*
+        En el asistente la caja va a todo el ancho del teléfono: con el borde
+        redondeado y su margen se perdían casi 50px de los 360 que hay, justo
+        donde se escribe. En edición no, porque ahí el formulario vive dentro
+        del `shell`, que ya pone su propio margen: sin borde redondeado quedaba
+        una caja cuadrada flotando en el medio de una página con aire.
+      */}
+      <div
+        className={`border-line bg-white shadow-panel ${
+          editing
+            ? "rounded-card border"
+            : "border-y sm:rounded-card sm:border"
+        }`}
+      >
         {/* Cada panel se oculta con `hidden`, no se desmonta: los valores
             siguen en el formulario aunque el paso no esté a la vista. */}
         <Panel active={step === "identidad"} editing={editing} title="Identidad">
@@ -1140,28 +1210,27 @@ function ProfileFormFields(props: {
             required
             group
           >
-            <div className="flex flex-col gap-1.5">
+            {/*
+              Cada modalidad es una fila entera y no una casilla suelta: en el
+              teléfono se toca el renglón completo, que es un blanco de 48px
+              en vez de los 16 de la casilla.
+            */}
+            <div className="flex flex-col gap-2">
               {SERVICE_MODES.map((mode) => (
-                <label
+                <CheckRow
                   key={mode}
-                  className="flex cursor-pointer items-center gap-2.5 text-[14px] text-ink-muted"
-                >
-                  <input
-                    type="checkbox"
-                    name="serviceModes"
-                    value={mode}
-                    checked={serviceModes.includes(mode)}
-                    onChange={(event) => {
-                      setServiceModes(
-                        event.target.checked
-                          ? [...serviceModes, mode]
-                          : serviceModes.filter((item) => item !== mode),
-                      );
-                    }}
-                    className="h-4 w-4 accent-brand-800"
-                  />
-                  {SERVICE_MODE_LABELS[mode]}
-                </label>
+                  name="serviceModes"
+                  value={mode}
+                  checked={serviceModes.includes(mode)}
+                  onChange={(checked) => {
+                    setServiceModes(
+                      checked
+                        ? [...serviceModes, mode]
+                        : serviceModes.filter((item) => item !== mode),
+                    );
+                  }}
+                  label={SERVICE_MODE_LABELS[mode]}
+                />
               ))}
             </div>
           </Field>
@@ -1203,9 +1272,9 @@ function ProfileFormFields(props: {
                           setLocations(locations.filter((_, i) => i !== index))
                         }
                         aria-label={`Quitar ${locationLabelById(item.locationId)}`}
-                        className="rounded p-1 hover:bg-surface-sunken"
+                        className="-mr-1 flex h-10 w-10 flex-none items-center justify-center rounded hover:bg-surface-sunken sm:mr-0 sm:h-8 sm:w-8"
                       >
-                        <Icon name="close" className="text-[17px]" />
+                        <Icon name="close" className="text-[19px] sm:text-[17px]" />
                       </button>
                     </div>
 
@@ -1223,7 +1292,7 @@ function ProfileFormFields(props: {
                     />
 
                     {/* BR-015: sólo una principal. */}
-                    <label className="flex cursor-pointer items-center gap-2 text-[13px] text-ink-muted">
+                    <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-[14px] text-ink-muted sm:min-h-0 sm:gap-2 sm:text-[13px]">
                       <input
                         type="radio"
                         name="primaryLocation"
@@ -1237,7 +1306,7 @@ function ProfileFormFields(props: {
                             })),
                           )
                         }
-                        className="h-4 w-4 accent-brand-800"
+                        className="h-5 w-5 flex-none accent-brand-800 sm:h-4 sm:w-4"
                       />
                       Es mi ubicación principal
                     </label>
@@ -1364,32 +1433,24 @@ function ProfileFormFields(props: {
             />
           </Field>
 
-          <label className="flex items-center gap-2.5 text-[14px] text-ink-muted">
-            <input
-              type="checkbox"
-              name="whatsappEnabled"
-              checked={whatsappEnabled}
-              onChange={(event) => setWhatsappEnabled(event.target.checked)}
-              className="h-4 w-4 accent-brand-800"
-            />
-            Este número recibe WhatsApp
-          </label>
+          <CheckRow
+            name="whatsappEnabled"
+            checked={whatsappEnabled}
+            onChange={setWhatsappEnabled}
+            label="Este número recibe WhatsApp"
+          />
 
           {/*
             BR-004: ocultar el teléfono lo saca del perfil y también de
             WhatsApp. Tiene que quedar algún canal público, y de eso avisa el
             servidor si no queda ninguno.
           */}
-          <label className="flex items-center gap-2.5 text-[14px] text-ink-muted">
-            <input
-              type="checkbox"
-              name="phonePublic"
-              checked={phonePublic}
-              onChange={(event) => setPhonePublic(event.target.checked)}
-              className="h-4 w-4 accent-brand-800"
-            />
-            Mostrar mi teléfono en el perfil público
-          </label>
+          <CheckRow
+            name="phonePublic"
+            checked={phonePublic}
+            onChange={setPhonePublic}
+            label="Mostrar mi teléfono en el perfil público"
+          />
 
           <Field
             label="Correo de contacto"
@@ -1449,21 +1510,28 @@ function ProfileFormFields(props: {
           </Field>
 
           <Field label="Formas de pago" error={errors.paymentMethods} group>
-            <div className="flex flex-wrap gap-x-5 gap-y-2">
+            {/*
+              Dos columnas en el teléfono: las etiquetas son cortas ("Efectivo",
+              "Débito") y en una sola columna el paso se estiraba media pantalla
+              de más por cinco palabras.
+            */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
               {PAYMENT_OPTIONS.map((method) => (
-                <label
+                <CheckRow
                   key={method}
-                  className="flex cursor-pointer items-center gap-2 text-[14px] text-ink-muted"
-                >
-                  <input
-                    type="checkbox"
-                    name="paymentMethods"
-                    value={method}
-                    defaultChecked={profile?.paymentMethods.includes(method)}
-                    className="h-4 w-4 accent-brand-800"
-                  />
-                  {PAYMENT_METHOD_LABELS[method]}
-                </label>
+                  name="paymentMethods"
+                  value={method}
+                  checked={paymentMethods.includes(method)}
+                  onChange={(on) =>
+                    setPaymentMethods((current) =>
+                      on
+                        ? [...current, method]
+                        : current.filter((m) => m !== method),
+                    )
+                  }
+                  label={PAYMENT_METHOD_LABELS[method]}
+                  compact
+                />
               ))}
             </div>
           </Field>
@@ -1568,17 +1636,13 @@ function ProfileFormFields(props: {
               que el recorrido pueda verse completo. No condiciona la creación
               del perfil — el botón de guardar no la mira.
             */}
-            <label className="flex cursor-pointer items-start gap-2.5 text-[14px] leading-relaxed text-ink-muted">
-              <input
-                type="checkbox"
-                name="paymentAcknowledged"
-                checked={paymentDone}
-                onChange={(event) => setPaymentDone(event.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-brand-800"
-              />
-              Doy por completado este paso. Cuando habilitemos los pagos te
-              avisamos para completar la suscripción.
-            </label>
+            <CheckRow
+              name="paymentAcknowledged"
+              checked={paymentDone}
+              onChange={setPaymentDone}
+              label="Doy por completado este paso. Cuando habilitemos los pagos te avisamos para completar la suscripción."
+              align="start"
+            />
           </Panel>
         ) : null}
 
@@ -1624,7 +1688,19 @@ type LocationRow = {
 };
 
 
-/** Barra de pasos: dice dónde estás, qué falta y dónde hay un error. */
+/**
+ * Barra de pasos: dice dónde estás, qué falta y dónde hay un error.
+ *
+ * Son dos presentaciones del mismo recorrido, no dos componentes: en el
+ * teléfono ocho nodos con su etiqueta no entran ni de lejos —quedaban en un
+ * carrusel horizontal donde el paso activo podía estar fuera de la vista— y
+ * en escritorio el camino completo se lee de un golpe y vale la pena.
+ *
+ * La versión de teléfono dice en palabras dónde estás ("Paso 3 de 8") y
+ * dibuja el avance en una fila de segmentos, que sí entran: son tocables para
+ * volver a un paso ya visto, sin pedir precisión de un píxel porque el área
+ * sensible es más alta que la línea que se ve.
+ */
 function StepBar({
   steps,
   current,
@@ -1639,76 +1715,151 @@ function StepBar({
   hasError: Record<StepId, boolean>;
   onSelect: (id: StepId) => void;
 }) {
+  const index = steps.findIndex((s) => s.id === current);
+  const step = steps[index];
+
   return (
-    /*
-     * Los pasos van unidos por una línea para que se lean como un recorrido y
-     * no como pestañas sueltas. La línea vive detrás de los nodos (`-z-10`) y
-     * se recorta a la altura del círculo.
-     */
-    <ol className="flex items-start overflow-x-auto pb-1">
-      {steps.map((step, index) => {
-        const active = step.id === current;
-        const done = completion[step.id];
-        const failed = hasError[step.id];
-        const previousDone = index > 0 && completion[steps[index - 1]!.id];
-
-        return (
-          <li
-            key={step.id}
-            className="relative flex min-w-[84px] flex-1 flex-col items-center gap-1.5"
-          >
-            {/* Tramo que llega desde el paso anterior. */}
-            {index > 0 ? (
-              <span
-                aria-hidden="true"
-                className={`absolute right-1/2 top-[18px] -z-10 h-0.5 w-full ${
-                  previousDone ? "bg-[#7CC9A3]" : "bg-line-strong"
-                }`}
-              />
-            ) : null}
-
-            <button
-              type="button"
-              onClick={() => onSelect(step.id)}
-              aria-current={active ? "step" : undefined}
-              className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors ${
-                failed
-                  ? "border-[#D92D20] bg-[#FFFBFA] text-[#B42318]"
-                  : active
-                    ? "border-brand-800 bg-brand-800 text-white"
-                    : done
-                      ? "border-[#1E8C56] bg-[#E8F6EF] text-[#1E8C56]"
-                      : "border-line-strong bg-white text-ink-faint hover:border-[#C6CEDC]"
+    <>
+      {/* Teléfono: título del paso, cuenta y segmentos de avance. */}
+      <div className="flex flex-col gap-2 px-4 sm:hidden">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="flex min-w-0 items-center gap-2">
+            <Icon
+              name={hasError[current] ? "error" : (step?.icon ?? "badge")}
+              className={`text-[20px] ${
+                hasError[current] ? "text-[#B42318]" : "text-brand-800"
               }`}
-            >
-              <Icon
-                name={failed ? "error" : done && !active ? "check" : step.icon}
-                filled={done && !failed}
-                className="text-[18px]"
-              />
-            </button>
-
-            <span
-              className={`px-1 text-center text-[12.5px] font-semibold leading-tight ${
-                failed
-                  ? "text-[#B42318]"
-                  : active
-                    ? "text-ink"
-                    : done
-                      ? "text-[#1E8C56]"
-                      : "text-ink-soft"
-              }`}
-            >
-              {step.label}
+            />
+            <span className="truncate text-[17px] font-bold tracking-[-.2px] text-ink">
+              {step?.label}
             </span>
-          </li>
-        );
-      })}
-    </ol>
+          </span>
+          <span className="flex-none text-[12.5px] font-semibold tabular-nums text-ink-soft">
+            Paso {index + 1} de {steps.length}
+          </span>
+        </div>
+
+        {/*
+         * Un segmento por paso. El área tocable ocupa toda la altura de la
+         * fila aunque la barra sea de 4px: apuntarle a una línea fina con el
+         * pulgar es lo que hace que un control así se sienta roto.
+         */}
+        <div className="flex gap-1">
+          {steps.map((item, position) => {
+            const failed = hasError[item.id];
+            const done = completion[item.id];
+            const active = item.id === current;
+
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSelect(item.id)}
+                aria-label={`Ir al paso ${position + 1}: ${item.label}`}
+                aria-current={active ? "step" : undefined}
+                className="group flex h-6 flex-1 items-center"
+              >
+                <span
+                  className={`h-1 w-full rounded-full transition-colors ${
+                    failed
+                      ? "bg-[#D92D20]"
+                      : active
+                        ? "bg-brand-800"
+                        : done
+                          ? "bg-[#7CC9A3]"
+                          : "bg-line-strong"
+                  }`}
+                />
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/*
+       * Escritorio: el recorrido entero. Los pasos van unidos por una línea
+       * para que se lean como un camino y no como pestañas sueltas. La línea
+       * vive detrás de los nodos (`-z-10`) y se recorta a la altura del
+       * círculo.
+       */}
+      <ol className="hidden items-start sm:flex">
+        {steps.map((item, position) => {
+          const active = item.id === current;
+          const done = completion[item.id];
+          const failed = hasError[item.id];
+          const previousDone =
+            position > 0 && completion[steps[position - 1]!.id];
+
+          return (
+            <li
+              key={item.id}
+              className="relative flex min-w-[84px] flex-1 flex-col items-center gap-1.5"
+            >
+              {/* Tramo que llega desde el paso anterior. */}
+              {position > 0 ? (
+                <span
+                  aria-hidden="true"
+                  className={`absolute right-1/2 top-[18px] -z-10 h-0.5 w-full ${
+                    previousDone ? "bg-[#7CC9A3]" : "bg-line-strong"
+                  }`}
+                />
+              ) : null}
+
+              <button
+                type="button"
+                onClick={() => onSelect(item.id)}
+                aria-current={active ? "step" : undefined}
+                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors ${
+                  failed
+                    ? "border-[#D92D20] bg-[#FFFBFA] text-[#B42318]"
+                    : active
+                      ? "border-brand-800 bg-brand-800 text-white"
+                      : done
+                        ? "border-[#1E8C56] bg-[#E8F6EF] text-[#1E8C56]"
+                        : "border-line-strong bg-white text-ink-faint hover:border-[#C6CEDC]"
+                }`}
+              >
+                <Icon
+                  name={failed ? "error" : done && !active ? "check" : item.icon}
+                  filled={done && !failed}
+                  className="text-[18px]"
+                />
+              </button>
+
+              <span
+                className={`px-1 text-center text-[12.5px] font-semibold leading-tight ${
+                  failed
+                    ? "text-[#B42318]"
+                    : active
+                      ? "text-ink"
+                      : done
+                        ? "text-[#1E8C56]"
+                        : "text-ink-soft"
+                }`}
+              >
+                {item.label}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </>
   );
 }
 
-/** Pie con navegación entre pasos y el guardado. */
+/**
+ * Pie con navegación entre pasos y el guardado.
+ *
+ * En el teléfono queda pegado abajo: los pasos largos —servicios, zonas,
+ * imágenes— pasan de una pantalla, y con el pie al final del contenido había
+ * que hacer scroll hasta el fondo cada vez para seguir. Pegado, la acción
+ * principal está siempre bajo el pulgar.
+ *
+ * Ahí la jerarquía se invierte respecto de escritorio: "Siguiente" ocupa el
+ * ancho y "Atrás" es un botón chico al lado, porque avanzar es lo que se hace
+ * en cada paso y volver es la excepción. En el último paso el que ocupa el
+ * ancho es el de crear el perfil.
+ */
 function Footer({
   steps,
   step,
@@ -1730,35 +1881,28 @@ function Footer({
   const previous = steps[index - 1];
   const next = steps[index + 1];
 
+  const submitLabel = pending
+    ? "Guardando…"
+    : isNew
+      ? "Crear perfil"
+      : "Guardar cambios";
+
   return (
-    <div className="flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-surface-muted px-5 py-3.5">
-      {previous ? (
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => onStep(previous.id)}
-        >
-          <Icon name="arrow_back" className="text-[17px]" />
-          {previous.label}
-        </Button>
-      ) : null}
-
-      {next ? (
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => onStep(next.id)}
-        >
-          {next.label}
-          <Icon name="arrow_forward" className="text-[17px]" />
-        </Button>
-      ) : null}
-
-      <div className="ml-auto flex flex-wrap items-center gap-3">
+    /*
+     * `sticky bottom-0` y no `fixed`: así el pie pertenece a la caja del
+     * formulario y no tapa el pie del sitio ni se superpone con nada cuando
+     * se llega al final de la página. El `safe-area` es por la barra de
+     * gestos del teléfono, que si no se come el botón.
+     */
+    <div className="sticky bottom-0 z-30 flex flex-col gap-2 border-t border-line-soft bg-surface-muted px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 sm:rounded-b-card sm:px-5 sm:py-3.5">
+      {/*
+        El estado va arriba de los botones en el teléfono y no al lado: una
+        lista de pasos que faltan al lado de un botón lo dejaba de dos
+        palabras de ancho.
+      */}
+      <div className="flex items-center justify-between gap-3 sm:order-2 sm:ml-auto sm:justify-end">
         {missing.length > 0 ? (
-          <span className="text-[12.5px] text-ink-soft">
+          <span className="text-[12.5px] leading-tight text-ink-soft">
             Falta completar: {missing.join(", ")}
           </span>
         ) : (
@@ -1767,13 +1911,108 @@ function Footer({
             Listo para publicar
           </span>
         )}
-        <Button type="submit" size="sm" disabled={pending || !canSubmit}>
-          {pending
-            ? "Guardando…"
-            : isNew
-              ? "Crear perfil"
-              : "Guardar cambios"}
+
+        {/* En escritorio el envío va acá, junto al estado. */}
+        <Button
+          type="submit"
+          size="sm"
+          disabled={pending || !canSubmit}
+          className="hidden sm:inline-flex"
+        >
+          {submitLabel}
         </Button>
+      </div>
+
+      <div className="flex items-center gap-2 sm:order-1 sm:gap-2.5">
+        {previous ? (
+          <>
+            {/* Teléfono: sólo la flecha, para dejarle el ancho a "Siguiente". */}
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => onStep(previous.id)}
+              aria-label={`Volver a ${previous.label}`}
+              className="h-12 w-12 flex-none px-0 sm:hidden"
+            >
+              <Icon name="arrow_back" className="text-[20px]" />
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => onStep(previous.id)}
+              className="hidden sm:inline-flex"
+            >
+              <Icon name="arrow_back" className="text-[17px]" />
+              {previous.label}
+            </Button>
+          </>
+        ) : null}
+
+        {next ? (
+          <>
+            {/*
+              Teléfono: la acción del paso, a todo el ancho que sobra.
+              "Siguiente" dice a dónde lleva —"Siguiente: Servicios"— para que
+              se sepa qué viene antes de tocarlo.
+
+              Con todo lo obligatorio completo el principal pasa a ser crear el
+              perfil, aunque queden pasos por delante: los que faltan son
+              opcionales, y obligar a caminarlos hasta el final para encontrar
+              el botón sería pedir trabajo por nada. Seguir avanzando se puede
+              igual, con el botón que queda al lado.
+            */}
+            {canSubmit ? (
+              <>
+                <Button
+                  type="submit"
+                  disabled={pending}
+                  className="h-12 min-w-0 flex-1 text-[15px] sm:hidden"
+                >
+                  {submitLabel}
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => onStep(next.id)}
+                  aria-label={`Seguir a ${next.label}`}
+                  className="h-12 w-12 flex-none px-0 sm:hidden"
+                >
+                  <Icon name="arrow_forward" className="text-[20px]" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                type="button"
+                onClick={() => onStep(next.id)}
+                className="h-12 min-w-0 flex-1 text-[15px] sm:hidden"
+              >
+                <span className="truncate">Siguiente: {next.label}</span>
+                <Icon name="arrow_forward" className="flex-none text-[19px]" />
+              </Button>
+            )}
+
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => onStep(next.id)}
+              className="hidden sm:inline-flex"
+            >
+              {next.label}
+              <Icon name="arrow_forward" className="text-[17px]" />
+            </Button>
+          </>
+        ) : (
+          /* Último paso: el envío es la acción principal del teléfono. */
+          <Button
+            type="submit"
+            disabled={pending || !canSubmit}
+            className="h-12 min-w-0 flex-1 text-[15px] sm:hidden"
+          >
+            {submitLabel}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -1801,9 +2040,13 @@ function EditFooter({
   onCancel?: () => void;
 }) {
   return (
-    <div className="sticky bottom-0 flex flex-wrap items-center gap-2.5 border-t border-line-soft bg-surface-muted px-5 py-3.5">
+    /*
+     * El `safe-area` es por la barra de gestos del teléfono: pegado abajo sin
+     * eso, el botón de guardar queda debajo de ella y se toca la mitad.
+     */
+    <div className="sticky bottom-0 z-30 flex flex-col gap-2 rounded-b-card border-t border-line-soft bg-surface-muted px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 sm:px-5 sm:py-3.5">
       {missing.length > 0 ? (
-        <span className="text-[12.5px] text-ink-soft">
+        <span className="text-[12.5px] leading-tight text-ink-soft">
           Falta completar: {missing.join(", ")}
         </span>
       ) : !dirty ? (
@@ -1816,11 +2059,25 @@ function EditFooter({
         </span>
       ) : null}
 
-      <div className="ml-auto flex flex-wrap items-center gap-2.5">
-        <Button type="button" variant="secondary" size="sm" onClick={onCancel}>
-          Salir del modo edición
+      {/*
+        Guardar ocupa el ancho en el teléfono y salir queda a su lado: es la
+        acción por la que se entró al modo edición.
+      */}
+      <div className="flex items-center gap-2 sm:ml-auto sm:flex-wrap sm:gap-2.5">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={onCancel}
+          className="h-12 flex-none px-3 text-[14px] sm:h-9 sm:px-4 sm:text-[13.5px]"
+        >
+          <span className="sm:hidden">Salir</span>
+          <span className="hidden sm:inline">Salir del modo edición</span>
         </Button>
-        <Button type="submit" size="sm" disabled={pending || !canSubmit}>
+        <Button
+          type="submit"
+          disabled={pending || !canSubmit}
+          className="h-12 min-w-0 flex-1 text-[15px] sm:h-9 sm:flex-none sm:text-[13.5px]"
+        >
           {pending ? "Guardando…" : "Guardar cambios"}
         </Button>
       </div>
@@ -1853,7 +2110,7 @@ function Panel({
 }) {
   if (editing) {
     return (
-      <section className="flex flex-col gap-4 border-b border-line-soft p-5 last:border-b-0">
+      <section className="flex flex-col gap-4 border-b border-line-soft p-4 last:border-b-0 sm:p-5">
         {title ? (
           <h2 className="text-[15px] font-bold tracking-[-.2px] text-ink">
             {title}
@@ -1865,9 +2122,72 @@ function Panel({
   }
 
   return (
-    <div className={`${active ? "flex" : "hidden"} flex-col gap-4 p-5`}>
+    <div
+      className={`${active ? "flex" : "hidden"} flex-col gap-5 p-4 sm:gap-4 sm:p-5`}
+    >
       {children}
     </div>
+  );
+}
+
+/**
+ * Una casilla con su etiqueta, tocable en todo el renglón.
+ *
+ * Una casilla nativa mide 16px. Con el dedo eso no se acierta, y el que llena
+ * este formulario lo hace casi siempre desde el teléfono, muchas veces parado
+ * en una obra. La fila entera es el blanco: 48px de alto, con borde para que
+ * se vea que es algo que se toca y no un texto suelto.
+ *
+ * Sirve controlada (`checked` + `onChange`) y sin controlar
+ * (`defaultChecked`): las formas de pago viven en el DOM y no en React, y
+ * pasarles `checked` las dejaría congeladas.
+ *
+ * `compact` es para las que van de a dos por fila, donde no hay lugar para el
+ * mismo alto ni el mismo espaciado.
+ */
+function CheckRow({
+  name,
+  value,
+  checked,
+  defaultChecked,
+  onChange,
+  label,
+  align = "center",
+  compact = false,
+}: {
+  name: string;
+  value?: string;
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onChange?: (checked: boolean) => void;
+  label: string;
+  /** `start` para etiquetas de varias líneas: la casilla se alinea arriba. */
+  align?: "center" | "start";
+  compact?: boolean;
+}) {
+  return (
+    <label
+      className={`flex cursor-pointer gap-3 rounded-input border border-line bg-white text-ink-muted transition-colors hover:border-line-strong ${
+        align === "start" ? "items-start" : "items-center"
+      } ${
+        compact
+          ? "min-h-[44px] px-2.5 py-2 text-[13.5px] sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:text-[14px]"
+          : "min-h-[48px] px-3 py-2.5 text-[14.5px] leading-snug sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:text-[14px]"
+      }`}
+    >
+      <input
+        type="checkbox"
+        name={name}
+        value={value}
+        {...(checked === undefined
+          ? { defaultChecked }
+          : { checked, onChange: (e) => onChange?.(e.target.checked) })}
+        className={`h-5 w-5 flex-none accent-brand-800 sm:h-4 sm:w-4 ${
+          align === "start" ? "mt-0.5" : ""
+        }`}
+      />
+      <span className="min-w-0">{label}</span>
+    </label>
   );
 }
 
@@ -1907,7 +2227,7 @@ function Field({
 }) {
   const heading = (
     <>
-      <span className="text-[13.5px] font-semibold text-ink-muted">
+      <span className="text-[14px] font-semibold text-ink-muted sm:text-[13.5px]">
         {label}
         {required ? <span className="text-[#B42318]"> *</span> : null}
       </span>
@@ -1920,12 +2240,14 @@ function Field({
   );
 
   const footer = error ? (
-    <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#B42318]">
-      <Icon name="error" className="text-[15px]" />
+    <span className="flex items-start gap-1.5 text-[13px] font-medium text-[#B42318] sm:text-[12.5px]">
+      <Icon name="error" className="mt-px flex-none text-[15px]" />
       {error}
     </span>
   ) : hint ? (
-    <span className="text-[12.5px] text-ink-faint">{hint}</span>
+    <span className="text-[13px] leading-snug text-ink-faint sm:text-[12.5px]">
+      {hint}
+    </span>
   ) : null;
 
   const className = `flex flex-col gap-1.5 ${half ? "" : "w-full"}`;
@@ -1984,14 +2306,20 @@ function ItemChip({
   onRemove: () => void;
 }) {
   return (
-    <span className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-3 pr-1.5 text-[13px] font-semibold text-brand-800">
+    <span className="flex items-center gap-1 rounded-full bg-brand-100 py-1.5 pl-3.5 pr-1.5 text-[13.5px] font-semibold text-brand-800 sm:gap-1.5 sm:py-1 sm:pl-3 sm:text-[13px]">
       {name ? <input type="hidden" name={name} value={value} /> : null}
       {label}
       {detail ? (
         <span className="font-medium text-[#5B6B87]">{detail}</span>
       ) : null}
-      <button type="button" aria-label={`Quitar ${label}`} onClick={onRemove}>
-        <Icon name="close" className="text-[15px] text-[#5B6B87]" />
+      {/* Igual que en `SearchSelect`: con el dedo, 20px de cruz no se acierta. */}
+      <button
+        type="button"
+        aria-label={`Quitar ${label}`}
+        onClick={onRemove}
+        className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-brand-800 hover:text-white sm:h-5 sm:w-5"
+      >
+        <Icon name="close" className="text-[16px] text-[#5B6B87] sm:text-[15px]" />
       </button>
     </span>
   );
@@ -2022,20 +2350,34 @@ function PlanHint({
   );
 }
 
-function ErrorBanner({ children }: { children: React.ReactNode }) {
+function ErrorBanner({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <p
       role="alert"
-      className="flex items-center gap-2 rounded-card border border-[#FDA29B] bg-[#FFFBFA] px-4 py-3 text-[14px] font-medium text-[#B42318]"
+      className={`flex items-center gap-2 rounded-card border border-[#FDA29B] bg-[#FFFBFA] px-4 py-3 text-[14px] font-medium text-[#B42318] ${className}`}
     >
-      <Icon name="error" className="text-[18px]" />
+      <Icon name="error" className="flex-none text-[18px]" />
       {children}
     </p>
   );
 }
 
+/*
+ * `text-[16px]` en el teléfono no es una decisión de tipografía: iOS hace zoom
+ * automático al enfocar un campo de menos de 16px, y de ahí la página queda
+ * corrida y hay que pellizcar para volver. Desde `sm` vale el tamaño del
+ * sistema visual.
+ *
+ * La altura también sube: 44px es el mínimo que se toca cómodo con el pulgar.
+ */
 function inputClass(error?: string): string {
-  return `h-11 w-full rounded-input border bg-white px-3.5 text-[14.5px] text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-800 ${
+  return `h-12 w-full rounded-input border bg-white px-3.5 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-800 sm:h-11 sm:text-[14.5px] ${
     error ? "border-[#FDA29B]" : "border-line-strong"
   }`;
 }

@@ -81,7 +81,12 @@ export function LocationPicker({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex flex-col gap-2 lg:flex-row">
+      {/*
+        De a dos por fila ya desde `sm`: son "Departamento" y "Localidad", dos
+        listas cortas, y esperar a `lg` dejaba dos selectores gigantes uno
+        arriba del otro en toda tablet.
+      */}
+      <div className="flex flex-col gap-2 sm:flex-row">
         {name && !addMode ? (
           <input type="hidden" name={name} value={value} />
         ) : null}
@@ -157,9 +162,9 @@ export function LocationPicker({
            * un campo para llenar—, que es el problema que se estaba evitando
            * al revés.
            */
-          className={`flex h-8 items-center gap-1 self-start rounded-input pl-1.5 pr-2.5 text-[13px] font-semibold disabled:opacity-50 ${SECONDARY_SURFACE}`}
+          className={`flex h-12 w-full items-center justify-center gap-1 rounded-input px-3 text-[14.5px] font-semibold disabled:opacity-50 sm:h-8 sm:w-auto sm:self-start sm:pl-1.5 sm:pr-2.5 sm:text-[13px] ${SECONDARY_SURFACE}`}
         >
-          <Icon name="add" className="text-[16px]" />
+          <Icon name="add" className="text-[18px] sm:text-[16px]" />
           Agregar zona
         </button>
       ) : null}
@@ -193,5 +198,6 @@ function Level({
   );
 }
 
+/* 16px en el teléfono: por debajo, iOS hace zoom al enfocar el selector. */
 const selectClass =
-  "h-11 w-full rounded-input border border-line-strong bg-white px-3 text-[15px] text-ink outline-none transition-colors focus:border-brand-800 disabled:bg-surface-muted disabled:text-ink-muted";
+  "h-12 w-full rounded-input border border-line-strong bg-white px-3 text-[16px] text-ink outline-none transition-colors focus:border-brand-800 disabled:bg-surface-muted disabled:text-ink-muted sm:h-11 sm:text-[15px]";

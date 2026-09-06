@@ -173,6 +173,55 @@ export function SearchSelect({
     ...(canCreate ? [{ create: true as const }] : []),
   ];
 
+  /*
+   * Cuánto lugar hay debajo del campo, para que la lista no se pase de la
+   * pantalla. Se mide contra `visualViewport` cuando existe, que es el único
+   * que descuenta el teclado del teléfono: `innerHeight` no lo hace y devolvía
+   * un alto donde la lista entraba, aunque en pantalla estuviera tapada.
+   *
+   * Se recalcula al abrir la lista y mientras el teclado aparece o el usuario
+   * hace scroll; con la lista cerrada no hay nada que medir.
+   */
+  useEffect(() => {
+    if (!open) return;
+    const root = rootRef.current;
+    if (!root) return;
+
+    const measure = () => {
+      const field = root.querySelector<HTMLElement>("[data-search-field]");
+      if (!field) return;
+
+      const viewport = window.visualViewport;
+      const bottom = viewport
+        ? viewport.height + viewport.offsetTop
+        : window.innerHeight;
+      // 12px de aire para que no quede pegada al borde de la pantalla.
+      const available = bottom - field.getBoundingClientRect().bottom - 12;
+
+      // Por debajo de 160px la lista no muestra ni dos opciones: ahí conviene
+      // el alto de siempre y que la página haga scroll.
+      root.style.setProperty(
+        "--sel-max",
+        `${Math.max(160, Math.min(available, 288))}px`,
+      );
+    };
+
+    measure();
+
+    const viewport = window.visualViewport;
+    viewport?.addEventListener("resize", measure);
+    viewport?.addEventListener("scroll", measure);
+    window.addEventListener("scroll", measure, true);
+    window.addEventListener("resize", measure);
+
+    return () => {
+      viewport?.removeEventListener("resize", measure);
+      viewport?.removeEventListener("scroll", measure);
+      window.removeEventListener("scroll", measure, true);
+      window.removeEventListener("resize", measure);
+    };
+  }, [open]);
+
   /* Clic afuera cierra: es lo que se espera de algo que se desplegó. */
   useEffect(() => {
     if (!open) return;
@@ -260,15 +309,20 @@ export function SearchSelect({
         <ul className="flex flex-wrap gap-1.5">
           {selected.map((option) => (
             <li key={option.value}>
-              <span className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-3 pr-1.5 text-[13px] font-semibold text-brand-800">
+              {/*
+                La cruz es más grande en el teléfono: con 20px pegada al texto
+                se erraba y se quitaba la etiqueta de al lado, o no pasaba
+                nada. 28px con su propio espacio se acierta.
+              */}
+              <span className="flex items-center gap-1 rounded-full bg-brand-100 py-1.5 pl-3.5 pr-1.5 text-[13.5px] font-semibold text-brand-800 sm:gap-1.5 sm:py-1 sm:pl-3 sm:text-[13px]">
                 {option.label}
                 <button
                   type="button"
                   onClick={() => onRemove(option.value)}
                   aria-label={`Quitar ${option.label}`}
-                  className="flex h-5 w-5 items-center justify-center rounded-full text-brand-800 transition-colors hover:bg-brand-800 hover:text-white"
+                  className="flex h-7 w-7 items-center justify-center rounded-full text-brand-800 transition-colors hover:bg-brand-800 hover:text-white sm:h-5 sm:w-5"
                 >
-                  <Icon name="close" className="text-[14px]" />
+                  <Icon name="close" className="text-[16px] sm:text-[14px]" />
                 </button>
               </span>
             </li>
@@ -279,7 +333,8 @@ export function SearchSelect({
       {locked ? null : (
         <div className="relative">
           <div
-            className={`flex h-11 items-center gap-2 rounded-input border bg-white px-3 transition-colors focus-within:border-brand-800 ${
+            data-search-field
+            className={`flex h-12 items-center gap-2 rounded-input border bg-white px-3 transition-colors focus-within:border-brand-800 sm:h-11 ${
               error ? "border-[#B42318]" : "border-line-strong"
             }`}
           >
@@ -305,7 +360,8 @@ export function SearchSelect({
               }}
               onFocus={() => setOpen(true)}
               onKeyDown={onKeyDown}
-              className="h-full w-full bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-faint"
+              /* 16px en el teléfono: por debajo, iOS hace zoom al enfocar. */
+              className="h-full w-full min-w-0 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-faint sm:text-[15px]"
             />
             <button
               type="button"
@@ -315,7 +371,7 @@ export function SearchSelect({
                 setOpen((current) => !current);
                 inputRef.current?.focus();
               }}
-              className="flex h-6 w-6 flex-none items-center justify-center rounded text-ink-soft hover:text-ink"
+              className="-mr-1 flex h-9 w-9 flex-none items-center justify-center rounded text-ink-soft hover:text-ink sm:mr-0 sm:h-6 sm:w-6"
             >
               <Icon
                 name={open ? "expand_less" : "expand_more"}
@@ -329,7 +385,20 @@ export function SearchSelect({
               id={listId}
               role="listbox"
               aria-label={label}
-              className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-card border border-line-strong bg-white py-1 shadow-mega"
+              /*
+                El alto se limita a lo que queda de pantalla bajo el campo:
+                con el teclado abierto la lista de 288px salía por debajo del
+                borde y las últimas opciones no había forma de alcanzarlas.
+                `--sel-max` lo calcula el efecto de abajo; los 18rem son el
+                valor de siempre, para cuando no haya podido medirse.
+              */
+              style={{ maxHeight: "var(--sel-max, 18rem)" }}
+              /*
+                Por encima del pie pegado del asistente (`z-30`): con `z-20` la
+                lista desplegada quedaba tapada por el botón "Siguiente" y las
+                últimas opciones no se veían.
+              */
+              className="absolute z-40 mt-1 w-full overflow-y-auto overscroll-contain rounded-card border border-line-strong bg-white py-1 shadow-mega"
             >
               {rows.length === 0 ? (
                 <li className="px-3 py-2.5 text-[14px] text-ink-soft">
@@ -364,7 +433,12 @@ export function SearchSelect({
                         choose(row);
                       }}
                       onMouseEnter={() => setActive(index)}
-                      className={`cursor-pointer px-3 py-2 ${
+                      /*
+                        Filas más altas en el teléfono: la lista es de 633
+                        servicios y se recorre con el pulgar, donde 36px de
+                        alto hacen elegir el de arriba o el de abajo.
+                      */
+                      className={`cursor-pointer px-3 py-3 sm:py-2 ${
                         isActive ? "bg-brand-100" : ""
                       }`}
                     >
@@ -375,7 +449,7 @@ export function SearchSelect({
                         </span>
                       ) : (
                         <>
-                          <span className="block text-[14px] text-ink">
+                          <span className="block text-[15px] text-ink sm:text-[14px]">
                             {row.label}
                           </span>
                           {row.context ? (

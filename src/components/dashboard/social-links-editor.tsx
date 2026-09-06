@@ -100,12 +100,19 @@ export function SocialLinksEditor({
                 key={link.platform}
                 className="flex flex-col gap-1 rounded-input border border-line bg-surface-muted px-3 py-2.5"
               >
+                {/*
+                  En el teléfono el nombre de la red va arriba de la dirección:
+                  con la columna fija de 96px al lado, de la URL se veían
+                  cuatro caracteres y no se sabía cuál se había cargado.
+                */}
                 <div className="flex items-center gap-3">
-                  <span className="w-24 flex-none text-[13px] font-semibold text-ink">
-                    {labelOf(link.platform)}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-[13.5px] text-ink-soft">
-                    {link.url}
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5 sm:flex-row sm:items-center sm:gap-3">
+                    <span className="text-[13px] font-semibold text-ink sm:w-24 sm:flex-none">
+                      {labelOf(link.platform)}
+                    </span>
+                    <span className="min-w-0 truncate text-[13.5px] text-ink-soft sm:flex-1">
+                      {link.url}
+                    </span>
                   </span>
                   <button
                     type="button"
@@ -115,9 +122,9 @@ export function SocialLinksEditor({
                       )
                     }
                     aria-label={`Quitar ${labelOf(link.platform)}`}
-                    className="flex h-7 w-7 flex-none items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white hover:text-ink"
+                    className="flex h-10 w-10 flex-none items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-white hover:text-ink sm:h-7 sm:w-7"
                   >
-                    <Icon name="close" className="text-[16px]" />
+                    <Icon name="close" className="text-[18px] sm:text-[16px]" />
                   </button>
                 </div>
                 {fieldError ? (
@@ -140,7 +147,8 @@ export function SocialLinksEditor({
               setPlatform(event.target.value as SocialPlatform);
               setProblem(null);
             }}
-            className="h-11 w-full rounded-input border border-line-strong bg-white px-3 text-[15px] text-ink outline-none transition-colors focus:border-brand-800 sm:w-44 sm:flex-none"
+            /* 16px en el teléfono: por debajo, iOS hace zoom al enfocar. */
+            className="h-12 w-full rounded-input border border-line-strong bg-white px-3 text-[16px] text-ink outline-none transition-colors focus:border-brand-800 sm:h-11 sm:w-44 sm:flex-none sm:text-[15px]"
           >
             <option value="">Elegí una red…</option>
             {available.map((option) => (
@@ -167,13 +175,13 @@ export function SocialLinksEditor({
                 add();
               }
             }}
-            className="h-11 w-full min-w-0 flex-1 rounded-input border border-line-strong bg-white px-3 text-[15px] text-ink outline-none transition-colors focus:border-brand-800"
+            className="h-12 w-full min-w-0 flex-1 rounded-input border border-line-strong bg-white px-3 text-[16px] text-ink outline-none transition-colors focus:border-brand-800 sm:h-11 sm:text-[15px]"
           />
 
           <button
             type="button"
             onClick={add}
-            className={`flex h-11 flex-none items-center justify-center gap-1 rounded-input px-4 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
+            className={`flex h-12 flex-none items-center justify-center gap-1 rounded-input px-4 text-[15px] font-semibold sm:h-11 sm:text-[14px] ${SECONDARY_SURFACE}`}
           >
             <Icon name="add" className="text-[18px]" />
             Agregar
