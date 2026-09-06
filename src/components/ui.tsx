@@ -140,7 +140,7 @@ export function SectionHeading({
 }
 
 type ButtonBase = {
-  variant?: "primary" | "secondary" | "accent" | "ghost";
+  variant?: "primary" | "secondary" | "accent" | "ghost" | "danger";
   size?: "md" | "sm";
 };
 
@@ -177,6 +177,15 @@ const BUTTON_STYLES: Record<NonNullable<ButtonBase["variant"]>, string> = {
   secondary: SECONDARY_SURFACE,
   accent: "bg-accent text-ink hover:bg-accent-hover font-bold",
   ghost: "text-brand-800 hover:bg-brand-100",
+  /*
+   * Confirmar algo que destruye. Es el mismo rojo con el que ya se pintan los
+   * errores, para que "esto no se deshace" se lea igual en todo el sitio.
+   *
+   * Sólido y no un contorno: es el botón que confirma y tiene que verse como
+   * tal. Lo que lo separa del primario es el color, no el peso — la salida
+   * segura al lado suele ser un `ghost`, así que el contraste alcanza.
+   */
+  danger: "bg-[#B42318] text-white hover:bg-[#912018]",
 };
 
 const SIZE_STYLES: Record<NonNullable<ButtonBase["size"]>, string> = {

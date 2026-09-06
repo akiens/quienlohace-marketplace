@@ -8,6 +8,7 @@ import { sectorOfSpecialty } from "@/data/taxonomy";
 import { toE164 } from "@/domain/phone";
 import { effectivePlanId } from "@/domain/plan-changes";
 import { publishBlockers } from "@/domain/publishing";
+import { fitToPlan } from "@/domain/plan-fit";
 import { PLAN_IDS, limitFor, limitMessage } from "@/domain/plans";
 import {
   applyGalleryLimit,
@@ -250,18 +251,35 @@ export async function saveProfile(
     paymentTicked;
 
   const limits = plan ? planLimits(plan) : undefined;
-  const notice = plan ? overLimitNotice(plan, draft) : null;
+
+  /*
+   * En el alta lo que no entra en el plan no se guarda.
+   *
+   * Es lo mismo que hace el asistente al bajar de plan, y se repite acá
+   * porque el envío se puede armar a mano: que la UI recorte no es una
+   * restricción (TR-004). No es una excepción a BR-009 —que conserva lo que
+   * excede al bajar de plan— sino su otra cara: BR-009 protege lo que ya se
+   * había cargado con un plan que se pagó, y en un perfil que todavía no
+   * existe no hay nada de eso. Guardar de más sólo dejaría al perfil nuevo
+   * naciendo con filas inactivas que nadie pidió.
+   *
+   * Editando no se toca: ahí sí hay un perfil con historia y manda BR-009.
+   */
+  const fitted =
+    !existing && plan ? { ...draft, ...fitToPlan(draft, plan).fitted } : draft;
+
+  const notice = plan && existing ? overLimitNotice(plan, draft) : null;
 
   // Al crear, se manda al panel; al editar, se responde en la misma página.
   let isNew = false;
   let saved: Profile;
 
   if (existing) {
-    saved = await profiles.update(existing.id, draft, limits);
+    saved = await profiles.update(existing.id, fitted, limits);
     if (settlingUpgrade) await profiles.markPlanPaid(existing.id);
     revalidatePath(`/profesionales/${existing.slug}`);
   } else {
-    saved = await profiles.create(user.id, draft, planId, limits);
+    saved = await profiles.create(user.id, fitted, planId, limits);
     /*
      * Las imágenes que se subieron durante el alta todavía no tenían perfil al
      * que colgarse: recién ahora existe el id. Sin esto la foto y la portada

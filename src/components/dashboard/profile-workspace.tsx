@@ -93,6 +93,16 @@ export function ProfileWorkspace({
         profile={profile}
         plan={current}
         images={images}
+        /*
+         * El formulario rechazó la baja: lo cargado no entraba en el plan
+         * nuevo y se eligió no perderlo. Acá se vuelve al anterior, que es el
+         * que el formulario sigue usando — sin esto el bloque de arriba
+         * quedaría anunciando un plan que no rige.
+         */
+        onPlanRejected={(planId) => {
+          setPicked({ planId, from: plan.id });
+          writeSelectedPlan(planId);
+        }}
       />
     </>
   );

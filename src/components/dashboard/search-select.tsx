@@ -57,6 +57,7 @@ export function SearchSelect({
   disabled = false,
   onQueryChange,
   externallyFiltered = false,
+  showContext = false,
 }: {
   /** Para el lector de pantalla: el `<Field>` de afuera pone el visible. */
   label: string;
@@ -97,6 +98,12 @@ export function SearchSelect({
    * que llegan acá.
    */
   externallyFiltered?: boolean;
+  /**
+   * Que las etiquetas de lo elegido muestren también su `context`, en una
+   * segunda línea chica. Para donde el contexto desempata homónimos —el rubro
+   * de una especialidad— y hace falta seguir viéndolo después de elegir.
+   */
+  showContext?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -332,26 +339,60 @@ export function SearchSelect({
 
       {selected.length > 0 ? (
         <ul className="flex flex-wrap gap-1.5">
-          {selected.map((option) => (
-            <li key={option.value}>
-              {/*
-                La cruz es más grande en el teléfono: con 20px pegada al texto
-                se erraba y se quitaba la etiqueta de al lado, o no pasaba
-                nada. 28px con su propio espacio se acierta.
-              */}
-              <span className="flex items-center gap-1 rounded-full bg-brand-100 py-1.5 pl-3.5 pr-1.5 text-[13.5px] font-semibold text-brand-800 sm:gap-1.5 sm:py-1 sm:pl-3 sm:text-[13px]">
-                {option.label}
-                <button
-                  type="button"
-                  onClick={() => onRemove(option.value)}
-                  aria-label={`Quitar ${option.label}`}
-                  className="flex h-7 w-7 items-center justify-center rounded-full text-brand-800 transition-colors hover:bg-brand-800 hover:text-white sm:h-5 sm:w-5"
+          {selected.map((option) => {
+            /*
+             * Con contexto la etiqueta lleva dos líneas: arriba lo elegido y
+             * abajo, en letra chica, de dónde sale —el rubro de la
+             * especialidad, la especialidad del servicio—.
+             *
+             * No es decoración: hay homónimos en rubros distintos
+             * ("Veterinaria" está en Mascotas y en Servicios rurales), y una
+             * vez elegidos la lista ya no está a la vista para desempatarlos.
+             * Sin el rubro, dos etiquetas idénticas no se distinguen y no hay
+             * forma de saber cuál quitar.
+             */
+            const stacked = showContext && Boolean(option.context);
+
+            return (
+              <li key={option.value}>
+                {/*
+                  La cruz es más grande en el teléfono: con 20px pegada al
+                  texto se erraba y se quitaba la etiqueta de al lado, o no
+                  pasaba nada. 28px con su propio espacio se acierta.
+                */}
+                <span
+                  className={`flex items-center gap-1 bg-brand-100 text-[13.5px] font-semibold text-brand-800 sm:gap-1.5 sm:text-[13px] ${
+                    stacked
+                      ? "rounded-card py-1 pl-3 pr-1.5"
+                      : "rounded-full py-1.5 pl-3.5 pr-1.5 sm:py-1 sm:pl-3"
+                  }`}
                 >
-                  <Icon name="close" className="text-[16px] sm:text-[14px]" />
-                </button>
-              </span>
-            </li>
-          ))}
+                  {stacked ? (
+                    <span className="flex flex-col py-0.5 leading-tight">
+                      {option.label}
+                      {/*
+                        El rubro va en letra chica y con menos peso: acompaña
+                        al nombre, no compite con él.
+                      */}
+                      <span className="text-[11px] font-medium text-brand-800/70">
+                        {option.context}
+                      </span>
+                    </span>
+                  ) : (
+                    option.label
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => onRemove(option.value)}
+                    aria-label={`Quitar ${option.label}`}
+                    className="flex h-7 w-7 flex-none items-center justify-center rounded-full text-brand-800 transition-colors hover:bg-brand-800 hover:text-white sm:h-5 sm:w-5"
+                  >
+                    <Icon name="close" className="text-[16px] sm:text-[14px]" />
+                  </button>
+                </span>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
 

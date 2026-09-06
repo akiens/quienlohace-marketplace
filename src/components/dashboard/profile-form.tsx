@@ -36,6 +36,7 @@ import {
   locationTypeLabel,
   normalizeServiceAreas,
 } from "@/data/locations";
+import { fitToPlan } from "@/domain/plan-fit";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon } from "@/components/ui";
 import {
@@ -167,6 +168,7 @@ export function ProfileForm({
   images,
   mode = "alta",
   onCancel,
+  onPlanRejected,
 }: {
   /**
    * Dueño del borrador. `localStorage` es del navegador y no de la sesión: sin
@@ -192,6 +194,12 @@ export function ProfileForm({
   mode?: ProfileFormMode;
   /** Sólo en edición: salir sin guardar. */
   onCancel?: () => void;
+  /**
+   * Se cancela una baja de plan: lo cargado no entraba en el plan nuevo y se
+   * eligió no perderlo. Quien maneja el plan tiene que volver al anterior,
+   * porque el formulario nunca llegó a aplicarlo.
+   */
+  onPlanRejected?: (planId: PlanLimits["id"]) => void;
 }) {
   /*
    * `useSyncExternalStore` exige un `getSnapshot` estable: uno nuevo en cada
@@ -249,6 +257,7 @@ export function ProfileForm({
       images={images}
       mode={mode}
       onCancel={onCancel}
+      onPlanRejected={onPlanRejected}
     />
   );
 }
@@ -267,8 +276,9 @@ function ProfileFormFields(props: {
   images: ProfileImage[];
   mode: ProfileFormMode;
   onCancel?: () => void;
+  onPlanRejected?: (planId: PlanLimits["id"]) => void;
 }) {
-  const { userId, profile, plan, mode } = props;
+  const { userId, profile, mode, onPlanRejected } = props;
 
   /** En edición todo se muestra junto: no hay recorrido que seguir. */
   const editing = mode === "edicion";
@@ -313,21 +323,6 @@ function ProfileFormFields(props: {
       : "identidad",
   );
 
-  /*
-   * Sólo se muestran los pasos que el plan habilita: a quien tiene Cobre no
-   * le sirve ver tres pasos que no puede usar. Lo que ya estaba cargado no se
-   * pierde por dejar de verse — sigue guardado e inactivo (RF-053).
-   */
-  const STEPS = useMemo(
-    () =>
-      ALL_STEPS.filter((step) => {
-        if (!step.feature) return true;
-        // El paso de pago no depende de una capacidad sino del precio.
-        if (step.feature === "paid") return plan.priceCents > 0;
-        return allowsFeature(plan, step.feature);
-      }),
-    [plan],
-  );
   // Sólo servicios confirmados: la fila en blanco dejó de existir cuando
   // pasaron a agregarse de a uno, como las zonas.
   const [services, setServices] = useState<ServiceRow[]>(
@@ -470,6 +465,107 @@ function ProfileFormFields(props: {
     draft?.whatsappEnabled ?? profile?.whatsappEnabled ?? true,
   );
 
+  /*
+   * Bajar de plan con datos ya cargados.
+   *
+   * El plan lo cambia el bloque de arriba y llega acá por `props.plan`. Si el
+   * nuevo no da para lo que ya está elegido, no se aplica de una: se avisa
+   * qué se perdería y se espera la respuesta. Aceptar recorta; cancelar deja
+   * todo como estaba y devuelve el plan al que regía.
+   */
+  /**
+   * El plan aplicado, que es con el que se pinta el formulario.
+   *
+   * No es directamente `props.plan`: mientras un aviso de baja está sin
+   * responder sigue rigiendo el anterior, porque todavía no se recortó nada.
+   * Pintar con los topes del nuevo dejaría a la vista contadores en rojo y
+   * pasos que desaparecen para un cambio que quizá se cancele.
+   */
+  const [applied, setApplied] = useState<PlanLimits>(props.plan);
+
+  /** El plan pedido y todavía sin aplicar, con lo que se perdería al hacerlo. */
+  const [held, setHeld] = useState<{
+    to: PlanLimits;
+    /** Qué se perdería, ya contado y en palabras. */
+    losses: string[];
+  } | null>(null);
+
+  const incoming = props.plan;
+
+  /*
+   * Se decide durante el render y no desde un efecto: un efecto aplicaría
+   * primero el plan nuevo —con el formulario ya recortado a la vista— y
+   * recién después preguntaría, que es justo al revés.
+   */
+  if (incoming.id !== applied.id) {
+    if (held?.to.id !== incoming.id) {
+      /*
+       * La pregunta es si lo cargado entra en el plan que llegó, no si el
+       * plan bajó: uno menor que igual da para todo no tiene nada que avisar,
+       * y se aplica sin molestar.
+       */
+      const { losses } = fitToPlan(
+        { specialtyIds, services, locations, socialLinks },
+        incoming,
+      );
+
+      if (losses.length === 0) {
+        setApplied(incoming);
+        setHeld(null);
+      } else {
+        setHeld({ to: incoming, losses });
+      }
+    }
+  } else if (held) {
+    // Volvió al plan que ya regía —se canceló, o se eligió de nuevo el mismo—:
+    // no queda nada que preguntar.
+    setHeld(null);
+  }
+
+  const plan = applied;
+
+  /** Aceptar la baja: se recorta lo que no entra y el plan nuevo pasa a regir. */
+  function applyDowngrade() {
+    if (!held) return;
+    const { fitted } = fitToPlan(
+      { specialtyIds, services, locations, socialLinks },
+      held.to,
+    );
+    setSpecialtyIds(fitted.specialtyIds);
+    setServices(fitted.services);
+    setLocations(fitted.locations);
+    setSocialLinks(fitted.socialLinks);
+    setApplied(held.to);
+    setHeld(null);
+  }
+
+  /**
+   * Cancelar la baja: no se toca nada y se avisa para que el plan vuelva al
+   * que regía. Sin ese aviso el bloque de arriba seguiría mostrando el plan
+   * nuevo mientras el formulario trabaja con el viejo.
+   */
+  function cancelDowngrade() {
+    if (!held) return;
+    setHeld(null);
+    onPlanRejected?.(applied.id);
+  }
+
+  /*
+   * Sólo se muestran los pasos que el plan habilita: a quien tiene Cobre no
+   * le sirve ver tres pasos que no puede usar. Lo que ya estaba cargado no se
+   * pierde por dejar de verse — sigue guardado e inactivo (RF-053).
+   */
+  const STEPS = useMemo(
+    () =>
+      ALL_STEPS.filter((step) => {
+        if (!step.feature) return true;
+        // El paso de pago no depende de una capacidad sino del precio.
+        if (step.feature === "paid") return plan.priceCents > 0;
+        return allowsFeature(plan, step.feature);
+      }),
+    [plan],
+  );
+
   const errors = state.errors ?? {};
   /*
    * Los topes del plan. `null` es "sin límite" (TR-002), y por eso las ayudas
@@ -522,24 +618,11 @@ function ProfileFormFields(props: {
   );
 
   /**
-   * Todas las especialidades, con su rubro debajo para distinguir homónimas
-   * ("Veterinaria" existe en Mascotas y en Servicios rurales).
-   */
-  const specialtyOptions: SearchOption[] = useMemo(
-    () =>
-      SERVICE_SECTORS.flatMap((sector) =>
-        listSpecialties(sector.id).map((specialty) => ({
-          value: specialty.id,
-          label: specialty.name,
-          context: sector.short,
-        })),
-      ),
-    [],
-  );
-
-  /**
    * Los rubros que se derivan de las especialidades elegidas (BR-010). Se
    * muestran para que se vea cuántos consume el plan, pero no se eligen.
+   *
+   * Se guarda el id además del nombre corto porque con el cupo de rubros
+   * lleno hay que filtrar el catálogo por ellos, y el nombre no alcanza.
    */
   const derivedSectors = useMemo(() => {
     const sectors = new Map<string, string>();
@@ -547,8 +630,34 @@ function ProfileFormFields(props: {
       const sector = sectorOfSpecialty(id);
       if (sector) sectors.set(sector.id, sector.short);
     }
-    return [...sectors.values()];
+    return [...sectors].map(([id, short]) => ({ id, short }));
   }, [specialtyIds]);
+
+  /**
+   * Todas las especialidades, con su rubro debajo para distinguir homónimas
+   * ("Veterinaria" existe en Mascotas y en Servicios rurales).
+   *
+   * Con el cupo de rubros del plan lleno sólo se ofrecen las de esos rubros.
+   * El tope de rubros no se elige ni se ve venir: elegir una especialidad de
+   * un rubro nuevo lo consume sin decirlo, y la persona se enteraría recién
+   * al guardar, con un error que le pide quitar algo sin decirle qué. Dejando
+   * de ofrecerlas, el límite se explica solo (BR-006).
+   */
+  const specialtyOptions: SearchOption[] = useMemo(() => {
+    const sectorsFull =
+      maxSectors !== null && derivedSectors.length >= maxSectors;
+    const allowed = new Set(derivedSectors.map((sector) => sector.id));
+
+    return SERVICE_SECTORS.filter(
+      (sector) => !sectorsFull || allowed.has(sector.id),
+    ).flatMap((sector) =>
+      listSpecialties(sector.id).map((specialty) => ({
+        value: specialty.id,
+        label: specialty.name,
+        context: sector.short,
+      })),
+    );
+  }, [derivedSectors, maxSectors]);
 
   /*
    * El servicio se identifica por su especialidad más su nombre: el mismo
@@ -1015,6 +1124,16 @@ function ProfileFormFields(props: {
 
 
   return (
+    <>
+      {held ? (
+        <DowngradeDialog
+          planName={held.to.name}
+          losses={held.losses}
+          onAccept={applyDowngrade}
+          onCancel={cancelDowngrade}
+        />
+      ) : null}
+
     <form
       ref={formRef}
       action={action}
@@ -1167,6 +1286,12 @@ function ProfileFormFields(props: {
               selected={selectedSpecialties}
               max={maxSpecialties ?? undefined}
               error={errors.specialtyIds}
+              /*
+                La etiqueta lleva el rubro debajo: hay especialidades
+                homónimas en rubros distintos y, una vez elegidas, la lista ya
+                no está para desempatarlas.
+              */
+              showContext
               placeholder="Buscá tu especialidad…"
               emptyLabel="No encontramos esa especialidad."
               onSelect={(option) => {
@@ -1200,11 +1325,21 @@ function ProfileFormFields(props: {
             */}
             {derivedSectors.length > 0 ? (
               <p className="text-[12.5px] text-ink-soft">
-                Rubros: {derivedSectors.join(" · ")}
+                Rubros:{" "}
+                {derivedSectors.map((sector) => sector.short).join(" · ")}
                 {maxSectors !== null
                   ? ` (${derivedSectors.length}/${maxSectors})`
                   : ""}
               </p>
+            ) : null}
+
+            {/*
+              Con el cupo de rubros lleno el catálogo deja de ofrecer los
+              demás. Se dice, porque si no una especialidad que existe
+              parecería no existir.
+            */}
+            {maxSectors !== null && derivedSectors.length >= maxSectors ? (
+              <PlanHint planName={plan.name} what="rubros" limit={maxSectors} />
             ) : null}
           </Field>
         </Panel>
@@ -1775,6 +1910,103 @@ function ProfileFormFields(props: {
         )}
       </div>
     </form>
+    </>
+  );
+}
+
+/**
+ * Aviso previo a bajar de plan.
+ *
+ * Se pregunta antes y no se avisa después porque lo que sigue no tiene vuelta
+ * atrás: en el alta no hay nada guardado en el servidor a lo que recurrir, y
+ * lo recortado del borrador no se recupera. Se dice qué se pierde —contado,
+ * no en general— para que la respuesta sea informada.
+ */
+function DowngradeDialog({
+  planName,
+  losses,
+  onAccept,
+  onCancel,
+}: {
+  planName: string;
+  losses: string[];
+  onAccept: () => void;
+  onCancel: () => void;
+}) {
+  // Escape cancela, como en cualquier diálogo: es la salida sin consecuencias.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onCancel();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="downgrade-title"
+      /*
+       * En el teléfono se apoya abajo, como el diálogo de planes: un recuadro
+       * centrado obliga a estirar el pulgar hasta arriba para responderlo.
+       */
+      className="fixed inset-0 z-50 flex items-end justify-center bg-ink/50 sm:items-center sm:p-4"
+      /*
+       * Tocar afuera cancela y no acepta: perder datos tiene que ser algo que
+       * se elige a propósito, nunca el resultado de un toque al costado.
+       */
+      onClick={onCancel}
+    >
+      <div
+        onClick={(event) => event.stopPropagation()}
+        className="w-full max-w-md rounded-t-card bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:rounded-card sm:p-6"
+      >
+        <div className="flex flex-col gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FEF3F2]">
+            <Icon name="warning" filled className="text-[22px] text-[#B42318]" />
+          </span>
+
+          <h2
+            id="downgrade-title"
+            className="text-[18px] font-bold text-ink sm:text-[19px]"
+          >
+            Vas a perder datos ya cargados
+          </h2>
+
+          <p className="text-[14px] leading-relaxed text-ink-soft">
+            El plan {planName} no da para todo lo que cargaste. Si seguís, se
+            quita lo último que agregaste hasta que entre en el plan:
+          </p>
+
+          {/*
+            Qué se pierde, contado. "Vas a perder datos" sin decir cuáles
+            obliga a aceptar a ciegas o a cancelar por las dudas.
+          */}
+          <ul className="flex flex-col gap-1 rounded-input bg-surface-muted px-3.5 py-2.5 text-[13.5px] font-medium text-ink">
+            {losses.map((loss) => (
+              <li key={loss} className="flex items-center gap-2">
+                <Icon name="close" className="text-[15px] text-[#B42318]" />
+                {loss}
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-1 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={onCancel}>
+              Cancelar
+            </Button>
+            {/*
+              La acción que destruye no es la destacada: el botón sólido
+              invita a apretarlo sin leer, y acá lo que se pierde no vuelve.
+            */}
+            <Button variant="danger" onClick={onAccept}>
+              Cambiar y quitar
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

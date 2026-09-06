@@ -205,9 +205,20 @@ function PlanDialog({
             <h2 className="text-[18px] font-bold text-ink sm:text-[20px]">
               Cambiar de plan
             </h2>
+            {/*
+              Bajar de plan no significa lo mismo en los dos caminos, y decir
+              lo mismo en ambos es mentirle a uno de los dos.
+
+              Con perfil creado la baja se agenda: el período pago corre hasta
+              su vencimiento y recién ahí lo que excede se esconde, sin
+              borrarse (BR-009). Creando el perfil por primera vez no hay
+              período pago ni perfil que conservar, y lo que no entra se quita
+              — el aviso previo lo confirma antes de que pase.
+            */}
             <p className="text-[13.5px] text-ink-soft sm:text-[14px]">
-              Si bajás de plan no perdés nada: lo que no entre queda guardado y
-              vuelve si recontratás.
+              {persist
+                ? "Si bajás de plan no perdés nada: seguís con el plan actual hasta que venza, y después lo que no entre deja de mostrarse."
+                : "Si bajás de plan, lo que no entre en el nuevo se quita. Te avisamos antes de hacerlo."}
             </p>
           </div>
           <button
