@@ -155,6 +155,74 @@ dos cosas por separado.
    Un plan menor que igual da para todo lo cargado se aplica sin preguntar: la
    condición es que algo no entre, no que el plan haya bajado.
 
+## Servicios
+- En el select de servicios vamos a tener 2 formas de listar las sugerencias:
+1. Si se seleccionaron especialidades en el paso anterior entonces vamos a mostrar como sugerencias los servicios que estan son partes de estas especialidades nada mas, los demas no los mostramos. La idea es ser lo mas precisos posible y ayudar al usuario sin crear demasiado ruido.
+2. Si no se selecciono ninguna especialidad en el paso anterior entonces simplemente muestra todas las sugerencias.
+
+Recerda que los servicios son libres al agregarlos, no tienen que estar en las sugerencias, las sugerencias solo son eso. Por lo tanto si se cambia a un plan menor simplemente hay que remover los ultimos servicios que no entren en la cantidad disponible del plan. Siempre se eliminan primero los ultimos que fueron agregados.
+
+## Servicios
+
+Las sugerencias salen de `src/data/taxonomy.json`, que es un catálogo fijo
+generado con `npm run generate:services` desde
+`docs/data/rubros_especialidades_servicios.md` (TR-021). No se consulta nada
+en vivo: el JSON se importa una vez y se indexa al cargar el módulo.
+
+### Las dos formas de sugerir
+
+El buscador arma sus sugerencias de dos maneras, según el paso anterior:
+
+1. **Con especialidades elegidas** — se sugieren **sólo** los servicios que
+   cuelgan de esas especialidades. Los demás no se muestran.
+
+   Es para ser preciso y no hacer ruido: quien declaró que es cerrajero no
+   tiene por qué ver "Corte de cabello" entre sus opciones. En números, dos
+   especialidades de peluquería llevan el catálogo de 1174 sugerencias a 19.
+
+2. **Sin ninguna especialidad elegida** — se sugiere el catálogo entero, que
+   es lo único que se puede ofrecer sin saber nada del proveedor.
+
+Antes las especialidades declaradas sólo **priorizaban** (iban primero, con un
+empujón de puntaje). Ahora **filtran**. La prioridad no alcanzaba: mezclada
+con 1174 opciones de cualquier rubro, la sugerencia pasa a ser una lista que
+hay que descartar a mano.
+
+Lo resuelve `searchServices` (`src/data/services.ts`) con el parámetro
+`preferSpecialties`: vacío es el modo 2, con contenido el modo 1.
+
+### Los servicios son texto libre
+
+Las sugerencias son **sólo eso**: sugerencias. Un servicio se agrega
+escribiéndolo aunque no figure en el catálogo (`allowCustom` en el
+`SearchSelect`), y lo que se guarda en el perfil es el texto confirmado, no
+una referencia al catálogo — que puede cambiar sin arrastrar los perfiles
+(TR-022).
+
+Lo que el filtrado acota es lo que se *sugiere*, nunca lo que se puede cargar.
+
+Cada servicio cuelga de una especialidad, porque la base lo exige con una FK
+compuesta (BR-010): si vino del catálogo, de la suya; si se escribió a mano,
+de la primera especialidad del perfil, que es la que la persona declaró como
+actividad principal.
+
+### Recorte al bajar de plan
+
+Al bajar de plan se quitan los **últimos servicios agregados** hasta entrar en
+el tope. Siempre los últimos primero.
+
+`services` está en orden de agregado —se acumula con `[...services, nuevo]`—
+así que el recorte es `slice(0, max)`: conserva el principio y corta el final.
+
+Como el servicio es texto libre, no hay ninguna otra jerarquía por la cual
+ordenarlos: el orden de carga es la única señal de cuáles importan más, y lo
+primero que alguien escribe es lo que más hace. Un servicio escrito a mano no
+se trata distinto de uno del catálogo.
+
+Antes de ese corte se van los servicios cuya especialidad ya no está (BR-010),
+que se pierden con ella y no cuentan como decisión aparte. El orden completo
+del recorte está en la regla 4 de "Rubro y Especialidades".
+
 # General Rules
 
 1. En el step#4 Ubicación, si el proveedor no selecciona "A domicilio" entonces no se muestra "Zonas donde trabajás": no va a ninguna zona, atiende en su local o a distancia.

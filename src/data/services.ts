@@ -177,41 +177,48 @@ export function searchServices(
     limit?: number;
     exclude?: string[];
     /**
-     * Las especialidades que el proveedor ya declaró. Lo que cuelga de ellas
-     * va primero: es lo que casi siempre está por agregar, y hacérselo buscar
-     * entre 1174 teniendo la especialidad dicha sería pedirle que repita el
-     * dato.
+     * Las especialidades que el proveedor ya declaró.
+     *
+     * Con al menos una, el catálogo se **restringe** a lo que cuelga de
+     * ellas: quien dijo que es cerrajero no tiene por qué ver "Corte de
+     * cabello" entre sus sugerencias. Sin ninguna elegida se ofrece el
+     * catálogo entero, que es lo único que se puede ofrecer sin saber nada.
+     *
+     * Restringir y no sólo priorizar: la sugerencia sirve cuando es corta y
+     * pertinente. Mezclada con 1174 opciones de cualquier rubro, la lista
+     * pasa a ser ruido que hay que descartar a mano.
+     *
+     * Esto acota lo que se *sugiere*, no lo que se puede cargar: el servicio
+     * es texto libre y se agrega igual escribiéndolo, esté o no en el
+     * catálogo (TR-022).
      */
     preferSpecialties?: string[];
   } = {},
 ): IndexedService[] {
   const taken = new Set(exclude.map(normalize));
-  const available = SERVICE_INDEX.filter(
-    (service) => !taken.has(service.search.name),
-  );
-
   const preferred = new Set(preferSpecialties);
-  const isPreferred = (service: IndexedService): boolean =>
-    preferred.has(service.specialtyId);
+
+  /*
+   * El universo de la búsqueda: con especialidades declaradas, sólo lo que
+   * cuelga de ellas; sin ninguna, el catálogo entero.
+   */
+  const available = SERVICE_INDEX.filter(
+    (service) =>
+      !taken.has(service.search.name) &&
+      (preferred.size === 0 || preferred.has(service.specialtyId)),
+  );
 
   const normalized = normalize(query);
 
   /*
-   * Sin texto: primero las especialidades elegidas y después el resto.
+   * Sin texto se muestra lo disponible tal cual: con especialidades elegidas
+   * eso ya es sólo lo suyo, y sin ninguna es el catálogo entero.
    *
-   * El corte por `limit` va al final y no antes de ordenar. Cortando primero
-   * quedaban los 1174 recortados a los 60 alfabéticamente iniciales, y recién
-   * ahí se priorizaba: un cerrajero abría la lista y no veía ni uno de sus
-   * servicios, porque los suyos no entraban en ese recorte.
+   * Antes acá había que separar preferidos del resto y ordenar antes de
+   * cortar, porque `limit` sobre 1174 dejaba fuera justo los del rubro
+   * propio. Filtrando el universo esa distinción desaparece.
    */
-  if (!normalized) {
-    if (preferred.size === 0) return available.slice(0, limit);
-
-    return [
-      ...available.filter(isPreferred),
-      ...available.filter((service) => !isPreferred(service)),
-    ].slice(0, limit);
-  }
+  if (!normalized) return available.slice(0, limit);
 
   const words = normalized.split(" ").filter(Boolean);
 
@@ -232,15 +239,10 @@ export function searchServices(
     if (base === null) continue;
 
     /*
-     * Un empujón, no un atajo: entre dos servicios que coinciden parecido
-     * gana el de la especialidad declarada, pero una coincidencia clara de
-     * otra especialidad sigue ganándole a una floja de la propia. Por eso
-     * suma y no multiplica.
+     * Sin empujón por especialidad: o todo lo que llega hasta acá es de las
+     * declaradas, o no hay ninguna declarada y no hay a quién favorecer.
      */
-    scored.push({
-      service,
-      points: isPreferred(service) ? base + 15 : base,
-    });
+    scored.push({ service, points: base });
   }
 
   scored.sort(

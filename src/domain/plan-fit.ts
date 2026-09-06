@@ -113,6 +113,16 @@ export function fitToPlan<T extends PlanFitInput>(
     kept.has(service.specialtyId),
   );
 
+  /*
+   * El tope se aplica cortando el final: `services` está en orden de agregado
+   * —se acumula con `[...services, nuevo]`— así que los últimos del array son
+   * los últimos que se agregaron, y son los que se van primero.
+   *
+   * Los servicios son texto libre y no salen necesariamente del catálogo
+   * (TR-022), así que no hay ninguna otra jerarquía por la cual ordenarlos:
+   * el orden en que se cargaron es la única señal de cuáles importan más, y
+   * lo primero que alguien escribe es lo que más hace.
+   */
   const maxServices = limitFor(plan, "services");
   const services =
     maxServices === null ? withoutOrphans : withoutOrphans.slice(0, maxServices);

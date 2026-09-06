@@ -675,12 +675,14 @@ function ProfileFormFields(props: {
   );
 
   /*
-   * Los servicios que se ofrecen, filtrados por lo tipeado.
+   * Los servicios que se sugieren, filtrados por lo tipeado.
    *
-   * Los del rubro ya elegido van primero —con y sin texto—: es lo que casi
-   * siempre se está por agregar. La prioridad la resuelve `searchServices`,
-   * que la aplica antes de recortar; ordenar acá, sobre lo ya recortado,
-   * dejaba fuera justo los del rubro cuando no entraban en el recorte.
+   * Con especialidades elegidas se sugiere sólo lo que cuelga de ellas; sin
+   * ninguna, el catálogo entero. Lo resuelve `searchServices` a partir de
+   * `preferSpecialties`.
+   *
+   * Es sólo la sugerencia: el servicio es texto libre y se puede agregar
+   * escribiéndolo aunque no esté en el catálogo (`allowCustom`).
    */
   const serviceOptions: SearchOption[] = useMemo(() => {
     const matches = searchServices(serviceQuery, {
@@ -1348,10 +1350,15 @@ function ProfileFormFields(props: {
           <Field
             label="Servicios"
             error={errors.services}
+            /*
+              El texto dice de dónde salen las sugerencias, porque la lista
+              cambia de tamaño según el paso anterior y si no parecería que
+              faltan opciones (o que sobran).
+            */
             hint={
               specialtyIds.length === 0
-                ? "Primero elegí al menos una especialidad."
-                : "Lo que ofrecés concretamente."
+                ? "Lo que ofrecés concretamente. Elegí especialidades y te sugerimos las de tu rubro."
+                : "Lo que ofrecés concretamente. Te sugerimos las de tus especialidades."
             }
             required
             counter={`${services.length}/${maxServices ?? "∞"}`}
