@@ -1,5 +1,12 @@
 Cuando un usuario se registra por primera vez entonces es redirigido a la pagina "Crear" esta pagina mostrara un formulario por etapas que ayudara a crear un perfil basico o avanzado segun el plan elegido.
 
+> **El alta y la edición son el mismo formulario.** `ProfileForm` es un solo
+> componente: lo monta el asistente (`/dashboard/crear`) y también "Mi perfil"
+> al editar (`/dashboard?editar=1`), que sólo cambia el modo. Salvo donde se
+> diga lo contrario, todo lo que este documento describe sobre los campos vale
+> igual en los dos lados — y una regla que se agregue acá no hay que volver a
+> aplicarla en la edición.
+
 # Flow
 
 - El borrador (`qlh.profileDraft` en localStorage) se borra **al enviar el formulario de registro**, no al entrar a "Crear".
@@ -194,10 +201,42 @@ una referencia al catálogo — que puede cambiar sin arrastrar los perfiles
 
 Lo que el filtrado acota es lo que se *sugiere*, nunca lo que se puede cargar.
 
+### A qué especialidad pertenece un servicio escrito a mano
+
 Cada servicio cuelga de una especialidad, porque la base lo exige con una FK
-compuesta (BR-010): si vino del catálogo, de la suya; si se escribió a mano,
-de la primera especialidad del perfil, que es la que la persona declaró como
-actividad principal.
+compuesta (BR-010). De dónde sale esa especialidad depende del caso:
+
+1. **Vino del catálogo** — de la suya. No se pregunta nada: el catálogo ya
+   dice a qué especialidad pertenece cada servicio.
+
+2. **Escrito a mano, con una sola especialidad en el perfil** — de ésa. Es la
+   única respuesta posible, y preguntarla sería hacer trabajar a la persona
+   para confirmar lo obvio.
+
+3. **Escrito a mano, con varias especialidades** — se abre un diálogo que
+   pide elegir entre las especialidades **del perfil**. Cancelar no agrega el
+   servicio.
+
+Antes el caso 3 se resolvía solo, colgándolo de la primera especialidad del
+perfil sin decirlo. Eso ponía "Destapaciones" bajo "Electricidad" porque
+Electricidad estaba primera, y el efecto recién se notaba al quitar esa
+especialidad —o al bajar de plan—, cuando desaparecía un servicio que no
+tenía nada que ver con ella. La especialidad decide en qué búsquedas aparece
+el perfil, así que es una decisión de la persona y no del programa (BR-011).
+
+El diálogo muestra el rubro debajo de cada especialidad, por lo mismo que las
+etiquetas: hay especialidades homónimas en rubros distintos.
+
+### Sin especialidades no hay servicios
+
+El campo de servicios está **bloqueado** mientras no haya al menos una
+especialidad elegida, y el texto de ayuda lo dice: "Primero elegí al menos una
+especialidad: cada servicio tiene que pertenecer a una".
+
+No es una restricción nueva sino la que la base ya imponía: antes se podía
+escribir un servicio igual, y se descartaba en silencio porque no había
+especialidad de la cual colgarlo. Bloquear el campo convierte un fallo mudo en
+una instrucción.
 
 ### Recorte al bajar de plan
 

@@ -2,6 +2,7 @@
 
 import {
   useActionState,
+  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -43,6 +44,7 @@ import {
   SearchSelect,
   type SearchOption,
 } from "@/components/dashboard/search-select";
+import { ServiceSpecialtyDialog } from "@/components/dashboard/service-specialty-dialog";
 import { SERVICE_SUGGESTIONS } from "@/data/taxonomy";
 import { searchServices } from "@/data/services";
 
@@ -658,6 +660,46 @@ function ProfileFormFields(props: {
       })),
     );
   }, [derivedSectors, maxSectors]);
+
+  /**
+   * El servicio escrito a mano que espera especialidad, o null.
+   *
+   * Guarda el nombre y no un objeto entero porque es lo único que falta
+   * saber: la especialidad la contesta el diálogo (BR-011).
+   */
+  const [pendingService, setPendingService] = useState<string | null>(null);
+
+  /**
+   * Agrega un servicio bajo una especialidad, si no está repetido.
+   *
+   * Lo comparten los tres caminos —catálogo, especialidad única y diálogo—
+   * para que la regla de no repetir viva en un solo lugar.
+   */
+  const addService = useCallback(
+    (specialtyId: string, name: string) => {
+      setServices((current) => {
+        // BR-011: no se repite el mismo servicio dentro de una especialidad.
+        const repeated = current.some(
+          (service) =>
+            service.specialtyId === specialtyId &&
+            service.name.toLowerCase() === name.toLowerCase(),
+        );
+        return repeated ? current : [...current, { specialtyId, name }];
+      });
+    },
+    [setServices],
+  );
+
+  /** Las especialidades del perfil, como opciones para el diálogo. */
+  const specialtyChoices = useMemo(
+    () =>
+      specialtyIds.map((id) => ({
+        id,
+        name: subcategoryLabel(id),
+        sector: sectorOfSpecialty(id)?.short,
+      })),
+    [specialtyIds],
+  );
 
   /*
    * El servicio se identifica por su especialidad más su nombre: el mismo
@@ -1380,9 +1422,17 @@ function ProfileFormFields(props: {
               cambia de tamaño según el paso anterior y si no parecería que
               faltan opciones (o que sobran).
             */
+            /*
+              Sin especialidades el campo está bloqueado y el texto lo dice: no
+              es una sugerencia, es lo que falta para poder cargar servicios.
+
+              Antes se podía escribir igual y no pasaba nada — el servicio se
+              descartaba en silencio porque no había especialidad de la cual
+              colgarlo (BR-010).
+            */
             hint={
               specialtyIds.length === 0
-                ? "Lo que ofrecés concretamente. Elegí especialidades y te sugerimos las de tu rubro."
+                ? "Primero elegí al menos una especialidad: cada servicio tiene que pertenecer a una."
                 : "Lo que ofrecés concretamente. Te sugerimos las de tus especialidades."
             }
             required
@@ -1406,6 +1456,9 @@ function ProfileFormFields(props: {
             <SearchSelect
               label="Servicios"
               name="serviceName"
+              // Cada servicio cuelga de una especialidad: sin ninguna elegida
+              // no hay dónde ponerlo (BR-010).
+              disabled={specialtyIds.length === 0}
               /*
                * Viaja el nombre, no el valor: el valor de un servicio elegido
                * es `especialidad|nombre`, una clave interna para distinguir
@@ -1428,33 +1481,30 @@ function ProfileFormFields(props: {
               customHint="Si no está en la lista, escribilo y agregalo igual."
               onSelect={(option) => {
                 /*
-                 * A qué especialidad se lo cuelga: la del catálogo si vino de
-                 * ahí, y si no la principal del perfil. El servicio es texto
-                 * libre (TR-022), pero la base exige que cuelgue de una
-                 * especialidad del perfil —`services.specialty_id` es NOT NULL
-                 * con FK contra `profile_specialties`—, y la primera es la que
-                 * la persona declaró como actividad principal.
-                 *
-                 * Se consulta el catálogo directamente en vez de adivinar por
-                 * la forma del valor: antes se miraba si tenía un guión, y un
-                 * servicio escrito a mano que lo llevara ("Aire acondicionado
-                 * - instalación") se tomaba por id de catálogo y se quedaba
-                 * sin especialidad.
+                 * Del catálogo se sabe la especialidad: es la suya. Se consulta
+                 * el catálogo en vez de adivinar por la forma del valor —antes
+                 * se miraba si tenía un guión, y un servicio escrito a mano que
+                 * lo llevara ("Aire acondicionado - instalación") se tomaba por
+                 * id de catálogo y se quedaba sin especialidad.
                  */
-                const specialtyId =
-                  SERVICE_SUGGESTION_SPECIALTY.get(option.value) ??
-                  specialtyIds[0];
-                if (!specialtyId) return;
-
-                // BR-011: no se repite dentro de la misma especialidad.
-                const repeated = services.some(
-                  (service) =>
-                    service.specialtyId === specialtyId &&
-                    service.name.toLowerCase() === option.label.toLowerCase(),
+                const fromCatalog = SERVICE_SUGGESTION_SPECIALTY.get(
+                  option.value,
                 );
-                if (repeated) return;
+                if (fromCatalog) {
+                  addService(fromCatalog, option.label);
+                  return;
+                }
 
-                setServices([...services, { specialtyId, name: option.label }]);
+                /*
+                 * Escrito a mano: la especialidad la elige la persona (BR-011).
+                 * Con una sola no hay nada que preguntar, y con ninguna el
+                 * campo está bloqueado, así que acá siempre hay más de una.
+                 */
+                if (specialtyIds.length === 1) {
+                  addService(specialtyIds[0]!, option.label);
+                  return;
+                }
+                setPendingService(option.label);
               }}
               onRemove={(value) =>
                 setServices(
@@ -1465,6 +1515,23 @@ function ProfileFormFields(props: {
                 )
               }
             />
+
+            {/*
+              Un servicio escrito a mano con varias especialidades elegidas:
+              se pregunta a cuál pertenece (BR-011). Cancelar no lo agrega —
+              queda como si no se hubiera escrito.
+            */}
+            {pendingService ? (
+              <ServiceSpecialtyDialog
+                serviceName={pendingService}
+                specialties={specialtyChoices}
+                onChoose={(specialtyId) => {
+                  addService(specialtyId, pendingService);
+                  setPendingService(null);
+                }}
+                onCancel={() => setPendingService(null)}
+              />
+            ) : null}
 
             {maxServices !== null && services.length >= maxServices ? (
               <PlanHint

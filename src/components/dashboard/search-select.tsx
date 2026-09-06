@@ -21,6 +21,17 @@ export type SearchOption = {
   value: string;
   label: string;
   context?: string;
+  /**
+   * Que la opción la escribió la persona y no salió del catálogo
+   * (`allowCustom`). Sólo la marca `choose` al confirmar texto libre.
+   *
+   * Quien recibe el `onSelect` no puede deducirlo del valor: el de una opción
+   * creada es el texto tal cual, y un servicio del catálogo también podría
+   * llamarse así. Sin esta marca había que adivinar por la forma del valor
+   * —si tenía un guión, por ejemplo—, y un texto libre que la cumpliera por
+   * casualidad se tomaba por opción del catálogo.
+   */
+  isCustom?: boolean;
 };
 
 /**
@@ -272,7 +283,7 @@ export function SearchSelect({
   const choose = useCallback(
     (row: SearchOption | { create: true }) => {
       if ("create" in row) {
-        onSelect({ value: trimmed, label: trimmed });
+        onSelect({ value: trimmed, label: trimmed, isCustom: true });
       } else {
         onSelect(row);
       }

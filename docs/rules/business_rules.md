@@ -153,6 +153,8 @@ La jerarquía funcional es `Rubro → Especialidad → Servicio`.
 - Un servicio debe tener entre 3 y 80 caracteres.
 - No puede repetirse el mismo servicio dentro de la misma especialidad de un perfil, ignorando mayúsculas.
 - Los alias sirven para buscar; no se muestran como opciones canónicas ni en el perfil público.
+- Un servicio personalizado pertenece a una especialidad que el proveedor elige explícitamente; el sistema no la deduce por él. Con una sola especialidad en el perfil la elección es única y no se pregunta.
+- Sin ninguna especialidad seleccionada no se pueden cargar servicios: cada servicio pertenece a una (BR-010) y sin ella no habría dónde ubicarlo.
 
 ### BR-012 — Calidad del catálogo
 
