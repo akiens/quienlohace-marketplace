@@ -221,7 +221,12 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
           onBlur={handleBlur}
           onInput={handleInput}
           onSubmit={handleSubmit}
-          className="flex flex-col gap-4"
+          /*
+            `scroll-mt`: se llega acá desde `/planes` por el ancla `#auth-form`,
+            y sin margen el encabezado pegado tapaba el primer campo justo
+            cuando la idea era dejarlo a la vista.
+          */
+          className="flex scroll-mt-24 flex-col gap-4"
         >
           <Field label="Correo" htmlFor="email" error={errors.email}>
             <input

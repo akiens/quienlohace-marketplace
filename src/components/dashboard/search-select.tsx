@@ -115,6 +115,12 @@ export function SearchSelect({
 
   const rootRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  /*
+   * Que el cierre es deliberado y el foco que viene detrás no debe reabrir.
+   * Es una ref y no estado porque la lee el `focus` que ocurre en el mismo
+   * ciclo: un estado todavía no habría llegado al render que lo atiende.
+   */
+  const closingRef = useRef(false);
   const listId = useId();
 
   const full = max !== undefined && selected.length >= max;
@@ -227,7 +233,17 @@ export function SearchSelect({
     if (!open) return;
 
     function onPointerDown(event: PointerEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+      if (rootRef.current?.contains(event.target as Node)) return;
+      /*
+       * Un clic afuera cierra, pero el campo puede conservar el foco (por
+       * ejemplo si se tocó una zona que no lo roba). Se marca el cierre para
+       * que un `focus` posterior no lo deshaga.
+       */
+      closingRef.current = true;
+      setOpen(false);
+      requestAnimationFrame(() => {
+        closingRef.current = false;
+      });
     }
 
     document.addEventListener("pointerdown", onPointerDown);
@@ -274,9 +290,18 @@ export function SearchSelect({
       return;
     }
 
+    /*
+     * Escape cierra sin elegir nada. El foco se queda en el campo —es lo que
+     * corresponde: se sigue pudiendo escribir— así que el cierre se marca
+     * para que ese foco no la reabra.
+     */
     if (event.key === "Escape" && open) {
       event.preventDefault();
+      closingRef.current = true;
       setOpen(false);
+      requestAnimationFrame(() => {
+        closingRef.current = false;
+      });
       return;
     }
 
@@ -289,7 +314,7 @@ export function SearchSelect({
   }
 
   return (
-    <div ref={rootRef} className="flex flex-col gap-2.5">
+    <div ref={rootRef} className="flex flex-col gap-2 sm:gap-2.5">
       {/*
         Lo elegido viaja en inputs ocultos, uno por valor: para el servidor es
         el mismo campo repetido de siempre.
@@ -334,7 +359,7 @@ export function SearchSelect({
         <div className="relative">
           <div
             data-search-field
-            className={`flex h-12 items-center gap-2 rounded-input border bg-white px-3 transition-colors focus-within:border-brand-800 sm:h-11 ${
+            className={`flex h-11 items-center gap-2 rounded-input border bg-white px-3 transition-colors focus-within:border-brand-800 ${
               error ? "border-[#B42318]" : "border-line-strong"
             }`}
           >
@@ -358,7 +383,16 @@ export function SearchSelect({
                 onQueryChange?.(event.target.value);
                 setOpen(true);
               }}
-              onFocus={() => setOpen(true)}
+              /*
+                Enfocar abre, pero sólo si la lista no se está cerrando a
+                propósito. El botón de al lado cierra y devuelve el foco al
+                campo: sin esta guarda ese foco volvía a abrirla en el acto y
+                la lista no había forma de cerrarla salvo eligiendo algo.
+              */
+              onFocus={() => {
+                if (closingRef.current) return;
+                setOpen(true);
+              }}
               onKeyDown={onKeyDown}
               /* 16px en el teléfono: por debajo, iOS hace zoom al enfocar. */
               className="h-full w-full min-w-0 bg-transparent text-[16px] text-ink outline-none placeholder:text-ink-faint sm:text-[15px]"
@@ -368,7 +402,22 @@ export function SearchSelect({
               tabIndex={-1}
               aria-label={open ? "Cerrar lista" : "Abrir lista"}
               onClick={() => {
-                setOpen((current) => !current);
+                /*
+                 * Cerrando: se avisa antes de devolver el foco, para que el
+                 * `focus` del campo no vuelva a abrir lo que se acaba de
+                 * cerrar. La marca se levanta enseguida, así el próximo clic
+                 * sobre el campo abre como siempre.
+                 */
+                if (open) {
+                  closingRef.current = true;
+                  setOpen(false);
+                  inputRef.current?.focus();
+                  requestAnimationFrame(() => {
+                    closingRef.current = false;
+                  });
+                  return;
+                }
+                setOpen(true);
                 inputRef.current?.focus();
               }}
               className="-mr-1 flex h-9 w-9 flex-none items-center justify-center rounded text-ink-soft hover:text-ink sm:mr-0 sm:h-6 sm:w-6"

@@ -107,6 +107,7 @@ export default async function CreateProfilePage() {
 
       <ProfileWorkspace
         userId={user.id}
+        accountEmail={user.email}
         profile={profile}
         plan={plan}
         plans={allPlans}

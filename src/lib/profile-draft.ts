@@ -109,14 +109,15 @@ export function readProfileDraft(ownerId: string): ProfileDraft | null {
  * No se miran los campos que el formulario trae puestos de fábrica: un
  * formulario recién montado ya los tiene, y tomarlos como dato hacía que el
  * borrador en blanco del primer render pareciera lleno y pisara al guardado
- * antes de que llegara a leerse.
+ * antes de que llegara a leerse. El correo de contacto entra en esa cuenta:
+ * arranca con el de la cuenta, así que estar cargado no dice que se haya
+ * escrito nada.
  */
 function isEmpty(draft: Omit<ProfileDraft, "version">): boolean {
   return (
     !draft.name?.trim() &&
     !draft.description?.trim() &&
     !draft.phone?.trim() &&
-    !draft.contactEmail?.trim() &&
     !draft.specialtyIds?.length &&
     !draft.services?.length &&
     !draft.serviceModes?.length &&
@@ -218,4 +219,24 @@ export function profileDraftSnapshot(ownerId: string): ProfileDraft | null {
 /** En el servidor no hay borrador: el HTML sale igual que un formulario nuevo. */
 export function profileDraftServerSnapshot(): ProfileDraft | null {
   return null;
+}
+
+/**
+ * Si ya se está leyendo el borrador del navegador.
+ *
+ * `useSyncExternalStore` rinde primero el valor del servidor y recién después
+ * el del cliente. Quien guarda necesita distinguir esos dos momentos: en el
+ * primero los campos todavía están vacíos porque el borrador no llegó, no
+ * porque no haya nada que guardar, y escribir ahí borra lo guardado.
+ *
+ * Son dos funciones constantes y no un booleano en el estado: así la
+ * respuesta llega en el mismo render en que `useSyncExternalStore` cambia de
+ * fuente, sin un efecto que agregue un render intermedio.
+ */
+export function clientHydrated(): boolean {
+  return true;
+}
+
+export function serverHydrated(): boolean {
+  return false;
 }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import Link from "next/link";
 
+import { PlanCta } from "@/components/plan-cta";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import {
   PLAN_BADGES,
@@ -174,8 +174,12 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         </Feature>
       </ul>
 
-      <Link
-        href="/registro"
+      {/*
+        Elegir acá deja el plan elegido para el alta: se llega al registro con
+        éste ya marcado, en vez de tener que volver a elegirlo.
+      */}
+      <PlanCta
+        planId={plan.id}
         className={`mt-auto flex h-11 items-center justify-center rounded-input text-[14.5px] font-semibold transition-colors ${
           highlighted
             ? "bg-brand-800 text-white hover:bg-brand-900"
@@ -183,7 +187,7 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         }`}
       >
         {plan.priceCents === 0 ? "Crear mi perfil" : `Elegir ${plan.name}`}
-      </Link>
+      </PlanCta>
 
       {plan.allowsCustomLanding ? (
         <p className="text-[12.5px] leading-relaxed text-ink-faint">

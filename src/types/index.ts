@@ -116,8 +116,8 @@ export type VerificationStatus =
 export type ServiceModeCode = "at_customer" | "at_business" | "remote";
 
 export const SERVICE_MODE_LABELS: Record<ServiceModeCode, string> = {
-  at_customer: "En el domicilio del cliente",
-  at_business: "En el negocio",
+  at_customer: "A domicilio",
+  at_business: "En nuestro local",
   remote: "A distancia",
 };
 

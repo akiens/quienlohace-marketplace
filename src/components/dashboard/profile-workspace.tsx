@@ -26,6 +26,7 @@ import type { PlanLimits, Profile, ProfileImage } from "@/types";
  */
 export function ProfileWorkspace({
   userId,
+  accountEmail,
   profile,
   plan,
   plans,
@@ -33,6 +34,8 @@ export function ProfileWorkspace({
 }: {
   /** Dueño del borrador: sin esto se leería el de quien usó antes el navegador. */
   userId: string;
+  /** El correo de la cuenta, con el que arranca el de contacto en el alta. */
+  accountEmail?: string;
   profile: Profile | null;
   plan: PlanLimits;
   plans: PlanLimits[];
@@ -86,6 +89,7 @@ export function ProfileWorkspace({
       />
       <ProfileForm
         userId={userId}
+        accountEmail={accountEmail}
         profile={profile}
         plan={current}
         images={images}

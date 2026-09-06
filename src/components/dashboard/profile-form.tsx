@@ -12,8 +12,10 @@ import {
 import { saveProfile } from "@/app/actions/profile";
 import {
   clearProfileDraft,
+  clientHydrated,
   profileDraftServerSnapshot,
   profileDraftSnapshot,
+  serverHydrated,
   subscribeProfileDraft,
   writeProfileDraft,
   type ProfileDraft,
@@ -29,6 +31,7 @@ import {
 import { MAX_SCHEDULE_ENTRIES, searchSchedules } from "@/data/schedules";
 import {
   COUNTRY_ID,
+  departmentOf,
   locationLabelById,
   locationTypeLabel,
   normalizeServiceAreas,
@@ -79,8 +82,10 @@ const PAYMENT_OPTIONS: PaymentMethod[] = [
 ];
 
 /**
- * BR-017: las tres modalidades. "Híbrida" no está: se deriva de elegir más de
- * una, y por eso el control es de selección múltiple y no una lista de radios.
+ * BR-017: las tres modalidades. No hay una opción "híbrida": quien atiende de
+ * varias formas marca varias, y por eso el control es de selección múltiple y
+ * no una lista de radios. Nombrar la combinación agregaba un cuarto concepto
+ * para decir lo que las tres casillas ya dicen.
  */
 const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"];
 
@@ -156,6 +161,7 @@ export type ProfileFormMode = "alta" | "edicion";
 
 export function ProfileForm({
   userId,
+  accountEmail,
   profile,
   plan,
   images,
@@ -170,6 +176,12 @@ export function ProfileForm({
    * borrador no se toca ni para leer ni para escribir.
    */
   userId?: string;
+  /**
+   * El correo con el que se registró. En el alta arranca el de contacto: es
+   * casi siempre el mismo, y quien quiera otro lo cambia. Editando no se pasa
+   * — ahí manda lo que el perfil ya tenga guardado, incluido estar vacío.
+   */
+  accountEmail?: string;
   profile: Profile | null;
   plan: PlanLimits;
   /**
@@ -200,13 +212,40 @@ export function ProfileForm({
   // Con perfil manda la base y el borrador no interviene.
   const draft = profile ? null : stored;
 
+  /*
+   * Si el borrador ya se leyó del navegador.
+   *
+   * `useSyncExternalStore` da primero el snapshot del servidor —vacío, para
+   * que la hidratación calce— y recién en el render siguiente el del cliente.
+   * En ese primer render los campos están en blanco, y el efecto que guarda
+   * corría igual: escribía un borrador vacío encima del que venía a rescatar.
+   *
+   * No alcanzaba con que `writeProfileDraft` ignore lo vacío, porque no todo
+   * lo que arranca en blanco lo parece: la modalidad viene con "a domicilio"
+   * puesta de fábrica, así que el borrador del primer render se veía "con
+   * datos" y pisaba el guardado. Al recargar se perdían el paso y lo cargado.
+   *
+   * Se sigue rindiendo el formulario igual: el servidor ya mandó los campos y
+   * devolver nada acá sería justamente el desajuste de hidratación que
+   * `useSyncExternalStore` viene a evitar. Lo que se pospone es sólo guardar,
+   * que es lo único que hace daño.
+   */
+  const hydrated = useSyncExternalStore(
+    subscribeProfileDraft,
+    clientHydrated,
+    serverHydrated,
+  );
+
   return (
     <ProfileFormFields
       key={draft ? "con-borrador" : "sin-borrador"}
       userId={userId}
+      accountEmail={accountEmail}
       profile={profile}
       plan={plan}
       draft={draft}
+      // Editando no hay borrador que esperar: la base vino con la página.
+      canPersistDraft={hydrated}
       images={images}
       mode={mode}
       onCancel={onCancel}
@@ -216,9 +255,15 @@ export function ProfileForm({
 
 function ProfileFormFields(props: {
   userId?: string;
+  accountEmail?: string;
   profile: Profile | null;
   plan: PlanLimits;
   draft: ProfileDraft | null;
+  /**
+   * Si ya se leyó el borrador del navegador. Hasta entonces los campos están
+   * en blanco por no haber llegado todavía, y guardarlos borraría lo guardado.
+   */
+  canPersistDraft: boolean;
   images: ProfileImage[];
   mode: ProfileFormMode;
   onCancel?: () => void;
@@ -338,8 +383,18 @@ function ProfileFormFields(props: {
       [],
   );
   const [scheduleQuery, setScheduleQuery] = useState("");
+  /*
+   * El correo de contacto arranca con el de la cuenta.
+   *
+   * Es el dato que se acaba de tipear en el registro y casi siempre es el
+   * mismo, así que pedirlo otra vez es hacer escribir dos veces lo mismo.
+   * Queda editable: el campo dice que puede ser distinto del de acceso.
+   *
+   * El borrador manda sobre esto —incluido uno donde se vació a propósito— y
+   * con perfil creado manda la base.
+   */
   const [contactEmail, setContactEmail] = useState(
-    draft?.contactEmail ?? profile?.contactEmail ?? "",
+    draft?.contactEmail ?? profile?.contactEmail ?? props.accountEmail ?? "",
   );
   const [phonePublic, setPhonePublic] = useState(
     draft?.phonePublic ?? profile?.phonePublic ?? true,
@@ -554,18 +609,50 @@ function ProfileFormFields(props: {
     [scheduleQuery, scheduleEntries],
   );
 
+  /**
+   * Si el proveedor se mueve para trabajar. Sólo entonces tiene sentido
+   * preguntarle hasta dónde llega: quien atiende nada más que en su local o a
+   * distancia no recorre ninguna zona.
+   */
+  const travels = serviceModes.includes("at_customer");
+
+  /**
+   * Las zonas de quien no se mueve, deducidas de dónde está.
+   *
+   * BR-016 pide al menos un área en todo perfil activo —sin ella no aparece
+   * en ninguna búsqueda—, pero el área no siempre hay que preguntarla: quien
+   * atiende en su local trabaja donde está, y eso ya lo dijo al declararlo.
+   * Se toma el departamento de cada local y no la localidad exacta, porque
+   * quien busca en el departamento tiene que encontrarlo.
+   *
+   * Sin ningún local —sólo a distancia— llega a cualquier parte, y el país
+   * entero es la respuesta correcta y no un valor de relleno.
+   */
+  const derivedServiceAreas = useMemo(() => {
+    if (locations.length === 0) return [COUNTRY_ID];
+
+    const areas = locations
+      .map((item) => departmentOf(item.locationId)?.id)
+      .filter((id): id is string => Boolean(id));
+
+    return areas.length > 0 ? normalizeServiceAreas(areas) : [COUNTRY_ID];
+  }, [locations]);
+
   const completion = useMemo(() => {
     return {
       identidad: name.trim().length >= 2 && description.trim().length >= 20,
       rubro: specialtyIds.length > 0,
       servicios: services.length > 0,
       /*
-       * BR-016: todo perfil activo declara al menos un área, así que el paso
-       * no está hecho hasta que haya una. Y si se atiende en el negocio hace
-       * falta además un local (BR-015).
+       * BR-016: todo perfil activo declara al menos un área. A quien se mueve
+       * se le preguntan, y hasta que elija una el paso no está hecho; a quien
+       * no, se derivan de sus locales y no hay nada que esperar. Y si se
+       * atiende en el negocio hace falta además un local (BR-015).
        */
       zonas:
-        serviceAreaIds.length > 0 &&
+        (travels
+          ? serviceAreaIds.length > 0
+          : derivedServiceAreas.length > 0) &&
         (!serviceModes.includes("at_business") || locations.length > 0),
       contacto: phone.trim().length > 0,
       /*
@@ -591,6 +678,8 @@ function ProfileFormFields(props: {
     services,
     serviceAreaIds,
     serviceModes,
+    travels,
+    derivedServiceAreas,
     locations,
     phone,
     socialLinks,
@@ -646,6 +735,12 @@ function ProfileFormFields(props: {
     // quién guardarlo, y uno anónimo es justamente el que se arrastra entre
     // cuentas.
     if (profile || !userId) return;
+    /*
+     * Todavía no se leyó lo guardado: los campos están vacíos porque el
+     * borrador no llegó, no porque no haya nada. Guardarlos ahora lo pisaría
+     * con un formulario en blanco, que era la pérdida al recargar.
+     */
+    if (!props.canPersistDraft) return;
 
     const form = formRef.current;
     const read = (name: string): string => {
@@ -684,6 +779,7 @@ function ProfileFormFields(props: {
   }, [
     userId,
     profile,
+    props.canPersistDraft,
     step,
     name,
     description,
@@ -1054,11 +1150,7 @@ function ProfileFormFields(props: {
           <Field
             label="Especialidades"
             error={errors.specialtyIds}
-            hint={
-              maxSpecialties === null
-                ? "En qué trabajás. La primera es la principal."
-                : `En qué trabajás. La primera es la principal; tu plan ${plan.name} permite hasta ${maxSpecialties}.`
-            }
+            hint="En qué trabajás. La primera es la principal."
             required
             counter={`${specialtyIds.length}/${maxSpecialties ?? "∞"}`}
             group
@@ -1124,9 +1216,7 @@ function ProfileFormFields(props: {
             hint={
               specialtyIds.length === 0
                 ? "Primero elegí al menos una especialidad."
-                : maxServices === null
-                  ? "Lo que ofrecés concretamente."
-                  : `Lo que ofrecés concretamente. Tu plan ${plan.name} permite hasta ${maxServices}.`
+                : "Lo que ofrecés concretamente."
             }
             required
             counter={`${services.length}/${maxServices ?? "∞"}`}
@@ -1206,7 +1296,7 @@ function ProfileFormFields(props: {
           <Field
             label="Cómo prestás el servicio"
             error={errors.serviceModes}
-            hint="Podés marcar más de una. Con varias, tu perfil se muestra como atención híbrida."
+            hint="Podés marcar más de una."
             required
             group
           >
@@ -1347,67 +1437,85 @@ function ProfileFormFields(props: {
             </Field>
           ) : null}
 
-          <Field
-            label="Zonas donde trabajás"
-            error={errors.serviceAreaIds}
-            hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Elegir Uruguay significa todo el país."
-            required
-            counter={`${serviceAreaIds.length}`}
-            group
-          >
-            <div className="flex flex-col gap-2.5">
-              {serviceAreaIds.length > 0 ? (
-                <div className="flex flex-wrap gap-1.5">
-                  {serviceAreaIds.map((id) => (
-                    <ItemChip
-                      key={id}
-                      name="serviceAreaIds"
-                      value={id}
-                      label={locationLabelById(id)}
-                      detail={locationTypeLabel(id)}
-                      onRemove={() => {
-                        setServiceAreaIds(
-                          serviceAreaIds.filter((x) => x !== id),
-                        );
-                        if (duplicateArea === id) setDuplicateArea(null);
-                      }}
-                    />
-                  ))}
-                </div>
-              ) : null}
+          {/*
+            Las zonas son "hasta dónde vas", así que sólo se preguntan a quien
+            va a algún lado. Quien atiende únicamente en su local o a distancia
+            no recorre ninguna zona, y pedírselas lo obligaba a contestar una
+            pregunta que no era sobre su trabajo.
+          */}
+          {travels ? (
+            <Field
+              label="Zonas donde trabajás"
+              error={errors.serviceAreaIds}
+              hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Elegir Uruguay significa todo el país."
+              required
+              counter={`${serviceAreaIds.length}`}
+              group
+            >
+              <div className="flex flex-col gap-2.5">
+                {serviceAreaIds.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {serviceAreaIds.map((id) => (
+                      <ItemChip
+                        key={id}
+                        name="serviceAreaIds"
+                        value={id}
+                        label={locationLabelById(id)}
+                        detail={locationTypeLabel(id)}
+                        onRemove={() => {
+                          setServiceAreaIds(
+                            serviceAreaIds.filter((x) => x !== id),
+                          );
+                          if (duplicateArea === id) setDuplicateArea(null);
+                        }}
+                      />
+                    ))}
+                  </div>
+                ) : null}
 
-              <LocationPicker
-                value=""
-                onChange={(id) => {
-                  if (!id) return;
-                  /*
-                   * Repetir una zona no agrega nada y antes se descartaba en
-                   * silencio: se veía como si el botón no funcionara.
-                   */
-                  if (serviceAreaIds.includes(id)) {
-                    setDuplicateArea(id);
-                    return;
-                  }
-                  setDuplicateArea(null);
-                  /*
-                   * TR-018: se normaliza al agregar. Elegir Uruguay reemplaza
-                   * lo demás y un departamento absorbe sus localidades, así
-                   * que lo que se ve es lo que se va a guardar.
-                   */
-                  setServiceAreaIds(
-                    normalizeServiceAreas([...serviceAreaIds, id]),
-                  );
-                }}
-                addMode
-              />
+                <LocationPicker
+                  value=""
+                  onChange={(id) => {
+                    if (!id) return;
+                    /*
+                     * Repetir una zona no agrega nada y antes se descartaba en
+                     * silencio: se veía como si el botón no funcionara.
+                     */
+                    if (serviceAreaIds.includes(id)) {
+                      setDuplicateArea(id);
+                      return;
+                    }
+                    setDuplicateArea(null);
+                    /*
+                     * TR-018: se normaliza al agregar. Elegir Uruguay reemplaza
+                     * lo demás y un departamento absorbe sus localidades, así
+                     * que lo que se ve es lo que se va a guardar.
+                     */
+                    setServiceAreaIds(
+                      normalizeServiceAreas([...serviceAreaIds, id]),
+                    );
+                  }}
+                  addMode
+                />
 
-              {duplicateArea ? (
-                <p role="alert" className="text-[13px] font-medium text-[#B42318]">
-                  Ya agregaste {locationLabelById(duplicateArea)}.
-                </p>
-              ) : null}
-            </div>
-          </Field>
+                {duplicateArea ? (
+                  <p role="alert" className="text-[13px] font-medium text-[#B42318]">
+                    Ya agregaste {locationLabelById(duplicateArea)}.
+                  </p>
+                ) : null}
+              </div>
+            </Field>
+          ) : (
+            /*
+              BR-016: todo perfil activo declara al menos un área igual, o no
+              aparecería en ninguna búsqueda. Sin la pregunta, sale de dónde
+              está: el departamento de cada local declarado. Y a distancia sin
+              local, el país entero, que es hasta dónde llega.
+            */
+            derivedServiceAreas.map((id) => (
+              <input key={id} type="hidden" name="serviceAreaIds" value={id} />
+            ))
+          )}
         </Panel>
 
         <Panel active={step === "contacto"} editing={editing} title="Contacto">
@@ -1932,7 +2040,7 @@ function Footer({
               variant="secondary"
               onClick={() => onStep(previous.id)}
               aria-label={`Volver a ${previous.label}`}
-              className="h-12 w-12 flex-none px-0 sm:hidden"
+              className="h-11 w-11 flex-none px-0 sm:hidden"
             >
               <Icon name="arrow_back" className="text-[20px]" />
             </Button>
@@ -1953,8 +2061,12 @@ function Footer({
           <>
             {/*
               Teléfono: la acción del paso, a todo el ancho que sobra.
-              "Siguiente" dice a dónde lleva —"Siguiente: Servicios"— para que
-              se sepa qué viene antes de tocarlo.
+
+              Dice "Siguiente" y nada más. Nombrar el destino —"Siguiente:
+              Servicios"— repetía lo que la barra de pasos ya muestra arriba, y
+              con nombres largos el botón se truncaba justo en la parte que
+              venía a informar. La flecha de al lado sigue nombrándolo en su
+              `aria-label`, para quien no ve la barra.
 
               Con todo lo obligatorio completo el principal pasa a ser crear el
               perfil, aunque queden pasos por delante: los que faltan son
@@ -1967,7 +2079,7 @@ function Footer({
                 <Button
                   type="submit"
                   disabled={pending}
-                  className="h-12 min-w-0 flex-1 text-[15px] sm:hidden"
+                  className="h-11 min-w-0 flex-1 text-[15px] sm:hidden"
                 >
                   {submitLabel}
                 </Button>
@@ -1976,7 +2088,7 @@ function Footer({
                   variant="secondary"
                   onClick={() => onStep(next.id)}
                   aria-label={`Seguir a ${next.label}`}
-                  className="h-12 w-12 flex-none px-0 sm:hidden"
+                  className="h-11 w-11 flex-none px-0 sm:hidden"
                 >
                   <Icon name="arrow_forward" className="text-[20px]" />
                 </Button>
@@ -1985,9 +2097,9 @@ function Footer({
               <Button
                 type="button"
                 onClick={() => onStep(next.id)}
-                className="h-12 min-w-0 flex-1 text-[15px] sm:hidden"
+                className="h-11 min-w-0 flex-1 text-[15px] sm:hidden"
               >
-                <span className="truncate">Siguiente: {next.label}</span>
+                Siguiente
                 <Icon name="arrow_forward" className="flex-none text-[19px]" />
               </Button>
             )}
@@ -2008,7 +2120,7 @@ function Footer({
           <Button
             type="submit"
             disabled={pending || !canSubmit}
-            className="h-12 min-w-0 flex-1 text-[15px] sm:hidden"
+            className="h-11 min-w-0 flex-1 text-[15px] sm:hidden"
           >
             {submitLabel}
           </Button>
@@ -2122,8 +2234,14 @@ function Panel({
   }
 
   return (
+    /*
+      El aire entre campos es menor en el teléfono, no mayor: es donde menos
+      pantalla hay y cada campo que entra es uno que no hay que ir a buscar
+      con el pulgar. Antes iba al revés —20px contra los 16 de escritorio— y
+      un paso de tres campos ya obligaba a desplazarse.
+    */
     <div
-      className={`${active ? "flex" : "hidden"} flex-col gap-5 p-4 sm:gap-4 sm:p-5`}
+      className={`${active ? "flex" : "hidden"} flex-col gap-3.5 px-4 py-4 sm:gap-4 sm:p-5`}
     >
       {children}
     </div>
@@ -2135,8 +2253,9 @@ function Panel({
  *
  * Una casilla nativa mide 16px. Con el dedo eso no se acierta, y el que llena
  * este formulario lo hace casi siempre desde el teléfono, muchas veces parado
- * en una obra. La fila entera es el blanco: 48px de alto, con borde para que
- * se vea que es algo que se toca y no un texto suelto.
+ * en una obra. La fila entera es el blanco: 44px de alto —el mínimo cómodo
+ * para el pulgar— con borde para que se vea que es algo que se toca y no un
+ * texto suelto.
  *
  * Sirve controlada (`checked` + `onChange`) y sin controlar
  * (`defaultChecked`): las formas de pago viven en el DOM y no en React, y
@@ -2172,7 +2291,7 @@ function CheckRow({
       } ${
         compact
           ? "min-h-[44px] px-2.5 py-2 text-[13.5px] sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:text-[14px]"
-          : "min-h-[48px] px-3 py-2.5 text-[14.5px] leading-snug sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:text-[14px]"
+          : "min-h-[44px] px-3 py-2 text-[14.5px] leading-snug sm:min-h-0 sm:border-0 sm:bg-transparent sm:p-0 sm:text-[14px]"
       }`}
     >
       <input
@@ -2193,7 +2312,7 @@ function CheckRow({
 
 /** Dos campos por fila en pantallas anchas; apilados en móvil. */
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-4 sm:grid-cols-2">{children}</div>;
+  return <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-4">{children}</div>;
 }
 
 function Field({
@@ -2250,13 +2369,13 @@ function Field({
     </span>
   ) : null;
 
-  const className = `flex flex-col gap-1.5 ${half ? "" : "w-full"}`;
+  const className = `flex flex-col gap-1 sm:gap-1.5 ${half ? "" : "w-full"}`;
 
   if (group) {
     return (
       <fieldset className={className}>
         {/* `legend` en flujo normal: no se quiere el corte del borde. */}
-        <legend className="mb-1.5 flex w-full items-baseline justify-between gap-2">
+        <legend className="mb-1 flex w-full items-baseline justify-between gap-2 sm:mb-1.5">
           {heading}
         </legend>
         {children}
@@ -2374,10 +2493,12 @@ function ErrorBanner({
  * corrida y hay que pellizcar para volver. Desde `sm` vale el tamaño del
  * sistema visual.
  *
- * La altura también sube: 44px es el mínimo que se toca cómodo con el pulgar.
+ * 44px de alto en todas las pantallas: es el mínimo que se toca cómodo con el
+ * pulgar y no hace falta más. Los 48 que llevaba el teléfono no se tocaban
+ * mejor y sumaban media pantalla cada seis campos.
  */
 function inputClass(error?: string): string {
-  return `h-12 w-full rounded-input border bg-white px-3.5 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-800 sm:h-11 sm:text-[14.5px] ${
+  return `h-11 w-full rounded-input border bg-white px-3.5 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-800 sm:text-[14.5px] ${
     error ? "border-[#FDA29B]" : "border-line-strong"
   }`;
 }
