@@ -17,6 +17,7 @@ import type {
   SocialLink,
 } from "@/types";
 import { coveringLocationIds } from "@/data/locations";
+import type { DowngradeNoticeStage } from "@/domain/plan-changes";
 import { getDb } from "@/infrastructure/cloudflare";
 import { slugify } from "@/lib/slug";
 import { newId } from "@/lib/id";
@@ -49,6 +50,8 @@ type ProfileRow = {
   subscription_status: string;
   plan_expires_at: string | null;
   downgrade_plan_id: string | null;
+  downgrade_notice_dismissed_at: string | null;
+  downgrade_notice_reminded_at: string | null;
   rating_sum: number;
   review_count: number;
 };
@@ -239,6 +242,8 @@ function toProfile(
     subscriptionStatus: row.subscription_status as Profile["subscriptionStatus"],
     planExpiresAt: row.plan_expires_at,
     downgradePlanId: (row.downgrade_plan_id ?? null) as PlanId | null,
+    downgradeNoticeDismissedAt: row.downgrade_notice_dismissed_at ?? null,
+    downgradeNoticeRemindedAt: row.downgrade_notice_reminded_at ?? null,
 
     /*
      * BR-026: sin opiniones el promedio no existe, no es cero. Se deriva de la
@@ -280,6 +285,7 @@ const SELECT_COLUMNS = `p.id, p.user_id, p.slug, p.name, p.type, p.icon,
   p.description, p.contact_email, p.phone, p.phone_e164, p.phone_verified_at,
   p.whatsapp_enabled, p.phone_public, p.profile_status, p.verification_status,
   p.plan_id, p.subscription_status, p.plan_expires_at, p.downgrade_plan_id,
+  p.downgrade_notice_dismissed_at, p.downgrade_notice_reminded_at,
   p.rating_sum, p.review_count`;
 
 /** BR-003: sólo los perfiles publicados son visibles en el sitio público. */
@@ -806,7 +812,12 @@ export class D1ProfileRepository implements ProfileRepository {
         `UPDATE profiles
             SET downgrade_plan_id = ?,
                 plan_expires_at = COALESCE(?, plan_expires_at),
-                purge_excess_after = ?, updated_at = ?
+                purge_excess_after = ?,
+                -- Cada baja es un aviso distinto: el de la anterior, cerrado
+                -- o no, no vale para ésta.
+                downgrade_notice_dismissed_at = NULL,
+                downgrade_notice_reminded_at = NULL,
+                updated_at = ?
           WHERE id = ?`,
       )
       .bind(
@@ -825,6 +836,8 @@ export class D1ProfileRepository implements ProfileRepository {
       .prepare(
         `UPDATE profiles
             SET downgrade_plan_id = NULL, purge_excess_after = NULL,
+                downgrade_notice_dismissed_at = NULL,
+                downgrade_notice_reminded_at = NULL,
                 updated_at = ?
           WHERE id = ?`,
       )
@@ -843,10 +856,43 @@ export class D1ProfileRepository implements ProfileRepository {
       .prepare(
         `UPDATE profiles
             SET plan_id = ?, downgrade_plan_id = NULL, plan_expires_at = NULL,
+                downgrade_notice_dismissed_at = NULL,
+                downgrade_notice_reminded_at = NULL,
                 updated_at = ?
           WHERE id = ? AND downgrade_plan_id = ?`,
       )
       .bind(planId, new Date().toISOString(), profileId, planId)
+      .run();
+  }
+
+  /**
+   * Marca como cerrado uno de los dos avisos de la baja agendada.
+   *
+   * Cada etapa escribe su propia columna: cerrar el recordatorio de los
+   * últimos días no puede contarse como haber cerrado el aviso normal —ni al
+   * revés—, o uno de los dos no llegaría a mostrarse nunca.
+   *
+   * El `WHERE` exige que la baja siga agendada: si venció y se consolidó
+   * mientras la pestaña estaba abierta no hay aviso que silenciar.
+   */
+  async dismissDowngradeNotice(
+    profileId: string,
+    stage: DowngradeNoticeStage,
+  ): Promise<void> {
+    // El nombre sale de un conjunto cerrado, nunca de la entrada del usuario.
+    const column =
+      stage === "reminder"
+        ? "downgrade_notice_reminded_at"
+        : "downgrade_notice_dismissed_at";
+
+    const now = new Date().toISOString();
+
+    await getDb()
+      .prepare(
+        `UPDATE profiles SET ${column} = ?, updated_at = ?
+          WHERE id = ? AND downgrade_plan_id IS NOT NULL`,
+      )
+      .bind(now, now, profileId)
       .run();
   }
 

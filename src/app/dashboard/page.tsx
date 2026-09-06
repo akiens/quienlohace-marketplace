@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { DowngradeNotice } from "@/components/dashboard/downgrade-notice";
 import { PlanSwitcher } from "@/components/dashboard/plan-switcher";
 import { ProfileView } from "@/components/dashboard/profile-view";
 import { Icon } from "@/components/ui";
 import {
   downgradeIsDue,
+  downgradeNoticeStage,
   effectivePlanId,
-  hasScheduledDowngrade,
 } from "@/domain/plan-changes";
 import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
@@ -63,6 +64,9 @@ export default async function DashboardPage() {
     planId: profile.planId ?? "cobre",
     downgradePlanId: profile.downgradePlanId,
     planExpiresAt: profile.planExpiresAt,
+    // Lo que ya se cerró del aviso, para no repetirlo.
+    dismissedAt: profile.downgradeNoticeDismissedAt,
+    remindedAt: profile.downgradeNoticeRemindedAt,
   };
   const planId: PlanId = effectivePlanId(planState);
 
@@ -86,46 +90,76 @@ export default async function DashboardPage() {
 
   if (!plan) return <SetupNotice />;
 
-  // Baja agendada que todavía no entró en vigencia: hay que avisarlo.
-  const downgrade = hasScheduledDowngrade(planState)
+  /*
+   * El aviso de la baja agendada, si corresponde mostrarlo.
+   *
+   * `downgradeNoticeStage` decide las dos cosas juntas: que haya una baja sin
+   * aplicar, y que el aviso que toca no esté cerrado. Devuelve además cuál de
+   * los dos es —el normal o el recordatorio de los últimos días—, que es lo
+   * que necesita el componente para marcar la columna correcta al cerrarlo.
+   */
+  const noticeStage = downgradeNoticeStage(planState);
+  const downgrade = noticeStage
     ? allPlans.find((p) => p.id === profile.downgradePlanId)
     : undefined;
 
   return (
-    <div className="shell flex flex-col gap-7 py-8">
-      <header className="flex flex-col gap-1.5">
-        <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
-          Mi perfil
-        </h1>
-        <p className="text-[15px] text-ink-soft">
-          Revisá cómo quedó, publicalo cuando esté listo y editá lo que
-          necesites.
-        </p>
-      </header>
-
-      {downgrade ? (
-        <p className="flex flex-wrap items-center gap-2 rounded-card border border-accent bg-accent-soft p-4 text-[14px] leading-relaxed text-accent-ink">
-          <Icon name="schedule" className="text-[18px]" />
-          Vas a pasar al plan {downgrade.name}
-          {profile.planExpiresAt ? (
-            <> el {formatDate(profile.planExpiresAt)}</>
-          ) : null}
-          . Hasta entonces seguís usando todo lo de {plan.name}; lo que no
-          entre en {downgrade.name} se guarda por si volvés.
-        </p>
+    <>
+      {/*
+       * El aviso va pegado al header del sitio, antes que nada: es una
+       * novedad de la cuenta, no de esta pantalla.
+       *
+       * Por eso queda fuera del contenedor del panel y a ancho completo —una
+       * banda del sitio, como las del sistema—. Dentro del contenedor se leía
+       * como un bloque más de "Mi perfil", que es justo lo que no es.
+       */}
+      {downgrade && noticeStage ? (
+        <DowngradeNotice
+          planName={plan.name}
+          downgradePlanName={downgrade.name}
+          effectiveOn={
+            profile.planExpiresAt ? formatDate(profile.planExpiresAt) : null
+          }
+          stage={noticeStage}
+        />
       ) : null}
 
-      <PlanSwitcher plan={plan} plans={allPlans} persist />
+      {/*
+       * En el teléfono el panel no lleva margen lateral: la franja del plan
+       * tiene que tocar los dos bordes, y con el `px` del `shell` quedaba
+       * flotando con 20px a cada lado. El margen se lo pone cada bloque que sí
+       * lo necesita, y vuelve entero desde `sm`.
+       */}
+      <div className="mx-auto flex w-full max-w-shell flex-col gap-5 px-0 py-6 sm:gap-7 sm:px-6 sm:py-8">
+        <header className="flex flex-col gap-1.5 px-5 sm:px-0">
+          <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
+            Mi perfil
+          </h1>
+          <p className="text-[15px] text-ink-soft">
+            Revisá cómo quedó, publicalo cuando esté listo y editá lo que
+            necesites.
+          </p>
+        </header>
 
-      <ProfileView profile={profile} plan={plan} images={images} />
-    </div>
+        <PlanSwitcher plan={plan} plans={allPlans} persist />
+
+        <div className="px-5 sm:px-0">
+          <ProfileView profile={profile} plan={plan} images={images} />
+        </div>
+      </div>
+    </>
   );
 }
 
-/** Fecha corta y legible: "12 de marzo de 2027". */
-function formatDate(iso: string): string {
+/**
+ * Fecha corta y legible: "12 de marzo de 2027". `null` si no se puede leer.
+ *
+ * Devolver `null` y no la cadena vacía es lo que deja al aviso omitir la fecha
+ * entera en vez de anunciar "el " y quedarse a la mitad.
+ */
+function formatDate(iso: string): string | null {
   const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) return null;
   return date.toLocaleDateString("es-UY", {
     day: "numeric",
     month: "long",

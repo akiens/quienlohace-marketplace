@@ -148,3 +148,63 @@ export function nextPeriodEnd(from: Date = new Date()): string {
   end.setMonth(end.getMonth() + 1);
   return end.toISOString();
 }
+
+/**
+ * Cuántos días antes de que la baja tenga efecto vuelve a aparecer el aviso,
+ * aunque ya se haya cerrado.
+ *
+ * Cerrarlo es decir "ya lo sé", no "no me lo recuerdes nunca": entre que se
+ * agenda la baja y que se aplica puede pasar un mes, y llegar al vencimiento
+ * sin acordarse es perder funciones de un día para el otro sin haber tenido
+ * ocasión de cancelarla.
+ */
+export const DOWNGRADE_REMINDER_DAYS = 3;
+
+/** Los dos avisos de una baja: el normal y el de los últimos días. */
+export type DowngradeNoticeStage = "initial" | "reminder";
+
+/** Lo que la persona ya cerró de los avisos de esta baja. */
+export type DowngradeNoticeState = {
+  /** Cuándo se cerró el aviso normal, o null si no se cerró. */
+  dismissedAt?: string | null;
+  /** Cuándo se cerró el recordatorio, o null si no se cerró. */
+  remindedAt?: string | null;
+};
+
+/** Si faltan `DOWNGRADE_REMINDER_DAYS` días o menos para que la baja rija. */
+function inReminderWindow(planExpiresAt: string | null | undefined, now: Date) {
+  if (!planExpiresAt) return false;
+
+  const expires = new Date(planExpiresAt);
+  if (Number.isNaN(expires.getTime())) return false;
+
+  const window = DOWNGRADE_REMINDER_DAYS * 24 * 60 * 60 * 1000;
+  return expires.getTime() - now.getTime() <= window;
+}
+
+/**
+ * Qué aviso de baja corresponde mostrar ahora, o `null` si ninguno.
+ *
+ * Hay una baja agendada y sin aplicar; a partir de ahí:
+ *
+ *   - Fuera de los últimos días se muestra el aviso normal, salvo que ya se
+ *     haya cerrado.
+ *   - Dentro de la ventana manda el recordatorio, y que el normal estuviera
+ *     cerrado no lo tapa: es un aviso nuevo, con otra urgencia. Se calla
+ *     recién cuando se cierra ése, y ahí no vuelve más.
+ *
+ * Devuelve cuál de los dos es para que cerrarlo escriba la columna que
+ * corresponde: confundirlos haría que el recordatorio no llegue a mostrarse.
+ */
+export function downgradeNoticeStage(
+  state: PlanState & DowngradeNoticeState,
+  now: Date = new Date(),
+): DowngradeNoticeStage | null {
+  if (!hasScheduledDowngrade(state, now)) return null;
+
+  if (inReminderWindow(state.planExpiresAt, now)) {
+    return state.remindedAt ? null : "reminder";
+  }
+
+  return state.dismissedAt ? null : "initial";
+}

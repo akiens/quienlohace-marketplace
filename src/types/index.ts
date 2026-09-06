@@ -244,6 +244,10 @@ export type Profile = {
   planExpiresAt: string | null;
   /** Plan al que se baja al vencer, o null si no hay baja agendada. */
   downgradePlanId: PlanId | null;
+  /** Cuándo se cerró el aviso de la baja, o null si no se cerró. */
+  downgradeNoticeDismissedAt: string | null;
+  /** Cuándo se cerró el recordatorio de los últimos días, o null. */
+  downgradeNoticeRemindedAt: string | null;
 
   /** null cuando el perfil todavía no tiene opiniones (BR-026). */
   rating: number | null;

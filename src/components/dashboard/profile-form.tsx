@@ -1406,6 +1406,16 @@ function ProfileFormFields(props: {
             <SearchSelect
               label="Servicios"
               name="serviceName"
+              /*
+               * Viaja el nombre, no el valor: el valor de un servicio elegido
+               * es `especialidad|nombre`, una clave interna para distinguir
+               * homónimos. Mandándola, el perfil guardaba esa clave como
+               * nombre del servicio y después la mostraba tal cual.
+               *
+               * La especialidad no se pierde: va en paralelo por
+               * `serviceSpecialty`, en el mismo orden.
+               */
+              submitLabel
               options={serviceOptions}
               selected={selectedServices}
               max={maxServices ?? undefined}
@@ -1419,14 +1429,21 @@ function ProfileFormFields(props: {
               onSelect={(option) => {
                 /*
                  * A qué especialidad se lo cuelga: la del catálogo si vino de
-                 * ahí, y si no la principal del perfil. Un servicio escrito a
-                 * mano tiene que colgar de alguna, y la primera es la que la
-                 * persona declaró como su actividad principal.
+                 * ahí, y si no la principal del perfil. El servicio es texto
+                 * libre (TR-022), pero la base exige que cuelgue de una
+                 * especialidad del perfil —`services.specialty_id` es NOT NULL
+                 * con FK contra `profile_specialties`—, y la primera es la que
+                 * la persona declaró como actividad principal.
+                 *
+                 * Se consulta el catálogo directamente en vez de adivinar por
+                 * la forma del valor: antes se miraba si tenía un guión, y un
+                 * servicio escrito a mano que lo llevara ("Aire acondicionado
+                 * - instalación") se tomaba por id de catálogo y se quedaba
+                 * sin especialidad.
                  */
-                const fromCatalog = option.value.includes("-")
-                  ? SERVICE_SUGGESTION_SPECIALTY.get(option.value)
-                  : undefined;
-                const specialtyId = fromCatalog ?? specialtyIds[0];
+                const specialtyId =
+                  SERVICE_SUGGESTION_SPECIALTY.get(option.value) ??
+                  specialtyIds[0];
                 if (!specialtyId) return;
 
                 // BR-011: no se repite dentro de la misma especialidad.

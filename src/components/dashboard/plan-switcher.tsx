@@ -80,19 +80,24 @@ export function PlanSwitcher({
   return (
     <>
       {/*
-       * En el teléfono la franja es más alta y el nombre del plan va sobre el
-       * precio, en dos líneas. En una sola —como en escritorio— la insignia,
-       * el nombre, el nivel, el precio y el botón no entran en 360px: o se
-       * salían del recuadro o el botón quedaba de tres píxeles.
+       * La franja es la misma en el teléfono que en escritorio: 36px de alto,
+       * la insignia de 64px saliéndose por arriba y por abajo, y el nombre, el
+       * nivel y el precio en una línea.
+       *
+       * Lo único propio del teléfono es que va de borde a borde, sin margen
+       * lateral ni esquinas redondeadas — y es lo que hace posible el resto:
+       * los 12px que tenía a cada lado eran justo los que le faltaban al
+       * contenido para entrar en una sola línea, y por eso antes el nombre y
+       * el precio se apilaban y la franja medía 52px.
        *
        * El nivel ("Básico", "Premium") se ve sólo desde `sm`: repite lo que ya
        * dice el nombre del plan, y en el ancho que hay es lo primero que sobra.
        */}
       <div
         style={{ backgroundImage: PLAN_RIBBONS[plan.id].face }}
-        className="relative mx-3 flex h-[52px] items-center gap-x-3 rounded-card py-[3px] pr-[3px] sm:mx-0 sm:h-9 sm:gap-x-5"
+        className="relative flex h-9 items-center gap-x-5 py-[3px] pr-[3px] sm:rounded-card"
       >
-        <span className="flex min-w-0 items-center gap-2 sm:gap-3">
+        <span className="flex min-w-0 items-center gap-3">
           {/*
            * La insignia se sale de la franja por arriba y por abajo, así se
            * lee como algo apoyado encima. Va corrida a la derecha, y el texto
@@ -103,33 +108,30 @@ export function PlanSwitcher({
             alt=""
             width={96}
             height={96}
-            className="pointer-events-none -my-3 ml-2.5 h-14 w-14 shrink-0 object-contain drop-shadow-[0_3px_8px_rgba(16,24,40,.35)] sm:ml-[15px] sm:h-16 sm:w-16"
+            className="pointer-events-none -my-3.5 ml-[15px] h-16 w-16 shrink-0 object-contain drop-shadow-[0_3px_8px_rgba(16,24,40,.35)]"
           />
-          <span className="flex min-w-0 flex-col leading-tight sm:flex-row sm:items-center sm:gap-3">
-            <span className="truncate text-[14px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,.5)] sm:text-[15px]">
+          <span className="flex min-w-0 items-center gap-3 leading-tight">
+            <span className="truncate text-[15px] font-bold text-white [text-shadow:0_1px_2px_rgba(0,0,0,.5)]">
               Plan {plan.name}
             </span>
             <span className="hidden rounded-full bg-black/25 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white sm:inline">
               {PLAN_TIERS[plan.id]}
             </span>
-            <span className="text-[12px] text-white/80 [text-shadow:0_1px_2px_rgba(0,0,0,.5)] sm:text-[13px]">
-              {formatPrice(plan)}
-            </span>
           </span>
         </span>
 
         {/*
-         * En el teléfono el botón es sólo el icono con su etiqueta accesible:
-         * "Cambiar mi plan" se comía el ancho que necesita el nombre del plan.
+         * El botón lleva su texto también en el teléfono. Antes ahí era sólo
+         * el icono porque no entraba: lo que ocupaba ese ancho era el precio,
+         * y sin él sobra para la etiqueta completa.
          */}
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Cambiar mi plan"
-          className="ml-auto mr-1 flex h-9 flex-none items-center gap-1.5 rounded-input bg-white/95 px-2.5 text-[13px] font-semibold text-ink transition-colors hover:bg-white sm:mr-0 sm:h-[30px] sm:px-3"
+          className="ml-auto mr-1 flex h-[30px] flex-none items-center gap-1.5 rounded-input bg-white/95 px-3 text-[13px] font-semibold text-ink transition-colors hover:bg-white sm:mr-0"
         >
-          <Icon name="swap_horiz" className="text-[18px] sm:text-[16px]" />
-          <span className="hidden sm:inline">Cambiar mi plan</span>
+          <Icon name="swap_horiz" className="text-[16px]" />
+          Cambiar mi plan
         </button>
       </div>
 

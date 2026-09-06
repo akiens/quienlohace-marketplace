@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
-import { getSpecialty } from "@/data/taxonomy";
+import { getSpecialty, sectorOfSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import { allowsFeature } from "@/domain/plans";
 import {
@@ -59,6 +59,27 @@ export function ProfileView({
     // historial que valga la pena recorrer con el botón de atrás.
     router.replace(on ? "/dashboard?editar=1" : "/dashboard");
   };
+
+  /*
+   * Los rubros del perfil (`service_sectors`). No se eligen: se derivan de las
+   * especialidades (BR-010), y por eso no había fila que mostrarlos — la
+   * sección se llamaba "Rubro" y era la única sin ninguno.
+   *
+   * Se deduplican: dos especialidades del mismo rubro son un rubro solo.
+   *
+   * Se muestra `short` y no `name`, que es lo que usa el resto del sitio —el
+   * menú, la portada, las categorías y el asistente—: el mismo rubro tiene que
+   * llamarse igual en todos lados. Con `name` acá decía "Hogar, Construcción y
+   * Mantenimiento" y en el menú "Hogar y mantenimiento".
+   */
+  const sectors = [
+    ...new Map(
+      profile.specialtyIds
+        .map((id) => sectorOfSpecialty(id))
+        .filter((sector) => sector !== undefined)
+        .map((sector) => [sector.id, sector.short] as const),
+    ).values(),
+  ];
 
   const avatar = images.find((image) => image.kind === "avatar") ?? null;
   const cover = images.find((image) => image.kind === "cover") ?? null;
@@ -164,13 +185,27 @@ export function ProfileView({
 
         <Section title="Rubro">
           {/* Los rubros se derivan de las especialidades (BR-010). */}
+          <Row label="Rubros">
+            {sectors.length > 0 ? <Chips values={sectors} /> : <Empty />}
+          </Row>
+          {/*
+            Cada especialidad con su rubro debajo, igual que en el asistente:
+            hay homónimas en rubros distintos ("Veterinaria" está en Mascotas y
+            en Servicios rurales) y el nombre solo no las distingue.
+          */}
           <Row label="Especialidades">
             {profile.specialtyIds.length > 0 ? (
-              <Chips values={profile.specialtyIds.map(subcategoryLabel)} />
+              <Chips
+                values={profile.specialtyIds.map((id) => ({
+                  label: subcategoryLabel(id),
+                  context: sectorOfSpecialty(id)?.short,
+                }))}
+              />
             ) : (
               <Empty />
             )}
           </Row>
+          {/* Sólo el nombre: el servicio se guarda como texto libre (TR-022). */}
           <Row label="Servicios">
             {profile.services.length > 0 ? (
               <Chips values={profile.services.map((item) => item.name)} />
@@ -298,15 +333,36 @@ function Row({
   );
 }
 
-function Chips({ values }: { values: string[] }) {
+/** Una etiqueta con su procedencia debajo, cuando corresponde mostrarla. */
+type ChipValue = { label: string; context?: string };
+
+/**
+ * Etiquetas de lo cargado. Con `context` la etiqueta lleva dos líneas —arriba
+ * lo elegido, abajo en letra chica de dónde sale—, igual que en el asistente.
+ */
+function Chips({ values }: { values: (string | ChipValue)[] }) {
+  const chips = values.map((value) =>
+    typeof value === "string" ? { label: value } : value,
+  );
+
   return (
     <span className="flex flex-wrap gap-1.5">
-      {values.map((value) => (
+      {chips.map((chip) => (
         <span
-          key={value}
-          className="rounded-full bg-brand-100 px-3 py-1 text-[13px] font-semibold text-brand-800"
+          key={chip.context ? `${chip.context}|${chip.label}` : chip.label}
+          className={`bg-brand-100 text-[13px] font-semibold text-brand-800 ${
+            chip.context
+              ? "flex flex-col rounded-card px-3 py-1 leading-tight"
+              : "rounded-full px-3 py-1"
+          }`}
         >
-          {value}
+          {chip.label}
+          {chip.context ? (
+            // Acompaña al nombre, no compite con él.
+            <span className="text-[11px] font-medium text-brand-800/70">
+              {chip.context}
+            </span>
+          ) : null}
         </span>
       ))}
     </span>

@@ -8,6 +8,7 @@ import {
   planChangeKind,
   purgeDeadline,
 } from "@/domain/plan-changes";
+import type { DowngradeNoticeStage } from "@/domain/plan-changes";
 import { PLAN_IDS } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
@@ -153,4 +154,47 @@ export async function changePlan(
   return {
     message: `Vas a pasar al plan ${target.name} cuando termine tu período actual. Hasta entonces seguís con ${current.name}.`,
   };
+}
+
+/**
+ * Cierra el aviso de la baja agendada.
+ *
+ * Se escribe en el perfil y no en el navegador: "ya lo leí" es una decisión de
+ * la persona, no del aparato, y cerrado en la computadora tampoco tiene que
+ * volver a saltar en el teléfono.
+ *
+ * La etapa viaja en el formulario porque el aviso normal y el recordatorio de
+ * los últimos días se cierran por separado (`downgradeNoticeStage`): sin
+ * distinguirlos, cerrar el primero silenciaría al segundo, que es justamente
+ * el que avisa que la baja es en tres días.
+ */
+export async function dismissDowngradeNotice(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+
+  const stage: DowngradeNoticeStage =
+    formData.get("stage") === "reminder" ? "reminder" : "initial";
+
+  const profiles = new D1ProfileRepository();
+  const profile = await profiles.findByUserId(user.id);
+
+  // Sin perfil no hay aviso que cerrar: no es un error, no hay nada que hacer.
+  if (!profile) return { message: "Aviso cerrado." };
+
+  try {
+    await profiles.dismissDowngradeNotice(profile.id, stage);
+  } catch (error) {
+    /*
+     * Cerrar un aviso no merece defenderse con un cartel de error: ya
+     * desapareció de la pantalla y lo peor que pasa es que vuelva en la
+     * próxima visita.
+     */
+    console.error("dismissDowngradeNotice failed", error);
+    return { errors: { form: "No pudimos guardar que cerraste el aviso." } };
+  }
+
+  revalidatePath("/dashboard");
+  return { message: "Aviso cerrado." };
 }

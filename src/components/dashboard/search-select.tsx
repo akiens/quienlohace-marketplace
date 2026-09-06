@@ -52,6 +52,7 @@ export function SearchSelect({
   allowCustom = false,
   customHint,
   name,
+  submitLabel = false,
   omitFromSubmit,
   error,
   disabled = false,
@@ -75,6 +76,17 @@ export function SearchSelect({
   customHint?: string;
   /** `name` de los inputs ocultos que viajan en el envío. */
   name: string;
+  /**
+   * Que el envío lleve la etiqueta y no el valor.
+   *
+   * Por defecto viaja `value`, que es lo correcto cuando identifica algo que
+   * el servidor conoce: el id de una especialidad, el de una ubicación. Los
+   * servicios no son ese caso — se guardan como texto libre (TR-022) y su
+   * `value` es una clave interna, `especialidad|nombre`, para distinguir
+   * homónimos de especialidades distintas. Enviándolo se guardaba esa clave
+   * como nombre y el perfil mostraba "esp-plomeria|Destapaciones".
+   */
+  submitLabel?: boolean;
   /**
    * Valores que se muestran como etiqueta pero no se envían con `name`.
    *
@@ -333,7 +345,7 @@ export function SearchSelect({
             key={option.value}
             type="hidden"
             name={name}
-            value={option.value}
+            value={submitLabel ? option.label : option.value}
           />
         ))}
 

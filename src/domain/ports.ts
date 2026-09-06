@@ -1,3 +1,4 @@
+import type { DowngradeNoticeStage } from "@/domain/plan-changes";
 import type {
   PaymentMethod,
   PlanId,
@@ -128,6 +129,14 @@ export interface ProfileRepository {
   cancelDowngrade(profileId: string): Promise<void>;
   /** Consolida una baja ya vencida en la fila. */
   applyDueDowngrade(profileId: string, planId: PlanId): Promise<void>;
+  /**
+   * Marca como cerrado uno de los dos avisos de la baja: el normal o el
+   * recordatorio de los últimos días. Cada uno se cierra por su cuenta.
+   */
+  dismissDowngradeNotice(
+    profileId: string,
+    stage: DowngradeNoticeStage,
+  ): Promise<void>;
   setStatus(profileId: string, status: ProfileStatus): Promise<void>;
 }
 
