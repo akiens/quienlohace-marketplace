@@ -249,8 +249,24 @@ export function EmptyState({
   );
 }
 
-/** Bloque publicitario nativo: siempre rotulado, nunca disfrazado de resultado. */
-export function AdSlot({ label = "Espacio publicitario" }: { label?: string }) {
+/**
+ * Bloque publicitario nativo: siempre rotulado, nunca disfrazado de resultado.
+ *
+ * Con `fallback` el hueco no se muestra vacío: mientras no haya un anuncio que
+ * poner, ese espacio lo ocupa lo que se le pase. El rótulo "Publicidad" queda
+ * sólo para el caso con anuncio real — rotular como publicidad una promoción
+ * del propio sitio sería mentirle a quien lee, y además le pediría al bloqueador
+ * de anuncios que lo esconda.
+ */
+export function AdSlot({
+  label = "Espacio publicitario",
+  fallback,
+}: {
+  label?: string;
+  fallback?: ReactNode;
+}) {
+  if (fallback) return <>{fallback}</>;
+
   return (
     <aside className="flex flex-col gap-2 rounded-card border border-line bg-white p-5">
       <span className="text-[10.5px] font-bold uppercase tracking-[.7px] text-ink-faint">

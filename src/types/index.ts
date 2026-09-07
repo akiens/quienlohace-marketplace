@@ -385,5 +385,12 @@ export const MAX_LOCATIONS = 5;
 export const MAX_SPECIALTIES = 5;
 /** 12 divide exacto por 1, 2, 3 y 4 columnas: nunca deja una fila coja. */
 export const PAGE_SIZE = 12;
-/** 8 completa dos filas de 4 y cuatro de 2, sin huecos en ningún ancho. */
-export const HOME_SECTION_SIZE = 8;
+/**
+ * Cuántos perfiles muestra cada sección de la portada.
+ *
+ * Cuatro: la fila entera de la grilla en `xl`, que es donde se mira la
+ * portada de escritorio. La portada es un índice, no un listado —cada sección
+ * lleva su "Ver todos" al listado completo—, y con ocho la página se hacía
+ * larga sin agregar nada que no estuviera a un clic.
+ */
+export const HOME_SECTION_SIZE = 4;
