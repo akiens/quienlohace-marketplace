@@ -75,13 +75,20 @@ import {
   type SocialPlatform,
 } from "@/types";
 
-/** Los códigos que persiste la base; la etiqueta en español es de la UI. */
+/**
+ * Los códigos que persiste la base; la etiqueta en español es de la UI.
+ *
+ * "Otros" ya no se ofrece: como casilla no decía nada —quien busca no puede
+ * filtrar por "otros"— y elegirla era una forma de no contestar. El código
+ * sigue existiendo en el tipo y en la base porque hay perfiles que ya lo
+ * tienen guardado, y quitarlo de ahí los rompería (TR-001); simplemente no se
+ * ofrece más al cargar el perfil.
+ */
 const PAYMENT_OPTIONS: PaymentMethod[] = [
   "cash",
   "bank_transfer",
   "debit_card",
   "credit_card",
-  "other",
 ];
 
 /**
@@ -644,21 +651,46 @@ function ProfileFormFields(props: {
    * un rubro nuevo lo consume sin decirlo, y la persona se enteraría recién
    * al guardar, con un error que le pide quitar algo sin decirle qué. Dejando
    * de ofrecerlas, el límite se explica solo (BR-006).
+   *
+   * El orden no es el del catálogo: primero van los rubros que ya se están
+   * trabajando, en el orden en que se eligieron, y después todo lo demás.
+   * Quien acaba de elegir "Electricista" casi siempre sigue con algo del
+   * mismo rubro, y el catálogo lo tenía a veinte rubros de distancia; ahora
+   * lo primero que se ofrece al abrir el selector es lo que sigue a mano.
+   *
+   * Con dos rubros elegidos el segundo va después del primero —no se mezclan—:
+   * así el bloque de arriba sigue siendo el rubro en el que se estaba, y
+   * sumar uno nuevo no reordena lo que ya se venía viendo.
    */
   const specialtyOptions: SearchOption[] = useMemo(() => {
     const sectorsFull =
       maxSectors !== null && derivedSectors.length >= maxSectors;
     const allowed = new Set(derivedSectors.map((sector) => sector.id));
 
-    return SERVICE_SECTORS.filter(
-      (sector) => !sectorsFull || allowed.has(sector.id),
-    ).flatMap((sector) =>
-      listSpecialties(sector.id).map((specialty) => ({
-        value: specialty.id,
-        label: specialty.name,
-        context: sector.short,
-      })),
+    /*
+     * Los rubros ya elegidos primero y en su orden; detrás, el resto del
+     * catálogo en el suyo. `derivedSectors` ya viene ordenado por elección
+     * —lo arma recorriendo `specialtyIds`—, así que alcanza con anteponerlo.
+     */
+    const chosenIds = derivedSectors.map((sector) => sector.id);
+    const chosen = chosenIds
+      .map((id) => SERVICE_SECTORS.find((sector) => sector.id === id))
+      .filter((sector): sector is (typeof SERVICE_SECTORS)[number] =>
+        Boolean(sector),
+      );
+    const rest = SERVICE_SECTORS.filter(
+      (sector) => !chosenIds.includes(sector.id),
     );
+
+    return [...chosen, ...rest]
+      .filter((sector) => !sectorsFull || allowed.has(sector.id))
+      .flatMap((sector) =>
+        listSpecialties(sector.id).map((specialty) => ({
+          value: specialty.id,
+          label: specialty.name,
+          context: sector.short,
+        })),
+      );
   }, [derivedSectors, maxSectors]);
 
   /**
@@ -769,7 +801,7 @@ function ProfileFormFields(props: {
   const remote = serviceModes.includes("remote");
 
   /**
-   * Si hay que preguntar hasta dónde llega.
+   * Si se ofrece elegir hasta dónde llega.
    *
    * Sólo a quien se traslada —quien atiende nada más que en su local no
    * recorre ninguna zona— y sólo si no atiende también a distancia: en ese
@@ -781,6 +813,8 @@ function ProfileFormFields(props: {
    * en su local sigue declarando sus locales normalmente. Son dos preguntas
    * distintas —hasta dónde llego y dónde estoy— y sólo la primera queda
    * contestada por atender a distancia.
+   *
+   * Se ofrece, pero no se exige: ver `derivedServiceAreas`.
    */
   const travels = serviceModes.includes("at_customer") && !remote;
 
@@ -816,21 +850,48 @@ function ProfileFormFields(props: {
     return areas.length > 0 ? normalizeServiceAreas(areas) : [COUNTRY_ID];
   }, [locations, remote]);
 
+  /**
+   * Las zonas que finalmente se guardan.
+   *
+   * Quien se traslada puede acotar hasta dónde llega, pero no está obligado:
+   * si no elige ninguna, vale todo el país. Antes el paso quedaba trabado
+   * hasta elegir una zona a mano, y era un trámite —no una decisión— para
+   * quien simplemente atiende a domicilio donde lo llamen.
+   *
+   * Se guarda el país explícito y no una lista vacía: BR-016 pide al menos un
+   * área en todo perfil activo, y sin ella el perfil no aparecería en ninguna
+   * búsqueda. El valor por omisión es el que más se parece a lo que declaró.
+   */
+  const effectiveServiceAreas = useMemo(
+    () =>
+      travels
+        ? serviceAreaIds.length > 0
+          ? serviceAreaIds
+          : [COUNTRY_ID]
+        : derivedServiceAreas,
+    [travels, serviceAreaIds, derivedServiceAreas],
+  );
+
   const completion = useMemo(() => {
     return {
       identidad: name.trim().length >= 2 && description.trim().length >= 20,
       rubro: specialtyIds.length > 0,
       servicios: services.length > 0,
       /*
-       * BR-016: todo perfil activo declara al menos un área. A quien se mueve
-       * se le preguntan, y hasta que elija una el paso no está hecho; a quien
-       * no, se derivan de sus locales y no hay nada que esperar. Y si se
-       * atiende en el negocio hace falta además un local (BR-015).
+       * BR-016: todo perfil activo declara al menos un área. Ya nunca falta
+       * —`effectiveServiceAreas` cae en el país entero cuando no se eligió
+       * nada—, así que el paso no se traba por las zonas. Lo único que puede
+       * faltar acá es el local de quien atiende en el negocio (BR-015).
+       *
+       * Pero hace falta haber pasado por el paso: como el valor por omisión ya
+       * alcanza, sin esto el tilde aparecía puesto desde el arranque y decía
+       * "esto ya está" sobre una pregunta que todavía no se leyó. Se marca al
+       * salir del paso, sea eligiendo zonas o dejándolo como venía —mirarlo y
+       * aceptar el país entero es una respuesta válida—, pero no antes.
        */
       zonas:
-        (travels
-          ? serviceAreaIds.length > 0
-          : derivedServiceAreas.length > 0) &&
+        visited.has("zonas") &&
+        effectiveServiceAreas.length > 0 &&
         (!serviceModes.includes("at_business") || locations.length > 0),
       contacto: phone.trim().length > 0,
       /*
@@ -854,11 +915,10 @@ function ProfileFormFields(props: {
     description,
     specialtyIds,
     services,
-    serviceAreaIds,
     serviceModes,
-    travels,
-    derivedServiceAreas,
+    effectiveServiceAreas,
     locations,
+    visited,
     phone,
     socialLinks,
     avatar,
@@ -1698,8 +1758,7 @@ function ProfileFormFields(props: {
             <Field
               label="Zonas donde trabajás"
               error={errors.serviceAreaIds}
-              hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Elegir Uruguay significa todo el país."
-              required
+              hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Si no elegís ninguna, vale todo el país."
               counter={`${serviceAreaIds.length}`}
               group
             >
@@ -1722,6 +1781,16 @@ function ProfileFormFields(props: {
                       />
                     ))}
                   </div>
+                ) : null}
+
+                {/*
+                  Sin ninguna zona elegida se manda el país: es lo que vale
+                  por omisión, y BR-016 no admite un perfil activo sin área.
+                  Los chips de arriba son los que envían cuando hay elegidas,
+                  así que este oculto sólo aparece cuando no hay ninguno.
+                */}
+                {serviceAreaIds.length === 0 ? (
+                  <input type="hidden" name="serviceAreaIds" value={COUNTRY_ID} />
                 ) : null}
 
                 <LocationPicker
@@ -1885,11 +1954,29 @@ function ProfileFormFields(props: {
 
           <Field label="Formas de pago" error={errors.paymentMethods} group>
             {/*
+              "Acepto todas" es un atajo, no un valor: marca las cuatro y se
+              desmarca solo en cuanto se destilda cualquiera. Se guarda la
+              lista completa y no una bandera, así que quien busca por
+              "efectivo" encuentra igual a este perfil (TR-001).
+            */}
+            <CheckRow
+              name="paymentMethodsAll"
+              value="all"
+              checked={PAYMENT_OPTIONS.every((method) =>
+                paymentMethods.includes(method),
+              )}
+              onChange={(on) =>
+                setPaymentMethods(on ? [...PAYMENT_OPTIONS] : [])
+              }
+              label="Acepto todas"
+            />
+
+            {/*
               Dos columnas en el teléfono: las etiquetas son cortas ("Efectivo",
               "Débito") y en una sola columna el paso se estiraba media pantalla
               de más por cinco palabras.
             */}
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
+            <div className="mt-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
               {PAYMENT_OPTIONS.map((method) => (
                 <CheckRow
                   key={method}
@@ -2817,9 +2904,14 @@ function PlanHint({
   what: string;
   limit: number;
 }) {
+  /*
+   * Tono de advertencia y no el gris de antes: esto no es un dato de color
+   * sino un tope ya alcanzado que frena lo que se está haciendo. En gris se
+   * leía como una nota al pie y se seguía intentando agregar.
+   */
   return (
-    <p className="flex flex-wrap items-center gap-1.5 rounded-input bg-surface-muted px-3 py-2 text-[12.5px] text-ink-soft">
-      <Icon name="info" className="text-[15px] text-ink-faint" />
+    <p className="flex flex-wrap items-center gap-1.5 rounded-input border border-warning-line bg-warning-soft px-3 py-2 text-[12.5px] text-warning-ink">
+      <Icon name="warning" className="text-[15px] text-warning" />
       {/* Con tope 0 no hay un "hasta" que informar: el plan directamente no
           lo incluye, y decir "hasta 0" se lee como un error. */}
       {limit === 0

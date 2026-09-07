@@ -204,6 +204,10 @@ La purga comprueba de nuevo que el dato continúa excedente. Una mejora o reacti
 - Por localidad: `uruguay` OR departamento padre OR localidad exacta.
 - Por departamento: `uruguay` OR departamento exacto OR localidad descendiente.
 - Siempre se filtran perfiles activos.
+- Los criterios de BR-031 se serializan en la query: `q`, `tipo`, `loc`, `esp`, `rating`, `pago`, `modo`, `geo`. Las listas van separadas por coma y sólo se escribe lo que difiere del estado vacío.
+- Al leer la query se descartan los códigos que no pertenecen al catálogo; las listas no se recortan.
+- El filtrado ocurre en la base, en una única cláusula construida a partir de los filtros. No existe una segunda implementación en memoria: dos versiones de la misma regla terminan discrepando y la que se ve no es la que manda.
+- La modalidad se resuelve contra `service_modes.code` a través de `profile_service_modes`; el tipo de perfil es una columna de `profiles`.
 
 ---
 

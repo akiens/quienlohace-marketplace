@@ -104,6 +104,8 @@ Todos los planes incluyen perfil público, teléfono con acceso opcional a Whats
 
 Las áreas de servicio, las modalidades, los horarios y los medios de pago no tienen límites diferentes por plan en la definición comercial actual.
 
+Las posiciones destacadas siguen siendo una capacidad de Platino y ordenan los listados, pero no se enumeran en la presentación comercial de los planes: se decidió no prometerlas hasta que existan métricas que respalden qué significa "destacado".
+
 ### BR-007 — Cómputo de límites
 
 - Solo cuentan registros activos.
@@ -196,6 +198,8 @@ La jerarquía funcional es `Rubro → Especialidad → Servicio`.
 ### BR-016 — Áreas de servicio
 
 - Todo perfil activo declara al menos un área.
+- El área no siempre se pregunta: cuando no se eligió ninguna, el perfil toma cobertura nacional. Quien atiende a distancia llega a todo el país y no se le pregunta; quien atiende sólo en su local cubre el departamento de cada local; quien se traslada puede acotar, y si no lo hace vale Uruguay.
+- La regla anterior fija un valor por omisión, no una excepción: nunca se guarda un perfil activo sin área, porque sin ella no aparecería en ninguna búsqueda.
 - Elegir Uruguay significa cobertura nacional, es explícito y reemplaza selecciones más específicas.
 - Uruguay no puede combinarse con departamentos ni localidades.
 - Elegir un departamento cubre todo el departamento y vuelve redundantes sus localidades.
@@ -259,7 +263,8 @@ La jerarquía funcional es `Rubro → Especialidad → Servicio`.
 
 ### BR-023 — Medios de pago
 
-- Se pueden declarar varios: efectivo, transferencia, débito, crédito y otros.
+- Se pueden declarar varios: efectivo, transferencia, débito y crédito.
+- `otros` sigue siendo un valor válido y se muestra en los perfiles que lo tengan guardado, pero ya no se ofrece al cargar el perfil: no es filtrable y elegirlo era una forma de no contestar.
 - Son visibles y pueden utilizarse como filtro.
 - No dependen del plan.
 
@@ -325,6 +330,19 @@ La jerarquía funcional es `Rubro → Especialidad → Servicio`.
 - Una operación que afecta varias reglas se completa por entero o no se aplica.
 - Nunca debe quedar público un perfil que dejó de cumplir requisitos de publicación.
 - Los conteos mostrados corresponden con los elementos activos realmente visibles.
+
+### BR-031 — Búsqueda y filtros
+
+- El buscador pide texto libre; todo lo que se elige de una lista vive en un único panel de filtros.
+- Los criterios son: qué se busca, ubicación, calificación, rubros y especialidades, medios de pago y modalidad.
+- **Qué se busca** distingue proveedor independiente, empresa y carta de servicio. La carta de servicio todavía no existe como entidad: se acepta como criterio, pero pedirla sola no devuelve resultados y combinarla con un tipo de perfil no le quita nada a ese tipo.
+- Una lista de criterios vacía significa «todos». Elegir varios valores dentro de un criterio significa «cualquiera de estos»; criterios distintos se combinan restringiendo.
+- Ningún criterio limita cuántos valores se pueden elegir. En particular, ubicación y especialidades no tienen tope.
+- Los filtros viven en la URL, de modo que una búsqueda se puede compartir, volver atrás funciona y el estado sobrevive a recargar.
+- Un valor que no existe en el catálogo se descarta al leer la URL: no filtra ni llega a la consulta.
+- El número de criterios elegidos se muestra sobre el acceso al panel de filtros. Cuenta valores, no secciones: tres zonas son tres. Lo que está en «todos» no suma, y el texto escrito tampoco —se ve en el propio campo—.
+- La búsqueda se lanza al confirmar, no mientras se escribe.
+- Buscar desde cualquier página lleva a la página de resultados con los criterios aplicados.
 
 ---
 

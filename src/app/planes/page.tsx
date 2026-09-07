@@ -154,9 +154,6 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         <Feature enabled={plan.allowsVerificationRequest}>
           Solicitud de verificación del perfil
         </Feature>
-        <Feature enabled={plan.allowsFeaturedPlacement}>
-          Posiciones destacadas y rotativas
-        </Feature>
         <Feature enabled={plan.allowsContactForm}>
           Formulario de contacto
         </Feature>

@@ -221,6 +221,11 @@ export function ProfileView({
           {/*
             El local es opcional: quien trabaja a domicilio o a distancia no
             tiene uno, y el perfil se publica igual (BR-015).
+
+            Sin local no se dice "Sin completar": no falta nada: es que la
+            pregunta no aplica. Ese texto hacía creer que el paso de ubicación
+            había quedado a medias y mandaba a completar algo que el perfil no
+            necesita. Se dice en cambio por qué no hay una dirección.
           */}
           <Row label="Dónde estás">
             {profile.locations.length > 0 ? (
@@ -230,7 +235,9 @@ export function ProfileView({
                 )}
               />
             ) : (
-              <Empty />
+              <span className="text-[14px] text-ink-soft">
+                No atendés en un local
+              </span>
             )}
           </Row>
           <Row label="Dónde trabajás">
