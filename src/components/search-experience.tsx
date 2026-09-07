@@ -31,6 +31,15 @@ export function SearchExperience({
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  /*
+   * Lo que se está escribiendo en el buscador y todavía no se confirmó.
+   *
+   * Vive acá y no sólo dentro del panel porque el panel lateral de filtros
+   * tiene que partir de esto: aplicar un filtro ahí mientras hay texto sin
+   * buscar descartaba lo tipeado y devolvía la búsqueda anterior.
+   */
+  const [draft, setDraft] = useState<SearchFilters>(filters);
+
   const activeCount = countActiveFilters(filters);
 
   function update(next: SearchFilters) {
@@ -41,9 +50,18 @@ export function SearchExperience({
 
   return (
     <>
+      {/*
+        El panel avisa al buscar, no mientras se escribe: `onSubmit` y no
+        `onChange`. Antes cada tecla y cada categoría elegida iban a la URL, y
+        el servidor buscaba con frases a medio escribir.
+
+        Los chips de abajo y el panel lateral sí siguen aplicando al instante:
+        ahí no se está componiendo una búsqueda sino corrigiendo una hecha.
+      */}
       <SearchPanel
         filters={filters}
-        onChange={update}
+        onSubmit={update}
+        onDraftChange={setDraft}
         variant="compact"
         onOpenFilters={() => setFiltersOpen(true)}
       />
@@ -73,8 +91,8 @@ export function SearchExperience({
                 label={locationLabelById(id)}
                 onRemove={() =>
                   update({
-                    ...filters,
-                    locationIds: filters.locationIds.filter((x) => x !== id),
+                    ...draft,
+                    locationIds: draft.locationIds.filter((x) => x !== id),
                   })
                 }
               />
@@ -85,8 +103,8 @@ export function SearchExperience({
                 label={getSpecialty(id)?.name ?? id}
                 onRemove={() =>
                   update({
-                    ...filters,
-                    specialtyIds: filters.specialtyIds.filter((x) => x !== id),
+                    ...draft,
+                    specialtyIds: draft.specialtyIds.filter((x) => x !== id),
                   })
                 }
               />
@@ -94,7 +112,7 @@ export function SearchExperience({
             {filters.minRating !== null ? (
               <FilterChip
                 label={`${filters.minRating}+ estrellas`}
-                onRemove={() => update({ ...filters, minRating: null })}
+                onRemove={() => update({ ...draft, minRating: null })}
               />
             ) : null}
             {filters.paymentMethods.map((method) => (
@@ -103,8 +121,8 @@ export function SearchExperience({
                 label={method}
                 onRemove={() =>
                   update({
-                    ...filters,
-                    paymentMethods: filters.paymentMethods.filter(
+                    ...draft,
+                    paymentMethods: draft.paymentMethods.filter(
                       (x) => x !== method,
                     ),
                   })
@@ -114,7 +132,7 @@ export function SearchExperience({
 
             <button
               type="button"
-              onClick={() => update({ ...filters, ...emptyExceptQuery(filters) })}
+              onClick={() => update({ ...draft, ...emptyExceptQuery(draft) })}
               className="text-[13px] font-semibold text-ink-soft underline underline-offset-2 hover:text-ink"
             >
               Limpiar filtros
@@ -125,9 +143,13 @@ export function SearchExperience({
         <ProfileGrid profiles={results} showAd />
       </div>
 
+      {/*
+        Parte del borrador y no de lo aplicado: si hay algo escrito sin buscar,
+        aplicar un filtro acá lo tiene que conservar, no descartarlo.
+      */}
       <FiltersPanel
         open={filtersOpen}
-        filters={filters}
+        filters={draft}
         resultCount={total}
         onChange={update}
         onClose={() => setFiltersOpen(false)}

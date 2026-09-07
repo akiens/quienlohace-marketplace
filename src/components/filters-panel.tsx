@@ -31,19 +31,30 @@ const PAYMENT_OPTIONS: PaymentMethod[] = [
 
 /**
  * Panel de filtros: drawer lateral en escritorio, bottom sheet en mobile.
- * Los cambios se aplican en vivo; "Aplicar" sólo cierra el panel.
+ *
+ * En la página de resultados los cambios se aplican en vivo y el botón del pie
+ * sólo cierra, diciendo cuántos resultados quedaron. En la portada todavía no
+ * hay búsqueda hecha —ni cuenta que mostrar—, así que ese botón es el que la
+ * lanza: `onSubmit` en lugar de `resultCount`.
  */
 export function FiltersPanel({
   open,
   filters,
   resultCount,
   onChange,
+  onSubmit,
   onClose,
 }: {
   open: boolean;
   filters: SearchFilters;
-  resultCount: number;
+  /**
+   * Coincidencias de la búsqueda vigente. Se omite donde no hay ninguna
+   * hecha: mostrar "Ver 0 resultados" antes de buscar sería mentira.
+   */
+  resultCount?: number;
   onChange: (filters: SearchFilters) => void;
+  /** Lanza la búsqueda desde el pie del panel. Sin él, el botón sólo cierra. */
+  onSubmit?: () => void;
   onClose: () => void;
 }) {
   useEffect(() => {
@@ -270,10 +281,15 @@ export function FiltersPanel({
           </button>
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+              onSubmit?.();
+            }}
             className="h-11 flex-1 rounded-input bg-brand-800 px-5 text-[15px] font-bold text-white hover:bg-brand-900 sm:flex-none"
           >
-            Ver {resultCount} {resultCount === 1 ? "resultado" : "resultados"}
+            {resultCount === undefined
+              ? "Buscar"
+              : `Ver ${resultCount} ${resultCount === 1 ? "resultado" : "resultados"}`}
           </button>
         </footer>
       </div>

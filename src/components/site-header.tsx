@@ -88,19 +88,11 @@ function Header({ signedIn }: { signedIn: boolean }) {
       <div className="shell flex h-[68px] items-center gap-7 lg:h-[88px]">
         <Link href="/" className="flex flex-none items-center gap-3">
           {/*
-            En el teléfono el logo es sólo la palabra: la marca y su separador
-            se llevaban ancho que ahí hace falta para la navegación, y la
-            palabra sola ya identifica al sitio. Vuelven desde `lg`.
+            El logo es la palabra y su bajada, en todos los tamaños. Antes
+            llevaba además la marca "QH" y una línea separadora, que se veían
+            sólo desde `lg`: la palabra sola ya identifica al sitio, y sin la
+            marca el encabezado es igual en el teléfono que en escritorio.
           */}
-          <Image
-            src="/brand/logo-mark.svg"
-            alt=""
-            width={50}
-            height={50}
-            priority
-            className="hidden h-10 w-auto lg:block lg:h-[50px]"
-          />
-          <span className="hidden h-8 w-[1.5px] flex-none rounded-full bg-[#DDDEE1]/55 lg:block lg:h-[42px]" />
           <span className="flex flex-col items-center gap-[3px]">
             <Image
               src="/brand/logo-word.svg"

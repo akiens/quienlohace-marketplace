@@ -15,7 +15,7 @@ import {
   listLocalities,
   locationLabelById,
 } from "@/data/locations";
-import { searchHref } from "@/lib/query";
+import { filtersToQuery, searchHref } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
 import { MAX_LOCATIONS, MAX_SPECIALTIES, type SearchFilters } from "@/types";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
@@ -29,8 +29,22 @@ const QUICK_SEARCHES = [
 ];
 
 type SearchPanelProps = {
+  /** Los filtros vigentes. Es de dónde parte el borrador del panel. */
   filters: SearchFilters;
-  onChange: (filters: SearchFilters) => void;
+  /**
+   * Avisa que se pidió buscar: al enviar el formulario o al tocar una búsqueda
+   * frecuente. **No** se llama mientras se escribe ni al elegir en los
+   * desplegables — eso queda en el borrador hasta que se confirme.
+   */
+  onSubmit?: (filters: SearchFilters) => void;
+  /**
+   * Avisa cada cambio del borrador, sin buscar.
+   *
+   * Lo usa la página de resultados para que el panel lateral de filtros parta
+   * de lo que se está escribiendo: sin esto, aplicar un filtro ahí descartaba
+   * el texto tipeado y todavía no confirmado.
+   */
+  onDraftChange?: (filters: SearchFilters) => void;
   variant?: "hero" | "compact";
   title?: string;
   subtitle?: string;
@@ -43,7 +57,8 @@ type SearchPanelProps = {
  */
 export function SearchPanel({
   filters,
-  onChange,
+  onSubmit,
+  onDraftChange,
   variant = "hero",
   title = "¿Qué servicio necesitás?",
   subtitle = "Encontrá profesionales y empresas verificadas en todo Uruguay.",
@@ -55,8 +70,44 @@ export function SearchPanel({
   );
   const panelRef = useRef<HTMLDivElement>(null);
 
+  /*
+   * Lo que se está armando, todavía sin buscar.
+   *
+   * Escribir en el campo o elegir una categoría no dispara la búsqueda: se
+   * acumula acá y recién sale al tocar "Buscar". Antes cada tecla y cada
+   * selección iban a la URL, así que el servidor buscaba con frases a medio
+   * escribir y la lista de resultados parpadeaba mientras se tipeaba.
+   */
+  const [draft, setDraft] = useState<SearchFilters>(filters);
+
+  /*
+   * Si los filtros vigentes cambian por fuera del panel —se quita un chip, se
+   * limpia todo, se navega hacia atrás— el borrador los adopta: si no, el
+   * panel seguiría mostrando lo de antes y la próxima búsqueda lo resucitaría.
+   *
+   * La comparación es sobre la query armada, que es la forma canónica de un
+   * conjunto de filtros y ya se usa para la URL.
+   */
+  const applied = filtersToQuery(filters);
+  const [syncedTo, setSyncedTo] = useState(applied);
+  if (syncedTo !== applied) {
+    setSyncedTo(applied);
+    setDraft(filters);
+  }
+
+  /** Escribe el borrador y lo avisa hacia afuera, que son siempre juntos. */
+  function updateDraft(next: SearchFilters) {
+    setDraft(next);
+    onDraftChange?.(next);
+  }
+
   const isHero = variant === "hero";
-  const activeFilterCount = countActiveFilters(filters);
+  /*
+   * El contador del botón "Filtros" cuenta el borrador y no lo aplicado: si
+   * contara lo aplicado, elegir una categoría en el buscador no movería el
+   * número hasta tocar "Buscar" y parecería que la selección no tomó.
+   */
+  const activeFilterCount = countActiveFilters(draft);
 
   useEffect(() => {
     if (!openPopover) return;
@@ -79,22 +130,28 @@ export function SearchPanel({
 
   function submit() {
     setOpenPopover(null);
-    router.push(searchHref(filters));
+    /*
+     * En la página de resultados quien manda es `onSubmit`: reemplaza la URL
+     * sin apilar una entrada de historial por búsqueda. Sin él —en la portada—
+     * se navega a `/buscar`.
+     */
+    if (onSubmit) onSubmit(draft);
+    else router.push(searchHref(draft));
   }
 
   const locationLabel =
-    filters.locationIds.length === 0
+    draft.locationIds.length === 0
       ? "Todo el país"
-      : filters.locationIds.length === 1
-        ? locationLabelById(filters.locationIds[0]!)
-        : `${locationLabelById(filters.locationIds[0]!)} +${filters.locationIds.length - 1}`;
+      : draft.locationIds.length === 1
+        ? locationLabelById(draft.locationIds[0]!)
+        : `${locationLabelById(draft.locationIds[0]!)} +${draft.locationIds.length - 1}`;
 
   const categoryLabel = (() => {
-    if (filters.specialtyIds.length === 0) return "Todos los rubros";
-    const name = getSpecialty(filters.specialtyIds[0]!)?.name ?? "Especialidad";
-    return filters.specialtyIds.length === 1
+    if (draft.specialtyIds.length === 0) return "Todos los rubros";
+    const name = getSpecialty(draft.specialtyIds[0]!)?.name ?? "Especialidad";
+    return draft.specialtyIds.length === 1
       ? name
-      : `${name} +${filters.specialtyIds.length - 1}`;
+      : `${name} +${draft.specialtyIds.length - 1}`;
   })();
 
   return (
@@ -126,9 +183,9 @@ export function SearchPanel({
             <Icon name="search" className="text-[21px] text-ink-soft" />
             <input
               type="search"
-              value={filters.query}
+              value={draft.query}
               onChange={(event) =>
-                onChange({ ...filters, query: event.target.value })
+                updateDraft({ ...draft, query: event.target.value })
               }
               placeholder="Buscar profesionales, empresas o servicios..."
               aria-label="Buscar profesionales, empresas o servicios"
@@ -143,16 +200,16 @@ export function SearchPanel({
             <PopoverButton
               icon="location_on"
               label={locationLabel}
-              active={filters.locationIds.length > 0}
+              active={draft.locationIds.length > 0}
               open={openPopover === "location"}
               onClick={() =>
                 setOpenPopover(openPopover === "location" ? null : "location")
               }
             />
             <PopoverButton
-              icon={filters.specialtyIds.length ? "check_circle" : "category"}
+              icon={draft.specialtyIds.length ? "check_circle" : "category"}
               label={categoryLabel}
-              active={filters.specialtyIds.length > 0}
+              active={draft.specialtyIds.length > 0}
               open={openPopover === "category"}
               onClick={() =>
                 setOpenPopover(openPopover === "category" ? null : "category")
@@ -186,18 +243,22 @@ export function SearchPanel({
           </div>
         </form>
 
+        {/*
+          Los desplegables editan el borrador, no los filtros vigentes: elegir
+          una categoría ya no relanza la búsqueda por su cuenta.
+        */}
         {openPopover === "location" ? (
           <LocationPopover
-            filters={filters}
-            onChange={onChange}
+            filters={draft}
+            onChange={updateDraft}
             onClose={() => setOpenPopover(null)}
           />
         ) : null}
 
         {openPopover === "category" ? (
           <CategoryPopover
-            filters={filters}
-            onChange={onChange}
+            filters={draft}
+            onChange={updateDraft}
             onClose={() => setOpenPopover(null)}
           />
         ) : null}
@@ -212,9 +273,11 @@ export function SearchPanel({
                 key={term}
                 type="button"
                 onClick={() => {
-                  const next = { ...filters, query: term };
-                  onChange(next);
-                  router.push(searchHref(next));
+                  // Un atajo busca de una: es lo que se espera al tocarlo.
+                  const next = { ...draft, query: term };
+                  updateDraft(next);
+                  if (onSubmit) onSubmit(next);
+                  else router.push(searchHref(next));
                 }}
                 className="rounded-full border border-white/20 bg-white/[.13] px-2.5 py-1 text-[13px] font-semibold text-white transition-colors hover:bg-white/25"
               >
