@@ -82,7 +82,7 @@ function Header({ signedIn }: { signedIn: boolean }) {
       ref={headerRef}
       className="sticky top-0 z-50 border-b border-[#16294B] bg-header-gradient"
     >
-      <div className="shell flex h-[68px] items-center gap-7 lg:h-[88px]">
+      <div className="shell flex h-[60px] items-center gap-7">
         <Link href="/" className="flex flex-none items-center gap-3">
           {/*
             El logo es la palabra y su bajada, en todos los tamaños. Antes
@@ -111,7 +111,7 @@ function Header({ signedIn }: { signedIn: boolean }) {
         </Link>
 
         {/* Navegación de escritorio */}
-        <nav className="hidden flex-1 items-center gap-0.5 lg:flex">
+        <nav className="hidden flex-1 items-center justify-center gap-0.5 lg:flex">
           {NAV_LINKS.map((link) => {
             /*
              * "Inicio" sólo está activo en la portada; el resto también con sus

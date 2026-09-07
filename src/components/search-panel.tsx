@@ -100,6 +100,12 @@ export function SearchPanel({
   // Con `bare` no hay encabezado que mostrar: sólo los controles.
   const isHero = variant === "hero" && !bare;
   /*
+   * La versión que va pegada al encabezado. En mobile se aprieta hasta ser una
+   * sola caja —el campo, y adentro los dos botones con solo su icono—: ahí el
+   * buscador es una herramienta de paso y no puede comerse media pantalla.
+   */
+  const isCompact = variant === "compact";
+  /*
    * El contador del botón "Filtros" cuenta el borrador y no lo aplicado: si
    * contara lo aplicado, elegir una categoría en el buscador no movería el
    * número hasta tocar "Buscar" y parecería que la selección no tomó.
@@ -158,11 +164,29 @@ export function SearchPanel({
             event.preventDefault();
             submit();
           }}
-          className="flex flex-col gap-2 rounded-card bg-white p-2.5 shadow-[0_12px_30px_-12px_rgba(10,20,40,.45)] lg:flex-row"
+          className={`flex rounded-card bg-white shadow-[0_12px_30px_-12px_rgba(10,20,40,.45)] lg:flex-row lg:gap-2 lg:p-2.5 ${
+            /*
+             * En mobile el compacto es una sola caja: los dos botones van
+             * adentro del campo y el padding baja a 2px, que es todo lo que
+             * hace falta para que el borde no toque los botones. El resto
+             * conserva la fila de siempre, apilada.
+             */
+            isCompact ? "gap-1 p-0.5" : "flex-col gap-2 p-2.5"
+          }`}
           role="search"
         >
-          <div className="flex h-12 flex-1 items-center gap-2.5 rounded-input border border-[#EAECF0] bg-surface-muted px-3">
-            <Icon name="search" className="text-[21px] text-ink-soft" />
+          <div
+            className={`flex h-12 min-w-0 flex-1 items-center rounded-input border border-[#EAECF0] bg-surface-muted p-3 ${
+              /*
+               * Adentro de la caja compacta el campo ya está enmarcado por
+               * ella: sin borde ni fondo propios sería una caja dentro de otra.
+               * En desktop vuelve a ser un campo suelto en la fila.
+               */
+              isCompact
+                ? "border-transparent bg-transparent px-2.5 lg:border-[#EAECF0] lg:bg-surface-muted lg:px-3"
+                : ""
+            }`}
+          >
             <input
               type="search"
               value={draft.query}
@@ -184,17 +208,44 @@ export function SearchPanel({
             vista y los otros escondidos. Ahora el buscador pide lo que se
             escribe, y todo lo que se elige de una lista vive en un solo lugar.
           */}
-          <div className="flex gap-2">
+          <div className={`flex ${isCompact ? "flex-none gap-1 lg:gap-2" : "gap-2"}`}>
             {onOpenFilters ? (
               <button
                 type="button"
                 onClick={onOpenFilters}
-                className={`flex h-12 flex-none items-center justify-center gap-2 rounded-input px-3.5 text-[14.5px] font-semibold ${SECONDARY_SURFACE}`}
+                /*
+                 * En el compacto de mobile el texto se va y queda el icono: el
+                 * ancho que ahorra se lo lleva "Buscar", que es la acción que
+                 * se toca. `aria-label` mantiene el nombre para quien no ve el
+                 * icono; en desktop vuelve la etiqueta escrita.
+                 */
+                aria-label={
+                  isCompact
+                    ? `Filtros${activeFilterCount > 0 ? ` (${activeFilterCount} activos)` : ""}`
+                    : undefined
+                }
+                className={`relative flex h-12 flex-none items-center justify-center gap-2 rounded-input text-[14.5px] font-semibold ${
+                  isCompact ? "w-11 px-0 lg:w-auto lg:px-3.5" : "px-3.5"
+                } ${SECONDARY_SURFACE}`}
               >
                 <Icon name="tune" className="text-[20px] text-brand-800" />
-                Filtros
+                <span className={isCompact ? "hidden lg:inline" : undefined}>
+                  Filtros
+                </span>
                 {activeFilterCount > 0 ? (
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-accent px-1.5 text-[12px] font-bold text-ink">
+                  <span
+                    className={`flex items-center justify-center rounded-full bg-accent font-bold text-ink ${
+                      /*
+                       * Sin lugar al lado del icono, el contador se mete en la
+                       * esquina del propio botón. Va adentro y no desbordando:
+                       * el formulario compacto sólo deja 2px de aire y un badge
+                       * saliente quedaría cortado por el borde redondeado.
+                       */
+                      isCompact
+                        ? "absolute right-0.5 top-0.5 h-4 min-w-[16px] px-1 text-[10.5px] lg:static lg:h-5 lg:min-w-[20px] lg:px-1.5 lg:text-[12px]"
+                        : "h-5 min-w-[20px] px-1.5 text-[12px]"
+                    }`}
+                  >
                     {activeFilterCount}
                   </span>
                 ) : null}
@@ -203,9 +254,20 @@ export function SearchPanel({
 
             <button
               type="submit"
-              className="h-12 flex-1 whitespace-nowrap rounded-input bg-brand-800 px-6 text-[15px] font-bold text-white transition-colors hover:bg-brand-950"
+              aria-label={isCompact ? "Buscar" : undefined}
+              className={`flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-input bg-brand-800 text-[15px] font-bold text-white transition-colors hover:bg-brand-950 ${
+                isCompact ? "w-11 flex-none px-0 lg:w-auto lg:flex-1 lg:px-6" : "flex-1 px-6"
+              }`}
             >
-              Buscar
+              {/*
+                El icono de la lupa vive acá y no en el campo: adentro del
+                input era decoración —no se puede tocar— y repetía lo que ya
+                dice el placeholder. En el botón nombra la acción.
+              */}
+              <Icon name="search" className="text-[20px]" />
+              <span className={isCompact ? "hidden lg:inline" : undefined}>
+                Buscar
+              </span>
             </button>
           </div>
         </form>
@@ -252,7 +314,7 @@ function GradientFrame({
       <div className="pointer-events-none absolute inset-0 bg-hatch" />
       <div
         ref={panelRef}
-        className={`shell relative ${isHero ? "py-5 lg:py-6" : "py-2"}`}
+        className={`shell relative ${isHero ? "py-5 lg:py-6" : "p-1"}`}
       >
         {children}
       </div>

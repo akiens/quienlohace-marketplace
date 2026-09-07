@@ -76,7 +76,19 @@ export function HomeHero() {
 
   return (
     <>
-      <section className="relative isolate flex min-h-[clamp(420px,72vh,620px)] flex-col justify-center overflow-hidden">
+      {/*
+        Alto: todo el viewport que queda libre debajo del encabezado —61px,
+        que son los `h-[60px]` de su fila más el borde inferior—. Antes era un
+        `clamp` topado en 620px, así que en pantallas altas la foto cortaba a
+        media altura y quedaba una franja blanca antes de las categorías.
+
+        `svh` y no `vh`: en el navegador de un celular `100vh` cuenta la barra
+        de direcciones que todavía está en pantalla, y el hero arrancaba más
+        alto que lo visible. `min-h` y no `h`: si el contenido crece —pantalla
+        baja en horizontal, texto más grande— el hero se estira en vez de
+        recortarlo.
+      */}
+      <section className="relative isolate flex min-h-[calc(100svh-61px)] flex-col justify-center overflow-hidden">
         {/* El slider, detrás de todo. */}
         <div aria-hidden className="absolute inset-0 -z-10">
           {SLIDES.map((slide, i) => (
@@ -105,11 +117,18 @@ export function HomeHero() {
         </div>
 
         <div className="shell flex flex-col items-center gap-6 py-12 text-center lg:py-16">
-          <div className="flex max-w-2xl flex-col gap-3">
-            <h1 className="text-[30px] font-extrabold leading-[1.1] tracking-[-.8px] text-white lg:text-[44px]">
+          {/*
+            `max-w-2xl` alcanzaba para el párrafo pero partía el título en dos
+            renglones en desktop. El ancho ahora lo pone cada uno: el título va
+            entero en una línea (`whitespace-nowrap` desde lg, con el cuerpo de
+            letra bajado a 40px para que entre en portátiles de 1280) y el
+            párrafo conserva su medida de lectura.
+          */}
+          <div className="flex flex-col items-center gap-3">
+            <h1 className="text-[30px] font-extrabold leading-[1.1] tracking-[-.8px] text-white lg:whitespace-nowrap lg:text-[40px] xl:text-[44px]">
               Encontrá al profesional que necesitás
             </h1>
-            <p className="text-[16px] text-[#D5DEEE] lg:text-[18px]">
+            <p className="max-w-2xl text-[16px] text-[#D5DEEE] lg:text-[18px]">
               Electricistas, plomeros, fletes, seguridad, tecnología y
               construcción. Profesionales y empresas de todo Uruguay, en un
               solo lugar.

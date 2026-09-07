@@ -1,7 +1,6 @@
-import Link from "next/link";
-
 import { HomeHero } from "@/components/home-hero";
 import { ProfileCard } from "@/components/profile-card";
+import { SectorGrid } from "@/components/sector-grid";
 import {
   AdSlot,
   ButtonLink,
@@ -53,41 +52,43 @@ export default async function HomePage() {
     .filter((profile) => !featuredIds.has(profile.id))
     .slice(0, HOME_SECTION_SIZE);
 
+  /*
+   * Las tarjetas de rubro, ya contadas.
+   *
+   * La grilla es un componente de cliente —tiene el "Mostrar más" de mobile—,
+   * así que recibe lo justo: sin esto habría que mandarle la taxonomía entera
+   * al navegador para contar especialidades que no cambian nunca.
+   */
+  const sectorCards = SERVICE_SECTORS.map((sector) => ({
+    id: sector.id,
+    slug: sector.slug,
+    short: sector.short,
+    icon: sector.icon,
+    specialtyCount: listSpecialties(sector.id).length,
+  }));
+
   return (
     <>
       <HomeHero />
 
       <div className="shell flex flex-col gap-14 py-12">
-        {/* Categorías: la puerta de entrada a la navegación y al SEO. */}
+        {/*
+          Rubros: la puerta de entrada a la navegación y al SEO.
+
+          El título dice "rubros y especialidades" y no "categoría" porque es
+          como se llaman en todo el resto del producto —la taxonomía es rubro →
+          especialidad → servicio (BR-010), y así lo dicen el alta, los planes y
+          el subtítulo de acá al lado—. "Categoría" sobrevivía sólo en este
+          encabezado, justo arriba de unas tarjetas que cuentan especialidades.
+          La URL sigue siendo `/categorias/...`: cambiarla rompería enlaces ya
+          publicados e indexados, y no es lo que se lee.
+        */}
         <section>
           <SectionHeading
-            title="Explorá por categoría"
-            subtitle="20 rubros con profesionales y empresas en todo el país."
+            title="Explorá por rubros y especialidades"
+            subtitle={`${SERVICE_SECTORS.length} rubros con profesionales y empresas en todo el país.`}
           />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-            {SERVICE_SECTORS.map((category) => (
-              <Link
-                key={category.id}
-                href={`/categorias/${category.slug}`}
-                className="group flex flex-col gap-2.5 rounded-card border border-line bg-white p-4 shadow-card transition-all hover:-translate-y-0.5 hover:border-[#C6CEDC] hover:shadow-card-hover"
-              >
-                <span className="flex h-10 w-10 items-center justify-center rounded-[11px] bg-brand-100">
-                  <Icon name={category.icon} className="text-[21px] text-brand-800" />
-                </span>
-                <span className="text-[14.5px] font-semibold leading-tight text-ink">
-                  {category.short}
-                </span>
-                {/*
-                  Cuántas especialidades tiene el rubro, que es un dato real del
-                  catálogo. Antes decía "N profesionales" con un número fijo
-                  escrito a mano, que no salía de ningún lado y envejecía mal.
-                */}
-                <span className="text-[12.5px] text-ink-soft">
-                  {listSpecialties(category.id).length} especialidades
-                </span>
-              </Link>
-            ))}
-          </div>
+          <SectorGrid sectors={sectorCards} />
         </section>
 
         <section>
