@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { logout } from "@/app/actions/auth";
+import { GlobalSearch, hidesGlobalSearch } from "@/components/global-search";
 import { Icon } from "@/components/ui";
 
 /**
@@ -47,8 +48,19 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
 function Header({ signedIn }: { signedIn: boolean }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  /*
+   * El buscador plegable arranca cerrado en cada página: el header se remonta
+   * al navegar —`key={pathname}`—, así que no hace falta cerrarlo a mano.
+   */
+  const [searchOpen, setSearchOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
+
+  /*
+   * Dónde el buscador ya está desplegado por su cuenta —la portada y los
+   * resultados—, el botón no va: no tendría nada que abrir.
+   */
+  const offersSearch = !hidesGlobalSearch(pathname);
 
   // Escape cierra cualquier capa abierta.
   useEffect(() => {
@@ -216,6 +228,13 @@ function Header({ signedIn }: { signedIn: boolean }) {
         </nav>
 
         <div className="hidden flex-none items-center gap-2.5 lg:flex">
+          {offersSearch ? (
+            <SearchToggle
+              open={searchOpen}
+              onToggle={() => setSearchOpen((value) => !value)}
+            />
+          ) : null}
+
           {signedIn ? (
             <Link
               href="/dashboard"
@@ -258,6 +277,13 @@ function Header({ signedIn }: { signedIn: boolean }) {
 
         {/* Acciones mobile */}
         <div className="ml-auto flex items-center gap-2 lg:hidden">
+          {offersSearch ? (
+            <SearchToggle
+              open={searchOpen}
+              onToggle={() => setSearchOpen((value) => !value)}
+            />
+          ) : null}
+
           {/*
             Con sesión, "Mi perfil" es el amarillo de la marca igual que en
             escritorio: es la acción propia de quien ya entró, y verla de un
@@ -286,10 +312,56 @@ function Header({ signedIn }: { signedIn: boolean }) {
         </div>
       </div>
 
+      {/*
+        El buscador desplegado va acá adentro, debajo de la barra: es parte del
+        encabezado pegajoso, así que al abrirlo baja el contenido en vez de
+        taparlo, y se mantiene a la vista mientras se escribe.
+      */}
+      <GlobalSearch open={searchOpen} />
+
       {drawerOpen ? (
         <MobileDrawer signedIn={signedIn} onClose={() => setDrawerOpen(false)} />
       ) : null}
     </header>
+  );
+}
+
+/**
+ * Abre y cierra el buscador. La flecha dice en cuál de los dos estados está.
+ *
+ * El icono solo, sin etiqueta: va en una fila donde todo lo demás son acciones
+ * de sesión, y "Buscar" escrito competiría con el enlace "Buscar" del menú,
+ * que lleva a otra parte —la página de resultados, no este campo—.
+ */
+function SearchToggle({
+  open,
+  onToggle,
+}: {
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      aria-controls="buscador-global"
+      aria-label={open ? "Cerrar el buscador" : "Abrir el buscador"}
+      className={`flex h-10 items-center gap-0.5 rounded-input border px-2.5 transition-colors max-lg:h-[38px] max-lg:rounded-[9px] ${
+        // Abierto se pinta como el resto de lo seleccionado en el encabezado.
+        open
+          ? "border-white/40 bg-white/15 text-white"
+          : "border-white/30 text-white hover:bg-white/10"
+      }`}
+    >
+      <Icon name="search" className="text-[20px]" />
+      <Icon
+        name="expand_more"
+        className={`text-[18px] text-[#9FB1CE] transition-transform ${
+          open ? "rotate-180" : ""
+        }`}
+      />
+    </button>
   );
 }
 

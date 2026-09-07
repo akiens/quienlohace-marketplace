@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
-import { GlobalSearch } from "@/components/global-search";
 import { HeaderWithAuth } from "@/components/header-auth";
 import { siteUrl } from "@/lib/site-url";
 import { SiteFooter } from "@/components/site-footer";
@@ -94,13 +93,13 @@ export default function RootLayout({
         >
           Saltar al contenido
         </a>
-        <HeaderWithAuth />
         {/*
-          El buscador, pegado al encabezado en todo el sitio salvo donde
-          estorba o está duplicado: la portada lo lleva sobre su slider y los
-          resultados traen el suyo. Lo decide `GlobalSearch`.
+          El buscador plegable ya no se monta acá sino dentro del encabezado:
+          el botón que lo abre vive en la barra del header, y tenerlos en el
+          mismo componente les deja compartir el estado sin subirlo hasta este
+          layout —que además es un componente de servidor—.
         */}
-        <GlobalSearch />
+        <HeaderWithAuth />
         <main id="contenido">
           {children}
         </main>

@@ -8,8 +8,14 @@ import { SearchPanel } from "@/components/search-panel";
 import { searchHref } from "@/lib/query";
 import { EMPTY_FILTERS, type SearchFilters } from "@/types";
 
-/** Dónde el buscador global no va, y por qué. */
-function hidesGlobalSearch(pathname: string): boolean {
+/**
+ * Dónde el buscador no se ofrece, ni siquiera plegado.
+ *
+ * La portada y los resultados quedan afuera porque ya traen el suyo, siempre
+ * desplegado: la portada sobre el slider y `/buscar` con los filtros vigentes.
+ * En el resto de estas páginas no hay nada que buscar.
+ */
+export function hidesGlobalSearch(pathname: string): boolean {
   // La portada lo lleva sobre el slider, en el medio de la pantalla.
   if (pathname === "/") return true;
 
@@ -29,23 +35,31 @@ function hidesGlobalSearch(pathname: string): boolean {
 }
 
 /**
- * El buscador que acompaña al encabezado en el resto del sitio.
+ * El buscador plegable que acompaña al encabezado en el resto del sitio.
  *
- * Va pegado debajo del header y sin texto alrededor: sólo el campo, la
- * ubicación, el rubro y los filtros. La bienvenida y el titulo viven en la
- * portada, que es la única pantalla donde el buscador es el contenido y no
- * una herramienta siempre a mano.
+ * Va pegado debajo del header y sin texto alrededor: sólo el campo y los dos
+ * botones. La bienvenida y el título viven en la portada, que es la única
+ * pantalla donde el buscador es el contenido y no una herramienta a mano.
  *
- * Como todo lo demás del buscador, no busca mientras se escribe: lo elegido
- * se junta en un borrador y sale al confirmar, navegando a `/buscar`.
+ * Empieza plegado y lo abre el botón del encabezado: en una página que no es
+ * de búsqueda, una barra siempre desplegada se come el alto de pantalla que
+ * necesita lo que sí se vino a leer. Quien abre el buscador ya decidió buscar.
+ *
+ * Quién manda el estado es el encabezado, no este componente: el botón que
+ * abre vive allá, y así los dos leen el mismo valor. Al navegar el header se
+ * remonta —`key={pathname}`— y esto vuelve a empezar plegado.
+ *
+ * Como todo lo demás del buscador, no busca mientras se escribe: lo elegido se
+ * junta en un borrador y sale al confirmar, navegando a `/buscar`.
  */
-export function GlobalSearch() {
+export function GlobalSearch({ open }: { open: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [draft, setDraft] = useState<SearchFilters>(EMPTY_FILTERS);
 
   if (hidesGlobalSearch(pathname)) return null;
+  if (!open) return null;
 
   const search = (filters: SearchFilters) => {
     setDraft(filters);
@@ -53,7 +67,8 @@ export function GlobalSearch() {
   };
 
   return (
-    <>
+    // `id`: es lo que apunta el `aria-controls` del botón que lo abre.
+    <div id="buscador-global">
       {/*
         `filters` es el borrador de acá y no `EMPTY_FILTERS`: lo que se elige
         en el panel lateral tiene que volver al buscador, que es donde se ve el
@@ -78,6 +93,6 @@ export function GlobalSearch() {
         onSubmit={() => search(draft)}
         onClose={() => setFiltersOpen(false)}
       />
-    </>
+    </div>
   );
 }
