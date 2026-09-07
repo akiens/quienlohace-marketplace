@@ -54,8 +54,16 @@ export function GlobalSearch() {
 
   return (
     <>
+      {/*
+        `filters` es el borrador de acá y no `EMPTY_FILTERS`: lo que se elige
+        en el panel lateral tiene que volver al buscador, que es donde se ve el
+        contador de filtros puestos. Con una constante, ese camino de vuelta no
+        existía —el buscador avisaba hacia arriba con `onDraftChange` pero
+        nunca se enteraba de lo que pasaba afuera—, así que elegir filtros no
+        movía el número.
+      */}
       <SearchPanel
-        filters={EMPTY_FILTERS}
+        filters={draft}
         onSubmit={search}
         onDraftChange={setDraft}
         variant="compact"

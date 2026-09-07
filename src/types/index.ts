@@ -360,29 +360,51 @@ export type ReviewReportReason =
 // ---------------------------------------------------------------------------
 
 /** Estado de búsqueda compartido entre el buscador y el panel de filtros. */
+/**
+ * Qué clase de resultado se busca.
+ *
+ * Los dos primeros son perfiles, y se distinguen por `Profile.type`. `service`
+ * es la carta de servicio —un servicio puntual publicado por un proveedor—,
+ * que todavía no existe como entidad: se acepta en el filtro y se serializa,
+ * pero hoy no cambia lo que devuelve la búsqueda. Está acá para que el filtro
+ * no tenga que cambiar de forma cuando se implemente.
+ */
+export type ResultKind = "individual" | "business" | "service";
+
+export const RESULT_KIND_LABELS: Record<ResultKind, string> = {
+  individual: "Proveedor independiente",
+  business: "Empresa o equipo",
+  service: "Servicios",
+};
+
 export type SearchFilters = {
   query: string;
-  /** IDs de ubicación seleccionados. Máximo 5. */
+  /**
+   * Qué se busca: perfiles independientes, empresas, cartas de servicio.
+   * Vacío es "todos", igual que el resto de los filtros de lista.
+   */
+  resultKinds: ResultKind[];
+  /** IDs de ubicación seleccionados. Sin tope. */
   locationIds: string[];
-  /** IDs de especialidad seleccionados. Máximo 5. */
+  /** IDs de especialidad seleccionados. Sin tope. */
   specialtyIds: string[];
   minRating: number | null;
   paymentMethods: PaymentMethod[];
+  /** Modalidades de atención (BR-017). Vacío es "todas". */
+  serviceModes: ServiceModeCode[];
   useMyLocation: boolean;
 };
 
 export const EMPTY_FILTERS: SearchFilters = {
   query: "",
+  resultKinds: [],
   locationIds: [],
   specialtyIds: [],
   minRating: null,
   paymentMethods: [],
+  serviceModes: [],
   useMyLocation: false,
 };
-
-/** Reglas de producto expresadas como constantes. */
-export const MAX_LOCATIONS = 5;
-export const MAX_SPECIALTIES = 5;
 /** 12 divide exacto por 1, 2, 3 y 4 columnas: nunca deja una fila coja. */
 export const PAGE_SIZE = 12;
 /**

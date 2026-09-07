@@ -140,8 +140,13 @@ export function HomeHero() {
            * fondo degradado, que acá taparía el slider. Por eso `bare`.
            */}
           <div className="w-full max-w-3xl">
+            {/*
+              `filters` es el borrador y no `EMPTY_FILTERS`: lo elegido en el
+              panel lateral tiene que volver acá, que es donde se ve el
+              contador de filtros puestos.
+            */}
             <SearchPanel
-              filters={EMPTY_FILTERS}
+              filters={draft}
               onSubmit={search}
               onDraftChange={setDraft}
               variant="hero"

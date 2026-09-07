@@ -917,6 +917,31 @@ function buildSearchWhere(filters: SearchFilters): {
   const clauses = [PUBLIC_WHERE];
   const params: (string | number)[] = [];
 
+  /*
+   * Qué clase de resultado se pide.
+   *
+   * `individual` y `business` son valores de `p.type`. `service` todavía no
+   * tiene entidad —la carta de servicio no existe— y por eso no aporta
+   * ninguna condición: pedir sólo servicios no puede devolver perfiles, así
+   * que devuelve vacío; pedirlo junto a un tipo de perfil no le quita nada a
+   * ese tipo. Cuando exista, este es el lugar donde se suma su rama.
+   */
+  if (filters.resultKinds.length > 0) {
+    const profileTypes = filters.resultKinds.filter(
+      (kind) => kind === "individual" || kind === "business",
+    );
+
+    if (profileTypes.length === 0) {
+      // Sólo se pidieron servicios, que aún no existen: ningún perfil aplica.
+      clauses.push("0 = 1");
+    } else if (profileTypes.length < 2) {
+      const marks = profileTypes.map(() => "?").join(",");
+      clauses.push(`p.type IN (${marks})`);
+      params.push(...profileTypes);
+    }
+    // Con los dos tipos elegidos no se agrega nada: no acota.
+  }
+
   if (filters.query) {
     /*
      * El texto busca en el nombre, la descripción y los servicios del perfil.
@@ -975,6 +1000,22 @@ function buildSearchWhere(filters: SearchFilters): {
                 WHERE pm.profile_id = p.id AND pm.method IN (${marks}))`,
     );
     params.push(...filters.paymentMethods);
+  }
+
+  if (filters.serviceModes.length > 0) {
+    /*
+     * BR-017: la modalidad se guarda por id en `profile_service_modes`, así
+     * que se llega al código por `service_modes`. Elegir varias es "cualquiera
+     * de estas" —quien atiende a domicilio y a distancia entra en las dos—,
+     * que es lo mismo que hacen los otros filtros de lista.
+     */
+    const marks = filters.serviceModes.map(() => "?").join(",");
+    clauses.push(
+      `EXISTS (SELECT 1 FROM profile_service_modes psm
+                 JOIN service_modes sm ON sm.id = psm.service_mode_id
+                WHERE psm.profile_id = p.id AND sm.code IN (${marks}))`,
+    );
+    params.push(...filters.serviceModes);
   }
 
   return { where: clauses.join(" AND "), params };

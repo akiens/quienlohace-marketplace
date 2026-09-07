@@ -13,11 +13,13 @@ import {
 import { countActiveFilters } from "@/lib/search";
 import {
   EMPTY_FILTERS,
-  MAX_LOCATIONS,
-  MAX_SPECIALTIES,
   PAYMENT_METHOD_LABELS,
+  RESULT_KIND_LABELS,
+  SERVICE_MODE_LABELS,
   type PaymentMethod,
+  type ResultKind,
   type SearchFilters,
+  type ServiceModeCode,
 } from "@/types";
 import { Icon } from "@/components/ui";
 
@@ -34,6 +36,23 @@ const PAYMENT_OPTIONS: PaymentMethod[] = [
   "debit_card",
   "credit_card",
   "other",
+];
+
+const RESULT_KIND_OPTIONS: { kind: ResultKind; icon: string; hint?: string }[] = [
+  { kind: "individual", icon: "person" },
+  { kind: "business", icon: "apartment" },
+  {
+    kind: "service",
+    icon: "sell",
+    // La carta de servicio todavía no existe: se avisa en vez de fingir.
+    hint: "Próximamente",
+  },
+];
+
+const SERVICE_MODE_OPTIONS: { mode: ServiceModeCode; icon: string }[] = [
+  { mode: "at_customer", icon: "home_work" },
+  { mode: "at_business", icon: "storefront" },
+  { mode: "remote", icon: "videocam" },
 ];
 
 /**
@@ -85,35 +104,34 @@ export function FiltersPanel({
 
   const activeCount = countActiveFilters(filters);
 
+  /*
+   * "Todo el país" elegido. Es un id de ubicación más —no un booleano aparte—,
+   * así que la búsqueda no necesita saber nada de este caso: llega como una
+   * zona y `coveringLocationIds` la expande como a cualquier otra (TR-019).
+   */
+  const countrywide = filters.locationIds.includes(COUNTRY_ID);
+
+  /**
+   * Suma o quita un valor de una lista de filtros.
+   *
+   * Todas las listas del panel funcionan igual —vacía es "todos", y elegir
+   * varios es "cualquiera de estos"—, así que el alta y la baja son una sola
+   * función y no cuatro copias con el nombre cambiado. Ya no hay tope: el
+   * filtro dejó de limitar cuántas zonas o especialidades se pueden pedir.
+   */
+  function toggleIn<K extends "resultKinds" | "locationIds" | "specialtyIds" | "paymentMethods" | "serviceModes">(
+    key: K,
+    value: SearchFilters[K][number],
+  ) {
+    const selected = filters[key] as SearchFilters[K][number][];
+    const next = selected.includes(value)
+      ? selected.filter((x) => x !== value)
+      : [...selected, value];
+    onChange({ ...filters, [key]: next });
+  }
+
   function toggleLocation(id: string) {
-    const selected = filters.locationIds;
-    if (selected.includes(id)) {
-      onChange({ ...filters, locationIds: selected.filter((x) => x !== id) });
-      return;
-    }
-    // El tope del plan de búsqueda: más zonas no acotan, ensucian (BR-014).
-    if (selected.length >= MAX_LOCATIONS) return;
-    onChange({ ...filters, locationIds: [...selected, id] });
-  }
-
-  function toggleSpecialty(id: string) {
-    const selected = filters.specialtyIds;
-    if (selected.includes(id)) {
-      onChange({ ...filters, specialtyIds: selected.filter((x) => x !== id) });
-      return;
-    }
-    if (selected.length >= MAX_SPECIALTIES) return;
-    onChange({ ...filters, specialtyIds: [...selected, id] });
-  }
-
-  function togglePayment(method: PaymentMethod) {
-    const selected = filters.paymentMethods;
-    onChange({
-      ...filters,
-      paymentMethods: selected.includes(method)
-        ? selected.filter((x) => x !== method)
-        : [...selected, method],
-    });
+    toggleIn("locationIds", id);
   }
 
   return (
@@ -151,6 +169,43 @@ export function FiltersPanel({
 
         <div className="flex-1 overflow-auto px-4 py-4">
           {/*
+            Qué se busca. Va primero porque decide sobre qué se aplica todo lo
+            de abajo: perfiles de una persona, de una empresa, o cartas de
+            servicio cuando existan.
+          */}
+          <Group title="Qué estás buscando">
+            <AllToggle
+              label="Todos los resultados"
+              checked={filters.resultKinds.length === 0}
+              onChange={() => onChange({ ...filters, resultKinds: [] })}
+            />
+            <DimmedWhenAll dimmed={filters.resultKinds.length === 0}>
+              <div className="flex flex-col gap-0.5">
+                {RESULT_KIND_OPTIONS.map(({ kind, icon, hint }) => (
+                  <label
+                    key={kind}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-[7px] p-2 text-[14px] text-ink-muted hover:bg-surface-sunken"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={filters.resultKinds.includes(kind)}
+                      onChange={() => toggleIn("resultKinds", kind)}
+                      className="h-4 w-4 accent-brand-800"
+                    />
+                    <Icon name={icon} className="text-[18px] text-brand-800" />
+                    {RESULT_KIND_LABELS[kind]}
+                    {hint ? (
+                      <span className="ml-auto rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] font-semibold text-ink-faint">
+                        {hint}
+                      </span>
+                    ) : null}
+                  </label>
+                ))}
+              </div>
+            </DimmedWhenAll>
+          </Group>
+
+          {/*
             La ubicación se elige acá: antes este grupo sólo mostraba lo ya
             seleccionado y remitía al buscador —"Elegí zonas desde el
             buscador"—, pero ese selector se mudó a este panel y el texto
@@ -159,7 +214,7 @@ export function FiltersPanel({
             Departamento y dentro sus localidades, que es como está armado el
             catálogo geográfico (BR-014).
           */}
-          <Group title={`Ubicación · máximo ${MAX_LOCATIONS}`}>
+          <Group title="Ubicación">
             <label className="flex items-center gap-3 rounded-input border border-line bg-white p-3">
               <input
                 type="checkbox"
@@ -226,15 +281,35 @@ export function FiltersPanel({
                   <label className="flex cursor-pointer items-center gap-2.5 rounded-input border border-line p-2.5 text-[14px] font-semibold text-ink hover:bg-surface-sunken">
                     <input
                       type="checkbox"
-                      checked={filters.locationIds.includes(COUNTRY_ID)}
-                      onChange={() => toggleLocation(COUNTRY_ID)}
+                      checked={countrywide}
+                      onChange={() =>
+                        onChange({
+                          ...filters,
+                          /*
+                           * Elegir todo el país reemplaza lo que hubiera
+                           * elegido antes: quedarse con Montevideo debajo de
+                           * "todo el país" no acota nada y al destildarlo
+                           * reaparecería una selección que ya no se ve.
+                           */
+                          locationIds: countrywide ? [] : [COUNTRY_ID],
+                        })
+                      }
                       className="h-4 w-4 accent-brand-800"
                     />
                     <Icon name="public" className="text-[18px] text-brand-800" />
                     {COUNTRY_LABEL} · todo el país
                   </label>
 
-                  {listDepartments().map((department) => (
+                  {/*
+                    Con todo el país elegido los departamentos se esconden, no
+                    se deshabilitan: es la excepción a la regla del resto del
+                    panel, y la pidió el propio criterio —"todo el país" ya
+                    incluye cada localidad, así que una lista de zonas debajo
+                    no afina nada, sólo invita a una contradicción—.
+                  */}
+                  {countrywide
+                    ? null
+                    : listDepartments().map((department) => (
                     <details
                       key={department.id}
                       className="rounded-input border border-line"
@@ -273,7 +348,7 @@ export function FiltersPanel({
                         ))}
                       </div>
                     </details>
-                  ))}
+                      ))}
                 </div>
               </>
             )}
@@ -314,7 +389,13 @@ export function FiltersPanel({
             lista escondía catorce sin decirlo, y no había forma de llegar a
             ellos desde ningún otro lado.
           */}
-          <Group title={`Rubros y especialidades · máximo ${MAX_SPECIALTIES}`}>
+          <Group title="Rubros y especialidades">
+            <AllToggle
+              label="Todos los rubros y especialidades"
+              checked={filters.specialtyIds.length === 0}
+              onChange={() => onChange({ ...filters, specialtyIds: [] })}
+            />
+            <DimmedWhenAll dimmed={filters.specialtyIds.length === 0}>
             <div className="flex flex-col gap-2">
               {SERVICE_SECTORS.map((category) => (
                 <details
@@ -339,7 +420,7 @@ export function FiltersPanel({
                           <input
                             type="checkbox"
                             checked={selected}
-                            onChange={() => toggleSpecialty(sub.id)}
+                            onChange={() => toggleIn("specialtyIds", sub.id)}
                             className="h-4 w-4 accent-brand-800"
                           />
                           {sub.name}
@@ -350,25 +431,61 @@ export function FiltersPanel({
                 </details>
               ))}
             </div>
+            </DimmedWhenAll>
           </Group>
 
           <Group title="Formas de pago">
-            <div className="flex flex-col gap-0.5">
-              {PAYMENT_OPTIONS.map((method) => (
-                <label
-                  key={method}
-                  className="flex cursor-pointer items-center gap-2.5 rounded-[7px] p-2 text-[14px] text-ink-muted hover:bg-surface-sunken"
-                >
-                  <input
-                    type="checkbox"
-                    checked={filters.paymentMethods.includes(method)}
-                    onChange={() => togglePayment(method)}
-                    className="h-4 w-4 accent-brand-800"
-                  />
-                  {PAYMENT_METHOD_LABELS[method]}
-                </label>
-              ))}
-            </div>
+            <AllToggle
+              label="Todas las formas de pago"
+              checked={filters.paymentMethods.length === 0}
+              onChange={() => onChange({ ...filters, paymentMethods: [] })}
+            />
+            <DimmedWhenAll dimmed={filters.paymentMethods.length === 0}>
+              <div className="flex flex-col gap-0.5">
+                {PAYMENT_OPTIONS.map((method) => (
+                  <label
+                    key={method}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-[7px] p-2 text-[14px] text-ink-muted hover:bg-surface-sunken"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={filters.paymentMethods.includes(method)}
+                      onChange={() => toggleIn("paymentMethods", method)}
+                      className="h-4 w-4 accent-brand-800"
+                    />
+                    {PAYMENT_METHOD_LABELS[method]}
+                  </label>
+                ))}
+              </div>
+            </DimmedWhenAll>
+          </Group>
+
+          {/* BR-017: cómo se presta el servicio. Elegir varias es "cualquiera". */}
+          <Group title="Modalidad">
+            <AllToggle
+              label="Todas las modalidades"
+              checked={filters.serviceModes.length === 0}
+              onChange={() => onChange({ ...filters, serviceModes: [] })}
+            />
+            <DimmedWhenAll dimmed={filters.serviceModes.length === 0}>
+              <div className="flex flex-col gap-0.5">
+                {SERVICE_MODE_OPTIONS.map(({ mode, icon }) => (
+                  <label
+                    key={mode}
+                    className="flex cursor-pointer items-center gap-2.5 rounded-[7px] p-2 text-[14px] text-ink-muted hover:bg-surface-sunken"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={filters.serviceModes.includes(mode)}
+                      onChange={() => toggleIn("serviceModes", mode)}
+                      className="h-4 w-4 accent-brand-800"
+                    />
+                    <Icon name={icon} className="text-[18px] text-brand-800" />
+                    {SERVICE_MODE_LABELS[mode]}
+                  </label>
+                ))}
+              </div>
+            </DimmedWhenAll>
           </Group>
         </div>
 
@@ -396,6 +513,77 @@ export function FiltersPanel({
       </div>
     </>
   );
+}
+
+/**
+ * La casilla "todos" que encabeza un grupo.
+ *
+ * Marcada significa "sin filtrar por esto", que es la lista vacía: destildar
+ * un valor cualquiera la desmarca sola. Volver a marcarla limpia el grupo.
+ *
+ * No esconde las opciones que hay debajo, las deshabilita: si desaparecieran,
+ * quien mira el panel no tendría cómo saber que ese criterio se puede afinar
+ * —y "todos" dejaría de parecer una elección para parecer el único estado
+ * posible—.
+ */
+function AllToggle({
+  label,
+  checked,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
+  /*
+   * "Todos" es un estado derivado: vale cuando no hay nada elegido. Por eso
+   * sólo se puede marcar, nunca desmarcar —destildarlo no significa nada,
+   * porque no existe una selección anterior a la que volver—. Se apaga cuando
+   * ya está marcado, y quien quiera acotar toca una opción de la lista, que
+   * es lo que lo desmarca solo.
+   *
+   * Antes esto era un checkbox común: al estar marcado el clic reescribía la
+   * lista vacía sobre sí misma, no cambiaba nada, y como el grupo de abajo
+   * estaba deshabilitado no había forma de salir del "todos".
+   */
+  return (
+    <label
+      className={`mb-2 flex items-center gap-2.5 rounded-input border border-line bg-surface-muted p-2.5 text-[14px] font-semibold text-ink ${
+        checked ? "cursor-default" : "cursor-pointer"
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={checked}
+        onChange={onChange}
+        className="h-4 w-4 accent-brand-800"
+      />
+      {label}
+    </label>
+  );
+}
+
+/**
+ * El cuerpo de un grupo mientras su "todos" está marcado.
+ *
+ * Baja el contraste para que se vea que ese criterio no está acotando nada,
+ * pero **no** bloquea: tocar cualquier opción tiene que poder sacar al grupo
+ * del "todos", y es la única manera de hacerlo.
+ *
+ * Antes esto ponía `inert` y `pointer-events-none`. Con el "todos" marcado
+ * —que es como abre el panel— el grupo entero quedaba muerto: no se podía
+ * elegir nada, y destildar "todos" tampoco servía porque no cambiaba el
+ * estado. El grupo era inalcanzable.
+ */
+function DimmedWhenAll({
+  dimmed,
+  children,
+}: {
+  dimmed: boolean;
+  children: React.ReactNode;
+}) {
+  return <div className={dimmed ? "opacity-60" : undefined}>{children}</div>;
 }
 
 function Group({
