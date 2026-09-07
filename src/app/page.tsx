@@ -8,7 +8,7 @@ import {
   PROVIDER_GRID,
   SectionHeading,
 } from "@/components/ui";
-import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
+import { SERVICE_SECTORS, SPECIALTIES, listSpecialties } from "@/data/taxonomy";
 import { listFeatured, listTopRated } from "@/application/profiles";
 import { HOME_SECTION_SIZE } from "@/types";
 
@@ -55,9 +55,9 @@ export default async function HomePage() {
   /*
    * Las tarjetas de rubro, ya contadas.
    *
-   * La grilla es un componente de cliente —tiene el "Mostrar más" de mobile—,
-   * así que recibe lo justo: sin esto habría que mandarle la taxonomía entera
-   * al navegador para contar especialidades que no cambian nunca.
+   * La grilla es un componente de cliente —se pliega y despliega—, así que
+   * recibe lo justo: sin esto habría que mandarle la taxonomía entera al
+   * navegador para contar especialidades que no cambian nunca.
    */
   const sectorCards = SERVICE_SECTORS.map((sector) => ({
     id: sector.id,
@@ -86,7 +86,7 @@ export default async function HomePage() {
         <section>
           <SectionHeading
             title="Explorá por rubros y especialidades"
-            subtitle={`${SERVICE_SECTORS.length} rubros con profesionales y empresas en todo el país.`}
+            subtitle={`Con más de ${SERVICE_SECTORS.length} rubros y ${SPECIALTIES.length} especialidades.`}
           />
           <SectorGrid sectors={sectorCards} />
         </section>

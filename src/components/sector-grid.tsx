@@ -6,13 +6,20 @@ import { useState } from "react";
 import { Icon } from "@/components/ui";
 
 /**
- * Cuántos rubros se ven en mobile antes de pedir el resto.
+ * Cuántos rubros se ven plegado, por ancho de pantalla.
  *
- * Seis son tres filas de dos: alcanzan para que se entienda de qué va la
- * sección y qué clase de cosas se pueden buscar, sin empujar el resto de la
- * portada fuera de la pantalla.
+ * En los dos casos es "las primeras filas y nada más", pero las filas no miden
+ * lo mismo: la grilla va de a dos columnas en mobile, tres desde `sm` y cinco
+ * desde `lg`. Así que el corte se cuenta en tarjetas y no en filas.
+ *
+ * - `MOBILE`: 6 = tres filas de dos.
+ * - `DESKTOP`: 10 = dos filas de cinco.
+ *
+ * Los dos números coinciden en el tramo del medio (`sm`, tres columnas): seis
+ * son dos filas justas, así que ahí no se ve ningún hueco a medio llenar.
  */
 const MOBILE_VISIBLE = 6;
+const DESKTOP_VISIBLE = 10;
 
 export type SectorCard = {
   id: string;
@@ -28,16 +35,38 @@ export type SectorCard = {
 };
 
 /**
- * La grilla de rubros de la portada, recortada en mobile.
+ * Cómo se esconde la tarjeta número `index` mientras la grilla está plegada.
  *
- * Son veinte. En desktop entran en cuatro filas de cinco y se ven de un
- * vistazo, pero en mobile van de a dos: diez filas que dejan los destacados,
- * "cómo funciona" y los mejor calificados debajo de una pared de tarjetas.
- * Ahí se muestran seis y el resto sale con "Mostrar más".
+ * Devuelve la clase que la oculta en los anchos donde sobra, o `""` si entra
+ * en todos. Son tres tramos:
+ *
+ * - Antes de `MOBILE_VISIBLE`: se ve siempre.
+ * - Entre los dos cortes: sobra en mobile pero entra en las dos filas de
+ *   desktop, así que se oculta sólo hasta `lg`.
+ * - Después de `DESKTOP_VISIBLE`: sobra en todos lados.
+ *
+ * Es CSS y no un `slice` del arreglo a propósito: cortar la lista dejaría diez
+ * rubros fuera del HTML, y son la puerta de entrada al SEO del sitio. Ocultar
+ * por ancho también evita tener que adivinar en el servidor con qué pantalla
+ * se va a abrir la página —no hay forma de saberlo— y deja el mismo HTML
+ * sirviendo a las dos.
+ */
+function hiddenClass(index: number): string {
+  if (index < MOBILE_VISIBLE) return "";
+  if (index < DESKTOP_VISIBLE) return "max-lg:hidden";
+  return "hidden";
+}
+
+/**
+ * La grilla de rubros de la portada, recortada mientras esté plegada.
+ *
+ * Son veinte, y de largo tapan lo que viene después —destacados, cómo
+ * funciona, mejor calificados—. Plegada muestra las primeras filas y el resto
+ * sale con "Mostrar más", que vuelve a plegarse con "Mostrar menos": quien
+ * abrió para mirar puede devolver la portada a como estaba.
  */
 export function SectorGrid({ sectors }: { sectors: SectorCard[] }) {
   const [expanded, setExpanded] = useState(false);
-  const hiddenCount = sectors.length - MOBILE_VISIBLE;
 
   return (
     <>
@@ -46,18 +75,8 @@ export function SectorGrid({ sectors }: { sectors: SectorCard[] }) {
           <Link
             key={sector.id}
             href={`/categorias/${sector.slug}`}
-            /*
-             * Las de más allá de seis se ocultan sólo hasta `lg`, y sólo
-             * mientras esté plegado.
-             *
-             * Es `max-lg:hidden` y no un `slice` del arreglo: cortar la lista
-             * dejaría catorce rubros fuera del HTML, y en desktop —donde
-             * entran de sobra— no aparecerían hasta que hidrate. Ocultarlos
-             * por CSS los deja en el documento, que es lo que ve el buscador
-             * y lo que se ve con JavaScript todavía en camino.
-             */
             className={`group flex flex-col gap-2.5 rounded-card border border-line bg-white p-4 shadow-card transition-all hover:-translate-y-0.5 hover:border-[#C6CEDC] hover:shadow-card-hover ${
-              !expanded && index >= MOBILE_VISIBLE ? "max-lg:hidden" : ""
+              expanded ? "" : hiddenClass(index)
             }`}
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-[11px] bg-brand-100">
@@ -79,18 +98,27 @@ export function SectorGrid({ sectors }: { sectors: SectorCard[] }) {
       </div>
 
       {/*
-        El botón es cosa de mobile: en desktop están los veinte a la vista y no
-        habría nada que mostrar. Se va al desplegar —ya no queda nada detrás, y
-        un "Mostrar menos" volvería a esconder lo que se acaba de pedir ver—.
+        El botón va en todos los anchos: plegada, la grilla esconde rubros
+        tanto en mobile como en desktop.
+
+        No dice cuántos faltan. Serían dos números distintos —catorce en mobile,
+        diez en desktop— y el texto se escribe una sola vez para las dos
+        pantallas; poner uno de los dos lo haría mentir en la mitad de los
+        casos. `aria-expanded` es lo que le dice a un lector de pantalla en qué
+        estado está, que es la parte que importa.
       */}
-      {!expanded && hiddenCount > 0 ? (
+      {sectors.length > MOBILE_VISIBLE ? (
         <button
           type="button"
-          onClick={() => setExpanded(true)}
-          className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-input border border-[#DAE0EC] bg-brand-100 text-[14.5px] font-semibold text-brand-800 transition-colors hover:border-[#C6CEDC] hover:bg-[#E4E9F2] lg:hidden"
+          onClick={() => setExpanded((open) => !open)}
+          aria-expanded={expanded}
+          className="mt-3 flex h-11 w-full items-center justify-center gap-1.5 rounded-input border border-[#DAE0EC] bg-brand-100 text-[14.5px] font-semibold text-brand-800 transition-colors hover:border-[#C6CEDC] hover:bg-[#E4E9F2]"
         >
-          Mostrar {hiddenCount} rubros más
-          <Icon name="expand_more" className="text-[20px]" />
+          {expanded ? "Mostrar menos" : "Mostrar más"}
+          <Icon
+            name="expand_more"
+            className={`text-[20px] transition-transform ${expanded ? "rotate-180" : ""}`}
+          />
         </button>
       ) : null}
     </>
