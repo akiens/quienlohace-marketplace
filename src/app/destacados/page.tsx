@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ProfileGrid } from "@/components/profile-grid";
 import { listFeatured } from "@/application/profiles";
 
@@ -20,8 +19,6 @@ export default async function FeaturedPage() {
 
   return (
     <div className="shell flex flex-col gap-7 py-8">
-      <Breadcrumbs items={[{ label: "Inicio", href: "/" }, { label: "Destacados" }]} />
-
       <header className="flex flex-col gap-2">
         <h1 className="text-[24px] font-bold tracking-[-.4px] text-ink sm:text-[28px]">
           Profesionales destacados

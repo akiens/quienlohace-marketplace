@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ProfileGrid } from "@/components/profile-grid";
 import { Icon } from "@/components/ui";
 import {
@@ -66,14 +65,6 @@ export default async function SubcategoryPage({
 
   return (
     <div className="shell flex flex-col gap-7 py-8">
-      <Breadcrumbs
-        items={[
-          { label: "Inicio", href: "/" },
-          { label: category.short, href: `/categorias/${category.slug}` },
-          { label: subcategory.name },
-        ]}
-      />
-
       <header className="flex items-center gap-3">
         <span className="flex h-12 w-12 items-center justify-center rounded-[13px] bg-brand-900">
           <Icon name={category.icon} className="text-[24px] text-accent" />

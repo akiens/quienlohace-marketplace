@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ProfileGrid } from "@/components/profile-grid";
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { Icon } from "@/components/ui";
 import {
   SERVICE_SECTORS,
@@ -57,13 +56,6 @@ export default async function CategoryPage({
 
   return (
     <div className="shell flex flex-col gap-7 py-8">
-      <Breadcrumbs
-        items={[
-          { label: "Inicio", href: "/" },
-          { label: category.short },
-        ]}
-      />
-
       <header className="flex flex-col gap-3">
         <div className="flex items-center gap-3">
           <span className="flex h-12 w-12 items-center justify-center rounded-[13px] bg-brand-900">

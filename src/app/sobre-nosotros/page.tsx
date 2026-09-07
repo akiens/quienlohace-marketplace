@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ButtonLink, Icon } from "@/components/ui";
 
 export const metadata: Metadata = {
@@ -35,10 +34,6 @@ const PRINCIPLES = [
 export default function AboutPage() {
   return (
     <div className="shell flex flex-col gap-10 py-8">
-      <Breadcrumbs
-        items={[{ label: "Inicio", href: "/" }, { label: "Sobre nosotros" }]}
-      />
-
       <header className="flex max-w-2xl flex-col gap-3">
         <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[32px]">
           Conectamos clientes y profesionales

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { FaqBrowser } from "@/components/faq-browser";
 import { FAQS } from "@/data/faqs";
 
@@ -26,10 +25,6 @@ export default function FaqPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-
-      <Breadcrumbs
-        items={[{ label: "Inicio", href: "/" }, { label: "Preguntas frecuentes" }]}
       />
 
       <header className="flex flex-col gap-2">

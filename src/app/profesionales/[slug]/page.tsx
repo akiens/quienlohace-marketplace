@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewList } from "@/components/review-list";
 import {
@@ -318,16 +317,6 @@ export default async function ProviderPage({
             ) : null}
           </div>
         </div>
-
-        <Breadcrumbs
-          items={[
-            { label: "Inicio", href: "/" },
-            ...(category
-              ? [{ label: category.short, href: `/categorias/${category.slug}` }]
-              : []),
-            { label: profile.name },
-          ]}
-        />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
           <div className="flex flex-col gap-6">

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 
-import { Breadcrumbs } from "@/components/breadcrumbs";
 import { ContactForm } from "@/components/contact-form";
 import { Icon } from "@/components/ui";
 
@@ -18,8 +17,6 @@ const CHANNELS = [
 export default function ContactPage() {
   return (
     <div className="shell flex flex-col gap-7 py-8">
-      <Breadcrumbs items={[{ label: "Inicio", href: "/" }, { label: "Contacto" }]} />
-
       <header className="flex max-w-2xl flex-col gap-2">
         <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
           Contacto

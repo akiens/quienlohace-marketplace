@@ -17,3 +17,5 @@ La pagina inicio va a tener las siguientes secciones en el siguiente orden:
 
 # 6. Espacio publicitario
 - Este es un espacio para agregar algun banner de publicidad. Si no existe publicidad, por ahora creemos un banner que statico que diga algo como: "Con tu primer perfil creado podras activar gratis por 3 meses cualquiera de los planes de pago." Aca crear un banner lindo y agradable a la vista, que invite al proveedor a activar este beneficio.
+
+# 7. Como funciona
