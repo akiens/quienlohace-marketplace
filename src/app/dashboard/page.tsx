@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { Banner } from "@/components/banner";
 import { DowngradeNotice } from "@/components/dashboard/downgrade-notice";
 import { PlanSwitcher } from "@/components/dashboard/plan-switcher";
 import { ProfileView } from "@/components/dashboard/profile-view";
@@ -34,8 +35,20 @@ export const dynamic = "force-dynamic";
  * habilita el plan vigente, así que subir de plan hace aparecer los nuevos
  * sin tener que volver al asistente.
  */
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ editar?: string }>;
+}) {
   if (!hasCloudflareRuntime()) return <SetupNotice />;
+
+  /*
+   * El modo edición se lee acá además de en `ProfileView` porque su aviso es
+   * un `Banner`, y los avisos van pegados al encabezado: montado dentro de
+   * `ProfileView` quedaba debajo del título de la página. La página no se
+   * vuelve dinámica por esto — ya lo era (`force-dynamic`).
+   */
+  const editing = (await searchParams).editar === "1";
 
   const user = await getCurrentUser();
   if (!user) redirect("/entrar");
@@ -106,14 +119,20 @@ export default async function DashboardPage() {
   return (
     <>
       {/*
-       * El aviso va pegado al header del sitio, antes que nada: es una
-       * novedad de la cuenta, no de esta pantalla.
+       * Los avisos van primero, pegados al encabezado del sitio y a ancho
+       * completo: son novedades de la cuenta o del estado de la pantalla, no
+       * contenido de "Mi perfil".
        *
-       * Por eso queda fuera del contenedor del panel y a ancho completo —una
-       * banda del sitio, como las del sistema—. Dentro del contenedor se leía
-       * como un bloque más de "Mi perfil", que es justo lo que no es.
+       * Editando se muestra sólo el de edición: apilar dos bandas empuja el
+       * formulario fuera de la pantalla, y el de la baja ya se leyó al entrar.
        */}
-      {downgrade && noticeStage ? (
+      {editing ? (
+        <Banner icon="edit">
+          Estás editando tu perfil. Los cambios se guardan al confirmar.
+        </Banner>
+      ) : null}
+
+      {!editing && downgrade && noticeStage ? (
         <DowngradeNotice
           planName={plan.name}
           downgradePlanName={downgrade.name}
@@ -143,9 +162,13 @@ export default async function DashboardPage() {
 
         <PlanSwitcher plan={plan} plans={allPlans} persist />
 
-        <div className="px-5 sm:px-0">
-          <ProfileView profile={profile} plan={plan} images={images} />
-        </div>
+        {/*
+          El padding lateral lo pone `ProfileView` en sus propios bloques y no
+          este contenedor: en modo edición el aviso de "estás editando" es un
+          `Banner`, que va a ancho completo, y envuelto acá quedaba con 20px a
+          cada lado como cualquier tarjeta.
+        */}
+        <ProfileView profile={profile} plan={plan} images={images} />
       </div>
     </>
   );

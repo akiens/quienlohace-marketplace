@@ -87,12 +87,12 @@ export function ProfileView({
 
   if (editing) {
     return (
-      <div className="flex flex-col gap-4">
-        <p className="flex items-center gap-2.5 rounded-card border border-accent bg-accent-soft px-4 py-3 text-[14px] font-medium text-accent-ink">
-          <Icon name="edit" className="text-[18px]" />
-          Estás editando tu perfil. Los cambios se guardan al confirmar.
-        </p>
-
+      /*
+        El aviso de "estás editando" no está acá sino en la página, que lo
+        monta antes del título: los avisos van pegados al encabezado del sitio
+        y desde este punto del árbol no se puede subir hasta ahí.
+      */
+      <div className="flex flex-col gap-4 px-5 sm:px-0">
         {/*
           El mismo formulario del alta, abierto de una vez. Comparten campos,
           validación y acción: una sola definición de qué es un perfil válido,
@@ -112,7 +112,9 @@ export function ProfileView({
   const published = profile.profileStatus === "active";
 
   return (
-    <div className="flex flex-col gap-5">
+    // El padding lateral va acá y no en la página: en edición el aviso tiene
+    // que poder salirse de él.
+    <div className="flex flex-col gap-5 px-5 sm:px-0">
       {/* Estado y acciones: publicar, editar y ver cómo se ve por fuera. */}
       <div className="flex flex-wrap items-center gap-2.5 rounded-card border border-line bg-white p-4">
         <span

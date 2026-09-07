@@ -1,23 +1,16 @@
 "use client";
 
-import { useState, useTransition } from "react";
-
 import { dismissDowngradeNotice } from "@/app/actions/plan";
-import { Icon } from "@/components/ui";
+import { Banner } from "@/components/banner";
 import type { DowngradeNoticeStage } from "@/domain/plan-changes";
 
 /**
- * El aviso de la baja de plan agendada: una banda debajo del encabezado, que
- * se puede cerrar.
+ * El aviso de la baja de plan agendada.
  *
- * Va sin esquinas redondeadas y de borde a borde, como una banda del sistema y
- * no como una tarjeta más del perfil: es una novedad sobre la cuenta, no
- * contenido del perfil, y la diferencia de forma es la que lo dice.
- *
- * Cerrarlo no espera al servidor: desaparece en el acto y la escritura va por
- * detrás. Es lo correcto para algo cuyo peor error posible es que el aviso
- * vuelva a aparecer en la próxima visita — mucho menos molesto que un cartel
- * que se queda medio segundo después de haberlo cerrado.
+ * Es un `Banner` con el contenido de este caso: qué plan viene, cuándo, y qué
+ * pasa con lo que no entra. El aviso en sí —dónde se dibuja, el color, la
+ * cruz, el cierre optimista— lo resuelve el `Banner`; acá queda sólo lo que
+ * es propio de la baja de plan.
  */
 export function DowngradeNotice({
   planName,
@@ -37,72 +30,51 @@ export function DowngradeNotice({
    */
   stage: DowngradeNoticeStage;
 }) {
-  const [dismissed, setDismissed] = useState(false);
-  const [, startTransition] = useTransition();
-
-  if (dismissed) return null;
-
   const reminder = stage === "reminder";
 
   return (
-    <div
-      role="status"
+    <Banner
       /*
-       * El recordatorio de los últimos días se ve distinto del normal: es el
-       * mismo hecho, pero ya casi no queda tiempo de reaccionar y el color lo
-       * dice antes que el texto.
+       * El recordatorio de los últimos días va en otro tono: es el mismo
+       * hecho, pero ya casi no queda tiempo de reaccionar y el color lo dice
+       * antes que el texto.
        */
-      className={`flex items-start gap-2.5 border-b px-5 py-3 text-[14px] leading-relaxed sm:px-6 ${
-        reminder
-          ? "border-[#F5C6A5] bg-[#FEF6EE] text-[#8A4B10]"
-          : "border-accent bg-accent-soft text-accent-ink"
-      }`}
+      tone={reminder ? "warning" : "info"}
+      icon={reminder ? "warning" : "schedule"}
+      dismissible
+      /*
+       * Se anota en el perfil que ya se leyó: "ya lo vi" es una decisión de la
+       * persona, no del aparato, y cerrado en la computadora tampoco tiene que
+       * volver a saltar en el teléfono.
+       *
+       * La etapa viaja en el envío porque el aviso normal y el recordatorio se
+       * cierran por separado: sin distinguirlos, cerrar el primero silenciaría
+       * al segundo, que es el que avisa que la baja es en tres días.
+       */
+      onBeforeDismiss={async () => {
+        const data = new FormData();
+        data.set("stage", stage);
+        await dismissDowngradeNotice({}, data);
+      }}
     >
-      <Icon
-        name={reminder ? "warning" : "schedule"}
-        className="mt-0.5 shrink-0 text-[18px]"
-      />
-
-      <p className="min-w-0 flex-1">
-        {reminder ? (
-          <>
-            <strong className="font-bold">
-              {effectiveOn ? `El ${effectiveOn}` : "En los próximos días"} pasás
-              al plan {downgradePlanName}.
-            </strong>{" "}
-            Si querés seguir con {planName}, cambiá el plan antes de esa fecha.
-            Lo que no entre en {downgradePlanName} deja de mostrarse, pero se
-            guarda por si volvés.
-          </>
-        ) : (
-          <>
-            Vas a pasar al plan {downgradePlanName}
-            {effectiveOn ? ` el ${effectiveOn}` : null}. Hasta entonces seguís
-            usando todo lo de {planName}; lo que no entre en{" "}
-            {downgradePlanName} se guarda por si volvés.
-          </>
-        )}
-      </p>
-
-      <button
-        type="button"
-        aria-label="Cerrar aviso"
-        onClick={() => {
-          setDismissed(true);
-          startTransition(async () => {
-            const data = new FormData();
-            data.set("stage", stage);
-            await dismissDowngradeNotice({}, data);
-          });
-        }}
-        /*
-         * 36px alrededor de la cruz: con el icono a secas se le erraba en el
-         * teléfono y el aviso se quedaba puesto.
-         */
-        className="-my-1 -mr-2 flex h-9 w-9 flex-none items-center justify-center rounded-input transition-colors hover:bg-black/5"
-      >
-        <Icon name="close" className="text-[18px]" />
-      </button>
-    </div>
+      {reminder ? (
+        <>
+          <strong className="font-bold">
+            {effectiveOn ? `El ${effectiveOn}` : "En los próximos días"} pasás
+            al plan {downgradePlanName}.
+          </strong>{" "}
+          Si querés seguir con {planName}, cambiá el plan antes de esa fecha. Lo
+          que no entre en {downgradePlanName} deja de mostrarse, pero se guarda
+          por si volvés.
+        </>
+      ) : (
+        <>
+          Vas a pasar al plan {downgradePlanName}
+          {effectiveOn ? ` el ${effectiveOn}` : null}. Hasta entonces seguís
+          usando todo lo de {planName}; lo que no entre en {downgradePlanName}{" "}
+          se guarda por si volvés.
+        </>
+      )}
+    </Banner>
   );
 }

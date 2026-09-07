@@ -44,6 +44,32 @@ const config: Config = {
           text: "#B8B1AC",
           line: "#322A26",
         },
+        /*
+         * Colores con significado, para los avisos (`Banner`) y los estados.
+         *
+         * Ya estaban en el código como literales repetidos —`#B42318` para el
+         * error, `#1E8C56` para el éxito—; nombrarlos evita que cada aviso
+         * elija un tono apenas distinto. El amarillo de `accent` hace de
+         * `info`, que es el que ya usaban los avisos del panel.
+         */
+        success: {
+          DEFAULT: "#1E8C56",
+          soft: "#F4FBF7",
+          line: "#D6EFE0",
+          ink: "#1E8C56",
+        },
+        warning: {
+          DEFAULT: "#C2711C",
+          soft: "#FEF6EE",
+          line: "#F5C6A5",
+          ink: "#8A4B10",
+        },
+        danger: {
+          DEFAULT: "#B42318",
+          soft: "#FEF3F2",
+          line: "#FDA29B",
+          ink: "#B42318",
+        },
         whatsapp: "#25A366",
       },
       backgroundImage: {
