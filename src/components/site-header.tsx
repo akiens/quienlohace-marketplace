@@ -11,14 +11,19 @@ import { Icon } from "@/components/ui";
 /**
  * Lo que se usa seguido, siempre a la vista y con su icono.
  *
- * Son tres porque son las tres cosas que alguien viene a hacer: volver al
- * principio, buscar un profesional o escribirnos. Lo demás es material de
- * consulta y vive en "Más".
+ * Son tres porque son las tres cosas que se vienen a hacer: volver al
+ * principio, buscar un profesional o ver cuánto sale publicarse. Lo demás es
+ * material de consulta y vive en "Más".
+ *
+ * "Planes" ocupa el lugar que tenía "Contacto": es la página que decide si
+ * alguien se da de alta —el otro lado del marketplace, y de donde sale la
+ * plata—, mientras que escribirnos es algo que se hace una vez y cuando ya
+ * hay un problema. Contacto sigue a un clic, en "Más" y en el pie.
  */
 const NAV_LINKS = [
   { label: "Inicio", href: "/", icon: "home" },
   { label: "Buscar", href: "/buscar", icon: "search" },
-  { label: "Contacto", href: "/contacto", icon: "mail" },
+  { label: "Planes", href: "/planes", icon: "sell" },
 ];
 
 /**
@@ -29,6 +34,7 @@ const MORE_LINKS = [
   { label: "Cómo funciona", href: "/como-funciona", icon: "help" },
   { label: "Sobre nosotros", href: "/sobre-nosotros", icon: "info" },
   { label: "Preguntas frecuentes", href: "/faq", icon: "quiz" },
+  { label: "Contacto", href: "/contacto", icon: "mail" },
 ];
 
 export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
@@ -336,7 +342,7 @@ function MobileDrawer({
                 ...NAV_LINKS,
                 /*
                  * En el teléfono no hay desplegable "Más": el menú ya es una
-                 * lista vertical con lugar de sobra, y esconder tres enlaces
+                 * lista vertical con lugar de sobra, y esconder esos enlaces
                  * tras otro toque no ahorraría nada.
                  */
                 ...MORE_LINKS,
