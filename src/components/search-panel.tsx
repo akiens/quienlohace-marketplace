@@ -3,21 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  SERVICE_SECTORS,
-  getSpecialty,
-  listSpecialties,
-} from "@/data/taxonomy";
-import {
-  COUNTRY_ID,
-  COUNTRY_LABEL,
-  listDepartments,
-  listLocalities,
-  locationLabelById,
-} from "@/data/locations";
 import { filtersToQuery, searchHref } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
-import { MAX_LOCATIONS, MAX_SPECIALTIES, type SearchFilters } from "@/types";
+import type { SearchFilters } from "@/types";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 
 const QUICK_SEARCHES = [
@@ -46,6 +34,13 @@ type SearchPanelProps = {
    */
   onDraftChange?: (filters: SearchFilters) => void;
   variant?: "hero" | "compact";
+  /**
+   * Sin fondo propio ni encabezado: sólo la fila de controles.
+   *
+   * La portada lo pone sobre su slider, con la bienvenida encima. El degradado
+   * del panel taparía la foto, y el título quedaría dicho dos veces.
+   */
+  bare?: boolean;
   title?: string;
   subtitle?: string;
   onOpenFilters?: () => void;
@@ -60,6 +55,7 @@ export function SearchPanel({
   onSubmit,
   onDraftChange,
   variant = "hero",
+  bare = false,
   title = "¿Qué servicio necesitás?",
   subtitle = "Encontrá profesionales y empresas verificadas en todo Uruguay.",
   onOpenFilters,
@@ -101,7 +97,8 @@ export function SearchPanel({
     onDraftChange?.(next);
   }
 
-  const isHero = variant === "hero";
+  // Con `bare` no hay encabezado que mostrar: sólo los controles.
+  const isHero = variant === "hero" && !bare;
   /*
    * El contador del botón "Filtros" cuenta el borrador y no lo aplicado: si
    * contara lo aplicado, elegir una categoría en el buscador no movería el
@@ -139,29 +136,14 @@ export function SearchPanel({
     else router.push(searchHref(draft));
   }
 
-  const locationLabel =
-    draft.locationIds.length === 0
-      ? "Todo el país"
-      : draft.locationIds.length === 1
-        ? locationLabelById(draft.locationIds[0]!)
-        : `${locationLabelById(draft.locationIds[0]!)} +${draft.locationIds.length - 1}`;
-
-  const categoryLabel = (() => {
-    if (draft.specialtyIds.length === 0) return "Todos los rubros";
-    const name = getSpecialty(draft.specialtyIds[0]!)?.name ?? "Especialidad";
-    return draft.specialtyIds.length === 1
-      ? name
-      : `${name} +${draft.specialtyIds.length - 1}`;
-  })();
+  /*
+   * Sobre la foto de la portada el panel no pone fondo ni ancho de `shell`: lo
+   * enmarca quien lo monta. En el resto del sitio sí trae su franja degradada.
+   */
+  const Frame = bare ? BareFrame : GradientFrame;
 
   return (
-    <section className="relative overflow-visible bg-brand-gradient">
-      <div className="pointer-events-none absolute inset-0 bg-hatch" />
-
-      <div
-        ref={panelRef}
-        className={`shell relative ${isHero ? "py-5 lg:py-6" : "py-2"}`}
-      >
+    <Frame panelRef={panelRef} isHero={isHero}>
         {isHero ? (
           <div className="mb-[18px] flex flex-col gap-1.5">
             <h1 className="text-[26px] font-extrabold leading-[1.1] tracking-[-.8px] text-white lg:text-[34px]">
@@ -193,30 +175,15 @@ export function SearchPanel({
             />
           </div>
 
-          {/* En móvil cada control ocupa el ancho completo: lado a lado las
-              etiquetas largas ("Todas las categorías") se recortan y la fila
-              queda despareja respecto del buscador. */}
-          <div className="flex flex-col gap-2 sm:flex-row lg:flex-none lg:basis-[400px]">
-            <PopoverButton
-              icon="location_on"
-              label={locationLabel}
-              active={draft.locationIds.length > 0}
-              open={openPopover === "location"}
-              onClick={() =>
-                setOpenPopover(openPopover === "location" ? null : "location")
-              }
-            />
-            <PopoverButton
-              icon={draft.specialtyIds.length ? "check_circle" : "category"}
-              label={categoryLabel}
-              active={draft.specialtyIds.length > 0}
-              open={openPopover === "category"}
-              onClick={() =>
-                setOpenPopover(openPopover === "category" ? null : "category")
-              }
-            />
-          </div>
+          {/*
+            La fila es sólo esto: el campo, "Filtros" y "Buscar".
 
+            La ubicación y el rubro tenían acá su propio desplegable y se
+            mudaron al panel de la derecha, con el resto de los criterios: eran
+            dos de cinco filtros y no se entendía por qué esos dos estaban a la
+            vista y los otros escondidos. Ahora el buscador pide lo que se
+            escribe, y todo lo que se elige de una lista vive en un solo lugar.
+          */}
           <div className="flex gap-2">
             {onOpenFilters ? (
               <button
@@ -243,26 +210,6 @@ export function SearchPanel({
           </div>
         </form>
 
-        {/*
-          Los desplegables editan el borrador, no los filtros vigentes: elegir
-          una categoría ya no relanza la búsqueda por su cuenta.
-        */}
-        {openPopover === "location" ? (
-          <LocationPopover
-            filters={draft}
-            onChange={updateDraft}
-            onClose={() => setOpenPopover(null)}
-          />
-        ) : null}
-
-        {openPopover === "category" ? (
-          <CategoryPopover
-            filters={draft}
-            onChange={updateDraft}
-            onClose={() => setOpenPopover(null)}
-          />
-        ) : null}
-
         {isHero ? (
           <div className="mt-3.5 flex flex-wrap items-center gap-2">
             <span className="text-[13px] font-medium text-[#AFBDD6]">
@@ -286,327 +233,45 @@ export function SearchPanel({
             ))}
           </div>
         ) : null}
+    </Frame>
+  );
+}
+
+/** El envoltorio de siempre: franja degradada a lo ancho del sitio. */
+function GradientFrame({
+  panelRef,
+  isHero,
+  children,
+}: {
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  isHero: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="relative overflow-visible bg-brand-gradient">
+      <div className="pointer-events-none absolute inset-0 bg-hatch" />
+      <div
+        ref={panelRef}
+        className={`shell relative ${isHero ? "py-5 lg:py-6" : "py-2"}`}
+      >
+        {children}
       </div>
     </section>
   );
 }
 
-function PopoverButton({
-  icon,
-  label,
-  active,
-  open,
-  onClick,
-}: {
-  icon: string;
-  label: string;
-  active: boolean;
-  open: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-expanded={open}
-      className={`flex h-12 min-w-0 flex-1 items-center gap-1.5 rounded-input border bg-white px-3 ${
-        open ? "border-brand-800" : "border-line-strong"
-      }`}
-    >
-      <Icon name={icon} className="text-[20px] text-brand-800" />
-      <span
-        className={`truncate text-[14.5px] font-semibold ${
-          active ? "text-ink" : "text-ink-soft"
-        }`}
-      >
-        {label}
-      </span>
-      <Icon name="expand_more" className="ml-auto text-[18px] text-ink-faint" />
-    </button>
-  );
-}
-
-function PopoverShell({
-  title,
-  children,
-  onClear,
-  onClose,
-}: {
-  title: string;
-  children: React.ReactNode;
-  onClear: () => void;
-  onClose: () => void;
-}) {
-  return (
-    <div className="absolute inset-x-5 z-40 mt-2 overflow-hidden rounded-card border border-line bg-white shadow-pop sm:inset-x-6">
-      <div className="flex items-center justify-between border-b border-line-soft px-3.5 py-3">
-        <p className="text-[13.5px] font-bold text-ink">{title}</p>
-      </div>
-      {children}
-      <div className="flex items-center justify-between border-t border-line-soft px-3.5 py-2.5">
-        <button
-          type="button"
-          onClick={onClear}
-          className="text-[13px] font-semibold text-ink-soft hover:text-ink"
-        >
-          Limpiar
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          className="h-[34px] rounded-lg bg-brand-800 px-4 text-[13.5px] font-semibold text-white hover:bg-brand-900"
-        >
-          Aplicar
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function LocationPopover({
-  filters,
-  onChange,
-  onClose,
-}: {
-  filters: SearchFilters;
-  onChange: (filters: SearchFilters) => void;
-  onClose: () => void;
-}) {
-  const departments = listDepartments();
-  const [department, setDepartment] = useState(departments[0]?.id ?? "");
-  const localities = listLocalities(department);
-
-  function toggle(id: string) {
-    const selected = filters.locationIds;
-    if (selected.includes(id)) {
-      onChange({ ...filters, locationIds: selected.filter((x) => x !== id) });
-      return;
-    }
-    if (selected.length >= MAX_LOCATIONS) return;
-    onChange({ ...filters, locationIds: [...selected, id] });
-  }
-
-  return (
-    <PopoverShell
-      title={`Ubicación · máximo ${MAX_LOCATIONS}`}
-      onClear={() =>
-        onChange({ ...filters, locationIds: [], useMyLocation: false })
-      }
-      onClose={onClose}
-    >
-      {filters.locationIds.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5 border-b border-line-soft bg-[#FBFCFD] px-3.5 py-2.5">
-          {filters.locationIds.map((id) => (
-            <span
-              key={id}
-              className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-2.5 pr-1.5 text-[12.5px] font-semibold text-brand-800"
-            >
-              {locationLabelById(id)}
-              <button
-                type="button"
-                onClick={() => toggle(id)}
-                aria-label={`Quitar ${locationLabelById(id)}`}
-              >
-                <Icon name="close" className="text-[15px] text-[#5B6B87]" />
-              </button>
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      {/*
-        Dos columnas y no tres: el catálogo llega hasta la localidad, que es su
-        nivel más preciso (BR-014). Los barrios salieron del modelo.
-      */}
-      <div className="grid max-h-[300px] grid-cols-1 sm:grid-cols-2">
-        <ColumnList label="Departamento">
-          {/*
-            Buscar en todo el país es una opción explícita: encuentra a quien
-            tiene cobertura nacional y a cualquiera más abajo (TR-019).
-          */}
-          <button
-            type="button"
-            onClick={() => toggle(COUNTRY_ID)}
-            className={`flex w-full items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
-              filters.locationIds.includes(COUNTRY_ID)
-                ? "font-bold"
-                : "font-medium"
-            }`}
-          >
-            <Checkbox checked={filters.locationIds.includes(COUNTRY_ID)} />
-            Todo {COUNTRY_LABEL}
-          </button>
-
-          {departments.map((item) => {
-            const selected = filters.locationIds.includes(item.id);
-            return (
-              <div key={item.id} className="flex items-center gap-1">
-                {/*
-                  El departamento se puede elegir entero: quien trabaja en todo
-                  Canelones no tiene por qué nombrar sus localidades (BR-016).
-                */}
-                <button
-                  type="button"
-                  onClick={() => toggle(item.id)}
-                  className={`flex flex-1 items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
-                    selected ? "font-bold" : "font-medium"
-                  }`}
-                >
-                  <Checkbox checked={selected} />
-                  {item.name}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDepartment(item.id)}
-                  aria-label={`Ver localidades de ${item.name}`}
-                  className={`rounded p-1 hover:bg-surface-sunken ${
-                    item.id === department ? "bg-surface-sunken" : ""
-                  }`}
-                >
-                  <Icon
-                    name="chevron_right"
-                    className="text-[17px] text-ink-faint"
-                  />
-                </button>
-              </div>
-            );
-          })}
-        </ColumnList>
-
-        <ColumnList label="Ciudad / Localidad">
-          {localities.length === 0 ? (
-            <p className="p-2 text-[13px] leading-relaxed text-ink-faint">
-              Elegí un departamento para ver sus localidades.
-            </p>
-          ) : (
-            localities.map((item) => {
-              const selected = filters.locationIds.includes(item.id);
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => toggle(item.id)}
-                  className={`flex w-full items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
-                    selected ? "font-bold" : "font-medium"
-                  }`}
-                >
-                  <Checkbox checked={selected} />
-                  {item.name}
-                </button>
-              );
-            })
-          )}
-        </ColumnList>
-      </div>
-    </PopoverShell>
-  );
-}
-
-function CategoryPopover({
-  filters,
-  onChange,
-  onClose,
-}: {
-  filters: SearchFilters;
-  onChange: (filters: SearchFilters) => void;
-  onClose: () => void;
-}) {
-  const [categoryIndex, setCategoryIndex] = useState(0);
-  const category = SERVICE_SECTORS[categoryIndex] ?? SERVICE_SECTORS[0]!;
-
-  function toggle(id: string) {
-    const selected = filters.specialtyIds;
-    if (selected.includes(id)) {
-      onChange({ ...filters, specialtyIds: selected.filter((x) => x !== id) });
-      return;
-    }
-    if (selected.length >= MAX_SPECIALTIES) return;
-    onChange({ ...filters, specialtyIds: [...selected, id] });
-  }
-
-  return (
-    <PopoverShell
-      title={`Categoría · máximo ${MAX_SPECIALTIES}`}
-      onClear={() => onChange({ ...filters, specialtyIds: [] })}
-      onClose={onClose}
-    >
-      <div className="grid max-h-[320px] grid-cols-1 sm:grid-cols-2">
-        <ColumnList>
-          {SERVICE_SECTORS.map((item, index) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setCategoryIndex(index)}
-              className={`flex w-full items-center gap-2.5 rounded-[7px] p-2 text-left hover:bg-surface-sunken ${
-                index === categoryIndex ? "bg-surface-sunken" : ""
-              }`}
-            >
-              <Icon name={item.icon} className="text-[19px] text-brand-800" />
-              <span
-                className={`text-[13.5px] leading-tight text-[#344054] ${
-                  index === categoryIndex ? "font-bold" : "font-medium"
-                }`}
-              >
-                {item.short}
-              </span>
-              <Icon
-                name="chevron_right"
-                className="ml-auto text-[17px] text-ink-faint"
-              />
-            </button>
-          ))}
-        </ColumnList>
-
-        <ColumnList>
-          {listSpecialties(category.id).map((sub) => {
-            const selected = filters.specialtyIds.includes(sub.id);
-            return (
-              <button
-                key={sub.id}
-                type="button"
-                onClick={() => toggle(sub.id)}
-                className={`flex w-full items-center gap-2 rounded-[7px] p-2 text-left text-[13.5px] text-[#344054] hover:bg-surface-sunken ${
-                  selected ? "bg-surface-muted" : ""
-                }`}
-              >
-                <Checkbox checked={selected} />
-                {sub.name}
-              </button>
-            );
-          })}
-        </ColumnList>
-      </div>
-    </PopoverShell>
-  );
-}
-
-function ColumnList({
-  label,
+/** Sin fondo ni ancho propio: lo enmarca quien lo monta. */
+function BareFrame({
+  panelRef,
   children,
 }: {
-  label?: string;
+  panelRef: React.RefObject<HTMLDivElement | null>;
+  isHero: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-auto border-line-soft p-1.5 sm:border-r sm:last:border-r-0">
-      {label ? (
-        <p className="px-2 py-1.5 text-[11px] font-bold uppercase tracking-[.5px] text-ink-faint">
-          {label}
-        </p>
-      ) : null}
+    <div ref={panelRef} className="relative">
       {children}
     </div>
-  );
-}
-
-function Checkbox({ checked }: { checked: boolean }) {
-  return (
-    <span
-      className={`flex h-4 w-4 flex-none items-center justify-center rounded border-[1.5px] ${
-        checked ? "border-brand-800 bg-brand-800" : "border-[#CDD4E0] bg-white"
-      }`}
-    >
-      {checked ? <Icon name="check" className="text-[13px] text-white" /> : null}
-    </span>
   );
 }

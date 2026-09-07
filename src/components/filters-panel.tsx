@@ -3,10 +3,17 @@
 import { useEffect } from "react";
 
 import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
-import { locationLabelById } from "@/data/locations";
+import {
+  COUNTRY_ID,
+  COUNTRY_LABEL,
+  listDepartments,
+  listLocalities,
+  locationLabelById,
+} from "@/data/locations";
 import { countActiveFilters } from "@/lib/search";
 import {
   EMPTY_FILTERS,
+  MAX_LOCATIONS,
   MAX_SPECIALTIES,
   PAYMENT_METHOD_LABELS,
   type PaymentMethod,
@@ -78,6 +85,17 @@ export function FiltersPanel({
 
   const activeCount = countActiveFilters(filters);
 
+  function toggleLocation(id: string) {
+    const selected = filters.locationIds;
+    if (selected.includes(id)) {
+      onChange({ ...filters, locationIds: selected.filter((x) => x !== id) });
+      return;
+    }
+    // El tope del plan de búsqueda: más zonas no acotan, ensucian (BR-014).
+    if (selected.length >= MAX_LOCATIONS) return;
+    onChange({ ...filters, locationIds: [...selected, id] });
+  }
+
   function toggleSpecialty(id: string) {
     const selected = filters.specialtyIds;
     if (selected.includes(id)) {
@@ -132,7 +150,16 @@ export function FiltersPanel({
         </header>
 
         <div className="flex-1 overflow-auto px-4 py-4">
-          <Group title="Ubicación">
+          {/*
+            La ubicación se elige acá: antes este grupo sólo mostraba lo ya
+            seleccionado y remitía al buscador —"Elegí zonas desde el
+            buscador"—, pero ese selector se mudó a este panel y el texto
+            mandaba a un lugar que ya no existe.
+
+            Departamento y dentro sus localidades, que es como está armado el
+            catálogo geográfico (BR-014).
+          */}
+          <Group title={`Ubicación · máximo ${MAX_LOCATIONS}`}>
             <label className="flex items-center gap-3 rounded-input border border-line bg-white p-3">
               <input
                 type="checkbox"
@@ -155,36 +182,100 @@ export function FiltersPanel({
 
             {filters.useMyLocation ? (
               <p className="mt-2 text-[13px] leading-relaxed text-ink-soft">
-                Estamos usando tu ubicación aproximada. Desactivá esta opción para
-                elegir zonas manualmente.
+                Estamos usando tu ubicación aproximada. Desactivá esta opción
+                para elegir zonas manualmente.
               </p>
-            ) : filters.locationIds.length > 0 ? (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {filters.locationIds.map((id) => (
-                  <span
-                    key={id}
-                    className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-2.5 pr-1.5 text-[12.5px] font-semibold text-brand-800"
-                  >
-                    {locationLabelById(id)}
-                    <button
-                      type="button"
-                      aria-label={`Quitar ${locationLabelById(id)}`}
-                      onClick={() =>
-                        onChange({
-                          ...filters,
-                          locationIds: filters.locationIds.filter((x) => x !== id),
-                        })
-                      }
-                    >
-                      <Icon name="close" className="text-[15px] text-[#5B6B87]" />
-                    </button>
-                  </span>
-                ))}
-              </div>
             ) : (
-              <p className="mt-2 text-[13px] text-ink-soft">
-                Elegí zonas desde el buscador para acotar los resultados.
-              </p>
+              <>
+                {filters.locationIds.length > 0 ? (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {filters.locationIds.map((id) => (
+                      <span
+                        key={id}
+                        className="flex items-center gap-1.5 rounded-full bg-brand-100 py-1 pl-2.5 pr-1.5 text-[12.5px] font-semibold text-brand-800"
+                      >
+                        {locationLabelById(id)}
+                        <button
+                          type="button"
+                          aria-label={`Quitar ${locationLabelById(id)}`}
+                          onClick={() =>
+                            onChange({
+                              ...filters,
+                              locationIds: filters.locationIds.filter(
+                                (x) => x !== id,
+                              ),
+                            })
+                          }
+                        >
+                          <Icon
+                            name="close"
+                            className="text-[15px] text-[#5B6B87]"
+                          />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                <div className="mt-2 flex flex-col gap-2">
+                  {/*
+                    Todo el país es una opción explícita y no el vacío: quien
+                    trabaja a distancia atiende en cualquier lado, y eso se
+                    elige, no se deduce de no haber elegido nada.
+                  */}
+                  <label className="flex cursor-pointer items-center gap-2.5 rounded-input border border-line p-2.5 text-[14px] font-semibold text-ink hover:bg-surface-sunken">
+                    <input
+                      type="checkbox"
+                      checked={filters.locationIds.includes(COUNTRY_ID)}
+                      onChange={() => toggleLocation(COUNTRY_ID)}
+                      className="h-4 w-4 accent-brand-800"
+                    />
+                    <Icon name="public" className="text-[18px] text-brand-800" />
+                    {COUNTRY_LABEL} · todo el país
+                  </label>
+
+                  {listDepartments().map((department) => (
+                    <details
+                      key={department.id}
+                      className="rounded-input border border-line"
+                    >
+                      <summary className="flex cursor-pointer items-center gap-2.5 p-2.5 text-[14px] font-semibold text-ink">
+                        <Icon
+                          name="location_on"
+                          className="text-[18px] text-brand-800"
+                        />
+                        {department.name}
+                      </summary>
+                      <div className="flex flex-col gap-0.5 border-t border-line-soft p-1.5">
+                        <label className="flex cursor-pointer items-center gap-2.5 rounded-[7px] p-2 text-[13.5px] font-semibold text-ink-muted hover:bg-surface-sunken">
+                          <input
+                            type="checkbox"
+                            checked={filters.locationIds.includes(department.id)}
+                            onChange={() => toggleLocation(department.id)}
+                            className="h-4 w-4 accent-brand-800"
+                          />
+                          Todo {department.name}
+                        </label>
+
+                        {listLocalities(department.id).map((locality) => (
+                          <label
+                            key={locality.id}
+                            className="flex cursor-pointer items-center gap-2.5 rounded-[7px] p-2 text-[13.5px] text-ink-muted hover:bg-surface-sunken"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={filters.locationIds.includes(locality.id)}
+                              onChange={() => toggleLocation(locality.id)}
+                              className="h-4 w-4 accent-brand-800"
+                            />
+                            {locality.name}
+                          </label>
+                        ))}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </>
             )}
           </Group>
 
@@ -213,9 +304,19 @@ export function FiltersPanel({
             </div>
           </Group>
 
-          <Group title={`Servicios · máximo ${MAX_SPECIALTIES}`}>
+          {/*
+            "Rubro" y "Especialidad" son los nombres del dominio (BR-010) y los
+            que usa el resto del sitio: el asistente, el perfil y el menú. Este
+            grupo decía "Servicios", que acá es otra cosa —lo que el proveedor
+            ofrece dentro de una especialidad— y confundía dos niveles.
+
+            Se listan todos los rubros y no los primeros seis: recortar la
+            lista escondía catorce sin decirlo, y no había forma de llegar a
+            ellos desde ningún otro lado.
+          */}
+          <Group title={`Rubros y especialidades · máximo ${MAX_SPECIALTIES}`}>
             <div className="flex flex-col gap-2">
-              {SERVICE_SECTORS.slice(0, 6).map((category) => (
+              {SERVICE_SECTORS.map((category) => (
                 <details
                   key={category.id}
                   className="rounded-input border border-line"

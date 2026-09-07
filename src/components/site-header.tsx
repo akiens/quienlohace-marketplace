@@ -6,26 +6,29 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { logout } from "@/app/actions/auth";
-import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
 import { Icon } from "@/components/ui";
 
+/**
+ * Lo que se usa seguido, siempre a la vista y con su icono.
+ *
+ * Son tres porque son las tres cosas que alguien viene a hacer: volver al
+ * principio, buscar un profesional o escribirnos. Lo demás es material de
+ * consulta y vive en "Más".
+ */
 const NAV_LINKS = [
-  { label: "Destacados", href: "/destacados" },
-  { label: "Cómo funciona", href: "/como-funciona" },
-];
-
-const MORE_LINKS = [
-  { label: "Sobre nosotros", href: "/sobre-nosotros", icon: "info" },
+  { label: "Inicio", href: "/", icon: "home" },
+  { label: "Buscar", href: "/buscar", icon: "search" },
   { label: "Contacto", href: "/contacto", icon: "mail" },
-  { label: "Preguntas frecuentes", href: "/faq", icon: "quiz" },
 ];
 
-/** Tintes rotativos para los iconos de categoría del mega-menú. */
-const TINTS = [
-  "bg-brand-100 text-brand-800",
-  "bg-accent-soft text-[#B98A05]",
-  "bg-[#EDF2F7] text-brand-700",
-  "bg-[#FDF4E3] text-[#A97F0A]",
+/**
+ * Lo que se lee una vez y no se vuelve a abrir: se agrupa tras "Más" para no
+ * gastar el ancho del encabezado en enlaces que casi nadie toca dos veces.
+ */
+const MORE_LINKS = [
+  { label: "Cómo funciona", href: "/como-funciona", icon: "help" },
+  { label: "Sobre nosotros", href: "/sobre-nosotros", icon: "info" },
+  { label: "Preguntas frecuentes", href: "/faq", icon: "quiz" },
 ];
 
 export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
@@ -36,10 +39,8 @@ export function SiteHeader({ signedIn = false }: { signedIn?: boolean }) {
 }
 
 function Header({ signedIn }: { signedIn: boolean }) {
-  const [megaOpen, setMegaOpen] = useState(false);
-  const [moreOpen, setMoreOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [hoveredCategory, setHoveredCategory] = useState(0);
+  const [moreOpen, setMoreOpen] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
@@ -47,26 +48,24 @@ function Header({ signedIn }: { signedIn: boolean }) {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key !== "Escape") return;
-      setMegaOpen(false);
-      setMoreOpen(false);
       setDrawerOpen(false);
+      setMoreOpen(false);
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  // Un clic fuera del header cierra los desplegables de escritorio.
+  // Un clic fuera del encabezado cierra el desplegable "Más".
   useEffect(() => {
-    if (!megaOpen && !moreOpen) return;
+    if (!moreOpen) return;
 
     function onPointerDown(event: PointerEvent) {
       if (headerRef.current?.contains(event.target as Node)) return;
-      setMegaOpen(false);
       setMoreOpen(false);
     }
     document.addEventListener("pointerdown", onPointerDown);
     return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [megaOpen, moreOpen]);
+  }, [moreOpen]);
 
   // Bloquea el scroll del fondo mientras el drawer está abierto.
   useEffect(() => {
@@ -77,8 +76,6 @@ function Header({ signedIn }: { signedIn: boolean }) {
       document.body.style.overflow = previous;
     };
   }, [drawerOpen]);
-
-  const activeCategory = SERVICE_SECTORS[hoveredCategory] ?? SERVICE_SECTORS[0]!;
 
   return (
     <header
@@ -115,60 +112,95 @@ function Header({ signedIn }: { signedIn: boolean }) {
 
         {/* Navegación de escritorio */}
         <nav className="hidden flex-1 items-center gap-0.5 lg:flex">
-          <button
-            type="button"
-            onClick={() => {
-              setMegaOpen((open) => !open);
-              setMoreOpen(false);
-            }}
-            aria-expanded={megaOpen}
-            className={`flex h-[38px] items-center gap-1.5 rounded-lg px-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-white/10 ${
-              megaOpen ? "bg-white/[.14]" : ""
-            }`}
-          >
-            Categorías
-            <Icon name="expand_more" className="text-[18px] text-[#9FB1CE]" />
-          </button>
+          {NAV_LINKS.map((link) => {
+            /*
+             * "Inicio" sólo está activo en la portada; el resto también con sus
+             * subrutas. Sin esa distinción `/` marcaría activo en todo el
+             * sitio, porque toda dirección empieza con la barra.
+             */
+            const active =
+              link.href === "/"
+                ? pathname === "/"
+                : pathname === link.href || pathname.startsWith(`${link.href}/`);
 
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex h-[38px] items-center whitespace-nowrap rounded-lg px-3 text-[14.5px] transition-colors hover:bg-white/10 ${
-                pathname === link.href
-                  ? "font-bold text-accent"
-                  : "font-medium text-[#D9E1EF]"
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                /*
+                 * Seleccionado se ve como el hover —el mismo fondo claro—, más
+                 * el texto en blanco pleno. Antes el activo sólo cambiaba de
+                 * color de letra y se perdía contra el degradado del encabezado.
+                 */
+                className={`flex h-[38px] items-center gap-1.5 whitespace-nowrap rounded-lg px-3 text-[14.5px] transition-colors hover:bg-white/10 ${
+                  active
+                    ? "bg-white/10 font-semibold text-white"
+                    : "font-medium text-[#D9E1EF]"
+                }`}
+              >
+                <Icon
+                  name={link.icon}
+                  className={`text-[18px] ${active ? "text-accent" : "text-[#9FB1CE]"}`}
+                />
+                {link.label}
+              </Link>
+            );
+          })}
 
+          {/*
+            "Más" agrupa lo institucional. Se marca activo cuando la página
+            abierta es una de las suyas: si no, estando en "Cómo funciona" el
+            encabezado no señalaría nada y parecería que no se navegó.
+          */}
           <div className="relative">
-            <button
-              type="button"
-              onClick={() => {
-                setMoreOpen((open) => !open);
-                setMegaOpen(false);
-              }}
-              aria-expanded={moreOpen}
-              className={`flex h-[38px] items-center gap-1 rounded-lg px-3 text-[14.5px] font-medium text-[#D9E1EF] transition-colors hover:bg-white/10 ${
-                moreOpen ? "bg-white/[.14]" : ""
-              }`}
-            >
-              Más
-              <Icon name="expand_more" className="text-[18px] text-[#9FB1CE]" />
-            </button>
+            {(() => {
+              const moreActive = MORE_LINKS.some(
+                (link) =>
+                  pathname === link.href || pathname.startsWith(`${link.href}/`),
+              );
+
+              return (
+                <button
+                  type="button"
+                  onClick={() => setMoreOpen((open) => !open)}
+                  aria-expanded={moreOpen}
+                  className={`flex h-[38px] items-center gap-1.5 rounded-lg px-3 text-[14.5px] transition-colors hover:bg-white/10 ${
+                    moreOpen || moreActive
+                      ? "bg-white/10 font-semibold text-white"
+                      : "font-medium text-[#D9E1EF]"
+                  }`}
+                >
+                  <Icon
+                    name="more_horiz"
+                    className={`text-[18px] ${moreActive ? "text-accent" : "text-[#9FB1CE]"}`}
+                  />
+                  Más
+                  <Icon
+                    name="expand_more"
+                    className="text-[18px] text-[#9FB1CE]"
+                  />
+                </button>
+              );
+            })()}
 
             {moreOpen ? (
-              <div className="absolute left-0 top-11 z-[70] min-w-[216px] rounded-xl border border-line bg-white p-1.5 shadow-mega">
+              <div className="absolute left-0 top-11 z-[70] min-w-[232px] rounded-xl border border-line bg-white p-1.5 shadow-mega">
                 {MORE_LINKS.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="flex items-center gap-2.5 whitespace-nowrap rounded-lg p-2.5 text-[14px] font-medium text-[#344054] hover:bg-surface-sunken"
+                    aria-current={pathname === link.href ? "page" : undefined}
+                    className={`flex items-center gap-2.5 whitespace-nowrap rounded-lg p-2.5 text-[14px] font-medium hover:bg-surface-sunken ${
+                      pathname === link.href
+                        ? "bg-surface-sunken text-brand-800"
+                        : "text-[#344054]"
+                    }`}
                   >
-                    <Icon name={link.icon} className="text-[19px] text-brand-800" />
+                    <Icon
+                      name={link.icon}
+                      className="text-[19px] text-brand-800"
+                    />
                     {link.label}
                   </Link>
                 ))}
@@ -248,135 +280,12 @@ function Header({ signedIn }: { signedIn: boolean }) {
         </div>
       </div>
 
-      {megaOpen ? (
-        <MegaMenu
-          activeIndex={hoveredCategory}
-          onHover={setHoveredCategory}
-          activeCategory={activeCategory}
-          onClose={() => setMegaOpen(false)}
-        />
-      ) : null}
-
       {drawerOpen ? (
         <MobileDrawer signedIn={signedIn} onClose={() => setDrawerOpen(false)} />
       ) : null}
     </header>
   );
 }
-
-function MegaMenu({
-  activeIndex,
-  onHover,
-  activeCategory,
-  onClose,
-}: {
-  activeIndex: number;
-  onHover: (index: number) => void;
-  activeCategory: (typeof SERVICE_SECTORS)[number];
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <div className="absolute inset-x-0 top-full hidden border-b border-line bg-white shadow-mega lg:block">
-        <div className="shell grid grid-cols-[340px_1fr] gap-6 pb-[22px] pt-[18px]">
-          <div className="max-h-[430px] overflow-auto border-r border-line-soft pr-2">
-            <div className="flex gap-2 px-1 pb-2.5">
-              <Link
-                href="/buscar"
-                className="flex h-[34px] flex-1 items-center justify-center rounded-lg border border-line-strong bg-white text-[13.5px] font-semibold text-ink hover:bg-surface-muted"
-              >
-                Todas
-              </Link>
-              <Link
-                href="/destacados"
-                className="flex h-[34px] flex-1 items-center justify-center gap-1.5 rounded-lg border border-accent bg-accent-soft text-[13.5px] font-semibold text-accent-ink hover:bg-[#FDF1CE]"
-              >
-                <Icon name="star" filled className="text-[16px] text-[#E0A800]" />
-                Destacados
-              </Link>
-            </div>
-
-            {SERVICE_SECTORS.map((category, index) => (
-              <Link
-                key={category.id}
-                href={`/categorias/${category.slug}`}
-                onMouseEnter={() => onHover(index)}
-                onFocus={() => onHover(index)}
-                className={`flex items-center gap-2.5 rounded-[9px] p-2.5 ${
-                  index === activeIndex ? "bg-surface-sunken" : ""
-                }`}
-              >
-                <span
-                  className={`flex h-8 w-8 flex-none items-center justify-center rounded-[9px] ${
-                    TINTS[index % TINTS.length]
-                  }`}
-                >
-                  <Icon name={category.icon} className="text-[19px]" />
-                </span>
-                <span
-                  className={`text-[14px] leading-tight text-ink ${
-                    index === activeIndex ? "font-bold" : "font-medium"
-                  }`}
-                >
-                  {category.short}
-                </span>
-                <Icon
-                  name="chevron_right"
-                  className="ml-auto text-[18px] text-ink-faint"
-                />
-              </Link>
-            ))}
-          </div>
-
-          <div className="flex flex-col gap-3.5 pt-0.5">
-            <div className="flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-[11px] bg-brand-900">
-                <Icon
-                  name={activeCategory.icon}
-                  className="text-[22px] text-accent"
-                />
-              </span>
-              <div className="flex flex-col gap-0.5">
-                <p className="text-[17px] font-bold tracking-[-.2px] text-ink">
-                  {activeCategory.name}
-                </p>
-                <p className="text-[13px] text-ink-soft">
-                  {listSpecialties(activeCategory.id).length} especialidades
-                </p>
-              </div>
-              <Link
-                href={`/categorias/${activeCategory.slug}`}
-                className="ml-auto flex h-9 items-center rounded-[9px] bg-brand-100 px-3.5 text-[13.5px] font-semibold text-brand-800 hover:bg-[#E3E8F1]"
-              >
-                Ver categoría →
-              </Link>
-            </div>
-
-            <div className="h-[330px] [column-fill:auto] [column-gap:24px] [column-width:220px]">
-              {listSpecialties(activeCategory.id).map((sub) => (
-                <Link
-                  key={sub.id}
-                  href={`/categorias/${activeCategory.slug}/${sub.slug}`}
-                  className="block break-inside-avoid rounded-[7px] px-2 py-[7px] text-[14px] text-ink-muted hover:bg-surface-sunken hover:text-brand-800"
-                >
-                  {sub.name}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-      <button
-        type="button"
-        aria-label="Cerrar menú de categorías"
-        onClick={onClose}
-        className="fixed inset-0 top-[88px] -z-10 hidden cursor-default bg-ink/[.28] lg:block"
-      />
-    </>
-  );
-}
-
-type DrawerLevel = "root" | "categories" | "subcategories";
 
 function MobileDrawer({
   signedIn,
@@ -385,12 +294,11 @@ function MobileDrawer({
   signedIn: boolean;
   onClose: () => void;
 }) {
-  const [level, setLevel] = useState<DrawerLevel>("root");
-  const [categoryIndex, setCategoryIndex] = useState(0);
-  const category = SERVICE_SECTORS[categoryIndex] ?? SERVICE_SECTORS[0]!;
-
-  const title =
-    level === "root" ? "Menú" : level === "categories" ? "Categorías" : category.name;
+  /*
+   * Un solo nivel: el menú ya no navega el catálogo de rubros. Eso se explora
+   * desde el buscador, que está en todas las pantallas.
+   */
+  const title = "Menú";
 
   return (
     <div className="lg:hidden">
@@ -419,24 +327,18 @@ function MobileDrawer({
         </div>
 
         <div className="flex-1 overflow-auto p-3 pb-6">
-          {level === "root" ? (
-            <nav className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                onClick={() => setLevel("categories")}
-                className="flex items-center gap-2.5 rounded-[10px] p-3 text-left text-[15px] font-semibold text-ink hover:bg-surface-sunken"
-              >
-                <Icon name="category" className="text-[20px] text-brand-800" />
-                Categorías
-                <Icon
-                  name="chevron_right"
-                  className="ml-auto text-[20px] text-ink-faint"
-                />
-              </button>
-
+          <nav className="flex flex-col gap-0.5">
+              {/*
+                Las mismas entradas que en escritorio, para que el menú no
+                dependa del tamaño de la pantalla, más la del panel propio.
+              */}
               {[
-                { label: "Destacados", href: "/destacados", icon: "star" },
-                { label: "Cómo funciona", href: "/como-funciona", icon: "help_outline" },
+                ...NAV_LINKS,
+                /*
+                 * En el teléfono no hay desplegable "Más": el menú ya es una
+                 * lista vertical con lugar de sobra, y esconder tres enlaces
+                 * tras otro toque no ahorraría nada.
+                 */
                 ...MORE_LINKS,
                 signedIn
                   ? { label: "Mi perfil", href: "/dashboard", icon: "account_circle" }
@@ -463,78 +365,7 @@ function MobileDrawer({
                   </button>
                 </form>
               ) : null}
-            </nav>
-          ) : null}
-
-          {level === "categories" ? (
-            <div className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                onClick={() => setLevel("root")}
-                className="flex items-center gap-2 p-3 text-left text-[14px] font-semibold text-ink-soft"
-              >
-                <Icon name="arrow_back" className="text-[20px]" />
-                Menú
-              </button>
-              {SERVICE_SECTORS.map((item, index) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => {
-                    setCategoryIndex(index);
-                    setLevel("subcategories");
-                  }}
-                  className="flex items-center gap-2.5 rounded-[10px] p-3 text-left hover:bg-surface-sunken"
-                >
-                  <span
-                    className={`flex h-8 w-8 flex-none items-center justify-center rounded-[9px] ${
-                      TINTS[index % TINTS.length]
-                    }`}
-                  >
-                    <Icon name={item.icon} className="text-[19px]" />
-                  </span>
-                  <span className="text-[14.5px] font-semibold leading-tight text-ink">
-                    {item.short}
-                  </span>
-                  <Icon
-                    name="chevron_right"
-                    className="ml-auto text-[20px] text-ink-faint"
-                  />
-                </button>
-              ))}
-            </div>
-          ) : null}
-
-          {level === "subcategories" ? (
-            <div className="flex flex-col gap-0.5">
-              <button
-                type="button"
-                onClick={() => setLevel("categories")}
-                className="flex items-center gap-2 p-3 text-left text-[14px] font-semibold text-ink-soft"
-              >
-                <Icon name="arrow_back" className="text-[20px]" />
-                Categorías
-              </button>
-              <Link
-                href={`/categorias/${category.slug}`}
-                className="flex items-center gap-2.5 rounded-[10px] bg-surface-sunken p-3"
-              >
-                <Icon name={category.icon} className="text-[20px] text-brand-800" />
-                <span className="text-[14.5px] font-bold text-ink">
-                  Todas · {category.short}
-                </span>
-              </Link>
-              {listSpecialties(category.id).map((sub) => (
-                <Link
-                  key={sub.id}
-                  href={`/categorias/${category.slug}/${sub.slug}`}
-                  className="rounded-[10px] p-3 text-[14.5px] text-ink-muted hover:bg-surface-sunken"
-                >
-                  {sub.name}
-                </Link>
-              ))}
-            </div>
-          ) : null}
+          </nav>
         </div>
       </div>
     </div>
