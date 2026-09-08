@@ -147,14 +147,42 @@ async function main(): Promise<void> {
     profileSchema.safeParse({
       ...VALID_PROFILE,
       serviceModes: ["at_business"],
-      locations: [{ locationId: "montevideo", isPrimary: true }],
+      locations: [
+        {
+          locationId: "montevideo-montevideo",
+          address: "18 de Julio 1234",
+          isPrimary: true,
+        },
+      ],
     }).success,
   );
   check(
     "BR-015 — el país no sirve como ubicación física",
     !profileSchema.safeParse({
       ...VALID_PROFILE,
-      locations: [{ locationId: "uruguay", isPrimary: true }],
+      locations: [
+        { locationId: "uruguay", address: "18 de Julio 1234", isPrimary: true },
+      ],
+    }).success,
+  );
+  check(
+    "BR-015 — un departamento entero no es una ubicación física",
+    !profileSchema.safeParse({
+      ...VALID_PROFILE,
+      locations: [
+        {
+          locationId: "montevideo",
+          address: "18 de Julio 1234",
+          isPrimary: true,
+        },
+      ],
+    }).success,
+  );
+  check(
+    "BR-015 — el local exige dirección",
+    !profileSchema.safeParse({
+      ...VALID_PROFILE,
+      locations: [{ locationId: "montevideo-montevideo", isPrimary: true }],
     }).success,
   );
   check(
@@ -162,8 +190,16 @@ async function main(): Promise<void> {
     !profileSchema.safeParse({
       ...VALID_PROFILE,
       locations: [
-        { locationId: "montevideo", isPrimary: true },
-        { locationId: "canelones", isPrimary: true },
+        {
+          locationId: "montevideo-montevideo",
+          address: "18 de Julio 1234",
+          isPrimary: true,
+        },
+        {
+          locationId: "canelones-las-piedras",
+          address: "Artigas 500",
+          isPrimary: true,
+        },
       ],
     }).success,
   );

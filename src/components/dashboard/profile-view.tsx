@@ -229,10 +229,18 @@ export function ProfileView({
           */}
           <Row label="Dónde estás">
             {profile.locations.length > 0 ? (
+              /*
+                La dirección va con la localidad: ahora es obligatoria (BR-015)
+                y es el dato que sirve para llegar. Mostrar sólo "Las Piedras"
+                escondía justo la parte que se acababa de pedir.
+              */
               <Chips
-                values={profile.locations.map((item) =>
-                  locationLabelById(item.locationId),
-                )}
+                values={profile.locations.map((item) => ({
+                  label: item.address ?? locationLabelById(item.locationId),
+                  context: item.address
+                    ? locationLabelById(item.locationId)
+                    : undefined,
+                }))}
               />
             ) : (
               <span className="text-[14px] text-ink-soft">

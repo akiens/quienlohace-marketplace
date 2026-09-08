@@ -39,7 +39,7 @@ import {
 } from "@/data/locations";
 import { fitToPlan } from "@/domain/plan-fit";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
-import { Button, Icon } from "@/components/ui";
+import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
 import {
   SearchSelect,
   type SearchOption,
@@ -63,7 +63,7 @@ import {
   GalleryField,
   SingleImageField,
 } from "@/components/dashboard/image-uploader";
-import { LocationPicker } from "@/components/dashboard/location-picker";
+import { LocalityPicker } from "@/components/dashboard/locality-picker";
 import {
   PAYMENT_METHOD_LABELS,
   SERVICE_MODE_LABELS,
@@ -371,8 +371,19 @@ function ProfileFormFields(props: {
       })) ??
       [],
   );
-  /** Lo elegido en el selector de local, a la espera de confirmarse. */
-  const [pendingLocation, setPendingLocation] = useState("");
+
+  /*
+   * El local que se está componiendo, todavía sin agregar.
+   *
+   * Localidad y dirección se piden juntas y recién entonces se agrega: antes
+   * elegir la localidad creaba la fila en el acto y la dirección se llenaba
+   * dentro de una tarjeta ya existente, así que la lista mostraba locales a
+   * medio hacer —y uno sin dirección es un local que no se puede publicar—.
+   */
+  const [newLocality, setNewLocality] = useState("");
+  const [newAddress, setNewAddress] = useState("");
+  const [newIsPrimary, setNewIsPrimary] = useState(false);
+
   const [serviceAreaIds, setServiceAreaIds] = useState<string[]>(
     draft?.serviceAreaIds ?? profile?.serviceAreaIds ?? [],
   );
@@ -1645,16 +1656,22 @@ function ProfileFormFields(props: {
             <Field
               label="Dónde atendés"
               error={errors.locations}
-              hint="La dirección de tu local o consultorio. Uruguay entero no sirve acá: tiene que decir dónde estás."
+              hint="La localidad y la dirección de tu local o consultorio. Tiene que decir dónde estás: ni el país ni un departamento entero alcanzan."
               required
               counter={`${locations.length}/${maxLocations ?? "∞"}`}
               group
             >
               <div className="flex flex-col gap-2.5">
+                {/*
+                  Lo ya agregado. Cada local es una fila: arriba dónde queda
+                  —localidad y departamento— y debajo la dirección, que es el
+                  dato con el que se llega. La cruz para quitarlo va a la
+                  derecha, como en el resto de las listas del formulario.
+                */}
                 {locations.map((item, index) => (
                   <div
                     key={`${item.locationId}-${index}`}
-                    className="flex flex-col gap-2 rounded-input border border-line p-3"
+                    className="flex items-start gap-2 rounded-input border border-line bg-surface-muted p-3"
                   >
                     <input type="hidden" name="locationId" value={item.locationId} />
                     <input
@@ -1662,81 +1679,167 @@ function ProfileFormFields(props: {
                       name="locationName"
                       value={item.name ?? ""}
                     />
+                    <input
+                      type="hidden"
+                      name="locationAddress"
+                      value={item.address ?? ""}
+                    />
 
-                    <div className="flex items-center justify-between gap-2">
+                    <Icon
+                      name="storefront"
+                      className="mt-0.5 flex-none text-[19px] text-brand-800"
+                    />
+
+                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                       <span className="text-[14px] font-semibold text-ink">
                         {locationLabelById(item.locationId)}
                       </span>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setLocations(locations.filter((_, i) => i !== index))
-                        }
-                        aria-label={`Quitar ${locationLabelById(item.locationId)}`}
-                        className="-mr-1 flex h-10 w-10 flex-none items-center justify-center rounded hover:bg-surface-sunken sm:mr-0 sm:h-8 sm:w-8"
-                      >
-                        <Icon name="close" className="text-[19px] sm:text-[17px]" />
-                      </button>
+                      <span className="text-[13px] text-ink-soft">
+                        {item.address}
+                      </span>
+
+                      {/*
+                        BR-015: una sola principal. Con un solo local no se
+                        pregunta —es la principal por descarte— y el radio
+                        suelto sólo invitaba a un clic que no cambia nada.
+                      */}
+                      {locations.length > 1 ? (
+                        <label className="mt-1 flex min-h-[36px] cursor-pointer items-center gap-2 text-[13px] text-ink-muted sm:min-h-0">
+                          <input
+                            type="radio"
+                            name="primaryLocation"
+                            value={index}
+                            checked={item.isPrimary}
+                            onChange={() =>
+                              setLocations(
+                                locations.map((row, i) => ({
+                                  ...row,
+                                  isPrimary: i === index,
+                                })),
+                              )
+                            }
+                            className="h-4 w-4 flex-none accent-brand-800"
+                          />
+                          Es mi ubicación principal
+                        </label>
+                      ) : (
+                        <input
+                          type="hidden"
+                          name="primaryLocation"
+                          value={index}
+                        />
+                      )}
                     </div>
 
-                    <input
-                      name="locationAddress"
-                      value={item.address ?? ""}
-                      onChange={(event) => {
-                        const next = [...locations];
-                        next[index] = { ...item, address: event.target.value };
-                        setLocations(next);
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const rest = locations.filter((_, i) => i !== index);
+                        /*
+                         * Si se quitó la principal, la primera que queda toma
+                         * el lugar: sin esto el perfil se quedaba sin ninguna
+                         * y no se podía guardar sin volver a elegirla.
+                         */
+                        setLocations(
+                          rest.some((row) => row.isPrimary)
+                            ? rest
+                            : rest.map((row, i) => ({
+                                ...row,
+                                isPrimary: i === 0,
+                              })),
+                        );
                       }}
-                      maxLength={160}
-                      placeholder="Dirección (opcional)"
-                      className={inputClass()}
-                    />
-
-                    {/* BR-015: sólo una principal. */}
-                    <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-[14px] text-ink-muted sm:min-h-0 sm:gap-2 sm:text-[13px]">
-                      <input
-                        type="radio"
-                        name="primaryLocation"
-                        value={index}
-                        checked={item.isPrimary}
-                        onChange={() =>
-                          setLocations(
-                            locations.map((row, i) => ({
-                              ...row,
-                              isPrimary: i === index,
-                            })),
-                          )
-                        }
-                        className="h-5 w-5 flex-none accent-brand-800 sm:h-4 sm:w-4"
-                      />
-                      Es mi ubicación principal
-                    </label>
+                      aria-label={`Quitar ${locationLabelById(item.locationId)}`}
+                      className="-mr-1 flex h-10 w-10 flex-none items-center justify-center rounded hover:bg-white sm:mr-0 sm:h-8 sm:w-8"
+                    >
+                      <Icon name="close" className="text-[19px] sm:text-[17px]" />
+                    </button>
                   </div>
                 ))}
 
+                {/*
+                  El local que se está armando: localidad, dirección y —cuando
+                  ya hay otro— si es la principal. Los tres campos están a la
+                  vista desde el principio y nada se agrega hasta confirmar,
+                  así la lista de arriba sólo tiene locales completos.
+                */}
                 {maxLocations === null || locations.length < maxLocations ? (
-                  <LocationPicker
-                    value={pendingLocation}
-                    allowCountry={false}
-                    onChange={(id) => {
-                      if (!id || id === COUNTRY_ID) return;
-                      if (locations.some((item) => item.locationId === id)) {
-                        return;
-                      }
-                      setLocations([
-                        ...locations,
-                        {
-                          locationId: id,
-                          name: null,
-                          address: null,
-                          // La primera que se agrega es la principal.
-                          isPrimary: locations.length === 0,
-                        },
-                      ]);
-                      setPendingLocation("");
-                    }}
-                    addMode
-                  />
+                  <div className="flex flex-col gap-2 rounded-input border border-dashed border-line-strong p-3">
+                    <LocalityPicker
+                      value={newLocality}
+                      onChange={setNewLocality}
+                    />
+
+                    <input
+                      value={newAddress}
+                      onChange={(event) => setNewAddress(event.target.value)}
+                      maxLength={160}
+                      placeholder="Calle y número"
+                      aria-label="Dirección exacta"
+                      className={inputClass()}
+                    />
+
+                    {/*
+                      Marcarlo como principal sólo tiene sentido si ya hay otro
+                      con el que competir: el primero lo es siempre.
+                    */}
+                    {locations.length > 0 ? (
+                      <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-[13px] text-ink-muted sm:min-h-0">
+                        <input
+                          type="checkbox"
+                          checked={newIsPrimary}
+                          onChange={(event) =>
+                            setNewIsPrimary(event.target.checked)
+                          }
+                          className="h-4 w-4 flex-none accent-brand-800"
+                        />
+                        Es mi ubicación principal
+                      </label>
+                    ) : null}
+
+                    <button
+                      type="button"
+                      /*
+                       * Sin localidad o sin dirección no hay local que agregar:
+                       * el botón lo dice apagándose, en vez de aceptar y
+                       * fallar después contra el esquema (BR-015).
+                       */
+                      disabled={!newLocality || !newAddress.trim()}
+                      onClick={() => {
+                        if (!newLocality || !newAddress.trim()) return;
+                        if (
+                          locations.some(
+                            (item) => item.locationId === newLocality,
+                          )
+                        ) {
+                          return;
+                        }
+
+                        // El primero es principal sí o sí; después, lo que se pida.
+                        const primary = locations.length === 0 || newIsPrimary;
+                        setLocations([
+                          ...locations.map((row) => ({
+                            ...row,
+                            isPrimary: primary ? false : row.isPrimary,
+                          })),
+                          {
+                            locationId: newLocality,
+                            name: null,
+                            address: newAddress.trim(),
+                            isPrimary: primary,
+                          },
+                        ]);
+
+                        setNewLocality("");
+                        setNewAddress("");
+                        setNewIsPrimary(false);
+                      }}
+                      className={`flex h-11 items-center justify-center gap-1.5 rounded-input px-3.5 text-[14px] font-semibold disabled:opacity-45 sm:h-9 sm:self-start sm:text-[13.5px] ${SECONDARY_SURFACE}`}
+                    >
+                      <Icon name="add" className="text-[18px]" />
+                      Agregar dirección de local
+                    </button>
+                  </div>
                 ) : (
                   <PlanHint
                     planName={plan.name}
@@ -1793,8 +1896,16 @@ function ProfileFormFields(props: {
                   <input type="hidden" name="serviceAreaIds" value={COUNTRY_ID} />
                 ) : null}
 
-                <LocationPicker
+                {/*
+                  El mismo desplegable del local, pero acá cualquier nivel es
+                  una respuesta (`granularity="any"`): una zona de trabajo
+                  puede ser todo el país o un departamento entero, y no hay por
+                  qué bajar hasta una localidad para decirlo (BR-016).
+                */}
+                <LocalityPicker
                   value=""
+                  granularity="any"
+                  placeholder="Agregá una zona"
                   onChange={(id) => {
                     if (!id) return;
                     /*
@@ -1815,7 +1926,6 @@ function ProfileFormFields(props: {
                       normalizeServiceAreas([...serviceAreaIds, id]),
                     );
                   }}
-                  addMode
                 />
 
                 {duplicateArea ? (

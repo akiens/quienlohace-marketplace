@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { COUNTRY_ID, locationExists } from "@/data/locations";
+import { getLocation, locationExists } from "@/data/locations";
 import {
   MAX_SCHEDULE_ENTRIES,
   MAX_SCHEDULE_LENGTH,
@@ -264,16 +264,29 @@ export const profileSchema = z
       .min(1, "Elegí al menos una zona donde trabajás.")
       .max(ABSOLUTE_MAX_ITEMS, "Demasiadas zonas."),
 
-    /* BR-015: el local. Uruguay no sirve como dirección. */
+    /*
+     * BR-015: el local, que es una dirección concreta.
+     *
+     * Tiene que ser una localidad: ni el país ni un departamento entero dicen
+     * dónde atiende alguien, y con "todo Canelones" nadie puede llegar. Antes
+     * sólo se rechazaba el país, así que un departamento pasaba.
+     *
+     * La dirección dejó de ser opcional por lo mismo: una localidad sola
+     * ubica el pueblo, no la puerta.
+     */
     locations: z
       .array(
         z.object({
           locationId: locationId.refine(
-            (id) => id !== COUNTRY_ID,
-            "Elegí un departamento o una localidad.",
+            (id) => getLocation(id)?.type === "locality",
+            "Elegí la localidad de tu local.",
           ),
           name: z.string().trim().max(80).nullable().default(null),
-          address: z.string().trim().max(160).nullable().default(null),
+          address: z
+            .string()
+            .trim()
+            .min(1, "Escribí la dirección de tu local.")
+            .max(160),
           isPrimary: z.coerce.boolean().default(false),
         }),
       )

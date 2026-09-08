@@ -129,7 +129,9 @@ function parseLocations(formData: FormData) {
     .map((locationId, index) => ({
       locationId: locationId.trim(),
       name: (names[index] ?? "").trim() || null,
-      address: (addresses[index] ?? "").trim() || null,
+      // Sin `|| null`: la dirección es obligatoria y el vacío lo rechaza el
+      // esquema con su mensaje, no se convierte en "no puso ninguna".
+      address: (addresses[index] ?? "").trim(),
       isPrimary: String(index) === primary,
     }))
     .filter((location) => location.locationId.length > 0);

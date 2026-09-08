@@ -190,8 +190,12 @@ type SeedProfile = {
   reviews: SeedReview[];
 };
 
-/** Departamentos y localidades: el país no es una ubicación física (BR-015). */
-const DEPARTMENTS = LOCATIONS.filter((l) => l.type === "department");
+/**
+ * Las localidades, que es lo único que puede ser una ubicación física.
+ *
+ * Ni el país ni un departamento sirven (BR-015): un local tiene dirección, y
+ * una dirección cae siempre dentro de una localidad.
+ */
 const LOCALITIES = LOCATIONS.filter((l) => l.type === "locality");
 
 const usedSlugs = new Set<string>();
@@ -337,11 +341,17 @@ function buildProfile(
     { length: locationCount },
     (_, i) => ({
       id: `seed-loc-${slug}-${i}`,
-      // La primera queda en la localidad del perfil; las demás, donde sea.
+      /*
+       * La primera queda en la localidad del perfil; las demás, en cualquier
+       * otra localidad.
+       *
+       * Siempre una localidad y nunca un departamento (BR-015): un local está
+       * en una dirección concreta, y "todo Canelones" no es un lugar donde se
+       * pueda atender a alguien. Antes se sorteaba entre localidades y
+       * departamentos, y el seed generaba locales imposibles.
+       */
       locationId:
-        i === 0
-          ? locality.id
-          : faker.helpers.arrayElement([...LOCALITIES, ...DEPARTMENTS]).id,
+        i === 0 ? locality.id : faker.helpers.arrayElement(LOCALITIES).id,
       name: i === 0 ? null : `Sucursal ${i + 1}`,
       address: `${faker.location.street()} ${faker.number.int({ min: 100, max: 4999 })}`,
       // BR-015: una sola principal.
