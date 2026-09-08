@@ -32,7 +32,6 @@ import {
 import { MAX_SCHEDULE_ENTRIES, searchSchedules } from "@/data/schedules";
 import {
   COUNTRY_ID,
-  departmentOf,
   locationLabelById,
   locationTypeLabel,
   normalizeServiceAreas,
@@ -806,81 +805,24 @@ function ProfileFormFields(props: {
   );
 
   /**
-   * Si atiende a distancia. Entonces llega a todo el país y no hay zona que
-   * preguntar: la respuesta ya la da la modalidad.
-   */
-  const remote = serviceModes.includes("remote");
-
-  /**
-   * Si se ofrece elegir hasta dónde llega.
+   * Las zonas que se van a guardar.
    *
-   * Sólo a quien se traslada —quien atiende nada más que en su local no
-   * recorre ninguna zona— y sólo si no atiende también a distancia: en ese
-   * caso ya alcanza todo el país, y preguntar zonas ofrecería recortar algo
-   * que no se recorta. Marcar Montevideo no dejaría de atender a distancia al
-   * resto del país, así que la respuesta sería engañosa.
+   * La pregunta se le hace a todo el mundo y la respuesta es siempre suya:
+   * Uruguay entero, un departamento completo o una localidad (BR-016).
    *
-   * Esto no toca los locales: quien atiende a domicilio, a distancia y además
-   * en su local sigue declarando sus locales normalmente. Son dos preguntas
-   * distintas —hasta dónde llego y dónde estoy— y sólo la primera queda
-   * contestada por atender a distancia.
+   * Antes el campo aparecía sólo para quien se traslada y no atiende a
+   * distancia; al resto se le deducía la zona de sus locales o del país. Esa
+   * deducción suponía cosas sobre el negocio de otro —quien atiende a
+   * distancia puede trabajar sólo para su departamento, y quien tiene local
+   * en Montevideo puede viajar a Canelones— y, peor, dejaba el campo fuera
+   * del formulario: al editar el perfil no había forma de corregir la zona.
    *
-   * Se ofrece, pero no se exige: ver `derivedServiceAreas`.
-   */
-  const travels = serviceModes.includes("at_customer") && !remote;
-
-  /**
-   * Las zonas de quien no se mueve, deducidas de lo que ya declaró.
-   *
-   * BR-016 pide al menos un área en todo perfil activo —sin ella no aparece
-   * en ninguna búsqueda—, pero el área no siempre hay que preguntarla.
-   *
-   * Atender a distancia es llegar a todo el país: el servicio viaja por
-   * teléfono o por internet y la ubicación del proveedor no lo limita. Manda
-   * sobre el local, porque tener consultorio en Montevideo no achica hasta
-   * dónde llega lo que se presta a distancia — quien atiende de las dos
-   * formas sigue alcanzando todo Uruguay.
-   *
-   * Sin atención a distancia, el área sale de dónde está: quien atiende en su
-   * local trabaja donde está, y eso ya lo dijo al declararlo. Se toma el
-   * departamento de cada local y no la localidad exacta, porque quien busca
-   * en el departamento tiene que encontrarlo.
-   *
-   * Sin local ni atención a distancia no queda de dónde deducir, y el país
-   * entero es la única respuesta que no deja al perfil fuera de toda
-   * búsqueda.
-   */
-  const derivedServiceAreas = useMemo(() => {
-    if (remote) return [COUNTRY_ID];
-    if (locations.length === 0) return [COUNTRY_ID];
-
-    const areas = locations
-      .map((item) => departmentOf(item.locationId)?.id)
-      .filter((id): id is string => Boolean(id));
-
-    return areas.length > 0 ? normalizeServiceAreas(areas) : [COUNTRY_ID];
-  }, [locations, remote]);
-
-  /**
-   * Las zonas que finalmente se guardan.
-   *
-   * Quien se traslada puede acotar hasta dónde llega, pero no está obligado:
-   * si no elige ninguna, vale todo el país. Antes el paso quedaba trabado
-   * hasta elegir una zona a mano, y era un trámite —no una decisión— para
-   * quien simplemente atiende a domicilio donde lo llamen.
-   *
-   * Se guarda el país explícito y no una lista vacía: BR-016 pide al menos un
-   * área en todo perfil activo, y sin ella el perfil no aparecería en ninguna
-   * búsqueda. El valor por omisión es el que más se parece a lo que declaró.
+   * Sin elección explícita vale todo el país: es lo más amplio y lo único que
+   * no deja el perfil fuera de las búsquedas.
    */
   const effectiveServiceAreas = useMemo(
-    () =>
-      travels
-        ? serviceAreaIds.length > 0
-          ? serviceAreaIds
-          : [COUNTRY_ID]
-        : derivedServiceAreas,
-    [travels, serviceAreaIds, derivedServiceAreas],
+    () => (serviceAreaIds.length > 0 ? serviceAreaIds : [COUNTRY_ID]),
+    [serviceAreaIds],
   );
 
   const completion = useMemo(() => {
@@ -894,14 +836,20 @@ function ProfileFormFields(props: {
        * nada—, así que el paso no se traba por las zonas. Lo único que puede
        * faltar acá es el local de quien atiende en el negocio (BR-015).
        *
-       * Pero hace falta haber pasado por el paso: como el valor por omisión ya
-       * alcanza, sin esto el tilde aparecía puesto desde el arranque y decía
-       * "esto ya está" sobre una pregunta que todavía no se leyó. Se marca al
-       * salir del paso, sea eligiendo zonas o dejándolo como venía —mirarlo y
-       * aceptar el país entero es una respuesta válida—, pero no antes.
+       * En el asistente hace falta además haber pasado por el paso: como el
+       * valor por omisión ya alcanza, sin eso el tilde aparecía puesto desde el
+       * arranque y decía "esto ya está" sobre una pregunta que todavía no se
+       * leyó. Se marca al salir del paso, sea eligiendo zonas o dejándolo como
+       * venía —mirarlo y aceptar el país entero es una respuesta válida—.
+       *
+       * Editando no se pide: ahí no hay recorrido sino un formulario largo con
+       * todos los paneles a la vista, así que `visited` nunca suma "zonas" y el
+       * paso quedaba incompleto para siempre. El perfil no se podía guardar y
+       * el pie decía "Falta completar: Ubicación" sobre un campo que estaba
+       * lleno y a la vista.
        */
       zonas:
-        visited.has("zonas") &&
+        (editing || visited.has("zonas")) &&
         effectiveServiceAreas.length > 0 &&
         (!serviceModes.includes("at_business") || locations.length > 0),
       contacto: phone.trim().length > 0,
@@ -930,6 +878,7 @@ function ProfileFormFields(props: {
     effectiveServiceAreas,
     locations,
     visited,
+    editing,
     phone,
     socialLinks,
     avatar,
@@ -1857,8 +1806,7 @@ function ProfileFormFields(props: {
             no recorre ninguna zona, y pedírselas lo obligaba a contestar una
             pregunta que no era sobre su trabajo.
           */}
-          {travels ? (
-            <Field
+          <Field
               label="Zonas donde trabajás"
               error={errors.serviceAreaIds}
               hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Si no elegís ninguna, vale todo el país."
@@ -1866,35 +1814,52 @@ function ProfileFormFields(props: {
               group
             >
               <div className="flex flex-col gap-2.5">
-                {serviceAreaIds.length > 0 ? (
-                  <div className="flex flex-wrap gap-1.5">
-                    {serviceAreaIds.map((id) => (
-                      <ItemChip
-                        key={id}
-                        name="serviceAreaIds"
-                        value={id}
-                        label={locationLabelById(id)}
-                        detail={locationTypeLabel(id)}
-                        onRemove={() => {
-                          setServiceAreaIds(
-                            serviceAreaIds.filter((x) => x !== id),
-                          );
-                          if (duplicateArea === id) setDuplicateArea(null);
-                        }}
-                      />
-                    ))}
-                  </div>
-                ) : null}
-
                 {/*
-                  Sin ninguna zona elegida se manda el país: es lo que vale
-                  por omisión, y BR-016 no admite un perfil activo sin área.
-                  Los chips de arriba son los que envían cuando hay elegidas,
-                  así que este oculto sólo aparece cuando no hay ninguno.
+                  Las zonas que se van a guardar, incluida la cobertura
+                  nacional cuando no se eligió ninguna.
+
+                  El país se muestra como un chip más y no como un input
+                  oculto: era invisible, así que la lista se veía vacía cuando
+                  en realidad el perfil cubría todo el país. Y como no se veía,
+                  tampoco se entendía por qué agregar una zona no parecía
+                  cambiar nada.
+
+                  Su cruz va apagada a propósito. Quitarlo no puede hacer nada
+                  —el vacío vuelve a significar "todo el país" (BR-016)—, así
+                  que ofrecer la acción era prometer un cambio que no ocurría y
+                  dejaba el botón de guardar apagado sin explicación. Para
+                  acotar se agrega una zona concreta, que es lo que lo
+                  reemplaza.
                 */}
-                {serviceAreaIds.length === 0 ? (
-                  <input type="hidden" name="serviceAreaIds" value={COUNTRY_ID} />
-                ) : null}
+                <div className="flex flex-wrap gap-1.5">
+                  {effectiveServiceAreas.map((id) => (
+                    <ItemChip
+                      key={id}
+                      name="serviceAreaIds"
+                      value={id}
+                      label={locationLabelById(id)}
+                      detail={locationTypeLabel(id)}
+                      /*
+                       * El país no se puede quitar, esté guardado o puesto por
+                       * omisión: sacarlo deja la lista vacía, y vacía vuelve a
+                       * significar todo el país (BR-016). La cruz no cambiaba
+                       * nada y el botón de guardar se quedaba apagado sin que
+                       * se entendiera por qué. Para acotar la cobertura se
+                       * agrega una zona concreta, que es lo que lo reemplaza.
+                       */
+                      onRemove={
+                        id === COUNTRY_ID
+                          ? undefined
+                          : () => {
+                              setServiceAreaIds(
+                                serviceAreaIds.filter((x) => x !== id),
+                              );
+                              if (duplicateArea === id) setDuplicateArea(null);
+                            }
+                      }
+                    />
+                  ))}
+                </div>
 
                 {/*
                   El mismo desplegable del local, pero acá cualquier nivel es
@@ -1921,9 +1886,22 @@ function ProfileFormFields(props: {
                      * TR-018: se normaliza al agregar. Elegir Uruguay reemplaza
                      * lo demás y un departamento absorbe sus localidades, así
                      * que lo que se ve es lo que se va a guardar.
+                     *
+                     * Con cobertura nacional puesta, elegir una zona concreta
+                     * la reemplaza en vez de sumarse: normalizar las dos juntas
+                     * devolvería Uruguay —que se come todo— y el clic no haría
+                     * nada. Es el caso de quien abre a editar un perfil que
+                     * quedó en "todo el país" por omisión y quiere acotarlo:
+                     * sin esto, agregar zonas no cambiaba nada y el botón de
+                     * guardar seguía apagado.
                      */
+                    const base = serviceAreaIds.filter(
+                      (area) => area !== COUNTRY_ID,
+                    );
                     setServiceAreaIds(
-                      normalizeServiceAreas([...serviceAreaIds, id]),
+                      id === COUNTRY_ID
+                        ? [COUNTRY_ID]
+                        : normalizeServiceAreas([...base, id]),
                     );
                   }}
                 />
@@ -1935,32 +1913,6 @@ function ProfileFormFields(props: {
                 ) : null}
               </div>
             </Field>
-          ) : (
-            /*
-              BR-016: todo perfil activo declara al menos un área igual, o no
-              aparecería en ninguna búsqueda. Sin la pregunta, el área sale de
-              lo ya declarado: todo el país si atiende a distancia, y si no el
-              departamento de cada local.
-            */
-            <>
-              {derivedServiceAreas.map((id) => (
-                <input key={id} type="hidden" name="serviceAreaIds" value={id} />
-              ))}
-
-              {/*
-                Se dice cuál quedó y por qué. El campo desaparece al marcar "a
-                distancia", y sin explicación se lee como que la pregunta se
-                perdió en vez de como que ya está contestada.
-              */}
-              {remote ? (
-                <p className="flex flex-wrap items-center gap-1.5 rounded-input bg-surface-muted px-3 py-2 text-[12.5px] text-ink-soft">
-                  <Icon name="public" className="text-[15px] text-ink-faint" />
-                  Atendés a distancia, así que llegás a todo Uruguay. No hace
-                  falta elegir zonas.
-                </p>
-              ) : null}
-            </>
-          )}
         </Panel>
 
         <Panel active={step === "contacto"} editing={editing} title="Contacto">
@@ -2982,7 +2934,14 @@ function ItemChip({
   label: string;
   /** Dato secundario, como el nivel de una ubicación. */
   detail?: string;
-  onRemove: () => void;
+  /**
+   * Sin esto el elemento no se puede quitar: la cruz se ve apagada.
+   *
+   * Es para lo que está puesto por omisión y no por elección —la cobertura
+   * nacional de quien no eligió zonas—: no hay nada que sacar, porque sacarlo
+   * lo dejaría igual.
+   */
+  onRemove?: () => void;
 }) {
   return (
     <span className="flex items-center gap-1 rounded-full bg-brand-100 py-1.5 pl-3.5 pr-1.5 text-[13.5px] font-semibold text-brand-800 sm:gap-1.5 sm:py-1 sm:pl-3 sm:text-[13px]">
@@ -2996,7 +2955,8 @@ function ItemChip({
         type="button"
         aria-label={`Quitar ${label}`}
         onClick={onRemove}
-        className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-brand-800 hover:text-white sm:h-5 sm:w-5"
+        disabled={!onRemove}
+        className="flex h-7 w-7 items-center justify-center rounded-full transition-colors enabled:hover:bg-brand-800 enabled:hover:text-white disabled:cursor-default disabled:opacity-40 sm:h-5 sm:w-5"
       >
         <Icon name="close" className="text-[16px] text-[#5B6B87] sm:text-[15px]" />
       </button>
