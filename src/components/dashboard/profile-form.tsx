@@ -1473,7 +1473,8 @@ function ProfileFormFields(props: {
             label="Descripción"
             error={errors.description}
             errorId="error-description"
-            hint={`${description.trim().length}/600 · mínimo 20 caracteres`}
+            counter={`${description.trim().length}/600 · mínimo 20 caracteres`}
+            hint="Contá qué hacés y cómo trabajás. Es lo primero que lee quien te busca."
             required
           >
             <textarea
@@ -3107,8 +3108,25 @@ function Field({
       {error}
     </span>
   ) : hint ? (
-    <span className="text-[13px] leading-snug text-ink-faint sm:text-[12.5px]">
-      {hint}
+    /*
+     * La nota se lee como nota y no como un tercer gris más del formulario.
+     *
+     * Antes era `text-ink-faint` suelto debajo del campo: entre el label
+     * (`ink-muted`), el texto tipeado (`ink`) y esto, la pantalla tenía tres
+     * grises sin jerarquía y no se entendía cuál era ayuda. Un rótulo
+     * "Nota", el icono y la barra lateral en azul de marca la separan del
+     * resto sin agregar otro tono de gris, y el texto sube a `ink-soft` para
+     * que se pueda leer.
+     */
+    <span className="flex items-start gap-2 rounded-r-[8px] border-l-2 border-brand-600/35 bg-brand-100/60 py-1.5 pl-2.5 pr-3 text-[13px] leading-snug text-ink-soft sm:text-[12.5px]">
+      <Icon
+        name="lightbulb"
+        className="mt-px flex-none text-[15px] text-brand-600"
+      />
+      <span className="min-w-0">
+        <span className="font-semibold text-brand-800">Nota: </span>
+        {hint}
+      </span>
     </span>
   ) : null;
 

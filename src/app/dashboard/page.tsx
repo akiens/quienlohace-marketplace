@@ -152,11 +152,10 @@ export default async function DashboardPage({
       <div className="mx-auto flex w-full max-w-shell flex-col gap-5 px-0 py-6 sm:gap-7 sm:px-6 sm:py-8">
         <header className="flex flex-col gap-1.5 px-5 sm:px-0">
           <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
-            Mi perfil
+            Edición de Mi Perfil
           </h1>
           <p className="text-[15px] text-ink-soft">
-            Revisá cómo quedó, publicalo cuando esté listo y editá lo que
-            necesites.
+            Editá tu perfil y, cuando esté listo, guardá los cambios.
           </p>
         </header>
 
