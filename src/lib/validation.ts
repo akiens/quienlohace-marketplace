@@ -28,7 +28,7 @@ const specialtyId = z
   .refine(specialtyExists, "Elegí una especialidad válida.");
 
 /** Las redes que acepta el esquema de la base. */
-const SOCIAL_PLATFORMS = [
+export const SOCIAL_PLATFORMS = [
   "instagram",
   "facebook",
   "linkedin",
@@ -37,6 +37,128 @@ const SOCIAL_PLATFORMS = [
   "youtube",
   "website",
 ] as const;
+
+type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];
+
+const SOCIAL_DOMAINS: Record<Exclude<SocialPlatform, "website">, string[]> = {
+  instagram: ["instagram.com", "instagr.am"],
+  facebook: ["facebook.com", "fb.com"],
+  linkedin: ["linkedin.com", "lnkd.in"],
+  x: ["x.com", "twitter.com"],
+  tiktok: ["tiktok.com"],
+  youtube: ["youtube.com", "youtu.be"],
+};
+
+const SOCIAL_LABELS: Record<SocialPlatform, string> = {
+  instagram: "Instagram",
+  facebook: "Facebook",
+  linkedin: "LinkedIn",
+  x: "X",
+  tiktok: "TikTok",
+  youtube: "YouTube",
+  website: "el sitio web",
+};
+
+/**
+ * Una dirección social completa y correspondiente a la plataforma elegida.
+ *
+ * Se compara el hostname ya interpretado por `URL`, no texto parcial: así
+ * `instagram.com.ejemplo.com` no puede pasar por una dirección de Instagram.
+ * Los subdominios oficiales sí son válidos (`www`, `m`, `vm`, etc.).
+ */
+export const socialLinkSchema = z
+  .object({
+    platform: z.enum(SOCIAL_PLATFORMS),
+    url: z
+      .string()
+      .trim()
+      .min(1, "Escribí la dirección.")
+      .max(300, "La dirección es demasiado larga."),
+  })
+  .superRefine((link, context) => {
+    let parsed: URL;
+    try {
+      parsed = new URL(link.url);
+    } catch {
+      context.addIssue({
+        code: "custom",
+        path: ["url"],
+        message: "Poné una dirección completa, con https://",
+      });
+      return;
+    }
+
+    if (
+      parsed.protocol !== "https:" ||
+      parsed.username !== "" ||
+      parsed.password !== "" ||
+      parsed.port !== ""
+    ) {
+      context.addIssue({
+        code: "custom",
+        path: ["url"],
+        message: "Poné una dirección segura que empiece con https://",
+      });
+      return;
+    }
+
+    if (link.platform === "website") return;
+
+    const hostname = parsed.hostname.toLowerCase().replace(/\.$/, "");
+    const domains = SOCIAL_DOMAINS[link.platform];
+    const belongsToPlatform = domains.some(
+      (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+    );
+
+    if (!belongsToPlatform) {
+      context.addIssue({
+        code: "custom",
+        path: ["url"],
+        message: `La dirección debe pertenecer a ${SOCIAL_LABELS[link.platform]}.`,
+      });
+      return;
+    }
+
+    if (parsed.pathname === "/" || parsed.pathname === "") {
+      context.addIssue({
+        code: "custom",
+        path: ["url"],
+        message: `Poné el enlace a tu perfil o contenido de ${SOCIAL_LABELS[link.platform]}.`,
+      });
+    }
+  });
+
+const socialLinksSchema = z
+  .array(
+    z.object({
+      platform: z.enum(SOCIAL_PLATFORMS),
+      url: z.string().trim(),
+    }),
+  )
+  .max(SOCIAL_PLATFORMS.length, "Demasiadas redes.")
+  .superRefine((links, context) => {
+    const seen = new Set<SocialPlatform>();
+
+    links.forEach((link) => {
+      if (seen.has(link.platform)) {
+        context.addIssue({
+          code: "custom",
+          path: [link.platform],
+          message: `Sólo podés agregar una dirección de ${SOCIAL_LABELS[link.platform]}.`,
+        });
+        return;
+      }
+      seen.add(link.platform);
+
+      const parsed = socialLinkSchema.safeParse(link);
+      if (parsed.success) return;
+      context.addIssue({
+        code: "custom",
+        path: [link.platform],
+        message: parsed.error.issues[0]?.message ?? "Dirección no válida.",
+      });
+    });
+  });
 
 /** Los códigos que persiste la base (TR-001). */
 const PAYMENT_METHODS = [
@@ -350,19 +472,7 @@ export const profileSchema = z
       .default([]),
 
     /* Redes sociales (BR-022). Sólo con plan que las habilite. */
-    socialLinks: z
-      .array(
-        z.object({
-          platform: z.enum(SOCIAL_PLATFORMS),
-          url: z
-            .string()
-            .trim()
-            .url("Poné una dirección completa, con https://")
-            .max(300, "La dirección es demasiado larga."),
-        }),
-      )
-      .max(SOCIAL_PLATFORMS.length, "Demasiadas redes.")
-      .default([]),
+    socialLinks: socialLinksSchema.default([]),
   })
   .refine(
     // BR-010: un servicio no puede colgar de una especialidad no elegida.

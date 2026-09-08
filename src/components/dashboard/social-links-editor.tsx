@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
+import { useFieldErrors } from "@/lib/use-field-errors";
+import { socialLinkSchema } from "@/lib/validation";
 import type { SocialPlatform } from "@/types";
 
 export type SocialLinkDraft = {
@@ -34,7 +36,7 @@ export function SocialLinksEditor({
   error,
 }: {
   /** Las redes que ofrece el formulario, en orden. */
-  platforms: Array<{ platform: SocialPlatform; label: string }>;
+  platforms: Array<{ platform: SocialPlatform; label: string; icon: string }>;
   value: SocialLinkDraft[];
   onChange: (links: SocialLinkDraft[]) => void;
   /** Errores del servidor por plataforma: `socialLinks.instagram`. */
@@ -46,32 +48,63 @@ export function SocialLinksEditor({
   const [platform, setPlatform] = useState<SocialPlatform | "">("");
   const [url, setUrl] = useState("");
   const [problem, setProblem] = useState<string | null>(null);
+  const [platformMenuOpen, setPlatformMenuOpen] = useState(false);
+  const platformMenuRef = useRef<HTMLDivElement>(null);
+  const platformMenuId = useId();
+
+  const selectedPlatform = platforms.find(
+    (option) => option.platform === platform,
+  );
+
+  const validateUrl = useCallback((field: string, candidate: unknown) => {
+    const parsed = socialLinkSchema.safeParse({
+      platform: field,
+      url: candidate,
+    });
+    return parsed.success ? "" : (parsed.error.issues[0]?.message ?? "");
+  }, []);
+  const urlErrorState = useFieldErrors(validateUrl);
+  const shownUrlError = platform ? urlErrorState.shown[platform] : undefined;
+
+  useEffect(() => {
+    if (!platformMenuOpen) return;
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (
+        event.target instanceof Node &&
+        !platformMenuRef.current?.contains(event.target)
+      ) {
+        setPlatformMenuOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setPlatformMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [platformMenuOpen]);
 
   const labelOf = (target: SocialPlatform): string =>
     platforms.find((option) => option.platform === target)?.label ?? target;
 
   function add() {
-    const chosen = platform || available[0]?.platform;
-    if (!chosen) return;
+    if (!platform) {
+      setProblem("Elegí una red.");
+      return;
+    }
 
     const trimmed = url.trim();
-    if (!trimmed) {
-      setProblem("Escribí la dirección.");
-      return;
-    }
-
-    /*
-     * Un aviso en el momento en vez de esperar al envío. El servidor vuelve a
-     * validar igual (RF-163): esto sólo evita agregar algo que ya se sabe que
-     * va a volver con error.
-     */
-    if (!/^https?:\/\/.+/i.test(trimmed)) {
-      setProblem("La dirección tiene que empezar con http:// o https://");
-      return;
-    }
+    const errors = urlErrorState.submitAll({ [platform]: trimmed });
+    if (errors[platform]) return;
 
     setProblem(null);
-    onChange([...value, { platform: chosen, url: trimmed }]);
+    onChange([...value, { platform, url: trimmed }]);
     setPlatform("");
     setUrl("");
   }
@@ -140,23 +173,64 @@ export function SocialLinksEditor({
 
       {available.length > 0 ? (
         <div className="flex flex-col gap-2 sm:flex-row">
-          <select
-            aria-label="Red social"
-            value={platform}
-            onChange={(event) => {
-              setPlatform(event.target.value as SocialPlatform);
-              setProblem(null);
-            }}
-            /* 16px en el teléfono: por debajo, iOS hace zoom al enfocar. */
-            className="h-12 w-full rounded-input border border-line-strong bg-white px-3 text-[16px] text-ink outline-none transition-colors focus:border-brand-800 sm:h-11 sm:w-44 sm:flex-none sm:text-[15px]"
+          <div
+            ref={platformMenuRef}
+            className="relative w-full sm:w-44 sm:flex-none"
           >
-            <option value="">Elegí una red…</option>
-            {available.map((option) => (
-              <option key={option.platform} value={option.platform}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+            <button
+              type="button"
+              aria-label="Red social"
+              aria-haspopup="listbox"
+              aria-expanded={platformMenuOpen}
+              aria-controls={platformMenuId}
+              onClick={() => setPlatformMenuOpen((open) => !open)}
+              className="flex h-12 w-full items-center gap-2 rounded-input border border-line-strong bg-white px-3 text-left text-[16px] text-ink outline-none transition-colors focus:border-brand-800 sm:h-11 sm:text-[15px]"
+            >
+              {selectedPlatform ? (
+                <Icon
+                  name={selectedPlatform.icon}
+                  className="flex-none text-[19px] text-brand-800"
+                />
+              ) : null}
+              <span className="min-w-0 flex-1 truncate">
+                {selectedPlatform?.label ?? "Elegí una red…"}
+              </span>
+              <Icon
+                name={platformMenuOpen ? "keyboard_arrow_up" : "keyboard_arrow_down"}
+                className="flex-none text-[20px] text-ink-soft"
+              />
+            </button>
+
+            {platformMenuOpen ? (
+              <ul
+                id={platformMenuId}
+                role="listbox"
+                aria-label="Redes sociales disponibles"
+                className="absolute z-40 mt-1 max-h-64 w-full overflow-y-auto rounded-input border border-line-strong bg-white p-1 shadow-card"
+              >
+                {available.map((option) => (
+                  <li key={option.platform} role="option" aria-selected={false}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPlatform(option.platform);
+                        setPlatformMenuOpen(false);
+                        setProblem(null);
+                        if (url) urlErrorState.edit(option.platform, url);
+                      }}
+                      className="flex min-h-10 w-full items-center gap-2 rounded-input px-2.5 text-left text-[14px] text-ink transition-colors hover:bg-surface-muted focus:bg-surface-muted focus:outline-none"
+                    >
+                      <Icon
+                        name={option.icon}
+                        className="flex-none text-[19px] text-brand-800"
+                      />
+                      <span>{option.label}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
 
           <input
             aria-label="Dirección"
@@ -167,7 +241,13 @@ export function SocialLinksEditor({
             onChange={(event) => {
               setUrl(event.target.value);
               setProblem(null);
+              if (platform) urlErrorState.edit(platform, event.target.value);
             }}
+            onBlur={(event) => {
+              if (platform) urlErrorState.blur(platform, event.target.value);
+            }}
+            aria-invalid={shownUrlError ? true : undefined}
+            aria-describedby={shownUrlError ? "social-url-error" : undefined}
             // Enter agrega la red en vez de enviar el formulario entero.
             onKeyDown={(event) => {
               if (event.key === "Enter") {
@@ -196,6 +276,16 @@ export function SocialLinksEditor({
       {problem ? (
         <p role="alert" className="text-[13px] font-medium text-[#B42318]">
           {problem}
+        </p>
+      ) : null}
+
+      {shownUrlError ? (
+        <p
+          id="social-url-error"
+          role="alert"
+          className="text-[13px] font-medium text-[#B42318]"
+        >
+          {shownUrlError}
         </p>
       ) : null}
     </div>

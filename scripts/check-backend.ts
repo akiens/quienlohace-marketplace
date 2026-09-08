@@ -12,6 +12,7 @@ import {
   credentialsSchema,
   profileSchema,
   signupSchema,
+  socialLinkSchema,
 } from "../src/lib/validation";
 
 let failures = 0;
@@ -294,6 +295,64 @@ async function main(): Promise<void> {
   check(
     "rechaza descripción demasiado corta",
     !profileSchema.safeParse({ ...VALID_PROFILE, description: "corta" }).success,
+  );
+
+  console.log("\nRedes sociales (BR-022, TR-039)");
+  const socialCases = [
+    ["instagram", "https://www.instagram.com/quienlohace"],
+    ["facebook", "https://facebook.com/quienlohace"],
+    ["linkedin", "https://uy.linkedin.com/company/quienlohace"],
+    ["x", "https://x.com/quienlohace"],
+    ["x", "https://twitter.com/quienlohace"],
+    ["tiktok", "https://www.tiktok.com/@quienlohace"],
+    ["youtube", "https://youtube.com/@quienlohace"],
+    ["youtube", "https://youtu.be/abc123"],
+    ["website", "https://quienlohace.uy"],
+  ] as const;
+  for (const [platform, url] of socialCases) {
+    check(
+      `acepta ${platform}: ${url}`,
+      socialLinkSchema.safeParse({ platform, url }).success,
+    );
+  }
+  check(
+    "rechaza una URL de Facebook cargada como Instagram",
+    !socialLinkSchema.safeParse({
+      platform: "instagram",
+      url: "https://facebook.com/quienlohace",
+    }).success,
+  );
+  check(
+    "rechaza dominios parecidos que no pertenecen a la red",
+    !socialLinkSchema.safeParse({
+      platform: "instagram",
+      url: "https://instagram.com.ejemplo.com/quienlohace",
+    }).success,
+  );
+  check(
+    "rechaza HTTP",
+    !socialLinkSchema.safeParse({
+      platform: "youtube",
+      url: "http://youtube.com/@quienlohace",
+    }).success,
+  );
+  check(
+    "rechaza la portada de una red sin perfil ni contenido",
+    !socialLinkSchema.safeParse({
+      platform: "linkedin",
+      url: "https://linkedin.com/",
+    }).success,
+  );
+  const wrongSocial = profileSchema.safeParse({
+    ...VALID_PROFILE,
+    socialLinks: [
+      { platform: "instagram", url: "https://facebook.com/quienlohace" },
+    ],
+  });
+  check(
+    "el servidor atribuye el error a la plataforma",
+    !wrongSocial.success &&
+      wrongSocial.error.issues[0]?.path.join(".") === "socialLinks.instagram",
   );
 
   console.log(

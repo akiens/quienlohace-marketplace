@@ -131,14 +131,18 @@ const ALL_STEPS = [
 type StepId = (typeof ALL_STEPS)[number]["id"];
 
 /** Las redes que ofrece el formulario, en el orden en que se muestran. */
-const SOCIAL_FIELDS: Array<{ platform: SocialPlatform; label: string }> = [
-  { platform: "instagram", label: "Instagram" },
-  { platform: "facebook", label: "Facebook" },
-  { platform: "website", label: "Sitio web" },
-  { platform: "linkedin", label: "LinkedIn" },
-  { platform: "tiktok", label: "TikTok" },
-  { platform: "youtube", label: "YouTube" },
-  { platform: "x", label: "X" },
+const SOCIAL_FIELDS: Array<{
+  platform: SocialPlatform;
+  label: string;
+  icon: string;
+}> = [
+  { platform: "instagram", label: "Instagram", icon: "photo_camera" },
+  { platform: "facebook", label: "Facebook", icon: "group" },
+  { platform: "website", label: "Sitio web", icon: "language" },
+  { platform: "linkedin", label: "LinkedIn", icon: "work" },
+  { platform: "tiktok", label: "TikTok", icon: "music_note" },
+  { platform: "youtube", label: "YouTube", icon: "smart_display" },
+  { platform: "x", label: "X", icon: "alternate_email" },
 ];
 
 /**
@@ -1394,6 +1398,7 @@ function ProfileFormFields(props: {
           description,
           phone,
           contactEmail,
+          socialLinks,
         });
 
         if (Object.keys(found).length > 0) event.preventDefault();
@@ -2363,7 +2368,9 @@ function ProfileFormFields(props: {
               platforms={SOCIAL_FIELDS}
               value={socialLinks}
               onChange={setSocialLinks}
-              error={(platform) => errors[`socialLinks.${platform}`]}
+              error={(platform) =>
+                errors[`socialLinks.${platform}`] ?? errors.socialLinks
+              }
             />
           </Panel>
         ) : null}
