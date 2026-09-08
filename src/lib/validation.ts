@@ -97,6 +97,37 @@ function nameParts(value: string): string[] {
     .filter((word) => word.length > 0 && !NAME_PARTICLES.has(word.toLowerCase()));
 }
 
+/**
+ * Qué caracteres admite el nombre de un perfil.
+ *
+ * No es `nameSchema`: aquél es el nombre de una persona —sólo letras, hasta
+ * cuatro partes— y un perfil puede llamarse "Herrería Téllez S.R.L.",
+ * "Fletes 24/7" o "Pinturas Díaz & Hijos". Así que se permiten letras con sus
+ * tildes, números y la puntuación que aparece de verdad en un nombre
+ * comercial: punto, coma, guion, apóstrofo, & / y paréntesis.
+ *
+ * Lo que queda afuera es lo que no nombra nada y sí sirve para colar cosas:
+ * `<` `>` para etiquetas HTML, `\` `|` `{}` `[]` `$` `` ` `` para inyecciones y
+ * plantillas, y `@` que hace pasar un nombre por un correo o un usuario. No es
+ * la defensa —eso es escapar la salida y consultas con parámetros— pero evita
+ * guardar basura que nadie escribió de buena fe.
+ *
+ * Tiene que empezar con letra o número: un nombre que arranca con puntuación
+ * es casi siempre un intento de ordenar la lista a la fuerza.
+ */
+/**
+ * Qué caracteres admite un teléfono escrito a mano.
+ *
+ * Dígitos y los signos con los que se escribe un número acá: el `+` del código
+ * de país (sólo al principio), espacios, guiones, puntos y paréntesis. Sin
+ * letras: `toE164` las descartaría en silencio y guardaría como válido algo
+ * que no lo es.
+ */
+const PHONE_ALLOWED = /^\+?[\d .\-()]+$/;
+
+const PROFILE_NAME_ALLOWED =
+  /^[\p{L}\p{N}][\p{L}\p{M}\p{N} .,\-'’&/()]*$/u;
+
 export const nameSchema = z
   .string({ error: "Debe entrar un nombre." })
   .trim()
@@ -193,7 +224,11 @@ export const profileSchema = z
       .string()
       .trim()
       .min(2, "Escribí el nombre de tu perfil.")
-      .max(80, "Máximo 80 caracteres."),
+      .max(80, "Máximo 80 caracteres.")
+      .refine(
+        (value) => PROFILE_NAME_ALLOWED.test(value),
+        "El nombre sólo puede tener letras, números y . , - ' & / ( )",
+      ),
     type: z.enum(["individual", "business"]),
     description: z
       .string()
@@ -219,6 +254,20 @@ export const profileSchema = z
       .trim()
       .min(1, "Dejá un teléfono para que puedan contactarte.")
       .max(40, "El teléfono es demasiado largo.")
+      /*
+       * Primero la forma y después el contenido.
+       *
+       * `toE164` se queda con los dígitos y descarta todo lo demás, así que
+       * por sí solo aceptaba "abc099123456xyz" y guardaba un número válido
+       * sacado de una cadena que nadie escribiría como teléfono. Se comprueba
+       * antes que lo escrito parezca un teléfono: dígitos y los signos con los
+       * que se los escribe acá —espacio, guion, punto, paréntesis y el + del
+       * código de país—.
+       */
+      .refine(
+        (value) => PHONE_ALLOWED.test(value),
+        "El teléfono sólo puede tener números, espacios y + - ( ) .",
+      )
       .refine(
         (value) => toE164(value) !== "",
         "El teléfono entrado no es válido.",
@@ -387,6 +436,21 @@ export const reviewReportSchema = z.object({
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;
+
+/**
+ * Las reglas de `profileSchema`, campo por campo, para validar en el cliente.
+ *
+ * Se sacan del propio schema con `.shape` en lugar de escribirlas de nuevo:
+ * son la misma regla, y copiarlas garantiza que algún día digan cosas
+ * distintas —el cliente aceptando lo que el servidor rechaza, o al revés—.
+ *
+ * Sólo sirve para los campos sueltos que se escriben a mano. Las reglas que
+ * cruzan campos (que haya un canal de contacto, que atender en el local exija
+ * una dirección) viven en los `refine` del schema entero y las comprueba el
+ * servidor: no se pueden evaluar mirando un campo solo.
+ */
+export const profileFieldSchemas: Record<string, z.ZodTypeAny> =
+  profileSchema.shape;
 
 /** Convierte los errores de Zod al shape que usan los formularios. */
 export function fieldErrors(

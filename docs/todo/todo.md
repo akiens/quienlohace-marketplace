@@ -1,5 +1,13 @@
-# General
-Con respecto a ubicacion, tanto en el asistente para crear perfil como en el perfil, como editar perfil y de forma general. Creo que `Donde atendes` debe de cambiar la forma en que lo tratamos. Aca vamos a presentar 2 campos: `un select para seleccionar directamente la localidad` y `un input para entrar la direccion exacta`. Como el donde atendes solo se activa si seleccionas local, aca no se puede seleccionar `todo departamento` o `todo localidad` aca directamente hay que entrar una direccion completa para que se pueda mostrar correctamente. El select quiero que sea dinamico o sea que te permita navegar dentro e el para poder seleccionar una localidad de un departamento sin tener que presentar 2 selects, Quizas el select se muestra, muestra los departamentos y luego si das click en un departamento entonces se muestra los locales dentro del mismo select.
+# Editar Perfil
+- todos los campos deben ser validados correctamente en el cliente (frontend) y en el backend, para evitar mal uso y abuso de los mismos. Desde el frontend siempre se debe hacer para evitar mandar algo al server que ya se puede determinar desde antes de enviarlo si esta mal o no, y desde el backend porque pueden directamente llamarlo desde una api donde llenan el request body sin la validacion del frontend.
+
+- Cambia el titulo de `Mi perfil` a `Edición de Mi Perfil` y debajo cambia `Revisá cómo quedó, publicalo cuando esté listo y editá lo que necesites.` por `Edita tu perfil y cuando este listo, guarda los cambios.` Si hay algo gramaticalmente incorrecto arreglalo.
+- En casi todos los labes hay debajo una nota, por ejemplo: 
+Si no está en la lista, escribilo y agregalo igual.
+Lo que ofrecés concretamente. Te sugerimos las de tus especialidades.
+
+Quiero que esa seccion tenga la palabra `nota` el tema es que tanto text gris claro, medio claro y oscuro hace dificul entender de que va. Quizas podamos mejorar esta parte de la interfaz
 
 
-Lo que hicistes esta bien pero sigue siendo complicado. Quiero que el input de la direccion y el radio button para marcar como direccion principal (solo 1 ves), este visible esde el principio. Asi el usuario selecciona, entra la direccion y puede dar click en un `agregar direccion de local` una ves agregado aparecera como aperecen los demas mostrando departamento y localidad como titulo y direccion abajo como subtitulo, mas el button de eliminar en este caso la cruz como todos los demas.  
+# Alert messages
+- Ahora mismo cuando se guardan los cambios 

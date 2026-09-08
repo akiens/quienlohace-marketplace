@@ -36,6 +36,7 @@ import {
   locationTypeLabel,
   normalizeServiceAreas,
 } from "@/data/locations";
+import { profileFieldSchemas } from "@/lib/validation";
 import { fitToPlan } from "@/domain/plan-fit";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
@@ -585,7 +586,96 @@ function ProfileFormFields(props: {
     [plan],
   );
 
-  const errors = state.errors ?? {};
+  /*
+   * Validación en el cliente.
+   *
+   * No reemplaza a la del servidor —la acción vuelve a validar todo con el
+   * mismo schema (RF-163), porque el `FormData` se puede armar a mano—, pero
+   * evita el viaje de ida y vuelta para lo que ya se sabe mal antes de enviar.
+   *
+   * Las reglas salen de `profileFieldSchemas`, que es el mismo objeto del que
+   * se arma `profileSchema`: un solo lugar donde dice cuánto mide un nombre y
+   * qué teléfono es marcable, así los dos lados no pueden decir cosas
+   * distintas.
+   */
+  const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  /*
+   * Si ya se intentó enviar. Desde ese momento los errores se muestran aunque
+   * el campo no se haya tocado: apretar "Guardar" es pedir que se revise todo,
+   * y dejar campos en silencio escondería justo lo que frena el envío.
+   */
+  const [submitAttempted, setSubmitAttempted] = useState(false);
+  /** Los campos que ya se dejaron: recién ahí se muestra su error. */
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  /*
+   * Los campos editados después de la última respuesta del servidor.
+   *
+   * El error de "ese correo ya está en uso" habla del valor que se envió, no
+   * del que hay ahora en pantalla: al primer cambio deja de aplicar y no se
+   * muestra hasta el próximo envío.
+   */
+  const [stale, setStale] = useState<Record<string, boolean>>({});
+
+  /** Valida un campo contra su regla del schema. Devuelve el error, o "". */
+  const validateField = useCallback((field: string, value: unknown): string => {
+    const schema = profileFieldSchemas[field];
+    if (!schema) return "";
+    const parsed = schema.safeParse(value);
+    return parsed.success ? "" : (parsed.error.issues[0]?.message ?? "");
+  }, []);
+
+  /**
+   * Al salir del campo: se valida y se muestra el error si lo hay.
+   *
+   * Mostrar mientras se escribe marcaría en rojo un teléfono a medio tipear,
+   * que es justo lo que la persona está por terminar.
+   */
+  const blurField = useCallback(
+    (field: string, value: unknown) => {
+      setTouched((current) => ({ ...current, [field]: true }));
+      const message = validateField(field, value);
+      setClientErrors((current) => ({ ...current, [field]: message }));
+    },
+    [validateField],
+  );
+
+  /**
+   * Mientras se escribe: sólo se **saca** el error, nunca se agrega.
+   *
+   * Es lo que deja ver que el campo ya va bien antes de salir de él, sin
+   * ensuciar el formulario con errores de algo a medio escribir.
+   */
+  const editField = useCallback(
+    (field: string, value: unknown) => {
+      setStale((current) =>
+        current[field] ? current : { ...current, [field]: true },
+      );
+      setClientErrors((current) => {
+        if (!current[field]) return current;
+        return validateField(field, value) === ""
+          ? { ...current, [field]: "" }
+          : current;
+      });
+    },
+    [validateField],
+  );
+
+  const serverErrors = state.errors ?? {};
+
+  /*
+   * El error que se muestra en cada campo.
+   *
+   * Manda el del cliente, que es el que corresponde a lo que hay en pantalla.
+   * El del servidor sólo se muestra si el campo no se tocó desde que llegó:
+   * si no, hablaría de un valor que ya no está.
+   */
+  const errors: Record<string, string | undefined> = { ...serverErrors };
+  for (const field of Object.keys(stale)) {
+    if (stale[field] && field !== "form") delete errors[field];
+  }
+  for (const [field, message] of Object.entries(clientErrors)) {
+    if (message && (touched[field] || submitAttempted)) errors[field] = message;
+  }
   /*
    * Los topes del plan. `null` es "sin límite" (TR-002), y por eso las ayudas
    * de más abajo lo comprueban antes de comparar contra un número.
@@ -1185,11 +1275,30 @@ function ProfileFormFields(props: {
   ]);
 
   /*
+   * Los campos de texto que hoy no pasan su regla.
+   *
+   * Se recalcula sobre el valor actual y no sobre `clientErrors`, que sólo
+   * tiene lo que ya se mostró: un campo que nunca se tocó puede estar mal
+   * —viene así de la base, o se pegó algo— y el botón no puede ignorarlo.
+   */
+  const invalidFields = ([
+    ["name", name],
+    ["description", description],
+    ["phone", phone],
+    ["contactEmail", contactEmail],
+  ] as const).filter(([field, value]) => validateField(field, value) !== "");
+
+  /*
    * En edición el botón pide además que haya algo para guardar: apretarlo sin
    * cambios mandaría el mismo perfil al servidor y respondería «guardado» sin
    * haber guardado nada, que es peor que no poder apretarlo.
+   *
+   * Y no se habilita con un campo inválido: el `onSubmit` corta el envío igual,
+   * pero un botón encendido que al apretarlo no hace nada se lee como roto. Si
+   * hay algo mal escrito, el botón lo dice estando apagado.
    */
-  const canSave = canSubmit && (!editing || dirty);
+  const canSave =
+    canSubmit && invalidFields.length === 0 && (!editing || dirty);
 
   // Un error del servidor puede referirse a un paso que no está a la vista;
   // este mapa permite señalarlo en la barra de pasos.
@@ -1246,6 +1355,34 @@ function ProfileFormFields(props: {
        */
       onInput={checkDirty}
       onChange={checkDirty}
+      /*
+       * Última red antes de salir: se revalidan los campos de texto y, si algo
+       * está mal, no se envía.
+       *
+       * Ahorra el viaje para lo que ya se sabe mal —el servidor contestaría lo
+       * mismo, más tarde— y deja los errores marcados de una vez en lugar de
+       * de a uno. El servidor revalida igual (RF-163): esto es comodidad, no
+       * seguridad, porque el `FormData` se puede armar sin pasar por acá.
+       */
+      onSubmit={(event) => {
+        setSubmitAttempted(true);
+
+        const found: Record<string, string> = {};
+        for (const [field, value] of [
+          ["name", name],
+          ["description", description],
+          ["phone", phone],
+          ["contactEmail", contactEmail],
+        ] as const) {
+          const message = validateField(field, value);
+          if (message) found[field] = message;
+        }
+
+        if (Object.keys(found).length > 0) {
+          event.preventDefault();
+          setClientErrors((current) => ({ ...current, ...found }));
+        }
+      }}
     >
       {/*
         El plan con el que se crea el perfil. Sólo cuenta la primera vez: si
@@ -1263,12 +1400,6 @@ function ProfileFormFields(props: {
           <Icon name="check_circle" filled className="text-[18px]" />
           {state.message}
         </p>
-      ) : null}
-
-      {errors.form ? (
-        <ErrorBanner className={editing ? "" : "mx-3 sm:mx-0"}>
-          {errors.form}
-        </ErrorBanner>
       ) : null}
 
       {/* La barra de pasos es del recorrido guiado: en edición no hay
@@ -1307,11 +1438,18 @@ function ProfileFormFields(props: {
             siguen en el formulario aunque el paso no esté a la vista. */}
         <Panel active={step === "identidad"} editing={editing} title="Identidad">
           <Row>
-            <Field label="Nombre del perfil" error={errors.name} required half>
+            <Field label="Nombre del perfil" error={errors.name}
+              errorId="error-name" required half>
               <input
                 name="name"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(event) => {
+                  setName(event.target.value);
+                  editField("name", event.target.value);
+                }}
+                onBlur={(event) => blurField("name", event.target.value)}
+                aria-invalid={errors.name ? true : undefined}
+                aria-describedby={errors.name ? "error-name" : undefined}
                 required
                 maxLength={80}
                 placeholder="Ej.: Electricidad Pérez"
@@ -1334,13 +1472,22 @@ function ProfileFormFields(props: {
           <Field
             label="Descripción"
             error={errors.description}
+            errorId="error-description"
             hint={`${description.trim().length}/600 · mínimo 20 caracteres`}
             required
           >
             <textarea
               name="description"
               value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              onChange={(event) => {
+                setDescription(event.target.value);
+                editField("description", event.target.value);
+              }}
+              onBlur={(event) => blurField("description", event.target.value)}
+              aria-invalid={errors.description ? true : undefined}
+              aria-describedby={
+                errors.description ? "error-description" : undefined
+              }
               required
               rows={4}
               maxLength={600}
@@ -1924,12 +2071,19 @@ function ProfileFormFields(props: {
           <Field
             label="Teléfono"
             error={errors.phone}
+            errorId="error-phone"
             hint="Con característica. Ej: 099 123 456"
           >
             <input
               name="phone"
               value={phone}
-              onChange={(event) => setPhone(event.target.value)}
+              onChange={(event) => {
+                setPhone(event.target.value);
+                editField("phone", event.target.value);
+              }}
+              onBlur={(event) => blurField("phone", event.target.value)}
+              aria-invalid={errors.phone ? true : undefined}
+              aria-describedby={errors.phone ? "error-phone" : undefined}
               inputMode="tel"
               autoComplete="tel"
               maxLength={40}
@@ -1960,13 +2114,22 @@ function ProfileFormFields(props: {
           <Field
             label="Correo de contacto"
             error={errors.contactEmail}
+            errorId="error-contactEmail"
             hint="Puede ser distinto del correo con el que entrás. Opcional si mostrás tu teléfono."
           >
             <input
               name="contactEmail"
               type="email"
               value={contactEmail}
-              onChange={(event) => setContactEmail(event.target.value)}
+              onChange={(event) => {
+                setContactEmail(event.target.value);
+                editField("contactEmail", event.target.value);
+              }}
+              onBlur={(event) => blurField("contactEmail", event.target.value)}
+              aria-invalid={errors.contactEmail ? true : undefined}
+              aria-describedby={
+                errors.contactEmail ? "error-contactEmail" : undefined
+              }
               maxLength={254}
               autoComplete="email"
               className={inputClass(errors.contactEmail)}
@@ -2175,7 +2338,9 @@ function ProfileFormFields(props: {
             canSubmit={canSave}
             dirty={dirty}
             missing={missing.map((s) => s.label)}
+            invalid={invalidFields.length}
             onCancel={props.onCancel}
+            error={errors.form}
           />
         ) : (
           <Footer
@@ -2183,9 +2348,10 @@ function ProfileFormFields(props: {
             step={step}
             onStep={setStep}
             pending={pending}
-            canSubmit={canSubmit}
+            canSubmit={canSubmit && invalidFields.length === 0}
             isNew={profile === null}
             missing={missing.map((s) => s.label)}
+            invalid={invalidFields.length}
           />
         )}
       </div>
@@ -2488,6 +2654,7 @@ function Footer({
   canSubmit,
   isNew,
   missing,
+  invalid,
 }: {
   steps: ReadonlyArray<(typeof ALL_STEPS)[number]>;
   step: StepId;
@@ -2496,6 +2663,8 @@ function Footer({
   canSubmit: boolean;
   isNew: boolean;
   missing: string[];
+  /** Cuántos campos tienen algo mal escrito. */
+  invalid: number;
 }) {
   const index = steps.findIndex((s) => s.id === step);
   const previous = steps[index - 1];
@@ -2521,7 +2690,18 @@ function Footer({
         palabras de ancho.
       */}
       <div className="flex items-center justify-between gap-3 sm:order-2 sm:ml-auto sm:justify-end">
-        {missing.length > 0 ? (
+        {invalid > 0 ? (
+          /*
+            Lo mal escrito se dice antes que lo que falta, y antes que
+            "Listo para publicar": con un campo inválido el perfil no está
+            listo, y el botón está apagado por eso.
+          */
+          <span className="text-[12.5px] leading-tight text-[#B42318]">
+            {invalid === 1
+              ? "Hay un campo con datos inválidos."
+              : `Hay ${invalid} campos con datos inválidos.`}
+          </span>
+        ) : missing.length > 0 ? (
           <span className="text-[12.5px] leading-tight text-ink-soft">
             Falta completar: {missing.join(", ")}
           </span>
@@ -2654,6 +2834,8 @@ function EditFooter({
   canSubmit,
   dirty,
   missing,
+  invalid,
+  error,
   onCancel,
 }: {
   pending: boolean;
@@ -2661,6 +2843,10 @@ function EditFooter({
   /** Si hay algo distinto de lo guardado. */
   dirty: boolean;
   missing: string[];
+  /** Cuántos campos tienen algo mal escrito. */
+  invalid: number;
+  /** El error que no es de ningún campo (clave `form`). */
+  error?: string;
   onCancel?: () => void;
 }) {
   return (
@@ -2669,7 +2855,34 @@ function EditFooter({
      * eso, el botón de guardar queda debajo de ella y se toca la mitad.
      */
     <div className="sticky bottom-0 z-30 flex flex-col gap-2 rounded-b-card border-t border-line-soft bg-surface-muted px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 sm:px-5 sm:py-3.5">
-      {missing.length > 0 ? (
+      {/*
+        El error que no es de ningún campo va acá y no arriba del formulario:
+        este pie está pegado abajo y siempre a la vista, así que es donde queda
+        la mirada al apretar "Guardar". Arriba, en un formulario largo, el
+        mensaje aparecía fuera de pantalla y el botón parecía no hacer nada.
+      */}
+      {error ? (
+        <p
+          role="alert"
+          className="flex w-full items-start gap-1.5 text-[13px] font-medium text-[#B42318] sm:order-last"
+        >
+          <Icon name="error" className="mt-px flex-none text-[15px]" />
+          {error}
+        </p>
+      ) : null}
+
+      {invalid > 0 ? (
+        /*
+          Con un campo mal escrito el botón está apagado, y hay que decir por
+          qué: si no, se lee como que guardar dejó de funcionar. El detalle de
+          qué tiene cada campo ya está debajo del campo mismo.
+        */
+        <span className="text-[12.5px] leading-tight text-[#B42318]">
+          {invalid === 1
+            ? "Hay un campo con datos inválidos."
+            : `Hay ${invalid} campos con datos inválidos.`}
+        </span>
+      ) : missing.length > 0 ? (
         <span className="text-[12.5px] leading-tight text-ink-soft">
           Falta completar: {missing.join(", ")}
         </span>
@@ -2830,6 +3043,7 @@ function Row({ children }: { children: React.ReactNode }) {
 function Field({
   label,
   error,
+  errorId,
   hint,
   required = false,
   half = false,
@@ -2839,6 +3053,11 @@ function Field({
 }: {
   label: string;
   error?: string;
+  /**
+   * El `id` del mensaje de error, para que el input lo apunte con
+   * `aria-describedby`. Va sólo en los campos que validan en el cliente.
+   */
+  errorId?: string;
   hint?: string;
   required?: boolean;
   half?: boolean;
@@ -2870,8 +3089,20 @@ function Field({
     </>
   );
 
+  /*
+   * El error se anuncia y se ata al campo.
+   *
+   * `role="alert"` hace que un lector de pantalla lo lea al aparecer, y el
+   * `id` es el que apunta el `aria-describedby` del input: sin él, quien no ve
+   * el borde rojo no tiene forma de saber que ese campo tiene un problema, ni
+   * cuál.
+   */
   const footer = error ? (
-    <span className="flex items-start gap-1.5 text-[13px] font-medium text-[#B42318] sm:text-[12.5px]">
+    <span
+      id={errorId}
+      role="alert"
+      className="flex items-start gap-1.5 text-[13px] font-medium text-[#B42318] sm:text-[12.5px]"
+    >
       <Icon name="error" className="mt-px flex-none text-[15px]" />
       {error}
     </span>
@@ -2990,24 +3221,6 @@ function PlanHint({
       <a href="/planes" className="font-semibold text-brand-800 hover:underline">
         Ver planes
       </a>
-    </p>
-  );
-}
-
-function ErrorBanner({
-  children,
-  className = "",
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <p
-      role="alert"
-      className={`flex items-center gap-2 rounded-card border border-[#FDA29B] bg-[#FFFBFA] px-4 py-3 text-[14px] font-medium text-[#B42318] ${className}`}
-    >
-      <Icon name="error" className="flex-none text-[18px]" />
-      {children}
     </p>
   );
 }

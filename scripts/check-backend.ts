@@ -257,6 +257,40 @@ async function main(): Promise<void> {
       ),
     }).success,
   );
+  /*
+   * El nombre y el teléfono llegan escritos a mano y son los que más se
+   * prestan a que entre cualquier cosa: el nombre sólo se medía de largo, y el
+   * teléfono se validaba después de descartar todo lo que no fuera dígito, así
+   * que "abc099123456xyz" pasaba y se guardaba como un número válido.
+   */
+  check(
+    "rechaza un nombre de perfil con caracteres que no nombran nada",
+    !profileSchema.safeParse({ ...VALID_PROFILE, name: "a@b|c\d" }).success,
+  );
+  check(
+    "rechaza un nombre de perfil con HTML",
+    !profileSchema.safeParse({
+      ...VALID_PROFILE,
+      name: "<script>alert(1)</script>",
+    }).success,
+  );
+  check(
+    "acepta un nombre comercial con puntuación legítima",
+    profileSchema.safeParse({
+      ...VALID_PROFILE,
+      name: "Pinturas Díaz & Hijos S.R.L.",
+    }).success,
+  );
+  check(
+    "rechaza un teléfono con letras",
+    !profileSchema.safeParse({ ...VALID_PROFILE, phone: "abc099123456xyz" })
+      .success,
+  );
+  check(
+    "acepta un teléfono escrito con espacios y signos",
+    profileSchema.safeParse({ ...VALID_PROFILE, phone: "+598 99 123 456" })
+      .success,
+  );
   check(
     "rechaza descripción demasiado corta",
     !profileSchema.safeParse({ ...VALID_PROFILE, description: "corta" }).success,
