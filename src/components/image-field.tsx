@@ -55,6 +55,10 @@ export function ImageField({
    */
   onChange: (state: {
     keepIds: string[];
+    /** Las que quedan visibles; ocultar no libera cupo (BR-033). */
+    activeIds: string[];
+    galleryRevision: string | null;
+    selectedIds?: string[];
     removedIds: string[];
     busy: boolean;
   }) => void;
@@ -65,6 +69,11 @@ export function ImageField({
   const [rejected, setRejected] = useState<string[]>([]);
 
   const upload = useImageUpload({ field, initial, max });
+  const galleryRevision = initial[0]?.galleryRevision ?? null;
+  const selectionPending = field === "gallery" && initial.some(image => image.gallerySelectionPending);
+  const [selected, setSelected] = useState(() => initial.filter(image => image.galleryState === "available" && image.lifecycle === "confirmed").map(image => image.id));
+  const [confirmSelection, setConfirmSelection] = useState(false);
+  const selectedKey = selected.join(",");
 
   /*
    * Se le avisa al formulario cuál es la selección de este campo.
@@ -79,6 +88,7 @@ export function ImageField({
    * línea, así que cambia de identidad en cada render y volvería a lo mismo.
    */
   const keepKey = upload.keepIds.join(",");
+  const activeKey = upload.activeIds.join(",");
   const removedKey = upload.removedIds.join(",");
   const { busy } = upload;
 
@@ -90,13 +100,16 @@ export function ImageField({
   useEffect(() => {
     onChangeRef.current({
       keepIds: keepKey ? keepKey.split(",") : [],
+      activeIds: activeKey ? activeKey.split(",") : [],
+      galleryRevision,
+      selectedIds: confirmSelection ? (selectedKey ? selectedKey.split(",") : []) : undefined,
       removedIds: removedKey ? removedKey.split(",") : [],
       busy,
     });
-  }, [keepKey, removedKey, busy]);
+  }, [keepKey, activeKey, removedKey, busy, galleryRevision, selectedKey, confirmSelection]);
 
   const single = shape !== "grid";
-  const full = upload.room !== null && upload.room <= 0;
+  const full = selectionPending || (upload.room !== null && upload.room <= 0);
 
   async function pick(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -130,6 +143,27 @@ export function ImageField({
         }}
       />
 
+      {selectionPending ? (
+        <div className="rounded-card border border-warning-line bg-warning-soft p-3">
+          <p className="text-sm text-warning-ink">Elegí una sola vez las imágenes que querés conservar en tu galería (hasta {max}). Al confirmar y guardar el formulario, las demás quedarán congeladas y no podrás intercambiarlas.</p>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {initial.filter(image => image.lifecycle === "confirmed").map(image => (
+              <label key={image.id} className="flex cursor-pointer flex-col gap-1 text-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={image.url} alt={image.alt || "Imagen para conservar"} className="aspect-[4/3] w-full rounded-card object-cover" />
+                <span><input type="checkbox" checked={selected.includes(image.id)}
+                  disabled={confirmSelection || (!selected.includes(image.id) && max != null && selected.length >= max)}
+                  onChange={event => setSelected(current => event.target.checked ? [...current, image.id] : current.filter(id => id !== image.id))} /> Conservar</span>
+              </label>
+            ))}
+          </div>
+          <label className="mt-3 flex items-start gap-2 text-sm">
+            <input type="checkbox" checked={confirmSelection} onChange={event => setConfirmSelection(event.target.checked)} />
+            Confirmo mi selección de {selected.length} imágenes. Se aplicará al guardar el formulario y no podré repetirla.
+          </label>
+        </div>
+      ) : null}
+
       {single ? (
         <SingleLayout
           item={upload.items[0] ?? null}
@@ -147,10 +181,12 @@ export function ImageField({
           planName={planName}
           max={max ?? policy.maxCount}
           sortable={policy.sortable}
+          overPlanCount={upload.overPlanCount}
           onPick={() => inputRef.current?.click()}
           onRemove={upload.remove}
           onRetry={upload.retry}
           onMove={upload.move}
+          onToggleActive={upload.toggleActive}
         />
       )}
 
@@ -278,10 +314,12 @@ function GridLayout({
   planName,
   max,
   sortable,
+  overPlanCount,
   onPick,
   onRemove,
   onRetry,
   onMove,
+  onToggleActive,
 }: {
   items: UploadItem[];
   help: string;
@@ -289,69 +327,36 @@ function GridLayout({
   planName?: string;
   max: number | null;
   sortable: boolean;
+  overPlanCount: number;
+  onToggleActive: (key: string) => void;
   onPick: () => void;
   onRemove: (key: string) => void;
   onRetry: (key: string) => void;
   onMove: (key: string, direction: -1 | 1) => void;
 }) {
+  const available = items.filter(item => item.hiddenReason !== "plan");
+  const active = available.filter(item => item.active);
+  const overPlan = items.filter(item => item.hiddenReason === "plan");
+
+  const card = (item: UploadItem, index: number, list: UploadItem[]) => (
+    <ImageCard
+      key={item.key}
+      item={item}
+      index={index}
+      total={list.length}
+      sortable={sortable && item.active}
+      canActivate={item.hiddenReason !== "plan"}
+      onRemove={onRemove}
+      onRetry={onRetry}
+      onMove={onMove}
+      onToggleActive={onToggleActive}
+    />
+  );
+
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {items.map((item, index) => (
-          <div key={item.key} className="flex flex-col gap-1">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-card border border-line bg-surface-muted">
-              <Thumb item={item} />
-
-              <button
-                type="button"
-                disabled={isBusy(item.status)}
-                onClick={() => void onRemove(item.key)}
-                aria-label="Quitar imagen"
-                className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#B42318] shadow-card transition-colors hover:bg-white disabled:opacity-50"
-              >
-                <Icon name="close" className="text-[17px]" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1">
-              {sortable && items.length > 1 ? (
-                <>
-                  <button
-                    type="button"
-                    disabled={index === 0}
-                    onClick={() => onMove(item.key, -1)}
-                    aria-label="Mover antes"
-                    className="flex h-7 w-7 items-center justify-center rounded-input text-ink-soft transition-colors hover:bg-surface-muted disabled:opacity-30"
-                  >
-                    <Icon name="arrow_back" className="text-[16px]" />
-                  </button>
-                  <button
-                    type="button"
-                    disabled={index === items.length - 1}
-                    onClick={() => onMove(item.key, 1)}
-                    aria-label="Mover después"
-                    className="flex h-7 w-7 items-center justify-center rounded-input text-ink-soft transition-colors hover:bg-surface-muted disabled:opacity-30"
-                  >
-                    <Icon name="arrow_forward" className="text-[16px]" />
-                  </button>
-                </>
-              ) : null}
-
-              {item.status === "error" ? (
-                <button
-                  type="button"
-                  onClick={() => onRetry(item.key)}
-                  className="ml-auto flex h-7 items-center gap-1 rounded-input px-2 text-[12px] font-semibold text-brand-800 transition-colors hover:bg-surface-muted"
-                >
-                  <Icon name="refresh" className="text-[15px]" />
-                  Reintentar
-                </button>
-              ) : null}
-            </div>
-
-            {item.error ? <ItemError message={item.error} /> : null}
-          </div>
-        ))}
+        {available.map((item, index) => card(item, index, item.active ? active : available))}
 
         {!full ? (
           <button
@@ -365,14 +370,180 @@ function GridLayout({
         ) : null}
       </div>
 
+      {/*
+        Fuera del cupo tras una baja: sí caducan, y el aviso lo dice. Es la
+        revisión que BR-009 exige poder hacer antes de que se borren.
+      */}
+      {overPlan.length > 0 ? (
+        <div className="flex flex-col gap-2 rounded-card border border-warning-line bg-warning-soft p-3">
+          <p className="flex items-start gap-1.5 text-[12.5px] leading-snug text-warning-ink">
+            <Icon name="schedule" className="mt-px flex-none text-[15px]" />
+            <span>
+              <strong className="font-semibold">
+                {overPlanCount === 1
+                  ? "1 imagen no entra en tu plan"
+                  : `${overPlanCount} imágenes no entran en tu plan`}
+              </strong>{" "}
+              {planName ? `${planName}, que incluye ${max}.` : "actual."} Se
+              conservan hasta vencer su plazo de 180 días. Mejorá el plan para recuperarlas.
+            </span>
+          </p>
+
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {overPlan.map((item, index) => card(item, index, overPlan))}
+          </div>
+        </div>
+      ) : null}
+
+      {/*
+        El cupo es de este campo y de ningún otro (BR-007): la galería no se
+        achica por tener foto de perfil ni portada. Cuenta las disponibles,
+        incluidas las ocultas voluntariamente.
+      */}
       <span className="text-[12.5px] leading-relaxed text-ink-faint">
         {full && max !== null
           ? planName
-            ? `Llegaste al máximo de tu plan ${planName}: ${max} ${max === 1 ? "imagen" : "imágenes"}.`
+            ? `Llegaste al máximo de tu plan ${planName}: ${max} ${max === 1 ? "imagen" : "imágenes"} en la galería.`
             : `Llegaste al máximo: ${max} ${max === 1 ? "imagen" : "imágenes"}.`
           : help}
       </span>
     </>
+  );
+}
+
+/**
+ * Una imagen de la grilla, con lo que se puede hacer sobre ella.
+ *
+ * La inactiva se ve atenuada y su acción principal es "Mostrar", no ordenar:
+ * mientras esté fuera del cupo su posición no cambia nada.
+ */
+function ImageCard({
+  item,
+  index,
+  total,
+  sortable,
+  canActivate,
+  onRemove,
+  onRetry,
+  onMove,
+  onToggleActive,
+}: {
+  item: UploadItem;
+  index: number;
+  total: number;
+  sortable: boolean;
+  /** Si hay lugar en el cupo para activarla. */
+  canActivate: boolean;
+  onRemove: (key: string) => void;
+  onRetry: (key: string) => void;
+  onMove: (key: string, direction: -1 | 1) => void;
+  onToggleActive: (key: string) => void;
+}) {
+  const busy = isBusy(item.status);
+  const saved = item.status === "done" && item.image !== null;
+  const [now] = useState(() => Date.now());
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div
+        className={`relative aspect-[4/3] overflow-hidden rounded-card border bg-surface-muted ${
+          item.active ? "border-line" : "border-line-strong"
+        }`}
+      >
+        <Thumb item={item} />
+
+        {/* La inactiva se ve apagada: se distingue de un vistazo cuál sale. */}
+        {!item.active ? (
+          <span className="pointer-events-none absolute inset-0 bg-surface-muted/55" />
+        ) : null}
+
+        {!item.active && item.hiddenReason !== "plan" ? (
+          <span className="pointer-events-none absolute inset-0 flex items-center justify-center px-3 text-center text-[12px] font-semibold leading-snug text-ink">
+            Oculta en tu perfil público
+          </span>
+        ) : null}
+
+        <button
+          type="button"
+          disabled={busy || item.hiddenReason === "plan"}
+          onClick={() => void onRemove(item.key)}
+          aria-label="Quitar imagen"
+          className="absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-[#B42318] shadow-card transition-colors hover:bg-white disabled:opacity-50"
+        >
+          <Icon name="close" className="text-[17px]" />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-1">
+        {sortable && total > 1 ? (
+          <>
+            <button
+              type="button"
+              disabled={index === 0}
+              onClick={() => onMove(item.key, -1)}
+              aria-label="Mover antes"
+              className="flex h-7 w-7 items-center justify-center rounded-input text-ink-soft transition-colors hover:bg-surface-muted disabled:opacity-30"
+            >
+              <Icon name="arrow_back" className="text-[16px]" />
+            </button>
+            <button
+              type="button"
+              disabled={index === total - 1}
+              onClick={() => onMove(item.key, 1)}
+              aria-label="Mover después"
+              className="flex h-7 w-7 items-center justify-center rounded-input text-ink-soft transition-colors hover:bg-surface-muted disabled:opacity-30"
+            >
+              <Icon name="arrow_forward" className="text-[16px]" />
+            </button>
+          </>
+        ) : null}
+
+        {item.status === "error" ? (
+          <button
+            type="button"
+            onClick={() => onRetry(item.key)}
+            className="ml-auto flex h-7 items-center gap-1 rounded-input px-2 text-[12px] font-semibold text-brand-800 transition-colors hover:bg-surface-muted"
+          >
+            <Icon name="refresh" className="text-[15px]" />
+            Reintentar
+          </button>
+        ) : null}
+
+        {/* Mostrar u ocultar sólo cambia la visibilidad de una disponible. */}
+        {saved && item.hiddenReason !== "plan" ? (
+          <button
+            type="button"
+            disabled={busy || (!item.active && !canActivate)}
+            onClick={() => onToggleActive(item.key)}
+            title={
+              !item.active && !canActivate
+                ? "Esta imagen está congelada por el plan."
+                : undefined
+            }
+            className={`ml-auto flex h-7 items-center gap-1 rounded-input px-2 text-[12px] font-semibold transition-colors disabled:opacity-40 ${
+              item.active
+                ? "text-ink-soft hover:bg-surface-muted"
+                : "text-brand-800 hover:bg-surface-muted"
+            }`}
+          >
+            <Icon
+              name={item.active ? "visibility_off" : "visibility"}
+              className="text-[15px]"
+            />
+            {item.active ? "Ocultar" : "Mostrar"}
+          </button>
+        ) : null}
+      </div>
+
+      {item.hiddenReason === "plan" ? (
+        <span className="text-xs text-warning-ink">
+          {item.image?.galleryState === "semi" ? "Semicongelada" : "Congelada"}. {item.image?.hiddenAt
+            ? `Eliminación en ${Math.max(0, Math.ceil((new Date(item.image.hiddenAt).getTime() + 180 * 86400000 - now) / 86400000))} días.`
+            : "Conservada; aún no hay fecha de eliminación."}
+        </span>
+      ) : null}
+      {item.error ? <ItemError message={item.error} /> : null}
+    </div>
   );
 }
 

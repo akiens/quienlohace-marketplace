@@ -172,8 +172,24 @@ export type ProfileImage = {
   alt: string;
   kind: ImageKind;
   sortOrder: number;
-  /** false cuando excede el cupo del plan (BR-009). */
+  /** false cuando no se muestra en el perfil. El motivo, en `hiddenReason`. */
   isActive: boolean;
+  /**
+   * Por qué no se muestra, cuando `isActive` es false (BR-009).
+   *
+   * `owner` la ocultó el proveedor —un servicio que por ahora no da— y no se
+   * borra nunca. `plan` no entra en el plan vigente tras una baja, y es un
+   * dato excedente que puede eliminarse a los 180 días.
+   *
+   * La distinción existe para que una limpieza no se lleve lo que alguien
+   * escondió a propósito creyendo que sólo lo escondía.
+   */
+  hiddenReason: "owner" | "plan" | null;
+  galleryState: "available" | "semi" | "frozen";
+  ownerHidden: boolean;
+  hiddenAt: string | null;
+  galleryRevision: string | null;
+  gallerySelectionPending: boolean;
   lifecycle: ImageLifecycle;
   /** Tamaño de la versión procesada. 0 en las filas anteriores a TR-042. */
   width: number;

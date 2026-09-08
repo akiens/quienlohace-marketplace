@@ -53,6 +53,19 @@ export type UploadItem = {
   error: string | null;
   /** El archivo original, para poder reintentar sin volver a elegirlo. */
   file: File | null;
+  /**
+   * Si se muestra en el perfil público (BR-033); no determina el cupo.
+   *
+   * No tiene nada que ver con la subida —eso lo lleva `status`—: una imagen
+   * deja de mostrarse porque la ocultó su dueño o porque no entra en el plan.
+   * En los dos casos sigue guardada.
+   */
+  active: boolean;
+  /**
+   * Por qué no se muestra (BR-009). `owner` la ocultó el proveedor y no se
+   * borra nunca; `plan` no entra en el plan vigente y caduca a los 180 días.
+   */
+  hiddenReason: "owner" | "plan" | null;
 };
 
 const STATUS_LABELS: Record<UploadStatus, string> = {
@@ -228,6 +241,12 @@ export function useImageUpload({
   max?: number | null;
 }) {
   const policy = policyFor(field);
+  /*
+   * El cupo es **de este campo** (BR-007): la galería no se achica por tener
+   * foto de perfil ni portada, que van aparte y las incluyen todos los planes.
+   * `max` lo pasa quien monta el campo cuando el tope viene del plan; si no,
+   * manda el de la política.
+   */
   const limit = max ?? policy.maxCount;
 
   const [items, setItems] = useState<UploadItem[]>(() =>
@@ -238,6 +257,8 @@ export function useImageUpload({
       image,
       error: null,
       file: null,
+      active: image.isActive,
+      hiddenReason: image.hiddenReason,
     })),
   );
 
@@ -338,9 +359,12 @@ export function useImageUpload({
   const add = useCallback(
     async (files: File[]): Promise<string[]> => {
       const rejected: string[] = [];
+      if (initial.some(image => image.gallerySelectionPending)) return ["Confirmá y guardá la selección de galería antes de agregar imágenes."];
 
-      // Lo que ya hay, para el cupo y para detectar repetidos.
-      const existing = items.filter((item) => item.status !== "error");
+      // Las disponibles, incluidas ocultas y pendientes, ocupan cupo (BR-007).
+      const existing = items.filter(
+        (item) => item.status !== "error" && item.hiddenReason !== "plan",
+      );
       const seen = new Set(
         existing.map((item) => (item.file ? fingerprint(item.file) : item.key)),
       );
@@ -349,7 +373,7 @@ export function useImageUpload({
        * Un campo de una sola imagen reemplaza en vez de acumular: elegir otra
        * foto de perfil es cambiar la que está.
        */
-      const single = limit === 1;
+      const single = policy.maxCount === 1;
       let room = single ? 1 : limit === null ? Infinity : limit - existing.length;
 
       const accepted: { key: string; file: File; url: string }[] = [];
@@ -399,9 +423,12 @@ export function useImageUpload({
           image: null,
           error: null,
           file,
+          // Lo que se sube ahora entra en el cupo: por eso se comprobó antes.
+          active: true,
+          hiddenReason: null,
         }));
 
-        if (!single) return [...current, ...incoming];
+        if (!single) return [...current.filter(item => item.active), ...incoming, ...current.filter(item => !item.active)];
 
         /*
          * Reemplazo en un campo de una sola: lo confirmado que había queda
@@ -431,7 +458,7 @@ export function useImageUpload({
 
       return rejected;
     },
-    [field, items, limit, send],
+    [field, initial, items, limit, policy.maxCount, send],
   );
 
   /** Reintenta una que falló, sin tocar las demás. */
@@ -488,6 +515,19 @@ export function useImageUpload({
     [items, patch],
   );
 
+  /** Visibilidad voluntaria: no cambia disponibilidad ni cupo (BR-033). */
+  const toggleActive = useCallback((key: string) => {
+    setItems(current => {
+      const item = current.find(candidate => candidate.key === key);
+      if (!item || item.status !== "done" || item.hiddenReason === "plan") return current;
+      const changed: UploadItem = { ...item, active: !item.active, hiddenReason: item.active ? "owner" : null };
+      const rest = current.filter(candidate => candidate.key !== key);
+      return changed.active
+        ? [...rest.filter(candidate => candidate.active), changed, ...rest.filter(candidate => !candidate.active)]
+        : [...rest, changed];
+    });
+  }, []);
+
   /** Mueve una imagen, para los campos que admiten ordenar. */
   const move = useCallback(
     (key: string, direction: -1 | 1) => {
@@ -499,7 +539,7 @@ export function useImageUpload({
         const next = [...current];
         const moved = next[index];
         const displaced = next[target];
-        if (!moved || !displaced) return current;
+        if (!moved || !displaced || !moved.active || !displaced.active) return current;
         next[index] = displaced;
         next[target] = moved;
         return next;
@@ -516,16 +556,37 @@ export function useImageUpload({
     .filter((item) => item.status === "done" && item.image)
     .map((item) => item.image!.id);
 
+  /**
+   * Cuáles de esos quedan visibles (BR-033). El resto sigue
+   * guardado e inactivo.
+   */
+  const activeIds = items
+    .filter((item) => item.status === "done" && item.image && item.active)
+    .map((item) => item.image!.id);
+
+  /** Disponibles que ocupan cupo, aunque estén ocultas voluntariamente. */
+  const activeCount = items.filter((item) => item.hiddenReason !== "plan" && item.status !== "error").length;
+
   return {
     items,
     busy,
     keepIds,
+    activeIds,
     removedIds,
     /** Cuántas más entran. `null` es sin tope. */
-    room: limit === null ? null : Math.max(0, limit - items.length),
+    room: limit === null ? null : Math.max(0, limit - activeCount),
+    /** Las que no se muestran porque no entran en el plan (BR-009). */
+    overPlanCount: items.filter(
+      (item) => item.hiddenReason === "plan",
+    ).length,
+    /** Las que el proveedor ocultó a propósito. Nunca se borran. */
+    hiddenByOwnerCount: items.filter(
+      (item) => !item.active && item.hiddenReason === "owner",
+    ).length,
     add,
     retry,
     remove,
     move,
+    toggleActive,
   };
 }

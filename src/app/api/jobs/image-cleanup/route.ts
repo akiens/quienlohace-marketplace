@@ -2,11 +2,11 @@ import { cleanupExpiredImages } from "@/infrastructure/d1-profile-images";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 /**
- * Limpieza de las imágenes que nadie confirmó (TR-043).
+ * Limpieza de imágenes pendientes, descartadas y excedentes vencidos (TR-043, BR-032).
  *
  * Se lleva lo pendiente que venció —alguien abrió un formulario, subió una
- * foto y se fue— y lo que un guardado marcó como descartado. Lo confirmado no
- * se toca nunca.
+ * foto y se fue—, lo descartado y los excedentes congelados o semicongelados
+ * cuyo plazo de 180 días venció. Las ocultas voluntariamente no vencen.
  *
  * Es una ruta y no un `scheduled` handler porque el sitio se despliega con el
  * adaptador de Next sobre Workers, que ya toma el `main` del worker: agregar

@@ -193,6 +193,50 @@ La limpieza se lleva sólo lo pendiente vencido y lo descartado. Vuelve a compro
 
 Nadie puede confirmar, modificar ni borrar imágenes de otro: la pertenencia se comprueba en la consulta que escribe, no en quien la llama (TR-004).
 
+#### Estados de imagen y disponibilidad por plan
+
+Los estados aplican BR-007, BR-032 y BR-033 de forma independiente:
+
+| Campo | Responsabilidad |
+|---|---|
+| `lifecycle` | Subida pendiente, confirmada o descartada (TR-043). |
+| `gallery_state` | Disponibilidad por plan: `available`, `semi` o `frozen`. |
+| `owner_hidden` | Preferencia de visibilidad del proveedor, conservada al congelar o recuperar. |
+| `is_active` | Visibilidad efectiva: disponible y no oculta por el proveedor. |
+| `hidden_reason` | Motivo efectivo: `plan`, `owner` o NULL; compatible con las consultas existentes. |
+| `hidden_at` | Inicio de conservación del excedente; nunca se reinicia al confirmar la selección. |
+
+`profile_gallery_state` persiste el cupo aplicado, la selección pendiente, el inicio de conservación y una revisión. Un cambio de cupo se reconcilia al leer las imágenes, incluso en consultas públicas, usando el plan efectivo y la fecha de una baja programada. Leer o guardar repetidamente no reabre una selección consumida.
+
+La confirmación explícita se envía separada de los IDs visibles. El servidor valida propietario, cupo y revisión; el cambio de revisión y las imágenes se escriben en un batch D1 con actualización condicional. Una pestaña obsoleta no puede repetir la selección ni activar excedentes. Omitir una imagen congelada desde un formulario no la marca como descartada.
+
+El cupo de subida incluye imágenes disponibles ocultas y pendientes. El `INSERT ... SELECT` comprueba el cupo en la propia escritura para impedir que subidas simultáneas lo excedan. La selección pendiente se resuelve antes de cargar nuevas imágenes.
+
+Las imágenes ocultas permanecen en la misma galería; el orden persistido agrupa primero las habilitadas. La interfaz distingue los excedentes por estado y muestra su tiempo restante según `hidden_at`.
+
+La ruta protegida `POST /api/jobs/image-cleanup` elimina pendientes vencidas, descartadas y excedentes vencidos según BR-032. Antes de purgar reconcilia el plan y vuelve a comprobar estado y fecha en el borrado. El batch encola la clave de R2 en `media_deletion_queue` y elimina la fila; si R2 falla, la cola permite reintentar en la siguiente ejecución. Requiere `CLEANUP_TOKEN` y una invocación periódica del servicio de tareas.
+
+#### El cupo se cuenta por campo
+
+BR-007 dice que la foto de perfil y la portada no consumen el cupo de la galería, y BR-021 que todos los planes las incluyen. Técnicamente eso significa que **cada campo cuenta sólo lo suyo**: toda consulta de cupo filtra por el campo antes de contar, y ninguna suma imágenes de campos distintos.
+
+De dónde sale el tope lo dice la política del campo, y son dos casos que no se mezclan:
+
+- **Tope propio** (`maxCount` con número): no depende del plan y el plan ni se consulta. Es el de la foto de perfil y la portada, una cada una.
+- **Tope del plan** (`maxCount: null`): el número sale del plan vigente. Hoy sólo la galería.
+
+Y cuenta **sólo las activas**, como dice BR-007: lo que quedó inactivo por una baja no ocupa lugar. Sin eso, bajar de un plan de 20 a uno de 5 dejaba quince imágenes invisibles llenando el cupo y no se podía subir ninguna.
+
+#### Elegir qué se conserva visible al bajar de plan
+
+BR-009 pide conservar «primero los elementos con mayor prioridad definida por el proveedor» y que el proveedor pueda revisar qué quedó inactivo antes de que se borre. En imágenes eso se traduce en tres cosas:
+
+- Las inactivas **se muestran** en el formulario, atenuadas y agrupadas aparte, con cuántas son y por qué no se ven. Ocultarlas impediría revisar qué está por perderse.
+- Cada una se puede activar o desactivar a mano, respetando el cupo: para mostrar una cuando no hay lugar, primero hay que ocultar otra.
+- El recorte automático por orden es la **red de seguridad**, no la norma: sólo actúa cuando hay más activas que cupo —al bajar de plan, donde nadie eligió todavía—. Si la selección ya entra, no se toca; pisarla le sacaría la decisión de las manos a quien la tomó.
+
+Un cupo en cero se explica según de dónde venga: sólo un campo del segundo tipo puede decir "tu plan no lo incluye". Culpar al plan por un campo que no depende de él mandaría a mejorarlo para conseguir algo que no cambiaría.
+
 ---
 
 ## 4. Identidad, autenticación y sesiones

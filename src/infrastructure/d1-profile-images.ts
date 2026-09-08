@@ -1,6 +1,8 @@
 import "server-only";
 
 import { getDb, getMediaBucket } from "@/infrastructure/cloudflare";
+import { effectivePlanId } from "@/domain/plan-changes";
+import type { PlanId } from "@/types";
 import { newId } from "@/lib/id";
 import type { ImageKind, ProfileImage } from "@/types";
 
@@ -33,12 +35,17 @@ type ImageRow = {
   kind: string;
   sort_order: number;
   is_active: number;
+  hidden_reason: string | null;
+  gallery_state: ProfileImage["galleryState"];
+  owner_hidden: number;
+  hidden_at: string | null;
   lifecycle: string;
   width: number;
   height: number;
 };
 
-const COLUMNS = `id, storage_key, alt, kind, sort_order, is_active, lifecycle, width, height`;
+const COLUMNS = `id, storage_key, alt, kind, sort_order, is_active, hidden_reason,
+                 gallery_state, owner_hidden, hidden_at, lifecycle, width, height`;
 
 function toImage(row: ImageRow): ProfileImage {
   return {
@@ -49,6 +56,12 @@ function toImage(row: ImageRow): ProfileImage {
     kind: row.kind as ImageKind,
     sortOrder: Number(row.sort_order),
     isActive: Number(row.is_active) === 1,
+    hiddenReason: (row.hidden_reason ?? null) as ProfileImage["hiddenReason"],
+    galleryState: row.gallery_state,
+    ownerHidden: Number(row.owner_hidden) === 1,
+    hiddenAt: row.hidden_at,
+    galleryRevision: null,
+    gallerySelectionPending: false,
     lifecycle: row.lifecycle as ProfileImage["lifecycle"],
     width: Number(row.width),
     height: Number(row.height),
@@ -69,6 +82,7 @@ function toImage(row: ImageRow): ProfileImage {
 export async function listImagesForUser(
   userId: string,
 ): Promise<ProfileImage[]> {
+  const state = await syncGalleryForUser(userId);
   const { results } = await getDb()
     .prepare(
       `SELECT ${COLUMNS}
@@ -80,13 +94,18 @@ export async function listImagesForUser(
     .bind(userId)
     .all<ImageRow>();
 
-  return (results ?? []).map(toImage);
+  return (results ?? []).map((row) => ({
+    ...toImage(row),
+    galleryRevision: state?.revision ?? null,
+    gallerySelectionPending: state?.selection_pending === 1,
+  }));
 }
 
 /** Sólo las confirmadas: lo que el perfil muestra de verdad. */
 export async function listConfirmedImages(
   userId: string,
 ): Promise<ProfileImage[]> {
+  const state = await syncGalleryForUser(userId);
   const { results } = await getDb()
     .prepare(
       `SELECT ${COLUMNS}
@@ -97,7 +116,11 @@ export async function listConfirmedImages(
     .bind(userId)
     .all<ImageRow>();
 
-  return (results ?? []).map(toImage);
+  return (results ?? []).map((row) => ({
+    ...toImage(row),
+    galleryRevision: state?.revision ?? null,
+    gallerySelectionPending: state?.selection_pending === 1,
+  }));
 }
 
 /**
@@ -125,6 +148,7 @@ export async function putProfileImage(input: {
   alt?: string;
 }): Promise<ProfileImage> {
   const db = getDb();
+  if (input.kind === "gallery") await syncGalleryForUser(input.userId);
   const id = newId();
   const key = `providers/${input.userId}/${input.kind}-${id}.${input.extension}`;
 
@@ -151,12 +175,18 @@ export async function putProfileImage(input: {
   const nowIso = now.toISOString();
   const expiresAt = new Date(now.getTime() + PENDING_TTL_MS).toISOString();
 
-  await db
+  const inserted = await db
     .prepare(
       `INSERT INTO profile_images
          (id, profile_id, owner_user_id, storage_key, alt, sort_order, kind,
           is_active, lifecycle, expires_at, width, height, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?, ?, ?, ?, ?)`,
+       SELECT ?, ?, ?, ?, ?, ?, ?, 1, 'pending', ?, ?, ?, ?, ?
+       WHERE ? <> 'gallery' OR EXISTS (
+         SELECT 1 FROM profile_gallery_state g WHERE g.user_id = ?
+           AND g.selection_pending = 0 AND (g.plan_limit IS NULL OR
+             (SELECT COUNT(*) FROM profile_images WHERE owner_user_id = g.user_id
+               AND kind = 'gallery' AND gallery_state = 'available'
+               AND lifecycle IN ('pending', 'confirmed')) < g.plan_limit))`,
     )
     .bind(
       id,
@@ -171,9 +201,15 @@ export async function putProfileImage(input: {
       input.height,
       nowIso,
       nowIso,
+      input.kind,
+      input.userId,
     )
     .run();
 
+  if (inserted.meta.changes !== 1) {
+    await deleteObject(key);
+    throw new Error("No hay cupo disponible o falta confirmar la selección de galería.");
+  }
   return {
     id,
     storageKey: key,
@@ -182,6 +218,12 @@ export async function putProfileImage(input: {
     kind: input.kind,
     sortOrder: position,
     isActive: true,
+    hiddenReason: null,
+    galleryState: "available",
+    ownerHidden: false,
+    hiddenAt: null,
+    galleryRevision: null,
+    gallerySelectionPending: false,
     lifecycle: "pending",
     width: input.width,
     height: input.height,
@@ -221,80 +263,82 @@ export async function discardPendingImage(
   return true;
 }
 
-/**
- * Aplica al guardar el formulario lo que se decidió mientras se editaba
- * (TR-043).
- *
- * Es el único momento en que una imagen cambia de estado, y va en un solo
- * lote: o queda todo aplicado o no queda nada, para que el formulario no
- * pueda terminar con la foto nueva puesta y la vieja todavía colgando.
- *
- * - `keepIds`: las que quedan. Las pendientes pasan a confirmadas.
- * - El resto de las confirmadas del mismo tipo se marcan `discarded`.
- *
- * Los ids que no sean del usuario se ignoran: la pertenencia se comprueba en
- * el `WHERE`, no en quien llama (TR-004).
- */
+/** Guarda visibilidad y selección con control de versión en un único batch D1. */
 export async function commitImageSelection(input: {
   userId: string;
   profileId: string;
-  /** Los tipos que este guardado decide. No toca los que no menciona. */
   kinds: ImageKind[];
-  /** Las que quedan, en el orden en que se muestran. */
   keepIds: string[];
+  activeIds: string[];
+  galleryRevision?: string | null;
+  selectedIds?: string[];
 }): Promise<void> {
   const db = getDb();
-  const { userId, profileId, kinds, keepIds } = input;
-
-  if (kinds.length === 0) return;
-
+  const { userId, profileId, kinds } = input;
+  if (!kinds.length) return;
+  const gallery = kinds.includes("gallery");
+  const state = gallery ? await syncGalleryForUser(userId) : null;
+  const rows = (await db.prepare(`SELECT ${COLUMNS} FROM profile_images
+    WHERE owner_user_id = ? AND lifecycle IN ('pending', 'confirmed')`)
+    .bind(userId).all<ImageRow>()).results.filter(row => kinds.includes(row.kind as ImageKind));
+  const keep = [...new Set(input.keepIds)];
+  const active = new Set(input.activeIds);
+  const selecting = input.selectedIds !== undefined;
+  const selected = new Set(input.selectedIds ?? []);
+  if (selecting && rows.some(row => row.lifecycle === "pending" && keep.includes(row.id))) throw new Error("Guardá la selección antes de agregar nuevas imágenes.");
+  if (keep.some(id => !rows.some(row => row.id === id)) ||
+      [...active].some(id => !keep.includes(id))) throw new Error("Selección de imágenes inválida.");
+  if (gallery && (!state || (rows.some(row => row.lifecycle === "confirmed") && input.galleryRevision !== state.revision))) {
+    throw new Error("La galería cambió. Recargá la página antes de guardar.");
+  }
+  if (selecting && (!state?.selection_pending || !input.galleryRevision ||
+      selected.size !== input.selectedIds!.length ||
+      [...selected].some(id => !rows.some(row => row.id === id && row.kind === 'gallery' && row.lifecycle === 'confirmed')) ||
+      (state.plan_limit !== null && selected.size > state.plan_limit))) {
+    throw new Error("La selección única ya se guardó o no respeta el cupo.");
+  }
+  if (!selecting && rows.some(row => row.gallery_state !== 'available' && active.has(row.id))) {
+    throw new Error("No se pueden mostrar imágenes congeladas.");
+  }
+  const occupying = rows.filter(row => keep.includes(row.id) && row.gallery_state === 'available');
+  if (gallery && !selecting && state?.plan_limit !== null && occupying.length > state!.plan_limit!) {
+    throw new Error("Las imágenes ocultas también ocupan cupo.");
+  }
   const now = new Date().toISOString();
-  const kindSlots = kinds.map(() => "?").join(",");
-
-  const statements = [];
-
-  /*
-   * Lo que se va: confirmado de estos tipos que no está en la lista. No se
-   * borra nada todavía —el archivo puede seguir referenciado, y borrarlo acá
-   * dejaría un hueco si el guardado falla después—: queda marcado y lo
-   * levanta la limpieza (TR-043).
-   */
-  const keepSlots = keepIds.map(() => "?").join(",");
-  statements.push(
-    db
-      .prepare(
-        `UPDATE profile_images
-            SET lifecycle = 'discarded', updated_at = ?, expires_at = ?
-          WHERE owner_user_id = ?
-            AND kind IN (${kindSlots})
-            AND lifecycle = 'confirmed'
-            ${keepIds.length > 0 ? `AND id NOT IN (${keepSlots})` : ""}`,
-      )
-      .bind(now, now, userId, ...kinds, ...keepIds),
-  );
-
-  /*
-   * Lo que queda: confirmado, colgado del perfil, y en la posición que le
-   * tocó. El orden se escribe de a una fila porque cada una lleva el suyo.
-   */
-  keepIds.forEach((imageId, index) => {
-    statements.push(
-      db
-        .prepare(
-          `UPDATE profile_images
-              SET lifecycle = 'confirmed',
-                  expires_at = NULL,
-                  profile_id = ?,
-                  sort_order = ?,
-                  updated_at = ?
-            WHERE id = ? AND owner_user_id = ?
-              AND lifecycle IN ('pending', 'confirmed')`,
-        )
-        .bind(profileId, index, now, imageId, userId),
-    );
-  });
-
-  await db.batch(statements);
+  const token = newId();
+  const statements: D1PreparedStatement[] = [];
+  const guard = gallery ? ` AND EXISTS (SELECT 1 FROM profile_gallery_state WHERE user_id = ? AND revision = ?)` : '';
+  const guardArgs = gallery ? [userId, token] : [];
+  if (state) statements.push(db.prepare(`UPDATE profile_gallery_state
+    SET revision = ?, selection_pending = ? WHERE user_id = ? AND revision = ?`)
+    .bind(token, selecting ? 0 : state.selection_pending, userId, state.revision));
+  // Agrupar habilitadas antes de ocultas también en el servidor.
+  const ordered = rows.filter(row => keep.includes(row.id) || row.gallery_state !== 'available')
+    .sort((a, b) => {
+      const rank = (row: ImageRow) => selecting
+        ? selected.has(row.id) ? row.owner_hidden ? 1 : 0 : 2
+        : row.gallery_state !== 'available' ? 2 : active.has(row.id) ? 0 : 1;
+      return rank(a) - rank(b) || keep.indexOf(a.id) - keep.indexOf(b.id);
+    }).map(row => row.id);
+  for (const row of rows) {
+    const planState = selecting ? (selected.has(row.id) ? 'available' : 'frozen') : row.gallery_state;
+    // Omitir un excedente desde un formulario viejo nunca lo descarta.
+    const discarded = !selecting && row.gallery_state === 'available' && !keep.includes(row.id);
+    if (row.lifecycle === 'pending' && !keep.includes(row.id)) continue;
+    const ownerHidden = selecting ? row.owner_hidden : planState === 'available' ? (active.has(row.id) ? 0 : 1) : row.owner_hidden;
+    const visible = planState === 'available' && !ownerHidden;
+    const hiddenAt = planState === 'available' ? null : row.hidden_at ?? state?.retention_started_at ?? now;
+    statements.push(db.prepare(`UPDATE profile_images SET profile_id = ?, lifecycle = ?,
+      expires_at = ?, sort_order = ?, is_active = ?, hidden_reason = ?, owner_hidden = ?,
+      gallery_state = ?, hidden_at = ?, updated_at = ?
+      WHERE id = ? AND owner_user_id = ? AND kind = ? AND lifecycle IN ('pending', 'confirmed')${guard}`)
+      .bind(profileId, discarded ? 'discarded' : 'confirmed', discarded ? now : null,
+        Math.max(0, ordered.indexOf(row.id)), visible ? 1 : 0,
+        planState !== 'available' ? 'plan' : ownerHidden ? 'owner' : null,
+        ownerHidden, planState, hiddenAt, now, row.id, userId, row.kind, ...guardArgs));
+  }
+  const results = await db.batch(statements);
+  if (state && results[0]?.meta.changes !== 1) throw new Error("La galería cambió. Recargá la página.");
 }
 
 /**
@@ -315,124 +359,120 @@ export async function claimImagesForProfile(
     .run();
 }
 
-/**
- * Aplica el tope de galería del plan (RF-053).
- *
- * No borra nada: lo que excede queda guardado e inactivo, así volver al plan
- * anterior lo repone sin tener que subirlo de nuevo. La foto de perfil y la
- * portada nunca se desactivan — las incluyen todos los planes.
- */
-export async function applyGalleryLimit(
-  userId: string,
-  /** `null` es "sin límite" (TR-002): entran todas. */
-  limit: number | null,
-): Promise<void> {
+export type GalleryState = {
+  plan_limit: number | null;
+  revision: string;
+  selection_pending: number;
+  retention_started_at: string | null;
+};
+
+/** Resuelve el plan vigente incluso si la baja programada todavía no se consolidó. */
+export async function syncGalleryForUser(userId: string): Promise<GalleryState | null> {
   const db = getDb();
+  const profile = await db.prepare(`SELECT plan_id, downgrade_plan_id, plan_expires_at
+    FROM profiles WHERE user_id = ?`).bind(userId).first<{
+      plan_id: PlanId; downgrade_plan_id: PlanId | null; plan_expires_at: string | null;
+    }>();
+  if (!profile) return null;
+  const planId = effectivePlanId({ planId: profile.plan_id, downgradePlanId: profile.downgrade_plan_id, planExpiresAt: profile.plan_expires_at });
+  const plan = await db.prepare('SELECT max_gallery_images FROM plans WHERE id = ?')
+    .bind(planId).first<{ max_gallery_images: number | null }>();
+  await applyGalleryLimit(userId, plan ? plan.max_gallery_images : 0);
+  return db.prepare('SELECT * FROM profile_gallery_state WHERE user_id = ?').bind(userId).first<GalleryState>();
+}
 
-  const { results } = await db
-    .prepare(
-      `SELECT id FROM profile_images
-        WHERE owner_user_id = ? AND kind = 'gallery' AND lifecycle = 'confirmed'
-        ORDER BY sort_order`,
-    )
-    .bind(userId)
-    .all<{ id: string }>();
-
-  const ids = (results ?? []).map((row) => row.id);
-  if (ids.length === 0) return;
-
-  const active = limit === null ? ids : ids.slice(0, limit);
-  const inactive = limit === null ? [] : ids.slice(limit);
-
+/** Sólo un cambio de cupo abre una selección; guardar u ocultar nunca la reabre. */
+export async function applyGalleryLimit(userId: string, limit: number | null): Promise<void> {
+  const db = getDb();
+  const prior = await db.prepare('SELECT * FROM profile_gallery_state WHERE user_id = ?')
+    .bind(userId).first<GalleryState>();
+  if (prior && prior.plan_limit === limit) {
+    // Al vencer todos los excedentes ya no queda una selección que confirmar.
+    if (prior.selection_pending) {
+      await db.prepare(`UPDATE profile_gallery_state SET selection_pending = 0,
+        retention_started_at = NULL, revision = ? WHERE user_id = ? AND revision = ?
+        AND NOT EXISTS (SELECT 1 FROM profile_images WHERE owner_user_id = ?
+          AND kind = 'gallery' AND lifecycle = 'confirmed' AND gallery_state <> 'available')`)
+        .bind(newId(), userId, prior.revision, userId).run();
+    }
+    return;
+  }
+  const rows = (await db.prepare(`SELECT ${COLUMNS} FROM profile_images
+    WHERE owner_user_id = ? AND kind = 'gallery' AND lifecycle = 'confirmed'
+    ORDER BY sort_order, created_at, id`).bind(userId).all<ImageRow>()).results;
+  const excess = limit !== null && rows.length > limit;
   const now = new Date().toISOString();
-
-  const statements = [];
-  if (active.length > 0) {
-    statements.push(
-      db
-        .prepare(
-          `UPDATE profile_images SET is_active = 1, updated_at = ?
-            WHERE id IN (${active.map(() => "?").join(",")})`,
-        )
-        .bind(now, ...active),
-    );
-  }
-  if (inactive.length > 0) {
-    statements.push(
-      db
-        .prepare(
-          `UPDATE profile_images SET is_active = 0, updated_at = ?
-            WHERE id IN (${inactive.map(() => "?").join(",")})`,
-        )
-        .bind(now, ...inactive),
-    );
-  }
-
+  const token = newId();
+  const pending = excess && limit !== 0 ? 1 : 0;
+  const retention = excess ? prior?.retention_started_at ?? now : null;
+  const statements = [prior
+    ? db.prepare(`UPDATE profile_gallery_state SET plan_limit = ?, revision = ?,
+        selection_pending = ?, retention_started_at = ? WHERE user_id = ? AND revision = ?`)
+        .bind(limit, token, pending, retention, userId, prior.revision)
+    : db.prepare(`INSERT OR IGNORE INTO profile_gallery_state
+        (user_id, plan_limit, revision, selection_pending, retention_started_at) VALUES (?, ?, ?, ?, ?)`)
+        .bind(userId, limit, token, pending, retention)];
+  const availableIds = new Set(rows.slice(0, limit ?? rows.length).map(row => row.id));
+  const ordered = [...rows].sort((a, b) => {
+    const rank = (row: ImageRow) => availableIds.has(row.id) ? row.owner_hidden ? 1 : 0 : 2;
+    return rank(a) - rank(b);
+  });
+  rows.forEach((row) => {
+    const available = availableIds.has(row.id);
+    statements.push(db.prepare(`UPDATE profile_images SET gallery_state = ?,
+      is_active = ?, hidden_reason = ?, hidden_at = ?, updated_at = ?, sort_order = ?
+      WHERE id = ? AND owner_user_id = ? AND EXISTS
+        (SELECT 1 FROM profile_gallery_state WHERE user_id = ? AND revision = ?)`)
+      .bind(available ? 'available' : pending ? 'semi' : 'frozen',
+        available && !row.owner_hidden ? 1 : 0,
+        available ? row.owner_hidden ? 'owner' : null : 'plan',
+        available ? null : row.hidden_at ?? retention, now, ordered.indexOf(row), row.id, userId, userId, token));
+  });
   await db.batch(statements);
 }
 
-/**
- * Limpieza de lo que quedó sin confirmar (TR-043).
- *
- * Se lleva dos cosas: lo pendiente que venció —alguien abrió el formulario,
- * subió una foto y se fue— y lo descartado por un guardado. En los dos casos
- * la fila se vuelve a comprobar en el `DELETE`, con el mismo estado con el
- * que se la eligió: si entre la consulta y el borrado alguien la confirmó, el
- * `WHERE` ya no la encuentra y la imagen se salva.
- *
- * El objeto se borra después de la fila y sin dejar que un fallo corte la
- * pasada: un objeto huérfano no se ve en ningún lado y lo vuelve a intentar
- * la próxima. Al revés —objeto borrado y fila viva— sería una imagen rota en
- * un perfil.
+/** Limpia pendientes vencidas, descartadas y excedentes vencidos (BR-032 / TR-043).
+ * Recomprueba estado y fecha al borrar para preservar imágenes recuperadas.
  */
 export async function cleanupExpiredImages(
   limit = 100,
 ): Promise<{ removed: number; failed: number }> {
   const db = getDb();
   const now = new Date().toISOString();
+  const cutoff = new Date(Date.now() - 180 * 86400000).toISOString();
 
   const { results } = await db
     .prepare(
-      `SELECT id, storage_key, lifecycle FROM profile_images
+      `SELECT id, owner_user_id, storage_key, lifecycle FROM profile_images
         WHERE (lifecycle = 'pending' AND expires_at IS NOT NULL AND expires_at < ?)
            OR lifecycle = 'discarded'
+           OR (lifecycle = 'confirmed' AND gallery_state <> 'available' AND hidden_at <= ?)
         LIMIT ?`,
     )
-    .bind(now, limit)
-    .all<{ id: string; storage_key: string; lifecycle: string }>();
+    .bind(now, cutoff, limit)
+    .all<{ id: string; owner_user_id: string; storage_key: string; lifecycle: string }>();
 
   let removed = 0;
   let failed = 0;
 
   for (const row of results ?? []) {
     try {
+      if (row.lifecycle === "confirmed") await syncGalleryForUser(row.owner_user_id);
       /*
        * El estado va en el `WHERE`: entre la consulta y esta línea el
        * formulario pudo haberla confirmado, y en ese caso no se borra.
        */
-      const outcome = await db
-        .prepare(
-          `DELETE FROM profile_images WHERE id = ? AND lifecycle = ?`,
-        )
-        .bind(row.id, row.lifecycle)
-        .run();
-
-      if (outcome.meta.changes === 0) continue;
-
-      /*
-       * El objeto sólo se borra si ninguna otra fila lo referencia. Hoy la
-       * clave es única por fila, pero comprobarlo es lo que impide que un
-       * reemplazo se lleve por delante el archivo que otra imagen todavía
-       * usa (TR-043).
-       */
-      const stillUsed = await db
-        .prepare(
-          `SELECT 1 FROM profile_images WHERE storage_key = ? LIMIT 1`,
-        )
-        .bind(row.storage_key)
-        .first();
-
-      if (!stillUsed) await getMediaBucket().delete(row.storage_key);
+      const eligible = `id = ? AND lifecycle = ? AND (
+        (lifecycle = 'pending' AND expires_at < ?) OR lifecycle = 'discarded' OR
+        (lifecycle = 'confirmed' AND gallery_state <> 'available' AND hidden_at <= ?))`;
+      const outcomes = await db.batch([
+        db.prepare(`INSERT OR IGNORE INTO media_deletion_queue (storage_key, queued_at)
+          SELECT storage_key, ? FROM profile_images WHERE ${eligible}`)
+          .bind(now, row.id, row.lifecycle, now, cutoff),
+        db.prepare(`DELETE FROM profile_images WHERE ${eligible}`)
+          .bind(row.id, row.lifecycle, now, cutoff),
+      ]);
+      if (!outcomes[1]?.meta.changes) continue;
 
       removed += 1;
     } catch (error) {
@@ -442,6 +482,19 @@ export async function cleanupExpiredImages(
     }
   }
 
+  const queue = await db.prepare('SELECT storage_key FROM media_deletion_queue ORDER BY queued_at LIMIT ?')
+    .bind(limit).all<{ storage_key: string }>();
+  for (const entry of queue.results) {
+    try {
+      const stillUsed = await db.prepare('SELECT 1 FROM profile_images WHERE storage_key = ? LIMIT 1')
+        .bind(entry.storage_key).first();
+      if (!stillUsed) await getMediaBucket().delete(entry.storage_key);
+      await db.prepare('DELETE FROM media_deletion_queue WHERE storage_key = ?').bind(entry.storage_key).run();
+    } catch (error) {
+      console.error("cleanupExpiredImages R2 retry pending", entry.storage_key, error);
+      failed += 1;
+    }
+  }
   return { removed, failed };
 }
 

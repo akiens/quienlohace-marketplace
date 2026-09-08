@@ -18,6 +18,7 @@ import type {
 } from "@/types";
 import { coveringLocationIds } from "@/data/locations";
 import type { DowngradeNoticeStage } from "@/domain/plan-changes";
+import { syncGalleryForUser } from "@/infrastructure/d1-profile-images";
 import { getDb } from "@/infrastructure/cloudflare";
 import { slugify } from "@/lib/slug";
 import { newId } from "@/lib/id";
@@ -83,6 +84,8 @@ async function loadRelations(ids: string[], scope: RelationScope = "public") {
 
   const db = getDb();
   const marks = ids.map(() => "?").join(",");
+  const owners = await db.prepare(`SELECT user_id FROM profiles WHERE id IN (${marks})`).bind(...ids).all<{ user_id: string }>();
+  for (const owner of owners.results) await syncGalleryForUser(owner.user_id);
   const onlyActive = scope === "public" ? "AND is_active = 1" : "";
 
   const [
@@ -156,7 +159,7 @@ async function loadRelations(ids: string[], scope: RelationScope = "public") {
          * en el del propio dueño, que lo ve desde el formulario.
          */
         `SELECT id, profile_id, storage_key, alt, kind, sort_order, is_active,
-                lifecycle, width, height
+                hidden_reason, gallery_state, owner_hidden, hidden_at, lifecycle, width, height
          FROM profile_images
          WHERE profile_id IN (${marks}) AND lifecycle = 'confirmed'
            ${onlyActive} ORDER BY sort_order`,
@@ -218,6 +221,13 @@ async function loadRelations(ids: string[], scope: RelationScope = "public") {
       kind: String(r.kind) as ImageKind,
       sortOrder: Number(r.sort_order),
       isActive: Number(r.is_active) === 1,
+      // La consulta pública sólo trae activas, así que no hay motivo que dar.
+      hiddenReason: r.hidden_reason as "owner" | "plan" | null,
+      galleryState: r.gallery_state as "available" | "semi" | "frozen",
+      ownerHidden: Number(r.owner_hidden) === 1,
+      hiddenAt: r.hidden_at as string | null,
+      galleryRevision: null,
+      gallerySelectionPending: false,
       lifecycle: "confirmed" as const,
       width: Number(r.width ?? 0),
       height: Number(r.height ?? 0),

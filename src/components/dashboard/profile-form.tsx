@@ -451,13 +451,30 @@ function ProfileFormFields(props: {
    * cancelar no rompe nada.
    */
   const [imageSelection, setImageSelection] = useState<
-    Record<string, { keepIds: string[]; removedIds: string[]; busy: boolean }>
+    Record<
+      string,
+      {
+        keepIds: string[];
+        activeIds: string[];
+        galleryRevision: string | null;
+        selectedIds?: string[];
+        removedIds: string[];
+        busy: boolean;
+      }
+    >
   >({});
 
   /** Recibe el estado de un campo de imagen y lo guarda por campo. */
   const onImageChange = useCallback(
     (field: string) =>
-      (state: { keepIds: string[]; removedIds: string[]; busy: boolean }) => {
+      (state: {
+        keepIds: string[];
+        activeIds: string[];
+        galleryRevision: string | null;
+        selectedIds?: string[];
+        removedIds: string[];
+        busy: boolean;
+      }) => {
         setImageSelection((current) => ({ ...current, [field]: state }));
       },
     [],
@@ -1399,11 +1416,25 @@ function ProfileFormFields(props: {
           {state.keepIds.map((id) => (
             <input key={id} type="hidden" name={`image:${field}`} value={id} />
           ))}
-          <input
-            type="hidden"
-            name={`imageFields`}
-            value={field}
-          />
+          {/*
+            Cuáles quedan visibles (BR-033). Van aparte de
+            `keepIds` porque una imagen puede quedar guardada y no mostrarse:
+            es lo que pasa con lo que excede el plan tras una baja.
+          */}
+          {state.activeIds.map((id) => (
+            <input
+              key={id}
+              type="hidden"
+              name={`imageActive:${field}`}
+              value={id}
+            />
+          ))}
+          <input type="hidden" name={`imageRevision:${field}`} value={state.galleryRevision ?? ""} />
+          {state.selectedIds !== undefined ? <>
+            <input type="hidden" name={`imageConfirm:${field}`} value="yes" />
+            {state.selectedIds.map(id => <input key={id} type="hidden" name={`imageSelected:${field}`} value={id} />)}
+          </> : null}
+          <input type="hidden" name="imageFields" value={field} />
         </Fragment>
       ))}
 
@@ -2303,8 +2334,9 @@ function ProfileFormFields(props: {
             La galería sí depende del plan: los que no la incluyen ven la vía
             para ampliarlo en vez de un campo que no podrían usar (RF-171).
           */}
-          {allowsFeature(plan, "gallery") ? (
+          {allowsFeature(plan, "gallery") || props.images.some(image => image.kind === "gallery") ? (
             <ImageField
+              key={props.images.find(image => image.kind === "gallery")?.galleryRevision ?? "gallery"}
               field="gallery"
               shape="grid"
               label="Galería de trabajos"

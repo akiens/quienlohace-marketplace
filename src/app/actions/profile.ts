@@ -330,7 +330,20 @@ export async function saveProfile(
         userId: user.id,
         profileId: saved.id,
         kinds: [field],
+        galleryRevision: formData.get(`imageRevision:${field}`)?.toString() ?? null,
+        selectedIds: formData.get(`imageConfirm:${field}`) === "yes"
+          ? formData.getAll(`imageSelected:${field}`).map(String) : undefined,
         keepIds: formData.getAll(`image:${field}`).map(String).filter(Boolean),
+        /*
+         * Cuáles quedan visibles (BR-009). Van aparte de `keepIds` porque una
+         * imagen puede quedar guardada sin mostrarse: lo que excede el plan
+         * tras una baja sigue ahí, inactivo, hasta que se elija mostrarlo o
+         * se mejore el plan.
+         */
+        activeIds: formData
+          .getAll(`imageActive:${field}`)
+          .map(String)
+          .filter(Boolean),
       });
     }
 

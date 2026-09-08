@@ -24,7 +24,7 @@ Las decisiones sobre almacenamiento, índices, transacciones, seguridad, normali
 
 1. Un perfil puede guardar **hasta 10 entradas de horario**, de 3 a 120 caracteres.
 2. Una **ubicación física** y un **área de servicio** son conceptos distintos. Una sucursal puede indicar un departamento o una localidad; la cobertura puede indicar Uruguay, departamentos o localidades.
-3. Los límites de los planes se aplican únicamente a elementos activos. Los datos que exceden un plan después de una baja se conservan temporalmente, pero dejan de mostrarse y de contar como beneficios activos.
+3. Los límites de los planes se aplican únicamente a elementos activos. Los datos que exceden un plan después de una baja se conservan temporalmente, pero dejan de mostrarse públicamente y de contar como beneficios activos.
 4. La verificación de contacto, la verificación comercial del perfil y la validación de una habilitación profesional son tres procesos independientes.
 
 ---
@@ -112,6 +112,7 @@ Las posiciones destacadas siguen siendo una capacidad de Platino y ordenan los l
 - Los rubros se derivan de los rubros de las especialidades activas.
 - El límite de servicios es total por perfil, no por especialidad.
 - La foto de perfil y la portada no consumen el cupo de la galería.
+- En la galería, el cupo cuenta las imágenes disponibles según el plan, incluidas las ocultas voluntariamente. Ocultar una imagen no libera cupo; las congeladas y semicongeladas quedan fuera del cupo disponible (BR-032 y BR-033).
 - “Sin límite” significa que no hay máximo comercial; no elimina controles razonables contra abuso.
 - Una operación que exceda el plan debe rechazarse o pedir que se desactive otro elemento. No debe aceptarse parcialmente sin informarlo.
 
@@ -127,11 +128,12 @@ Las posiciones destacadas siguen siendo una capacidad de Platino y ordenan los l
 
 - Una mejora habilita los nuevos cupos cuando la suscripción queda activa.
 - Una baja programada solo puede apuntar a un plan inferior.
-- Al bajar de plan no se eliminan datos excedentes: se desactivan de forma determinista y dejan de mostrarse.
+- Al bajar de plan no se eliminan datos excedentes: se desactivan de forma determinista y dejan de mostrarse públicamente.
 - Se conservan primero los elementos con mayor prioridad definida por el proveedor; ante empate, los más antiguos.
 - Los elementos desactivados pueden reactivarse al mejorar el plan si vuelven a caber.
 - Los datos excedentes pueden eliminarse después de 180 días desde la fecha comunicada al proveedor. Antes, el proveedor debe poder revisar qué quedó inactivo.
 - Las redes sociales se conservan, pero permanecen inactivas en Cobre.
+- Para imágenes de galería, BR-032 detalla la congelación, la selección única, la conservación y la recuperación. Ocultar voluntariamente una imagen se rige por BR-033 y es independiente del cambio de plan.
 
 ---
 
@@ -252,7 +254,54 @@ La jerarquía funcional es `Rubro → Especialidad → Servicio`.
 - La galería depende del plan y respeta BR-006.
 - Una imagen subida durante el alta pertenece al usuario que la subió aunque todavía no esté asociada al perfil.
 - Solo su propietario o un administrador autorizado puede reemplazarla o eliminarla.
-- Las imágenes inactivas por una baja no se muestran.
+- Las imágenes congeladas o semicongeladas por una baja no se muestran en el perfil público, pero siguen visibles para el proveedor en la gestión de imágenes según BR-032.
+- La visibilidad voluntaria y el orden de las imágenes disponibles se rigen por BR-033.
+
+### BR-032 — Galería al bajar o mejorar de plan
+
+La congelación depende del cupo del plan y es independiente de la visibilidad elegida por el proveedor (BR-033). Este flujo comienza cuando el cambio de plan se hace efectivo, no cuando se programa.
+
+| Estado por plan | Uso en galería | Gestión del proveedor |
+| --- | --- | --- |
+| Disponible | Ocupa cupo y puede mostrarse públicamente si está habilitada. | Permite el uso normal de la imagen. |
+| Semicongelada | Queda fuera del cupo y no se muestra públicamente. | Permanece visible, con selección única pendiente y aviso del tiempo restante antes de su eliminación. |
+| Congelada | Queda fuera del cupo y no se muestra públicamente. | Permanece visible, sin posibilidad de intercambiarla con las disponibles, y con aviso del tiempo restante antes de su eliminación. |
+
+**Baja a un plan sin galería**
+
+- Todas las imágenes de galería quedan congeladas y se muestran en la sección de imágenes del proveedor con su advertencia de eliminación.
+- No se ofrece selección de imágenes para conservar en la galería, porque el cupo es cero.
+
+**Cambio a un plan con galería y un cupo menor que las imágenes conservadas**
+
+- Tanto al bajar de plan como al mejorar a uno cuyo cupo no alcance para todas las imágenes conservadas, quedan disponibles tantas imágenes como permita el nuevo plan, siguiendo la prioridad y el desempate de BR-009. Las excedentes pasan a la sección de imágenes semicongeladas.
+- El proveedor tiene una única oportunidad de elegir con cuáles permanecer, entre las imágenes que quedaron disponibles y las semicongeladas por ese cambio de plan, respetando el nuevo cupo.
+- Puede ajustar esa elección antes de guardarla. La oportunidad se consume al confirmar y guardar correctamente la selección.
+- Al guardar, las elegidas quedan disponibles y todas las no elegidas quedan congeladas. No vuelve a ofrecerse la selección para ese mismo ajuste de cupo ni se permiten intercambios posteriores con las congeladas. Así se evita usar la sección como almacenamiento rotativo.
+- Mientras no se guarde la selección, se mantiene la galería provisional dentro del cupo; las excedentes siguen semicongeladas y su plazo de conservación continúa corriendo.
+- Si todas las imágenes conservadas caben en el nuevo plan, no hay excedentes ni se requiere esta selección.
+
+**Conservación y eliminación de excedentes**
+
+- No se eliminan automáticamente imágenes por exceder el plan antes de transcurridos 180 días desde la fecha comunicada al proveedor según BR-009.
+- Tanto las congeladas como las semicongeladas muestran cuánto tiempo les queda antes de ser eliminadas. La advertencia se muestra en la gestión del proveedor, nunca en el perfil público.
+- Guardar la selección única y pasar de semicongeladas a congeladas no reinicia el plazo. Las imágenes disponibles que se descarten al guardar quedan sujetas al mismo plazo de esa baja.
+- Transcurridos los 180 días, las imágenes que continúen congeladas o semicongeladas quedan sujetas a eliminación definitiva.
+
+**Recuperación al mejorar de plan**
+
+- Cuando la mejora queda activa y el nuevo cupo alcanza o supera el total de imágenes conservadas de la galería, todas las congeladas y semicongeladas se descongelan automáticamente y vuelven a estar disponibles para uso normal.
+- Las imágenes recuperadas dejan de estar sujetas a la eliminación por aquella baja. Una imagen ya eliminada no puede recuperarse.
+- Descongelar conserva la preferencia de mostrar u ocultar: no publica una imagen que el proveedor había ocultado voluntariamente.
+- Si el nuevo cupo no alcanza para todas las imágenes conservadas, se aplica el flujo de selección única definido arriba: quedan disponibles las permitidas y las excedentes quedan semicongeladas hasta guardar la elección. Al guardarla, las no seleccionadas quedan congeladas y no se permite repetir la selección para ese mismo ajuste de cupo.
+
+### BR-033 — Mostrar, ocultar y ordenar imágenes de galería
+
+- Mostrar u ocultar es una preferencia de visibilidad pública, independiente de la congelación por plan y de la selección única de BR-032.
+- Al ocultar una imagen disponible, deja de mostrarse en el perfil público. En la gestión permanece en la misma galería, se presenta visualmente deshabilitada y pasa a la última posición de la galería, después de las demás imágenes ocultas.
+- Al volver a habilitarla, pasa a la última posición del grupo de imágenes habilitadas, antes de las ocultas. Las demás imágenes conservan su orden relativo.
+- Ocultar una imagen no la mueve a otra sección, no la congela, no inicia un plazo de eliminación y no libera cupo del plan.
+- Mostrar u ocultar no consume ni reabre la selección única y no permite descongelar imágenes ni eludir el límite del plan.
 
 ### BR-022 — Redes sociales
 
@@ -329,7 +378,7 @@ La jerarquía funcional es `Rubro → Especialidad → Servicio`.
 
 - Una operación que afecta varias reglas se completa por entero o no se aplica.
 - Nunca debe quedar público un perfil que dejó de cumplir requisitos de publicación.
-- Los conteos mostrados corresponden con los elementos activos realmente visibles.
+- Los conteos públicos corresponden con los elementos activos realmente visibles. En la gestión de galería, el uso del cupo sigue BR-007 y distingue las imágenes ocultas de las congeladas o semicongeladas.
 
 ### BR-031 — Búsqueda y filtros
 

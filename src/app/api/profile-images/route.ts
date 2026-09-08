@@ -47,18 +47,22 @@ function fail(error: string, status = 400) {
 /**
  * Cuántas imágenes admite el campo para este usuario.
  *
- * La política fija el tope de los campos que no dependen del plan; los que sí
- * —hoy la galería— lo dicen con `maxCount: null` y el número sale del plan
- * vigente (BR-009). Se resuelve acá y no en la UI: que el paso no se muestre
- * no es una restricción (TR-004).
+ * El cupo del plan es **sólo de la galería** (BR-007): la foto de perfil y la
+ * portada las incluyen todos los planes y no consumen ese cupo (BR-021). Por
+ * eso el tope de esos campos sale de su política —una cada uno— y el plan ni
+ * se consulta.
+ *
+ * Un campo que sí depende del plan lo declara con `maxCount: null` y su cupo
+ * sale del plan vigente (BR-009). Se resuelve acá y no en la UI: que el paso
+ * no se muestre no es una restricción (TR-004).
  */
 async function maxForField(
   field: ImageField,
   planId: PlanId,
-): Promise<{ max: number | null; planName: string | null }> {
+): Promise<{ max: number | null; planName: string | null; fromPlan: boolean }> {
   const policy = policyFor(field);
   if (policy.maxCount !== null) {
-    return { max: policy.maxCount, planName: null };
+    return { max: policy.maxCount, planName: null, fromPlan: false };
   }
 
   const plan = (await plans.findById(planId)) ?? (await plans.findById("cobre"));
@@ -70,6 +74,7 @@ async function maxForField(
   return {
     max: plan ? limitFor(plan, "galleryImages") : 0,
     planName: plan?.name ?? null,
+    fromPlan: true,
   };
 }
 
@@ -114,15 +119,26 @@ export async function POST(request: Request) {
    * Contar también lo pendiente es lo que impide subir diez, guardar, y
    * pasarse del plan de una.
    */
-  const { max, planName } = await maxForField(field, planId);
+  const { max, planName, fromPlan } = await maxForField(field, planId);
 
   if (max === 0) {
-    return fail("Tu plan no incluye galería de trabajos.");
+    /*
+     * El aviso distingue de dónde sale el cero: sólo los campos que dependen
+     * del plan pueden decir "tu plan no lo incluye". Uno cuya política diga
+     * cero está apagado para todos, y culpar al plan mandaría a mejorarlo
+     * para conseguir algo que no daría igual.
+     */
+    return fail(
+      fromPlan
+        ? "Tu plan no incluye galería de trabajos."
+        : "Este campo no admite imágenes.",
+    );
   }
 
   if (max !== null) {
+    // BR-007: contar disponibles del campo, incluidas ocultas y pendientes.
     const current = (await listImagesForUser(user.id)).filter(
-      (image) => image.kind === field,
+      (image) => image.kind === field && image.galleryState === "available",
     );
 
     /*
@@ -131,7 +147,7 @@ export async function POST(request: Request) {
      * obligaría a borrar la vieja antes de poder elegir la nueva, que es
      * justo lo que TR-043 evita.
      */
-    if (max > 1 && current.length >= max) {
+    if (field === "gallery" && current.length >= max) {
       return fail(
         planName
           ? `Tu plan ${planName} permite hasta ${max} imágenes.`
