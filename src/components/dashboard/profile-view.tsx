@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
@@ -92,7 +93,7 @@ export function ProfileView({
         monta antes del título: los avisos van pegados al encabezado del sitio
         y desde este punto del árbol no se puede subir hasta ahí.
       */
-      <div className="flex flex-col gap-4 px-5 sm:px-0">
+      <div className="flex min-w-0 flex-col gap-4 px-1 sm:px-0">
         {/*
           El mismo formulario del alta, abierto de una vez. Comparten campos,
           validación y acción: una sola definición de qué es un perfil válido,
@@ -114,7 +115,7 @@ export function ProfileView({
   return (
     // El padding lateral va acá y no en la página: en edición el aviso tiene
     // que poder salirse de él.
-    <div className="flex flex-col gap-5 px-5 sm:px-0">
+    <div className="flex flex-col gap-5 px-1 sm:px-0">
       {/* Estado y acciones: publicar, editar y ver cómo se ve por fuera. */}
       <div className="flex flex-wrap items-center gap-2.5 rounded-card border border-line bg-white p-4">
         <span
@@ -166,13 +167,11 @@ export function ProfileView({
           <div className="flex flex-wrap items-center gap-4">
             <Thumb image={avatar} label="Foto de perfil" round />
             <Thumb image={cover} label="Portada" />
-            {allowsFeature(plan, "gallery") ? (
-              <span className="text-[13.5px] text-ink-soft">
-                Galería: {gallery.length} imagen
-                {gallery.length === 1 ? "" : "es"}
-              </span>
-            ) : null}
           </div>
+
+          {allowsFeature(plan, "gallery") && gallery.length > 0 ? (
+            <Gallery images={gallery} />
+          ) : null}
         </Section>
 
         <Section title="Identidad">
@@ -417,5 +416,60 @@ function Thumb({
       </span>
       <span className="text-[13.5px] text-ink-soft">{label}</span>
     </span>
+  );
+}
+
+/**
+ * La galería arranca resumida para que la sección siga siendo escaneable:
+ * cuatro fotos en móvil (dos filas) y cinco en pantallas amplias (una fila).
+ */
+function Gallery({ images }: { images: ProfileImage[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const hasMoreOnMobile = images.length > 4;
+  const hasMoreOnDesktop = images.length > 5;
+
+  return (
+    <div className="flex flex-col items-start gap-3">
+      <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-5">
+        {images.map((image, index) => {
+          const collapsedVisibility =
+            index >= 5 ? "hidden" : index === 4 ? "hidden sm:block" : "";
+
+          return (
+            <div
+              key={image.id}
+              className={`aspect-square overflow-hidden rounded-card border border-line bg-surface-muted ${
+                expanded ? "" : collapsedVisibility
+              }`}
+            >
+              {/* La sirve `/media` desde R2: no pasa por el optimizador. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={image.url}
+                alt={image.alt || "Foto de la galería"}
+                className="h-full w-full object-cover"
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      {hasMoreOnMobile ? (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((current) => !current)}
+          className={`flex h-10 items-center gap-1.5 rounded-input px-4 text-[14px] font-semibold ${SECONDARY_SURFACE} ${
+            hasMoreOnDesktop ? "" : "sm:hidden"
+          }`}
+        >
+          {expanded ? "Mostrar menos" : "Mostrar más"}
+          <Icon
+            name={expanded ? "expand_less" : "expand_more"}
+            className="text-[18px] text-brand-800"
+          />
+        </button>
+      ) : null}
+    </div>
   );
 }

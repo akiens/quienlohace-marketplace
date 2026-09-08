@@ -100,7 +100,7 @@ export default function RootLayout({
           layout —que además es un componente de servidor—.
         */}
         <HeaderWithAuth />
-        <main id="contenido">
+        <main id="contenido" className="min-w-0">
           {children}
         </main>
         <SiteFooter />

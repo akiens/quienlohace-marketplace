@@ -1370,7 +1370,7 @@ function ProfileFormFields(props: {
        * que es lo que pinta los errores por campo.
        */
       noValidate
-      className="flex flex-col gap-4 sm:gap-5"
+      className="flex min-w-0 flex-col gap-4 sm:gap-5"
       /*
        * Se escucha en el formulario y no en cada campo: `input` y `change`
        * burbujean, así que un solo par de manejadores alcanza para los
@@ -1470,12 +1470,12 @@ function ProfileFormFields(props: {
          */
         resetKey={state}
         /*
-         * En edición el formulario va dentro de un bloque con `px-5` y la
+         * En edición el formulario va dentro de un bloque con `px-1` y la
          * banda tiene que salirse de él para tocar los dos bordes. En el alta
          * no hay tal padding —la página lo pone en `px-0` en el teléfono— y
          * restarlo la mandaría fuera de la pantalla.
          */
-        className={editing ? "-mx-5 sm:mx-0" : ""}
+        className={editing ? "-mx-1 sm:mx-0" : ""}
       />
 
       {/* La barra de pasos es del recorrido guiado: en edición no hay
@@ -1504,7 +1504,7 @@ function ProfileFormFields(props: {
         una caja cuadrada flotando en el medio de una página con aire.
       */}
       <div
-        className={`border-line bg-white shadow-panel ${
+        className={`min-w-0 border-line bg-white shadow-panel ${
           editing
             ? "rounded-card border"
             : "border-y sm:rounded-card sm:border"
@@ -3051,7 +3051,7 @@ function Panel({
       un paso de tres campos ya obligaba a desplazarse.
     */
     <div
-      className={`${active ? "flex" : "hidden"} flex-col gap-3.5 px-4 py-4 sm:gap-4 sm:p-5`}
+      className={`${active ? "flex" : "hidden"} min-w-0 flex-col gap-3.5 px-4 py-4 sm:gap-4 sm:p-5`}
     >
       {children}
     </div>
@@ -3122,7 +3122,11 @@ function CheckRow({
 
 /** Dos campos por fila en pantallas anchas; apilados en móvil. */
 function Row({ children }: { children: React.ReactNode }) {
-  return <div className="grid gap-3.5 sm:grid-cols-2 sm:gap-4">{children}</div>;
+  return (
+    <div className="grid min-w-0 gap-3.5 sm:grid-cols-2 sm:gap-4">
+      {children}
+    </div>
+  );
 }
 
 function Field({
@@ -3214,7 +3218,7 @@ function Field({
     </span>
   ) : null;
 
-  const className = `flex flex-col gap-1 sm:gap-1.5 ${half ? "" : "w-full"}`;
+  const className = `flex min-w-0 flex-col gap-1 sm:gap-1.5 ${half ? "" : "w-full"}`;
 
   if (group) {
     return (

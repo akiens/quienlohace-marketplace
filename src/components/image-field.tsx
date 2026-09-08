@@ -123,7 +123,7 @@ export function ImageField({
     `${formatAccepted(field)}, hasta ${formatBytes(policy.maxBytes)}.`;
 
   return (
-    <fieldset className="flex w-full flex-col gap-2">
+    <fieldset className="flex min-w-0 w-full flex-col gap-2">
       <legend className="mb-1.5 text-[13.5px] font-semibold text-ink-muted">
         {label}
       </legend>

@@ -135,7 +135,7 @@ export default async function DashboardPage({
        * flotando con 20px a cada lado. El margen se lo pone cada bloque que sí
        * lo necesita, y vuelve entero desde `sm`.
        */}
-      <div className="mx-auto flex w-full max-w-shell flex-col gap-5 px-0 py-6 sm:gap-7 sm:px-6 sm:py-8">
+      <div className="mx-auto flex min-w-0 w-full max-w-shell flex-col gap-5 px-0 py-6 sm:gap-7 sm:px-6 sm:py-8">
         <header className="flex flex-col gap-1.5 px-5 sm:px-0">
           <div className="flex">
             <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
