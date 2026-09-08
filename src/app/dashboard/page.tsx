@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { Banner } from "@/components/banner";
 import { DowngradeNotice } from "@/components/dashboard/downgrade-notice";
 import { PlanSwitcher } from "@/components/dashboard/plan-switcher";
 import { ProfileView } from "@/components/dashboard/profile-view";
@@ -43,10 +42,11 @@ export default async function DashboardPage({
   if (!hasCloudflareRuntime()) return <SetupNotice />;
 
   /*
-   * El modo edición se lee acá además de en `ProfileView` porque su aviso es
-   * un `Banner`, y los avisos van pegados al encabezado: montado dentro de
-   * `ProfileView` quedaba debajo del título de la página. La página no se
-   * vuelve dinámica por esto — ya lo era (`force-dynamic`).
+   * El modo edición se lee acá además de en `ProfileView` porque de él
+   * depende el aviso de la baja de plan, que va pegado al encabezado: apilarlo
+   * sobre el aviso del formulario (TR-040) empuja los campos fuera de la
+   * pantalla, y editando ya se leyó al entrar. La página no se vuelve dinámica
+   * por esto — ya lo era (`force-dynamic`).
    */
   const editing = (await searchParams).editar === "1";
 

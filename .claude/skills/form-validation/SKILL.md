@@ -1,6 +1,6 @@
 ---
 name: form-validation
-description: Patrón de validación de formularios de QuienLoHace: schemas Zod compartidos entre cliente y servidor, cuándo mostrar y ocultar cada error, y accesibilidad. Usar al crear o modificar cualquier formulario con entradas de la persona usuaria — registro, acceso, contacto, opiniones, perfil — o al revisar validación existente.
+description: Patrón de formularios de QuienLoHace: schemas Zod compartidos entre cliente y servidor (TR-039), cuándo mostrar y ocultar cada error, el aviso de resultado success/warning/error con FormAlert (TR-040) y accesibilidad. Usar al crear o modificar cualquier formulario con entradas de la persona usuaria — registro, acceso, contacto, opiniones, perfil — al revisar validación existente, o al mostrar el resultado de un envío.
 ---
 
 # Validación de formularios
@@ -31,7 +31,7 @@ export const contactSchema = z.object({
 Reutilizá las piezas que ya existen (`nameSchema`, `emailSchema`,
 `passwordSchema`) en vez de redefinir la regla.
 
-## 2. El servidor valida siempre (RF-163)
+## 2. El servidor valida siempre (TR-004, TR-039)
 
 La validación del cliente es comodidad, no seguridad: se puede desactivar
 JavaScript o mandar el `FormData` a mano. La Server Action **vuelve a validar
@@ -47,23 +47,65 @@ usan los formularios. Los errores sin campo caen en la clave `form`.
 
 ## 3. Cuándo se muestra y cuándo se oculta un error
 
-Esta es la parte que es fácil equivocar. La regla es **asimétrica**:
+Esta es la parte que es fácil equivocar. El error aparece **mientras se
+escribe**, no recién al salir del campo: quien tipea algo inválido tiene que
+enterarse ahí mismo.
+
+Validar en cada tecla, sin más, marcaría en rojo todo dato a medio tipear
+(`ana@gmail.co` está mal hasta la última letra). Por eso al escribir se espera
+una pausa corta sin teclas —`FIELD_ERROR_DELAY_MS`, 600 ms— antes de mostrar
+el error. Cada tecla reinicia la espera.
 
 | Momento | Qué hace |
 |---|---|
-| `onBlur` | Valida el campo y **muestra** su error si lo hay. |
-| `onInput` | **Sólo quita** el error si el valor pasó a ser válido. Nunca agrega. |
+| Al escribir, ya válido | **Quita** el error en el acto, sin esperar. |
+| Al escribir, sigue inválido | **Muestra** el error tras la pausa. |
+| `onBlur` | **Muestra** el error ya: se terminó de escribir. |
 | `onSubmit` | Valida todo, muestra todos los errores y corta el envío. |
 
-Escribir no puede *agregar* un error: marcaría en rojo un correo a medio
-tipear (`ana@`), que es exactamente lo que la persona está por completar.
-Escribir sí puede *sacarlo*, y eso es lo que deja ver que el campo ya va bien
-antes de salir de él.
+La asimetría es deliberada: corregir se nota siempre al instante, equivocarse
+tras la pausa. Dejar el rojo puesto mientras se piensa si ya está bien es peor
+que ponerlo tarde.
 
-Un campo sólo muestra error si fue tocado (`touched`) o si hubo un envío
-fallido; si no, el formulario aparecería en rojo antes de escribir nada.
+No lo implementes a mano: `useFieldErrors` (`src/lib/use-field-errors.ts`)
+tiene los temporizadores por campo y los tres momentos resueltos.
 
-## 4. Los errores del servidor caducan al editar
+```tsx
+const fieldErrors = useFieldErrors(validateField);
+
+<input
+  onChange={(e) => fieldErrors.edit("email", e.target.value)}
+  onBlur={(e) => fieldErrors.blur("email", e.target.value)}
+  aria-invalid={fieldErrors.shown.email ? true : undefined}
+/>
+```
+
+`shown` son los errores que ya se pueden mostrar; un campo intacto no aparece
+en rojo antes de escribir nada.
+
+## 4. Cuándo se habilita el botón de envío (TR-039)
+
+El botón está encendido **sólo si** se cumplen las tres a la vez:
+
+1. Hay algo que enviar: en edición, algún control cambió respecto de lo
+   guardado (`dirty`); en un alta, están los obligatorios.
+2. Ningún campo tiene un valor inválido según su schema.
+3. No hay un envío en curso (`pending`).
+
+```tsx
+const canSave = canSubmit && invalidFields.length === 0 && (!editing || dirty);
+```
+
+Un botón encendido que al apretarlo no hace nada se lee como roto; uno
+apagado que dice qué falta, no. La contracara: un cambio válido **enciende el
+botón solo**, sin apretar nada más.
+
+Tras un envío exitoso el formulario vuelve a esperar: lo recién guardado pasa
+a ser el punto de partida y el botón se apaga hasta el próximo cambio.
+
+La referencia es `profile-form.tsx`, que ya lo hace entero.
+
+## 5. Los errores del servidor caducan al editar
 
 Si el servidor respondió "El correo entrado ya está en uso." y la persona
 escribe otro correo, ese mensaje ya no habla del valor que está en pantalla.
@@ -74,14 +116,62 @@ La excepción es el error general (clave `form`): "Correo o contraseña
 incorrectos." se queda hasta reenviar, porque sólo un envío nuevo puede
 saber si las credenciales nuevas sirven.
 
-## 5. Dónde va cada error
+## 6. Dónde va cada error
 
 - **De un campo** → debajo de su input, con el borde del input en rojo.
-- **General** (clave `form`) → **debajo del botón de envío**, que es donde
-  queda la vista después de enviar. Arriba del formulario empuja todo el
-  contenido hacia abajo al aparecer.
+- **General** (clave `form`) → depende del formulario:
+  - En **acceso y registro**, debajo del botón de envío. Es una excepción
+    deliberada (TR-040): esos formularios son cortos y un aviso arriba
+    desplazaba todo el contenido al aparecer.
+  - En el **resto**, como banda pegada al encabezado, con `FormAlert` (§7).
 
-## 6. Accesibilidad
+## 7. El aviso del resultado (TR-040)
+
+Todo envío termina diciendo cómo salió. No escribas el aviso a mano con
+colores literales: es `FormAlert`, que envuelve el `Banner` del sitio, se
+pega al encabezado, dura 15 s y trae la cruz para cerrarlo antes.
+
+```tsx
+<FormAlert
+  message={
+    state.message ??
+    state.errors?.form ??
+    (state.errors ? "Revisá los campos marcados." : undefined)
+  }
+  tone={state.tone ?? (state.errors ? "error" : "success")}
+  // El objeto de estado, que `useActionState` devuelve nuevo en cada
+  // respuesta: sin esto dos envíos de igual texto no darían señal.
+  resetKey={state}
+/>
+```
+
+Los tres tonos:
+
+| Tono | Cuándo |
+|---|---|
+| `success` | Salió como se pedía. |
+| `warning` | Salió, pero con una consecuencia que hay que saber. |
+| `error` | No salió. |
+
+El tono se deduce solo —`message` es éxito, `errors` es error—, así que
+`warning` es el único que hay que pedir a mano, desde el servidor:
+
+```ts
+return {
+  tone: "warning",
+  message: "Guardamos los cambios, pero tu perfil dejó de estar publicado.",
+};
+```
+
+Dos cosas que es fácil equivocar:
+
+- Un rechazo por validación vuelve con los errores **por campo** y sin
+  `form`. Sin un mensaje de respaldo el aviso queda mudo justo cuando hay
+  algo que decir.
+- Un formulario que **se reemplaza** por una confirmación final (opiniones,
+  contacto) no usa `FormAlert`: ese mensaje no debe desaparecer solo.
+
+## 8. Accesibilidad
 
 Cada error necesita las tres cosas:
 
@@ -102,7 +192,7 @@ otro idioma, no se pueden traducir y contradicen a los del servidor. Los
 atributos (`required`, `minLength`) se dejan igual porque siguen describiendo
 el campo.
 
-## 7. Mensajes
+## 9. Mensajes
 
 En español rioplatense, en el mismo tono que el resto del sitio, y diciendo
 qué hacer. El mensaje vive en el schema, no en el componente, así el cliente
@@ -113,16 +203,44 @@ y el servidor dicen lo mismo.
 - Regla incumplida → `La contraseña no cumple con el mínimo de caracteres requeridos.`
 - Falla de infraestructura → `No fue posible el registro, por favor intente más tarde.`
 
-Nunca muestres el error real de una excepción: registralo con `console.error`
-y devolvé un mensaje genérico. El detalle no le sirve a quien usa el sitio y
-puede filtrar información de la infraestructura.
+## 10. El error real nunca sale al navegador (TR-041)
+
+Toda operación que pueda fallar por infraestructura —base, hash, red,
+almacenamiento— va dentro de un `try`. **Una Server Action no puede dejar
+escapar una excepción**: sin `catch`, el error sube al renderer y termina en
+la pantalla, con su mensaje real a la vista.
+
+```ts
+try {
+  saved = await profiles.update(existing.id, fitted, limits);
+} catch (error) {
+  console.error("saveProfile failed", error);
+  return { errors: { form: SAVE_FAILED } };
+}
+```
+
+El error entero va al log; de vuelta va una frase genérica y estable, definida
+como constante. Nunca el `message` de la excepción, el stack, el SQL ni el
+nombre de una tabla, una columna o un constraint.
+
+Un error de base que **sí** corresponde a una regla del producto se traduce al
+mensaje de esa regla antes de salir: el choque del índice único de
+`users.email` se responde con `El correo entrado ya está en uso.`, nunca con
+el texto del constraint.
 
 ## Al terminar
 
 - [ ] El schema está en `src/lib/validation.ts` y lo usan los dos lados.
 - [ ] La Server Action valida antes de tocar la base.
-- [ ] `onInput` sólo limpia; `onBlur` y `onSubmit` muestran.
+- [ ] El error aparece escribiendo, tras la pausa; se va al instante al
+      corregir. `onBlur` y `onSubmit` lo muestran sin esperar.
 - [ ] Los errores del servidor caducan al editar el campo.
-- [ ] El error general va debajo del botón.
+- [ ] El error general va donde corresponde: banda con `FormAlert`, o
+      debajo del botón en acceso y registro.
+- [ ] El envío termina con un aviso de resultado, con el tono correcto.
+- [ ] El rechazo por validación no deja el aviso mudo.
+- [ ] El botón se enciende sólo con cambios y todo válido.
+- [ ] Ninguna operación que toque la base quedó fuera de un `try`.
+- [ ] Ningún mensaje al navegador lleva el error real.
 - [ ] `aria-invalid`, `aria-describedby`, `role="alert"` e `id` puestos.
 - [ ] `noValidate` en el `<form>`.

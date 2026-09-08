@@ -16,7 +16,7 @@ export type FormState = {
   errors?: Record<string, string>;
   message?: string;
   /**
-   * El tono del aviso, cuando el que se deduce no alcanza.
+   * El tono del aviso, cuando el que se deduce no alcanza (TR-040).
    *
    * Por defecto un `message` es un éxito y unos `errors` un error, que cubre
    * casi todo. Se pasa a mano el caso que no encaja: el guardado que salió

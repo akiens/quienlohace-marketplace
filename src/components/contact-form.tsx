@@ -1,24 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button, Icon } from "@/components/ui";
+import { CONTACT_REASONS, contactSchema } from "@/lib/validation";
+import { FIELD_ERROR_DELAY_MS } from "@/lib/use-field-errors";
 
 type Fields = {
   nombre: string;
   email: string;
-  motivo: string;
+  motivo: (typeof CONTACT_REASONS)[number];
   mensaje: string;
 };
 
 type Errors = Partial<Record<keyof Fields, string>>;
 
-const MOTIVOS = [
-  { value: "consulta", label: "Consulta general" },
-  { value: "perfil", label: "Ayuda con mi perfil" },
-  { value: "publicidad", label: "Publicidad y patrocinios" },
-  { value: "reporte", label: "Reportar un problema" },
-];
+/*
+ * La etiqueta en español de cada motivo. Los valores son los de
+ * `CONTACT_REASONS`, en el schema: el tipo del índice obliga a que esta lista
+ * y la regla no puedan separarse.
+ */
+const MOTIVO_LABELS: Record<(typeof CONTACT_REASONS)[number], string> = {
+  consulta: "Consulta general",
+  perfil: "Ayuda con mi perfil",
+  publicidad: "Publicidad y patrocinios",
+  reporte: "Reportar un problema",
+};
 
 const EMPTY: Fields = {
   nombre: "",
@@ -28,46 +35,106 @@ const EMPTY: Fields = {
 };
 
 /**
- * En el prototipo el envío se simula. La validación es la misma que se
- * necesitaría con backend, y en producción debe repetirse del lado servidor:
- * nunca se confía sólo en el frontend.
+ * Valida un campo contra su regla del schema. Devuelve el error, o "".
+ *
+ * Las reglas salen de `contactSchema` (TR-039), el mismo del que tendría que
+ * validar el servidor cuando este formulario deje de ser una simulación: un
+ * solo lugar donde dice qué correo es válido.
  */
-function validate(fields: Fields): Errors {
-  const errors: Errors = {};
-
-  if (fields.nombre.trim().length < 2) {
-    errors.nombre = "Escribí tu nombre.";
-  }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email.trim())) {
-    errors.email = "Revisá el correo: no parece una dirección válida.";
-  }
-  if (fields.mensaje.trim().length < 10) {
-    errors.mensaje = "Contanos un poco más (al menos 10 caracteres).";
-  }
-
-  return errors;
+function validateField<K extends keyof Fields>(field: K, value: string): string {
+  const parsed = contactSchema.shape[field].safeParse(value);
+  return parsed.success ? "" : (parsed.error.issues[0]?.message ?? "");
 }
 
 export function ContactForm() {
   const [fields, setFields] = useState<Fields>(EMPTY);
   const [errors, setErrors] = useState<Errors>({});
+  /** Los campos que ya se dejaron: recién ahí se muestra su error. */
+  const [touched, setTouched] = useState<Partial<Record<keyof Fields, boolean>>>(
+    {},
+  );
   const [sent, setSent] = useState(false);
 
+  /*
+   * Un temporizador por campo para la pausa: cada tecla cancela el suyo, y
+   * dos campos escribiéndose no se pisan el turno.
+   */
+  const revealTimers = useRef<
+    Partial<Record<keyof Fields, ReturnType<typeof setTimeout>>>
+  >({});
+
+  useEffect(() => {
+    const pending = revealTimers.current;
+    return () => {
+      for (const timer of Object.values(pending)) clearTimeout(timer);
+    };
+  }, []);
+
+  /*
+   * Mientras se escribe (TR-039).
+   *
+   * Corregirlo se nota en el acto; si sigue mal, el error aparece recién tras
+   * una pausa sin teclas. Escribiendo de corrido no marca en rojo un correo a
+   * medio tipear (`ana@`), y al detenerse avisa sin tener que salir del campo.
+   */
   function update<K extends keyof Fields>(key: K, value: Fields[K]) {
     setFields((current) => ({ ...current, [key]: value }));
-    // Limpia el error del campo apenas se corrige.
-    setErrors((current) => ({ ...current, [key]: undefined }));
+
+    const message = validateField(key, value);
+    setErrors((current) => ({ ...current, [key]: message || undefined }));
+
+    clearTimeout(revealTimers.current[key]);
+    if (message) {
+      revealTimers.current[key] = setTimeout(() => {
+        delete revealTimers.current[key];
+        setTouched((current) =>
+          current[key] ? current : { ...current, [key]: true },
+        );
+      }, FIELD_ERROR_DELAY_MS);
+    }
   }
+
+  /** Al salir del campo: el error se muestra ya, sin esperar la pausa. */
+  function blur<K extends keyof Fields>(key: K) {
+    clearTimeout(revealTimers.current[key]);
+    delete revealTimers.current[key];
+    setTouched((current) => ({ ...current, [key]: true }));
+    const message = validateField(key, fields[key]);
+    setErrors((current) => ({ ...current, [key]: message || undefined }));
+  }
+
+  const parsed = contactSchema.safeParse(fields);
+
+  /*
+   * El botón se enciende sólo con todo válido (TR-039): uno encendido que al
+   * apretarlo no hace nada se lee como roto.
+   */
+  const canSubmit = parsed.success;
 
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
 
-    const found = validate(fields);
-    setErrors(found);
-    if (Object.keys(found).length > 0) return;
+    if (!parsed.success) {
+      // Enviar es pedir que se revise todo: se muestran todos los errores.
+      const found: Errors = {};
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0] as keyof Fields | undefined;
+        if (field && !found[field]) found[field] = issue.message;
+      }
+      setErrors(found);
+      setTouched({ nombre: true, email: true, motivo: true, mensaje: true });
+      return;
+    }
 
     setSent(true);
     setFields(EMPTY);
+    setErrors({});
+    setTouched({});
+  }
+
+  /** Un error sólo se muestra si el campo ya se dejó o si se intentó enviar. */
+  function shownError<K extends keyof Fields>(key: K): string | undefined {
+    return touched[key] ? errors[key] : undefined;
   }
 
   if (sent) {
@@ -100,7 +167,7 @@ export function ContactForm() {
       <Field
         label="Nombre"
         htmlFor="nombre"
-        error={errors.nombre}
+        error={shownError("nombre")}
         required
       >
         <input
@@ -108,21 +175,23 @@ export function ContactForm() {
           type="text"
           value={fields.nombre}
           onChange={(event) => update("nombre", event.target.value)}
-          aria-invalid={Boolean(errors.nombre)}
-          aria-describedby={errors.nombre ? "nombre-error" : undefined}
-          className={inputClass(Boolean(errors.nombre))}
+          onBlur={() => blur("nombre")}
+          aria-invalid={Boolean(shownError("nombre"))}
+          aria-describedby={shownError("nombre") ? "nombre-error" : undefined}
+          className={inputClass(Boolean(shownError("nombre")))}
         />
       </Field>
 
-      <Field label="Correo" htmlFor="email" error={errors.email} required>
+      <Field label="Correo" htmlFor="email" error={shownError("email")} required>
         <input
           id="email"
           type="email"
           value={fields.email}
           onChange={(event) => update("email", event.target.value)}
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? "email-error" : undefined}
-          className={inputClass(Boolean(errors.email))}
+          onBlur={() => blur("email")}
+          aria-invalid={Boolean(shownError("email"))}
+          aria-describedby={shownError("email") ? "email-error" : undefined}
+          className={inputClass(Boolean(shownError("email")))}
         />
       </Field>
 
@@ -130,30 +199,33 @@ export function ContactForm() {
         <select
           id="motivo"
           value={fields.motivo}
-          onChange={(event) => update("motivo", event.target.value)}
+          onChange={(event) =>
+            update("motivo", event.target.value as Fields["motivo"])
+          }
           className={inputClass(false)}
         >
-          {MOTIVOS.map((motivo) => (
-            <option key={motivo.value} value={motivo.value}>
-              {motivo.label}
+          {CONTACT_REASONS.map((motivo) => (
+            <option key={motivo} value={motivo}>
+              {MOTIVO_LABELS[motivo]}
             </option>
           ))}
         </select>
       </Field>
 
-      <Field label="Mensaje" htmlFor="mensaje" error={errors.mensaje} required>
+      <Field label="Mensaje" htmlFor="mensaje" error={shownError("mensaje")} required>
         <textarea
           id="mensaje"
           rows={5}
           value={fields.mensaje}
           onChange={(event) => update("mensaje", event.target.value)}
-          aria-invalid={Boolean(errors.mensaje)}
-          aria-describedby={errors.mensaje ? "mensaje-error" : undefined}
-          className={`${inputClass(Boolean(errors.mensaje))} h-auto resize-y py-2.5`}
+          onBlur={() => blur("mensaje")}
+          aria-invalid={Boolean(shownError("mensaje"))}
+          aria-describedby={shownError("mensaje") ? "mensaje-error" : undefined}
+          className={`${inputClass(Boolean(shownError("mensaje")))} h-auto resize-y py-2.5`}
         />
       </Field>
 
-      <Button type="submit" className="self-start">
+      <Button type="submit" className="self-start" disabled={!canSubmit}>
         Enviar mensaje
       </Button>
     </form>

@@ -14,7 +14,7 @@ import { Banner, type BannerTone } from "@/components/banner";
 export const FORM_ALERT_MS = 15_000;
 
 /**
- * El aviso de un formulario: cómo salió el envío.
+ * El aviso de un formulario: cómo salió el envío (TR-040).
  *
  * Es el `Banner` del sitio con lo que un formulario necesita encima: se va
  * solo a los {@link FORM_ALERT_MS}, se puede cerrar antes con la cruz, y

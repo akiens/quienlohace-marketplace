@@ -19,6 +19,17 @@ import type { FormState } from "@/app/actions/auth";
 
 const reviews = new D1ReviewRepository();
 
+/*
+ * Mensajes para cuando falla la infraestructura y no los datos (TR-041). El
+ * error real se registra y nunca sale al navegador.
+ */
+const REVIEW_FAILED =
+  "No pudimos guardar tu opinión, por favor intentá de nuevo en unos minutos.";
+const DELETE_FAILED =
+  "No pudimos borrar tu opinión, por favor intentá de nuevo en unos minutos.";
+const REPORT_FAILED =
+  "No pudimos registrar el reporte, por favor intentá de nuevo en unos minutos.";
+
 /**
  * El slug viaja en el formulario junto al id. Es sólo para revalidar la
  * página; la autorización nunca depende de él, así que un valor manipulado
@@ -60,24 +71,30 @@ export async function submitReview(
     return { errors: fieldErrors(parsed.error) };
   }
 
-  const existing = await reviews.findByConsumer(profileId, consumer.id);
+  let existing;
+  try {
+    existing = await reviews.findByConsumer(profileId, consumer.id);
 
-  if (existing) {
-    await reviews.updateOwn({
-      reviewId: existing.id,
-      consumerId: consumer.id,
-      rating: parsed.data.rating,
-      comment: parsed.data.comment,
-    });
-  } else {
-    await reviews.create({
-      profileId,
-      authorId: null,
-      consumerId: consumer.id,
-      authorName: parsed.data.authorName,
-      rating: parsed.data.rating,
-      comment: parsed.data.comment,
-    });
+    if (existing) {
+      await reviews.updateOwn({
+        reviewId: existing.id,
+        consumerId: consumer.id,
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
+      });
+    } else {
+      await reviews.create({
+        profileId,
+        authorId: null,
+        consumerId: consumer.id,
+        authorName: parsed.data.authorName,
+        rating: parsed.data.rating,
+        comment: parsed.data.comment,
+      });
+    }
+  } catch (error) {
+    console.error("submitReview failed", error);
+    return { errors: { form: REVIEW_FAILED } };
   }
 
   revalidateProvider(String(formData.get("slug") ?? ""));
@@ -98,7 +115,15 @@ export async function deleteReview(
   }
 
   const reviewId = String(formData.get("reviewId") ?? "");
-  const deleted = await reviews.deleteOwn(reviewId, consumer.id);
+
+  let deleted: boolean;
+  try {
+    deleted = await reviews.deleteOwn(reviewId, consumer.id);
+  } catch (error) {
+    console.error("deleteReview failed", error);
+    return { errors: { form: DELETE_FAILED } };
+  }
+
   if (!deleted) {
     return { errors: { form: "No encontramos esa opinión." } };
   }
@@ -125,13 +150,18 @@ export async function reportReview(
     return { errors: fieldErrors(parsed.error) };
   }
 
-  await reviews.report({
-    reviewId: parsed.data.reviewId,
-    consumerId: consumer?.id ?? null,
-    userId: null,
-    reason: parsed.data.reason,
-    detail: parsed.data.detail,
-  });
+  try {
+    await reviews.report({
+      reviewId: parsed.data.reviewId,
+      consumerId: consumer?.id ?? null,
+      userId: null,
+      reason: parsed.data.reason,
+      detail: parsed.data.detail,
+    });
+  } catch (error) {
+    console.error("reportReview failed", error);
+    return { errors: { form: REPORT_FAILED } };
+  }
 
   return { message: "Gracias. Vamos a revisar esta opinión." };
 }

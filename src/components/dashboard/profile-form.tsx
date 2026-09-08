@@ -41,6 +41,7 @@ import { fitToPlan } from "@/domain/plan-fit";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
 import { FormAlert } from "@/components/form-alert";
+import { useFieldErrors } from "@/lib/use-field-errors";
 import {
   SearchSelect,
   type SearchOption,
@@ -599,15 +600,6 @@ function ProfileFormFields(props: {
    * qué teléfono es marcable, así los dos lados no pueden decir cosas
    * distintas.
    */
-  const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
-  /*
-   * Si ya se intentó enviar. Desde ese momento los errores se muestran aunque
-   * el campo no se haya tocado: apretar "Guardar" es pedir que se revise todo,
-   * y dejar campos en silencio escondería justo lo que frena el envío.
-   */
-  const [submitAttempted, setSubmitAttempted] = useState(false);
-  /** Los campos que ya se dejaron: recién ahí se muestra su error. */
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
   /*
    * Los campos editados después de la última respuesta del servidor.
    *
@@ -625,40 +617,34 @@ function ProfileFormFields(props: {
     return parsed.success ? "" : (parsed.error.issues[0]?.message ?? "");
   }, []);
 
-  /**
-   * Al salir del campo: se valida y se muestra el error si lo hay.
-   *
-   * Mostrar mientras se escribe marcaría en rojo un teléfono a medio tipear,
-   * que es justo lo que la persona está por terminar.
+  /*
+   * Los errores por campo y cuándo se muestra cada uno (TR-039). El hook pone
+   * el momento —la pausa al escribir, el blur, el envío—; acá sólo se dice
+   * cuál es la regla de cada campo.
    */
-  const blurField = useCallback(
-    (field: string, value: unknown) => {
-      setTouched((current) => ({ ...current, [field]: true }));
-      const message = validateField(field, value);
-      setClientErrors((current) => ({ ...current, [field]: message }));
-    },
-    [validateField],
-  );
+  const fieldErrorState = useFieldErrors(validateField);
+  const { shown: shownFieldErrors } = fieldErrorState;
+
+  /** Al salir del campo: el error se muestra ya, sin esperar la pausa. */
+  const blurField = fieldErrorState.blur;
 
   /**
-   * Mientras se escribe: sólo se **saca** el error, nunca se agrega.
+   * En cada tecla.
    *
-   * Es lo que deja ver que el campo ya va bien antes de salir de él, sin
-   * ensuciar el formulario con errores de algo a medio escribir.
+   * El error aparece solo tras una pausa corta sin escribir, y desaparece en
+   * el acto al corregirlo. Lo resuelve el hook; acá se anota además que el
+   * campo cambió desde la última respuesta del servidor, para que su error
+   * viejo deje de aplicar.
    */
+  const editFieldErrors = fieldErrorState.edit;
   const editField = useCallback(
     (field: string, value: unknown) => {
       setStale((current) =>
         current[field] ? current : { ...current, [field]: true },
       );
-      setClientErrors((current) => {
-        if (!current[field]) return current;
-        return validateField(field, value) === ""
-          ? { ...current, [field]: "" }
-          : current;
-      });
+      editFieldErrors(field, value);
     },
-    [validateField],
+    [editFieldErrors],
   );
 
   const serverErrors = state.errors ?? {};
@@ -674,8 +660,8 @@ function ProfileFormFields(props: {
   for (const field of Object.keys(stale)) {
     if (stale[field] && field !== "form") delete errors[field];
   }
-  for (const [field, message] of Object.entries(clientErrors)) {
-    if (message && (touched[field] || submitAttempted)) errors[field] = message;
+  for (const [field, message] of Object.entries(shownFieldErrors)) {
+    errors[field] = message;
   }
   /*
    * Los topes del plan. `null` es "sin límite" (TR-002), y por eso las ayudas
@@ -1278,8 +1264,8 @@ function ProfileFormFields(props: {
   /*
    * Los campos de texto que hoy no pasan su regla.
    *
-   * Se recalcula sobre el valor actual y no sobre `clientErrors`, que sólo
-   * tiene lo que ya se mostró: un campo que nunca se tocó puede estar mal
+   * Se recalcula sobre el valor actual y no sobre los errores mostrados, que
+   * son sólo los que ya se revelaron: un campo que nunca se tocó puede estar mal
    * —viene así de la base, o se pegó algo— y el botón no puede ignorarlo.
    */
   const invalidFields = ([
@@ -1366,23 +1352,19 @@ function ProfileFormFields(props: {
        * seguridad, porque el `FormData` se puede armar sin pasar por acá.
        */
       onSubmit={(event) => {
-        setSubmitAttempted(true);
+        /*
+         * Apretar "Guardar" es pedir que se revise todo: los errores se
+         * muestran aunque el campo no se haya tocado, porque si no quedaría
+         * en silencio justo lo que frena el envío.
+         */
+        const found = fieldErrorState.submitAll({
+          name,
+          description,
+          phone,
+          contactEmail,
+        });
 
-        const found: Record<string, string> = {};
-        for (const [field, value] of [
-          ["name", name],
-          ["description", description],
-          ["phone", phone],
-          ["contactEmail", contactEmail],
-        ] as const) {
-          const message = validateField(field, value);
-          if (message) found[field] = message;
-        }
-
-        if (Object.keys(found).length > 0) {
-          event.preventDefault();
-          setClientErrors((current) => ({ ...current, ...found }));
-        }
+        if (Object.keys(found).length > 0) event.preventDefault();
       }}
     >
       {/*

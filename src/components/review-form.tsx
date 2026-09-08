@@ -1,10 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 
 import { deleteReview, submitReview } from "@/app/actions/reviews";
 import type { FormState } from "@/app/actions/auth";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
+import { reviewSchema } from "@/lib/validation";
+import { FIELD_ERROR_DELAY_MS } from "@/lib/use-field-errors";
 import type { ConsumerUser, Review } from "@/types";
 
 /**
@@ -33,6 +35,24 @@ export function ReviewForm({
   const [open, setOpen] = useState(false);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
+  /*
+   * El comentario es controlado y se valida contra `reviewSchema` (TR-039),
+   * el mismo que usa la acción. Antes era un campo suelto con `minLength`
+   * nativo: el navegador lo rechazaba en su idioma y con su propio mensaje,
+   * distinto del que devolvía el servidor para la misma regla.
+   */
+  const [comment, setComment] = useState("");
+  const [commentTouched, setCommentTouched] = useState(false);
+
+  /*
+   * La pausa tras la que se muestra el error escribiendo (TR-039). Cada tecla
+   * la reinicia: de corrido no marca en rojo un comentario a medio escribir, y
+   * al detenerse con algo inválido avisa sin salir del campo.
+   */
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  useEffect(() => () => clearTimeout(revealTimer.current), []);
 
   useEffect(() => {
     let active = true;
@@ -44,6 +64,7 @@ export function ReviewForm({
         if (!active || !data) return;
         setContext(data);
         setRating(data.existing?.rating ?? 0);
+        setComment(data.existing?.comment ?? "");
         // Al volver de Google se reabre el formulario donde se había quedado.
         if (data.consumer && window.location.search.includes("opinar=1")) {
           setOpen(true);
@@ -67,10 +88,25 @@ export function ReviewForm({
   >(deleteReview, {});
 
   const message = state.message ?? deleteState.message;
+  const errors = state.errors ?? {};
+
+  /** El comentario contra su regla del schema. */
+  const commentCheck = reviewSchema.shape.comment.safeParse(comment);
+  const commentError = commentCheck.success
+    ? ""
+    : (commentCheck.error.issues[0]?.message ?? "");
+
+  /*
+   * El error se muestra al salir del campo o cuando el servidor lo devolvió,
+   * no mientras se escribe: tipeando el comentario está corto casi todo el
+   * tiempo y marcarlo en rojo desde la primera letra no ayuda (TR-039).
+   */
+  const shownCommentError = errors.comment ?? (commentTouched ? commentError : "");
+
+  const canSubmit = rating > 0 && commentError === "";
   const consumer = context?.consumer ?? null;
   const existing = context?.existing ?? null;
   const googleEnabled = context?.googleEnabled ?? false;
-  const errors = state.errors ?? {};
 
   if (message) {
     return (
@@ -127,6 +163,11 @@ export function ReviewForm({
   return (
     <form
       action={action}
+      /*
+       * `noValidate`: los mensajes nativos del navegador están en otro idioma
+       * y contradicen a los del schema, que son los que se muestran acá.
+       */
+      noValidate
       className="flex flex-col gap-4 rounded-input border border-line bg-white p-4"
     >
       <input type="hidden" name="profileId" value={profileId} />
@@ -191,17 +232,45 @@ export function ReviewForm({
           required
           minLength={10}
           maxLength={1000}
-          defaultValue={existing?.comment ?? ""}
+          value={comment}
+          onChange={(event) => {
+            const value = event.target.value;
+            setComment(value);
+
+            clearTimeout(revealTimer.current);
+            // Válido: el rojo se va en el acto. Inválido: aparece tras la pausa.
+            if (reviewSchema.shape.comment.safeParse(value).success) {
+              setCommentTouched(false);
+            } else {
+              revealTimer.current = setTimeout(
+                () => setCommentTouched(true),
+                FIELD_ERROR_DELAY_MS,
+              );
+            }
+          }}
+          onBlur={() => {
+            clearTimeout(revealTimer.current);
+            setCommentTouched(true);
+          }}
+          aria-invalid={shownCommentError ? true : undefined}
+          aria-describedby={shownCommentError ? "review-comment-error" : undefined}
           placeholder="¿Cómo fue tu experiencia? Contá qué trabajo hizo y cómo te atendió."
           className={`w-full resize-y rounded-input border px-3.5 py-2.5 text-[14.5px] leading-relaxed text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-800 ${
-            errors.comment ? "border-[#FDA29B]" : "border-line-strong"
+            shownCommentError ? "border-[#FDA29B]" : "border-line-strong"
           }`}
         />
-        {errors.comment ? <FieldError>{errors.comment}</FieldError> : null}
+        {shownCommentError ? (
+          <FieldError id="review-comment-error">{shownCommentError}</FieldError>
+        ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5">
-        <Button type="submit" size="sm" disabled={pending || rating === 0}>
+        {/*
+          El botón se enciende sólo con la opinión entera válida (TR-039): con
+          sólo la puntuación puesta, apretarlo devolvía un error del servidor
+          por algo que ya se sabía acá.
+        */}
+        <Button type="submit" size="sm" disabled={pending || !canSubmit}>
           {pending ? "Publicando…" : existing ? "Guardar cambios" : "Publicar"}
         </Button>
         <Button
@@ -239,9 +308,20 @@ export function ReviewForm({
   );
 }
 
-function FieldError({ children }: { children: React.ReactNode }) {
+function FieldError({
+  children,
+  id,
+}: {
+  children: React.ReactNode;
+  /** Para que el campo lo apunte con `aria-describedby`. */
+  id?: string;
+}) {
   return (
-    <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#B42318]">
+    <span
+      id={id}
+      role="alert"
+      className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#B42318]"
+    >
       <Icon name="error" className="text-[15px]" />
       {children}
     </span>

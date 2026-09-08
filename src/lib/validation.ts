@@ -410,6 +410,31 @@ export const profileSchema = z
     },
   );
 
+/**
+ * Formulario de contacto (TR-039).
+ *
+ * Reusa `nameSchema` y `emailSchema` en vez de repetir la regla: sin esto el
+ * formulario traía su propio regex de correo, más permisivo que el del resto
+ * del sitio, y un correo que acá pasaba podía no pasar en el registro.
+ */
+export const CONTACT_REASONS = [
+  "consulta",
+  "perfil",
+  "publicidad",
+  "reporte",
+] as const;
+
+export const contactSchema = z.object({
+  nombre: nameSchema,
+  email: emailSchema,
+  motivo: z.enum(CONTACT_REASONS, { error: "Elegí un motivo." }),
+  mensaje: z
+    .string({ error: "Escribí tu mensaje." })
+    .trim()
+    .min(10, "Contanos un poco más (al menos 10 caracteres).")
+    .max(2000, "El mensaje es demasiado largo."),
+});
+
 export const reviewSchema = z.object({
   rating: z.coerce
     .number("Elegí una puntuación.")

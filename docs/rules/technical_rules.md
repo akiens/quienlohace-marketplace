@@ -82,6 +82,69 @@ Los cupos cuentan registros activos:
 - Ubicaciones: sucursales activas.
 - Galería: imágenes activas de tipo galería.
 
+### TR-039 — Validación en las dos capas
+
+Todo formulario con entrada de la persona usuaria valida **en el cliente y en el servidor**, con un único schema de Zod exportado desde `src/lib/validation.ts` e importado por los dos.
+
+- El servidor valida **siempre**, aunque el cliente ya lo haya hecho (TR-004). El `FormData` se puede armar a mano y el JavaScript se puede desactivar: la validación del cliente es comodidad, nunca la barrera.
+- El cliente valida para ahorrar el viaje y marcar todos los errores de una vez, no de a uno.
+- Las reglas no se escriben dentro del componente ni se duplican en la acción: dos copias terminan diciendo cosas distintas. El mensaje también vive en el schema, así los dos lados dicen lo mismo.
+- Los errores por campo vuelven como `Record<string, string>` mediante `fieldErrors()`; los que no son de un campo usan la clave `form`.
+
+El error aparece **mientras se escribe**, no recién al abandonar el campo: quien tipea algo inválido tiene que enterarse ahí mismo. Para no marcar en rojo un dato a medio tipear —`ana@gmail.co` está mal hasta la última letra—, la validación al escribir espera una pausa corta sin teclas (600 ms, `FIELD_ERROR_DELAY_MS`) antes de mostrar el error. Cada tecla reinicia esa espera.
+
+| Momento | Qué hace |
+|---|---|
+| Al escribir, si el valor pasó a ser válido | **Quita** el error en el acto, sin esperar. |
+| Al escribir, si sigue inválido | **Muestra** el error tras la pausa. |
+| `onBlur` | **Muestra** el error ya, sin esperar: se terminó de escribir. |
+| `onSubmit` | **Muestra** todos los errores y corta el envío. |
+
+Corregir se nota siempre al instante; equivocarse, tras la pausa. La asimetría es deliberada: dejar el rojo puesto mientras se piensa si ya está bien es peor que ponerlo tarde.
+
+Un campo con error se marca con el borde en rojo, `aria-invalid` y el mensaje debajo, asociado por `aria-describedby`.
+
+El botón de envío está habilitado **sólo si** se cumplen las tres condiciones a la vez:
+
+1. Hay algo que enviar: en un formulario de edición, algún control cambió respecto de lo guardado. En uno de alta, están los obligatorios.
+2. Ningún campo tiene un valor inválido según su schema.
+3. No hay un envío en curso.
+
+Un botón encendido que al apretarlo no hace nada se lee como roto; uno apagado que explica qué falta, no. La consecuencia es que un cambio válido **habilita el botón solo**, sin apretar nada más.
+
+### TR-040 — Aviso del resultado del envío
+
+Todo envío de formulario termina con un aviso visible de cómo salió, en uno de tres tonos:
+
+| Tono | Cuándo |
+|---|---|
+| `success` | La operación se completó como se pedía. |
+| `warning` | Se completó, pero con una consecuencia que hay que saber (se guardó y el perfil dejó de estar publicado). |
+| `error` | No se completó. |
+
+- El componente es `FormAlert` (`src/components/form-alert.tsx`), que envuelve el `Banner` del sitio. No se escriben avisos a mano con colores literales.
+- El tono se deduce del resultado: un `message` es `success` y unos `errors` son `error`. El campo `tone` de `FormState` está para el caso que no encaja, y es el único modo de emitir un `warning`.
+- Va pegado al encabezado del sitio y `sticky` justo debajo: en un formulario largo un aviso quieto arriba se pierde apenas se scrollea, que es cuando hay que leerlo.
+- Dura 15 segundos y además lleva una cruz para cerrarlo antes. El temporizador se reinicia con cada aviso nuevo.
+- Un envío rechazado por validación por campo igual muestra el aviso general: los mensajes por campo se ven en su campo, y el aviso dice que el envío no pasó.
+- Un aviso que **reemplaza** el formulario por una confirmación final (opiniones, contacto) no es este caso y no lleva `FormAlert`: no debe desaparecer solo.
+
+La excepción documentada es el error general de acceso y registro, que va **debajo del botón** de envío y no como banda: apareciendo arriba desplazaba el formulario al aparecer.
+
+Tras un envío exitoso el formulario vuelve a su estado de espera: lo recién guardado pasa a ser el punto de partida y el botón se apaga hasta el próximo cambio.
+
+### TR-041 — Los errores no revelan el detalle técnico
+
+Ningún mensaje que llega al navegador expone el error real: ni el `message` de la excepción, ni el stack, ni el SQL, ni el nombre de una tabla, una columna o un constraint.
+
+- Toda operación que pueda fallar por infraestructura —base, hash, red, almacenamiento— va dentro de un `try`. Una Server Action **nunca** deja escapar una excepción: sin `catch`, el error sube al renderer y termina en la pantalla.
+- En el `catch`: `console.error` con el error entero, para poder diagnosticarlo, y de vuelta una frase genérica y estable para esa situación.
+- La frase dice qué pasó en términos del producto y qué hacer, no por qué falló por dentro: `No fue posible el registro, por favor intente más tarde.`
+- Un error de base que **sí** corresponde a una regla del producto se traduce al mensaje de esa regla antes de salir. El choque del índice único de `users.email` se responde con `El correo entrado ya está en uso.`, nunca con el texto del constraint.
+- El mismo criterio rige en las rutas de API: se responde un código y una frase genérica; el detalle queda en el log.
+
+Esto es la contracara de TR-037: lo que no se registra en logs tampoco se muestra en pantalla.
+
 ---
 
 ## 4. Identidad, autenticación y sesiones

@@ -32,6 +32,16 @@ import type { FormState } from "@/app/actions/auth";
 const profiles = new D1ProfileRepository();
 const plans = new D1PlanRepository();
 
+/*
+ * Mensajes para cuando falla la infraestructura y no los datos (TR-041). El
+ * error real se registra con `console.error` y nunca sale al navegador: no le
+ * dice nada a quien guarda y puede filtrar detalles de la base.
+ */
+const SAVE_FAILED =
+  "No pudimos guardar los cambios, por favor intentá de nuevo en unos minutos.";
+const STATUS_FAILED =
+  "No pudimos cambiar el estado de tu perfil, por favor intentá de nuevo en unos minutos.";
+
 /**
  * Cuántos elementos de cada lista entran en el plan.
  *
@@ -276,44 +286,55 @@ export async function saveProfile(
   let isNew = false;
   let saved: Profile;
 
-  if (existing) {
-    saved = await profiles.update(existing.id, fitted, limits);
-    if (settlingUpgrade) await profiles.markPlanPaid(existing.id);
-    revalidatePath(`/profesionales/${existing.slug}`);
-  } else {
-    saved = await profiles.create(user.id, fitted, planId, limits);
+  /*
+   * Todo lo que toca la base va dentro del `try` (TR-041): sin él una falla de
+   * infraestructura sube al renderer y termina como pantalla de error, con el
+   * mensaje real de la excepción a la vista. Acá se registra entero y de
+   * vuelta va una frase genérica.
+   */
+  try {
+    if (existing) {
+      saved = await profiles.update(existing.id, fitted, limits);
+      if (settlingUpgrade) await profiles.markPlanPaid(existing.id);
+      revalidatePath(`/profesionales/${existing.slug}`);
+    } else {
+      saved = await profiles.create(user.id, fitted, planId, limits);
+      /*
+       * Las imágenes que se subieron durante el alta todavía no tenían perfil al
+       * que colgarse: recién ahora existe el id. Sin esto la foto y la portada
+       * quedarían guardadas pero sin aparecer en el perfil (BR-021).
+       */
+      await claimImagesForProfile(user.id, saved.id);
+      isNew = true;
+    }
+
     /*
-     * Las imágenes que se subieron durante el alta todavía no tenían perfil al
-     * que colgarse: recién ahora existe el id. Sin esto la foto y la portada
-     * quedarían guardadas pero sin aparecer en el perfil (BR-021).
+     * La galería se recorta al plan igual que el resto de las listas: lo que
+     * excede queda inactivo, no borrado (BR-009). Se hace acá y no al subir
+     * porque el plan puede cambiar después, y el guardado es el momento donde se
+     * recalcula todo contra el plan vigente.
      */
-    await claimImagesForProfile(user.id, saved.id);
-    isNew = true;
-  }
+    if (plan) await applyGalleryLimit(user.id, limitFor(plan, "galleryImages"));
 
-  /*
-   * La galería se recorta al plan igual que el resto de las listas: lo que
-   * excede queda inactivo, no borrado (BR-009). Se hace acá y no al subir
-   * porque el plan puede cambiar después, y el guardado es el momento donde se
-   * recalcula todo contra el plan vigente.
-   */
-  if (plan) await applyGalleryLimit(user.id, limitFor(plan, "galleryImages"));
-
-  /*
-   * Un perfil publicado que dejó de cumplir los requisitos no puede seguir
-   * público (BR-030). Editarlo hasta romperlos —quitar la última especialidad,
-   * dejar de tener local atendiendo en el negocio— lo despublica en vez de
-   * dejar a la vista algo que ya no califica.
-   */
-  if (saved.profileStatus === "active" && publishBlockers(saved).length > 0) {
-    await profiles.setStatus(saved.id, "inactive");
-    revalidatePath("/dashboard");
-    revalidatePath(`/profesionales/${saved.slug}`);
-    return {
-      tone: "warning",
-      message:
-        "Guardamos los cambios, pero tu perfil dejó de cumplir los requisitos para estar publicado y ya no es visible.",
-    };
+    /*
+     * Un perfil publicado que dejó de cumplir los requisitos no puede seguir
+     * público (BR-030). Editarlo hasta romperlos —quitar la última especialidad,
+     * dejar de tener local atendiendo en el negocio— lo despublica en vez de
+     * dejar a la vista algo que ya no califica.
+     */
+    if (saved.profileStatus === "active" && publishBlockers(saved).length > 0) {
+      await profiles.setStatus(saved.id, "inactive");
+      revalidatePath("/dashboard");
+      revalidatePath(`/profesionales/${saved.slug}`);
+      return {
+        tone: "warning",
+        message:
+          "Guardamos los cambios, pero tu perfil dejó de cumplir los requisitos para estar publicado y ya no es visible.",
+      };
+    }
+  } catch (error) {
+    console.error("saveProfile failed", error);
+    return { errors: { form: SAVE_FAILED } };
   }
 
   revalidatePath("/dashboard");
@@ -361,7 +382,12 @@ export async function setProfileStatus(
     }
   }
 
-  await profiles.setStatus(profile.id, status);
+  try {
+    await profiles.setStatus(profile.id, status);
+  } catch (error) {
+    console.error("setProfileStatus failed", error);
+    return { errors: { form: STATUS_FAILED } };
+  }
 
   revalidatePath("/dashboard");
   revalidatePath(`/profesionales/${profile.slug}`);
