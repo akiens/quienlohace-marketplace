@@ -156,6 +156,15 @@ export type SocialLink = {
 /** Rol de una imagen del perfil: foto, portada o galería. */
 export type ImageKind = "avatar" | "cover" | "gallery";
 
+/**
+ * Dónde está una imagen dentro de su ciclo de vida (TR-043).
+ *
+ * `pending` se subió pero todavía no la confirmó ningún guardado: existe, es
+ * de quien la subió, y expira sola si nadie la usa. `confirmed` es la que se
+ * muestra. `discarded` está marcada para que la limpieza se la lleve.
+ */
+export type ImageLifecycle = "pending" | "confirmed" | "discarded";
+
 export type ProfileImage = {
   id: string;
   storageKey: string;
@@ -165,6 +174,10 @@ export type ProfileImage = {
   sortOrder: number;
   /** false cuando excede el cupo del plan (BR-009). */
   isActive: boolean;
+  lifecycle: ImageLifecycle;
+  /** Tamaño de la versión procesada. 0 en las filas anteriores a TR-042. */
+  width: number;
+  height: number;
 };
 
 /**

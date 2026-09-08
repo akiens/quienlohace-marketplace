@@ -150,9 +150,16 @@ async function loadRelations(ids: string[], scope: RelationScope = "public") {
       .bind(...ids),
     db
       .prepare(
-        `SELECT id, profile_id, storage_key, alt, kind, sort_order, is_active
+        /*
+         * Sólo las confirmadas (TR-043): lo pendiente es de una edición que
+         * todavía no se guardó y no puede aparecer en el perfil, ni siquiera
+         * en el del propio dueño, que lo ve desde el formulario.
+         */
+        `SELECT id, profile_id, storage_key, alt, kind, sort_order, is_active,
+                lifecycle, width, height
          FROM profile_images
-         WHERE profile_id IN (${marks}) ${onlyActive} ORDER BY sort_order`,
+         WHERE profile_id IN (${marks}) AND lifecycle = 'confirmed'
+           ${onlyActive} ORDER BY sort_order`,
       )
       .bind(...ids),
   ]);
@@ -211,6 +218,9 @@ async function loadRelations(ids: string[], scope: RelationScope = "public") {
       kind: String(r.kind) as ImageKind,
       sortOrder: Number(r.sort_order),
       isActive: Number(r.is_active) === 1,
+      lifecycle: "confirmed" as const,
+      width: Number(r.width ?? 0),
+      height: Number(r.height ?? 0),
     })),
   };
 }

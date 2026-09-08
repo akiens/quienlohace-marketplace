@@ -1,6 +1,6 @@
 ---
 name: form-validation
-description: Patrón de formularios de QuienLoHace: schemas Zod compartidos entre cliente y servidor (TR-039), cuándo mostrar y ocultar cada error, el aviso de resultado success/warning/error con FormAlert (TR-040) y accesibilidad. Usar al crear o modificar cualquier formulario con entradas de la persona usuaria — registro, acceso, contacto, opiniones, perfil — al revisar validación existente, o al mostrar el resultado de un envío.
+description: Patrón de formularios de QuienLoHace: schemas Zod compartidos entre cliente y servidor (TR-039), cuándo mostrar y ocultar cada error, el aviso de resultado success/warning/error con FormAlert (TR-040), los campos de imagen con subida temporal y confirmación al guardar (TR-042, TR-043) y accesibilidad. Usar al crear o modificar cualquier formulario con entradas de la persona usuaria — registro, acceso, contacto, opiniones, perfil — al revisar validación existente, al mostrar el resultado de un envío, o al agregar un campo de subida de imágenes.
 ---
 
 # Validación de formularios
@@ -203,7 +203,42 @@ y el servidor dicen lo mismo.
 - Regla incumplida → `La contraseña no cumple con el mínimo de caracteres requeridos.`
 - Falla de infraestructura → `No fue posible el registro, por favor intente más tarde.`
 
-## 10. El error real nunca sale al navegador (TR-041)
+## 10. Campos de imagen (TR-042, TR-043)
+
+Las imágenes no viajan en el envío del formulario: se suben apenas se eligen y
+quedan **pendientes** hasta que el guardado las confirme. Lo que sí viaja es
+la selección — qué imágenes quedan y en qué orden.
+
+No lo implementes de nuevo. El campo es reusable:
+
+```tsx
+<ImageField
+  field="avatar"          // de acá salen todos los límites
+  shape="circle"          // "circle" | "wide" | "grid"
+  label="Foto de perfil"
+  initial={images.filter((i) => i.kind === "avatar")}
+  onChange={onImageChange("avatar")}
+/>
+```
+
+Para un campo **nuevo** alcanza con declararlo en `src/domain/image-policy.ts`
+—cuántas, cuánto pesan, qué formatos, qué dimensiones, qué proporción— y
+montarlo. Nada más se toca.
+
+El formulario tiene que hacer tres cosas:
+
+1. Guardar lo que `onChange` le pasa, por campo.
+2. Apagar el botón de guardar mientras algún campo esté `busy`.
+3. Mandar los `keepIds` como campos ocultos, y llamar a
+   `commitImageSelection` en la acción **después** de guardar el resto.
+
+Lo que resuelven el hook y el campo, y por lo que no conviene reimplementarlos:
+estado por imagen, reintento que no arrastra a las demás, validación local
+antes de gastar red, reducción en el navegador, `objectURL` revocados, y la
+diferencia entre quitar una pendiente (se borra) y una confirmada (se marca, y
+la aplica el guardado).
+
+## 11. El error real nunca sale al navegador (TR-041)
 
 Toda operación que pueda fallar por infraestructura —base, hash, red,
 almacenamiento— va dentro de un `try`. **Una Server Action no puede dejar
@@ -242,5 +277,7 @@ el texto del constraint.
 - [ ] El botón se enciende sólo con cambios y todo válido.
 - [ ] Ninguna operación que toque la base quedó fuera de un `try`.
 - [ ] Ningún mensaje al navegador lleva el error real.
+- [ ] Los campos de imagen usan `ImageField`, con su política declarada.
+- [ ] El botón de guardar espera a que ninguna imagen esté en curso.
 - [ ] `aria-invalid`, `aria-describedby`, `role="alert"` e `id` puestos.
 - [ ] `noValidate` en el `<form>`.

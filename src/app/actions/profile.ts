@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { normalizeServiceAreas } from "@/data/locations";
 import { sectorOfSpecialty } from "@/data/taxonomy";
+import { isImageField } from "@/domain/image-policy";
 import { toE164 } from "@/domain/phone";
 import { effectivePlanId } from "@/domain/plan-changes";
 import { publishBlockers } from "@/domain/publishing";
@@ -13,6 +14,7 @@ import { PLAN_IDS, limitFor, limitMessage } from "@/domain/plans";
 import {
   applyGalleryLimit,
   claimImagesForProfile,
+  commitImageSelection,
 } from "@/infrastructure/d1-profile-images";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
@@ -306,6 +308,30 @@ export async function saveProfile(
        */
       await claimImagesForProfile(user.id, saved.id);
       isNew = true;
+    }
+
+    /*
+     * Recién acá las imágenes dejan de ser provisionales (TR-043): lo elegido
+     * se confirma y queda en su orden, y lo quitado se marca para la limpieza.
+     *
+     * Va después de guardar el perfil: si el perfil no se guardó, las imágenes
+     * tienen que quedar como estaban para poder reintentar sin volver a
+     * subirlas. Y antes del recorte por plan, que cuenta las confirmadas.
+     *
+     * Los ids se comprueban contra el dueño en el propio `UPDATE`: uno que no
+     * sea suyo no coincide y no se toca (TR-004).
+     */
+    const imageFields = new Set(
+      formData.getAll("imageFields").map(String).filter(isImageField),
+    );
+
+    for (const field of imageFields) {
+      await commitImageSelection({
+        userId: user.id,
+        profileId: saved.id,
+        kinds: [field],
+        keepIds: formData.getAll(`image:${field}`).map(String).filter(Boolean),
+      });
     }
 
     /*

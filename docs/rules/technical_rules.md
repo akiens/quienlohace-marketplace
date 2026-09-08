@@ -145,6 +145,54 @@ Ningún mensaje que llega al navegador expone el error real: ni el `message` de 
 
 Esto es la contracara de TR-037: lo que no se registra en logs tampoco se muestra en pantalla.
 
+### TR-042 — Una imagen no es una imagen hasta que se demuestra
+
+Lo que llega en un formulario es un archivo, no una imagen. **Nada de lo que lo acompaña prueba nada**: ni el nombre, ni la extensión, ni el `Content-Type`, ni lo que haya validado el navegador. Todo eso lo escribe quien sube.
+
+Antes de aceptar un archivo se comprueba, en este orden y de lo más barato a lo más caro:
+
+1. **Peso**, contra el tope del campo y contra el tope duro del sistema.
+2. **Firma binaria** (*magic bytes*): qué es en realidad. Descarta al instante lo que ni siquiera aparenta ser una imagen.
+3. **Dimensiones declaradas en la cabecera**, sin decodificar el resto. Es la defensa contra la *decompression bomb*: un PNG de 40 KB puede anunciar 30.000 × 30.000 y pedir gigabytes al expandirse, y el peso del archivo no lo delata.
+4. **Decodificación**: si no se abre, está roto y se rechaza.
+
+Se rechazan SVG —puede traer scripts y se serviría desde el dominio del sitio—, GIF y todo lo que no esté en la lista del campo.
+
+**Lo que se guarda es una versión regenerada, nunca el archivo original.** Decodificar y volver a codificar desde los píxeles es lo que garantiza que nada viaje escondido entre los bytes. Esa regeneración además:
+
+- respeta la orientación EXIF, para que la foto no quede acostada;
+- reduce al lado más largo que fije el campo, sin agrandar nunca;
+- descarta los metadatos, incluidas las coordenadas GPS de dónde se sacó;
+- convierte a un formato moderno y comprime a la calidad del campo.
+
+La validación del navegador cumple lo mismo por adelantado para avisar al instante (TR-039), y no cuenta como validación: el cliente se puede manipular.
+
+Los límites —cuántas, cuánto pesan, qué formatos, qué dimensiones, qué proporción— son **por campo** y viven en un solo lugar, que leen las dos capas. Un campo de imagen nuevo se declara ahí y no toca nada más.
+
+#### Degradación conocida, sin el binding de Images
+
+La regeneración la hace Cloudflare Images (`env.IMAGES`), que es la única pieza del stack capaz de decodificar dentro del worker: las librerías habituales son binarios nativos y el runtime de Workers no los ejecuta.
+
+Cuando el binding no está disponible, la subida **sigue funcionando** con lo que no necesita decodificar —peso, firma binaria, dimensiones de la cabecera—, y se guarda el archivo tal como llegó. Eso frena un ejecutable renombrado, un SVG con scripts y una bomba de descompresión, que es la mayor parte del riesgo.
+
+Lo que se pierde es la garantía: el redimensionado y el borrado de metadatos quedan en manos del navegador, y el navegador se puede manipular. Un archivo armado a mano puede conservar su EXIF —incluidas las coordenadas GPS— y su tamaño original.
+
+**Esto es una degradación aceptada para no quedarse sin subida de imágenes, no una implementación alternativa de la regla.** Con el binding activo, la regla se cumple entera y sin cambiar código.
+
+### TR-043 — Una imagen subida es temporal hasta que el formulario se guarda
+
+Subir no es guardar. Una imagen se sube apenas se elige —un archivo no sobrevive a una recarga ni entra en un borrador—, pero hasta que el formulario se guarde queda **pendiente**: existe, pertenece a quien la subió, no se muestra como definitiva en ningún lado y expira sola.
+
+- Cada imagen tiene su propio estado visible: preparando, optimizando, subiendo, lista, error, o pendiente de eliminación. Una que falla se reintenta sola, sin afectar a las demás ni a lo que ya está escrito en el formulario.
+- **No se puede guardar** mientras alguna esté procesándose o subiendo, y un segundo clic en guardar no dispara un segundo envío.
+- Quitar una imagen **confirmada** no la borra: la marca. Hasta que el guardado se aplique, el archivo sigue donde está, que es lo que permite cancelar la edición sin haber perdido nada. Quitar una **pendiente** sí la borra: nunca estuvo en ningún formulario guardado.
+- Al guardar, y en una sola operación: se confirma lo elegido con su orden, y se marca para limpieza lo que se quitó. Si el guardado falla, lo subido sigue pendiente y se puede reintentar sin volver a subirlo.
+- Si se cancela o se abandona, lo pendiente expira —24 h como referencia— y lo levanta la limpieza automática.
+
+La limpieza se lleva sólo lo pendiente vencido y lo descartado. Vuelve a comprobar el estado de cada fila **en el borrado**, con el mismo estado con el que la eligió: si entre la consulta y el borrado alguien la confirmó, ya no coincide y la imagen se salva. Un fallo en una no corta la pasada. El archivo se borra después de la fila y sólo si ninguna otra lo referencia: una fila viva sin archivo es una imagen rota en un perfil, mientras que un archivo sin fila no se ve en ningún lado y lo levanta la próxima pasada.
+
+Nadie puede confirmar, modificar ni borrar imágenes de otro: la pertenencia se comprueba en la consulta que escribe, no en quien la llama (TR-004).
+
 ---
 
 ## 4. Identidad, autenticación y sesiones

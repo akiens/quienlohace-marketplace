@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Fragment,
   useActionState,
   useCallback,
   useEffect,
@@ -61,10 +62,7 @@ import {
   SocialLinksEditor,
   type SocialLinkDraft,
 } from "@/components/dashboard/social-links-editor";
-import {
-  GalleryField,
-  SingleImageField,
-} from "@/components/dashboard/image-uploader";
+import { ImageField } from "@/components/image-field";
 import { LocalityPicker } from "@/components/dashboard/locality-picker";
 import {
   PAYMENT_METHOD_LABELS,
@@ -444,19 +442,32 @@ function ProfileFormFields(props: {
   });
   /*
    * Las imágenes no salen del borrador: no viajan en el envío del formulario
-   * sino en su propia acción, así que ya están guardadas en el servidor. Lo
-   * que llega por `images` es la verdad, y el estado local sólo evita tener
-   * que volver a pedir la página entera después de cada subida.
+   * sino en su propia acción, así que ya están subidas al servidor. Lo que
+   * llega por `images` es el punto de partida.
+   *
+   * Lo que sí viaja en el envío es la **selección**: qué imágenes quedan, en
+   * qué orden, y cuáles se quitaron. Hasta que el formulario se guarde, lo
+   * subido es pendiente y lo quitado sigue donde estaba (TR-043), así que
+   * cancelar no rompe nada.
    */
-  const [avatar, setAvatar] = useState<ProfileImage | null>(
-    () => props.images.find((image) => image.kind === "avatar") ?? null,
+  const [imageSelection, setImageSelection] = useState<
+    Record<string, { keepIds: string[]; removedIds: string[]; busy: boolean }>
+  >({});
+
+  /** Recibe el estado de un campo de imagen y lo guarda por campo. */
+  const onImageChange = useCallback(
+    (field: string) =>
+      (state: { keepIds: string[]; removedIds: string[]; busy: boolean }) => {
+        setImageSelection((current) => ({ ...current, [field]: state }));
+      },
+    [],
   );
-  const [cover, setCover] = useState<ProfileImage | null>(
-    () => props.images.find((image) => image.kind === "cover") ?? null,
-  );
-  const [gallery, setGallery] = useState<ProfileImage[]>(() =>
-    props.images.filter((image) => image.kind === "gallery"),
-  );
+
+  /*
+   * Mientras haya una imagen procesándose o subiendo no se puede guardar: el
+   * envío mandaría una selección que todavía no existe del todo (TR-043).
+   */
+  const imagesBusy = Object.values(imageSelection).some((state) => state.busy);
 
   /*
    * Marca de "pago resuelto". Es provisional: no cobra nada ni consulta a
@@ -938,7 +949,7 @@ function ProfileFormFields(props: {
        * Las imágenes cuentan como hechas con la foto de perfil, que es la que
        * se ve en los listados; la portada y la galería son un extra.
        */
-      imagenes: avatar !== null,
+      imagenes: (imageSelection.avatar?.keepIds.length ?? 0) > 0,
       redes: socialLinks.length > 0,
       /*
        * Mientras no haya cobro, lo marca la persona: es un marcador de que
@@ -958,7 +969,7 @@ function ProfileFormFields(props: {
     editing,
     phone,
     socialLinks,
-    avatar,
+    imageSelection.avatar,
     paymentDone,
   ]);
 
@@ -1285,7 +1296,11 @@ function ProfileFormFields(props: {
    * hay algo mal escrito, el botón lo dice estando apagado.
    */
   const canSave =
-    canSubmit && invalidFields.length === 0 && (!editing || dirty);
+    canSubmit &&
+    invalidFields.length === 0 &&
+    // Ninguna imagen a mitad de camino: la selección todavía no está firme.
+    !imagesBusy &&
+    (!editing || dirty);
 
   // Un error del servidor puede referirse a un paso que no está a la vista;
   // este mapa permite señalarlo en la barra de pasos.
@@ -1372,6 +1387,25 @@ function ProfileFormFields(props: {
         el perfil ya existe, el servidor usa el suyo y descarta este valor.
       */}
       <input type="hidden" name="planId" value={plan.id} />
+
+      {/*
+        La selección de imágenes, que es lo único que de ellas viaja en el
+        envío: los archivos ya están subidos y pendientes (TR-043). Van como
+        campos ocultos y no en un estado aparte para que el `FormData` los
+        lleve igual que al resto, sin una segunda petición.
+      */}
+      {Object.entries(imageSelection).map(([field, state]) => (
+        <Fragment key={field}>
+          {state.keepIds.map((id) => (
+            <input key={id} type="hidden" name={`image:${field}`} value={id} />
+          ))}
+          <input
+            type="hidden"
+            name={`imageFields`}
+            value={field}
+          />
+        </Fragment>
+      ))}
 
       {/*
         Cómo salió el envío. Va pegado al encabezado del sitio y se va solo a
@@ -2247,22 +2281,22 @@ function ProfileFormFields(props: {
             acción y queda guardada aunque el alta siga sin terminar. Por eso
             no hay ningún campo de archivo dentro del envío del formulario.
           */}
-          <SingleImageField
-            kind="avatar"
-            image={avatar}
+          <ImageField
+            field="avatar"
             shape="circle"
             label="Foto de perfil"
             hint="Se ve en los resultados de búsqueda y arriba de tu perfil. JPG, PNG o WebP, hasta 5 MB."
-            onChange={setAvatar}
+            initial={props.images.filter((image) => image.kind === "avatar")}
+            onChange={onImageChange("avatar")}
           />
 
-          <SingleImageField
-            kind="cover"
-            image={cover}
+          <ImageField
+            field="cover"
             shape="wide"
             label="Imagen de portada"
             hint="La franja ancha del encabezado de tu perfil."
-            onChange={setCover}
+            initial={props.images.filter((image) => image.kind === "cover")}
+            onChange={onImageChange("cover")}
           />
 
           {/*
@@ -2270,11 +2304,14 @@ function ProfileFormFields(props: {
             para ampliarlo en vez de un campo que no podrían usar (RF-171).
           */}
           {allowsFeature(plan, "gallery") ? (
-            <GalleryField
-              images={gallery}
-              max={limitFor(plan, "galleryImages") ?? Number.MAX_SAFE_INTEGER}
+            <ImageField
+              field="gallery"
+              shape="grid"
+              label="Galería de trabajos"
+              initial={props.images.filter((image) => image.kind === "gallery")}
+              max={limitFor(plan, "galleryImages")}
               planName={plan.name}
-              onChange={setGallery}
+              onChange={onImageChange("gallery")}
             />
           ) : (
             <PlanHint
@@ -2355,7 +2392,9 @@ function ProfileFormFields(props: {
             step={step}
             onStep={setStep}
             pending={pending}
-            canSubmit={canSubmit && invalidFields.length === 0}
+            // `!imagesBusy` también acá: en el alta el botón es otro, y sin
+            // esto se podía crear el perfil con una imagen a medio subir.
+            canSubmit={canSubmit && invalidFields.length === 0 && !imagesBusy}
             isNew={profile === null}
             missing={missing.map((s) => s.label)}
             invalid={invalidFields.length}

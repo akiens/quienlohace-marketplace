@@ -76,6 +76,11 @@ Estas son las que más veces se rompen por escribir sin mirar:
 - **TR-041 — Los errores no revelan el detalle técnico.** Ninguna Server
   Action deja escapar una excepción: todo lo que toca la base va en un `try`,
   el error entero al log y de vuelta una frase genérica.
+- **TR-042 — Una imagen no es una imagen hasta que se demuestra.** Firma
+  binaria, dimensiones de la cabecera y decodificación; se guarda una versión
+  regenerada, nunca el original.
+- **TR-043 — Lo subido es temporal hasta guardar.** Quitar una confirmada la
+  marca, no la borra; cancelar no cambia nada.
 - **TR-004 — Entrada y autorización.** Se autentica y autoriza antes de leer
   o mutar; los errores no revelan credenciales ni cuentas ajenas.
 - **TR-006 — Reglas derivadas.** Los requisitos y los cupos los evalúa el

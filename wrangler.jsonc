@@ -25,6 +25,24 @@
 			"migrations_dir": "migrations"
 		}
 	],
+	// Cloudflare Images: decodifica y recomprime dentro del worker (TR-042).
+	// Es lo que permite verificar que un archivo es realmente una imagen y
+	// guardar una versión regenerada en vez del original.
+	//
+	// Costo: las primeras 5.000 transformaciones únicas del mes son gratis, y
+	// `info()` —la que hace la verificación— no cuenta. Como cada imagen se
+	// transforma una sola vez al subirla y después se sirve desde R2, cada
+	// foto gasta una transformación en toda su vida. Las imágenes se guardan
+	// en R2 y no en Images, así que no corren los cargos de almacenamiento ni
+	// de entrega.
+	//
+	// Si el binding no está habilitado en la cuenta, el flujo sigue andando
+	// con las comprobaciones que no necesitan decodificar (firma binaria y
+	// cabecera) y se guarda lo que llegó. Es una degradación conocida y
+	// anotada en TR-042: ver `src/infrastructure/image-processing.ts`.
+	"images": {
+		"binding": "IMAGES"
+	},
 	"r2_buckets": [
 		{
 			"binding": "MEDIA",
