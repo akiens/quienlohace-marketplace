@@ -127,7 +127,6 @@ export function FormAlert({
       <Banner
         key={count}
         tone={tone}
-        dismissible
         onDismiss={() => {
           setHidden(true);
           onDismiss?.();

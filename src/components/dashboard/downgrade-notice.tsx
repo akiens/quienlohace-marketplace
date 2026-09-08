@@ -41,7 +41,6 @@ export function DowngradeNotice({
        */
       tone={reminder ? "warning" : "info"}
       icon={reminder ? "warning" : "schedule"}
-      dismissible
       /*
        * Se anota en el perfil que ya se leyó: "ya lo vi" es una decisión de la
        * persona, no del aparato, y cerrado en la computadora tampoco tiene que

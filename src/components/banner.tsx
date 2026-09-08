@@ -50,7 +50,6 @@ export function Banner({
   tone = "info",
   icon,
   children,
-  dismissible = false,
   onDismiss,
   onBeforeDismiss,
 }: {
@@ -62,8 +61,6 @@ export function Banner({
    * necesitan destacar una fecha o un nombre dentro de la frase.
    */
   children: React.ReactNode;
-  /** Si lleva cruz para cerrarlo. */
-  dismissible?: boolean;
   /** Se llama después de cerrar. Para avisar a quien lo montó. */
   onDismiss?: () => void;
   /**
@@ -92,9 +89,8 @@ export function Banner({
 
       <p className="min-w-0 flex-1">{children}</p>
 
-      {dismissible ? (
-        <button
-          type="button"
+      <button
+        type="button"
           aria-label="Cerrar aviso"
           onClick={() => {
             // Primero se va de la pantalla; lo demás corre por detrás.
@@ -107,10 +103,9 @@ export function Banner({
            * teléfono y el aviso se quedaba puesto.
            */
           className="-my-1 -mr-2 flex h-9 w-9 flex-none items-center justify-center rounded-input transition-colors hover:bg-black/5"
-        >
-          <Icon name="close" className="text-[18px]" />
-        </button>
-      ) : null}
+      >
+        <Icon name="close" className="text-[18px]" />
+      </button>
     </div>
   );
 }

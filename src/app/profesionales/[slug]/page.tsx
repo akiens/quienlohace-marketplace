@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { Banner } from "@/components/banner";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewList } from "@/components/review-list";
 import {
@@ -165,23 +166,15 @@ export default async function ProviderPage({
       />
 
       {isPreview ? (
-        <div className="bg-accent-soft">
-          <div className="shell flex flex-wrap items-center gap-x-3 gap-y-1.5 py-3">
-            <span className="flex items-center gap-2 text-[14px] font-semibold text-accent-ink">
-              <Icon name="visibility_off" className="text-[18px]" />
-              Vista previa: así se verá tu perfil cuando lo publiques.
-            </span>
-            <span className="text-[13.5px] text-accent-ink/80">
-              Todavía no es visible para nadie más.
-            </span>
-            <Link
-              href="/dashboard"
-              className="ml-auto text-[13.5px] font-semibold text-accent-ink underline"
-            >
-              Volver a mi perfil
-            </Link>
-          </div>
-        </div>
+        <Banner tone="info" icon="visibility_off">
+          <strong className="font-semibold">
+            Vista previa: así se verá tu perfil cuando lo publiques.
+          </strong>{" "}
+          Todavía no es visible para nadie más.{" "}
+          <Link href="/dashboard" className="font-semibold underline">
+            Volver a mi perfil
+          </Link>
+        </Banner>
       ) : null}
 
       {/* Portada */}
