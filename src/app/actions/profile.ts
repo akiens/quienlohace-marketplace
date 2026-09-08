@@ -310,6 +310,7 @@ export async function saveProfile(
     revalidatePath("/dashboard");
     revalidatePath(`/profesionales/${saved.slug}`);
     return {
+      tone: "warning",
       message:
         "Guardamos los cambios, pero tu perfil dejó de cumplir los requisitos para estar publicado y ya no es visible.",
     };

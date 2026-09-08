@@ -7,6 +7,7 @@ import { useActionState, useEffect, useState } from "react";
 import { changePlan } from "@/app/actions/plan";
 import type { FormState } from "@/app/actions/auth";
 import { Icon } from "@/components/ui";
+import { FormAlert } from "@/components/form-alert";
 import {
   PLAN_BADGES,
   PLAN_RIBBONS,
@@ -135,11 +136,16 @@ export function PlanSwitcher({
         </button>
       </div>
 
-      {state.errors?.form ? (
-        <p role="alert" className="px-4 text-[13.5px] font-medium text-[#B42318] sm:px-0">
-          {state.errors.form}
-        </p>
-      ) : null}
+      {/*
+        Un cambio de plan rechazado. El éxito no se avisa acá: subir de plan
+        navega al asistente y bajar se responde en el diálogo, así que lo
+        único que queda por contar en esta pantalla es que no se pudo.
+      */}
+      <FormAlert
+        message={state.errors?.form}
+        tone="error"
+        resetKey={state}
+      />
 
       {open ? (
         <PlanDialog

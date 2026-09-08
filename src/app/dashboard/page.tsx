@@ -118,20 +118,6 @@ export default async function DashboardPage({
 
   return (
     <>
-      {/*
-       * Los avisos van primero, pegados al encabezado del sitio y a ancho
-       * completo: son novedades de la cuenta o del estado de la pantalla, no
-       * contenido de "Mi perfil".
-       *
-       * Editando se muestra sólo el de edición: apilar dos bandas empuja el
-       * formulario fuera de la pantalla, y el de la baja ya se leyó al entrar.
-       */}
-      {editing ? (
-        <Banner icon="edit">
-          Estás editando tu perfil. Los cambios se guardan al confirmar.
-        </Banner>
-      ) : null}
-
       {!editing && downgrade && noticeStage ? (
         <DowngradeNotice
           planName={plan.name}
@@ -151,9 +137,12 @@ export default async function DashboardPage({
        */}
       <div className="mx-auto flex w-full max-w-shell flex-col gap-5 px-0 py-6 sm:gap-7 sm:px-6 sm:py-8">
         <header className="flex flex-col gap-1.5 px-5 sm:px-0">
-          <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
-            Edición de Mi Perfil
-          </h1>
+          <div className="flex">
+            <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
+              Mi Perfil
+            </h1>
+            <span className="ml-1">Edición</span>
+          </div>
           <p className="text-[15px] text-ink-soft">
             Editá tu perfil y, cuando esté listo, guardá los cambios.
           </p>

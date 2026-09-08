@@ -40,6 +40,7 @@ import { profileFieldSchemas } from "@/lib/validation";
 import { fitToPlan } from "@/domain/plan-fit";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
+import { FormAlert } from "@/components/form-alert";
 import {
   SearchSelect,
   type SearchOption,
@@ -1390,17 +1391,40 @@ function ProfileFormFields(props: {
       */}
       <input type="hidden" name="planId" value={plan.id} />
 
-      {state.message ? (
-        <p
-          role="status"
-          className={`flex items-center gap-2 rounded-card border border-[#D6EFE0] bg-[#F4FBF7] px-4 py-3 text-[14px] font-medium text-[#1E8C56] ${
-            editing ? "" : "mx-3 sm:mx-0"
-          }`}
-        >
-          <Icon name="check_circle" filled className="text-[18px]" />
-          {state.message}
-        </p>
-      ) : null}
+      {/*
+        Cómo salió el envío. Va pegado al encabezado del sitio y se va solo a
+        los quince segundos; el `-mx` lo saca del padding lateral que le pone
+        quien monta el formulario, porque es una banda del sitio y no una
+        tarjeta del contenido.
+      */}
+      <FormAlert
+        /*
+         * Un rechazo por validación vuelve con los errores repartidos por
+         * campo y sin `form`: sin este respaldo el aviso no diría nada
+         * justo cuando hay algo que decir. Los mensajes por campo se siguen
+         * viendo en su campo; acá va la señal de que el envío no pasó.
+         */
+        message={
+          state.message ??
+          state.errors?.form ??
+          (state.errors
+            ? "Revisá los campos marcados: hay datos que faltan o no son válidos."
+            : undefined)
+        }
+        tone={state.tone ?? (state.errors ? "error" : "success")}
+        /*
+         * La respuesta del servidor, sea cual sea: dos guardados seguidos
+         * traen el mismo texto, y sin algo que cambie el segundo no se vería.
+         */
+        resetKey={state}
+        /*
+         * En edición el formulario va dentro de un bloque con `px-5` y la
+         * banda tiene que salirse de él para tocar los dos bordes. En el alta
+         * no hay tal padding —la página lo pone en `px-0` en el teléfono— y
+         * restarlo la mandaría fuera de la pantalla.
+         */
+        className={editing ? "-mx-5 sm:mx-0" : ""}
+      />
 
       {/* La barra de pasos es del recorrido guiado: en edición no hay
           recorrido, están todos los campos a la vez. */}
