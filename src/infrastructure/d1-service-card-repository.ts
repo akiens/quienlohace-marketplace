@@ -2,6 +2,7 @@ import "server-only";
 
 import { coveringLocationIds } from "@/data/locations";
 import { getDb } from "@/infrastructure/cloudflare";
+import { loadServiceCardImages } from "@/infrastructure/d1-service-card-images";
 import { newId } from "@/lib/id";
 import { slugify } from "@/lib/slug";
 import type {
@@ -83,7 +84,7 @@ const FROM = `FROM service_cards sc
   LEFT JOIN profile_images pi ON pi.id = sc.image_id
     AND pi.is_active = 1 AND pi.lifecycle = 'confirmed'`;
 
-function toCard(row: CardRow): ServiceCard {
+function toCard(row: CardRow, images: ServiceCard["images"] = []): ServiceCard {
   return {
     id: row.id,
     profileId: row.profile_id,
@@ -109,11 +110,17 @@ function toCard(row: CardRow): ServiceCard {
     paymentMethod: row.payment_method as PaymentMethod | null,
     schedule: row.schedule,
     imageId: row.image_id,
-    imageUrl: row.image_storage_key ? `/media/${row.image_storage_key}` : null,
+    imageUrl: images[0]?.url ?? (row.image_storage_key ? `/media/${row.image_storage_key}` : null),
+    images,
     isPublished: row.is_published === 1,
     isActive: row.is_active === 1,
     sortOrder: row.sort_order,
   };
+}
+
+async function hydrateCards(rows: CardRow[]): Promise<ServiceCard[]> {
+  const images = await loadServiceCardImages(rows.map((row) => row.id));
+  return rows.map((row) => toCard(row, images.get(row.id) ?? []));
 }
 
 function buildSearchWhere(filters: SearchFilters) {
@@ -164,15 +171,16 @@ async function uniqueSlug(title: string, excludeId?: string): Promise<string> {
 }
 
 export class D1ServiceCardRepository {
-  async listPublicSlugs(): Promise<string[]> {
+  async listPublicPaths(): Promise<{ providerSlug: string; slug: string }[]> {
     const result = await getDb().prepare(
-      `SELECT sc.slug FROM service_cards sc JOIN profiles p ON p.id = sc.profile_id
+      `SELECT p.slug AS providerSlug, sc.slug FROM service_cards sc
+       JOIN profiles p ON p.id = sc.profile_id
        WHERE sc.is_active = 1 AND sc.is_published = 1 AND p.profile_status = 'active'
          AND EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id
            AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1)
        ORDER BY sc.updated_at DESC`,
-    ).all<{ slug: string }>();
-    return result.results.map((row) => row.slug);
+    ).all<{ providerSlug: string; slug: string }>();
+    return result.results;
   }
 
   async listForProfile(profileId: string, owner = false): Promise<ServiceCard[]> {
@@ -183,7 +191,7 @@ export class D1ServiceCardRepository {
     const result = await getDb().prepare(
       `SELECT ${SELECT} ${FROM} WHERE sc.profile_id = ? ${condition} ORDER BY sc.sort_order, sc.created_at`,
     ).bind(profileId).all<CardRow>();
-    return result.results.map(toCard);
+    return hydrateCards(result.results);
   }
 
   async findPublicBySlug(slug: string): Promise<ServiceCard | null> {
@@ -194,14 +202,16 @@ export class D1ServiceCardRepository {
          AND EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id
            AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1)`,
     ).bind(slug).first<CardRow>();
-    return row ? toCard(row) : null;
+    if (!row) return null;
+    return (await hydrateCards([row]))[0] ?? null;
   }
 
   async findOwned(id: string, userId: string): Promise<ServiceCard | null> {
     const row = await getDb().prepare(
       `SELECT ${SELECT} ${FROM} WHERE sc.id = ? AND p.user_id = ?`,
     ).bind(id, userId).first<CardRow>();
-    return row ? toCard(row) : null;
+    if (!row) return null;
+    return (await hydrateCards([row]))[0] ?? null;
   }
 
   async save(profileId: string, input: ServiceCardInput, id?: string): Promise<string> {
@@ -266,7 +276,7 @@ export class D1ServiceCardRepository {
        ORDER BY CASE WHEN sc.title LIKE ? THEN 0 ELSE 1 END,
          p.review_count DESC, sc.sort_order LIMIT ?`,
     ).bind(...values, query ? `%${query}%` : "%", limit).all<CardRow>();
-    return rows.results.map(toCard);
+    return hydrateCards(rows.results);
   }
 
   async count(filters: SearchFilters): Promise<number> {

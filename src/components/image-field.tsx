@@ -36,6 +36,7 @@ export function ImageField({
   initial,
   max,
   planName,
+  endpoint,
   onChange,
 }: {
   field: ImageFieldName;
@@ -48,6 +49,8 @@ export function ImageField({
   max?: number | null;
   /** Para el aviso de cupo lleno. */
   planName?: string;
+  /** Ruta de subida. Las cartas usan su almacenamiento propio. */
+  endpoint?: string;
   /**
    * Avisa al formulario qué imágenes quedan y cuáles se quitaron, para que
    * las mande al guardar. También si hay algo en curso: mientras lo haya, el
@@ -68,7 +71,7 @@ export function ImageField({
   const inputId = useId();
   const [rejected, setRejected] = useState<string[]>([]);
 
-  const upload = useImageUpload({ field, initial, max });
+  const upload = useImageUpload({ field, initial, max, endpoint });
   const galleryRevision = initial[0]?.galleryRevision ?? null;
   const selectionPending = field === "gallery" && initial.some(image => image.gallerySelectionPending);
   const [selected, setSelected] = useState(() => initial.filter(image => image.galleryState === "available" && image.lifecycle === "confirmed").map(image => image.id));
@@ -510,7 +513,7 @@ function ImageCard({
         ) : null}
 
         {/* Mostrar u ocultar sólo cambia la visibilidad de una disponible. */}
-        {saved && item.hiddenReason !== "plan" ? (
+        {saved && item.image?.kind !== "service" && item.hiddenReason !== "plan" ? (
           <button
             type="button"
             disabled={busy || (!item.active && !canActivate)}

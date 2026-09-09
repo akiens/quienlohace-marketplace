@@ -486,8 +486,9 @@ export async function cleanupExpiredImages(
     .bind(limit).all<{ storage_key: string }>();
   for (const entry of queue.results) {
     try {
-      const stillUsed = await db.prepare('SELECT 1 FROM profile_images WHERE storage_key = ? LIMIT 1')
-        .bind(entry.storage_key).first();
+      const stillUsed = await db.prepare(`SELECT 1 FROM profile_images WHERE storage_key = ?
+        UNION ALL SELECT 1 FROM service_card_images WHERE storage_key = ? LIMIT 1`)
+        .bind(entry.storage_key, entry.storage_key).first();
       if (!stillUsed) await getMediaBucket().delete(entry.storage_key);
       await db.prepare('DELETE FROM media_deletion_queue WHERE storage_key = ?').bind(entry.storage_key).run();
     } catch (error) {

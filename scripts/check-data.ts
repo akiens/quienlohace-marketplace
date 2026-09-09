@@ -320,6 +320,12 @@ if (seedOk) {
          HAVING count(*) > pl.max_service_cards)`,
     ],
     [
+      "BR-034 — los perfiles mock con cartas tienen entre 2 y 5",
+      `SELECT count(*) n FROM (
+         SELECT profile_id FROM service_cards
+          GROUP BY profile_id HAVING count(*) < 2 OR count(*) > 5)`,
+    ],
+    [
       "BR-006 — ubicaciones activas dentro del tope del plan",
       `SELECT count(*) n FROM (
          SELECT p.id FROM profiles p
@@ -364,13 +370,15 @@ if (seedOk) {
               (SELECT count(*) FROM specialties) AS specialties,
               (SELECT count(*) FROM profiles) AS profiles,
               (SELECT count(*) FROM services) AS services,
+              (SELECT count(*) FROM service_cards) AS serviceCards,
               (SELECT count(*) FROM reviews) AS reviews`,
     )
     .get() as Record<string, number>;
 
   console.log(
     `\n  ${counts.locations} ubicaciones · ${counts.specialties} especialidades · ` +
-      `${counts.profiles} perfiles · ${counts.services} servicios · ${counts.reviews} opiniones`,
+      `${counts.profiles} perfiles · ${counts.services} servicios · ` +
+      `${counts.serviceCards} cartas · ${counts.reviews} opiniones`,
   );
 }
 

@@ -113,7 +113,7 @@ const DEFAULT_ACCEPT: readonly ImageFormat[] = [
 /**
  * Las políticas por campo.
  *
- * Los tres campos de hoy son los del perfil. Uno nuevo —el logo de una
+ * Los campos del perfil y de sus cartas se declaran acá. Uno nuevo —el logo de una
  * empresa, la foto de una opinión— se agrega acá con sus números y el resto
  * del flujo funciona sin tocarse.
  */
@@ -152,6 +152,17 @@ export const IMAGE_POLICIES = {
     minDimension: 400,
     // La proporción la elige quien sube: son trabajos, y recortarlos a una
     // forma fija cortaría justo lo que se quiere mostrar.
+    aspectRatio: null,
+    quality: 82,
+    sortable: true,
+  },
+  service: {
+    // Una portada y hasta tres fotos de muestra por carta.
+    maxCount: 4,
+    maxBytes: 5 * 1024 * 1024,
+    accept: DEFAULT_ACCEPT,
+    maxDimension: 1600,
+    minDimension: 400,
     aspectRatio: null,
     quality: 82,
     sortable: true,

@@ -107,6 +107,8 @@ export type ServiceCard = {
   schedule: string;
   imageId: string | null;
   imageUrl: string | null;
+  /** La primera es la portada de la carta; las restantes son muestras. */
+  images: ProfileImage[];
   isPublished: boolean;
   isActive: boolean;
   sortOrder: number;
@@ -188,8 +190,8 @@ export type SocialLink = {
   isActive: boolean;
 };
 
-/** Rol de una imagen del perfil: foto, portada o galería. */
-export type ImageKind = "avatar" | "cover" | "gallery";
+/** Rol visual de una imagen: perfil, portada, galería o carta de servicio. */
+export type ImageKind = "avatar" | "cover" | "gallery" | "service";
 
 /**
  * Dónde está una imagen dentro de su ciclo de vida (TR-043).

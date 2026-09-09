@@ -12,6 +12,10 @@ export const SERVICE_TIER_LABELS = {
   premium: "Premium",
 } as const;
 
+export function serviceCardHref(card: Pick<ServiceCard, "providerSlug" | "slug">): string {
+  return `/profesionales/${card.providerSlug}/servicios/${card.slug}`;
+}
+
 export function serviceCardPrice(card: ServiceCard): string {
   const min = card.priceMinCents === null ? null : money.format(card.priceMinCents / 100);
   const max = card.priceMaxCents === null ? null : money.format(card.priceMaxCents / 100);

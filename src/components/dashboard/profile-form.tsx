@@ -180,6 +180,7 @@ export function ProfileForm({
   plan,
   images,
   mode = "alta",
+  embedded = false,
   onCancel,
   onPlanRejected,
 }: {
@@ -205,6 +206,8 @@ export function ProfileForm({
    */
   images: ProfileImage[];
   mode?: ProfileFormMode;
+  /** En edición puede compartir la misma caja visual con otras secciones. */
+  embedded?: boolean;
   /** Sólo en edición: salir sin guardar. */
   onCancel?: () => void;
   /**
@@ -269,6 +272,7 @@ export function ProfileForm({
       canPersistDraft={hydrated}
       images={images}
       mode={mode}
+      embedded={embedded}
       onCancel={onCancel}
       onPlanRejected={onPlanRejected}
     />
@@ -288,6 +292,7 @@ function ProfileFormFields(props: {
   canPersistDraft: boolean;
   images: ProfileImage[];
   mode: ProfileFormMode;
+  embedded: boolean;
   onCancel?: () => void;
   onPlanRejected?: (planId: PlanLimits["id"]) => void;
 }) {
@@ -1370,7 +1375,7 @@ function ProfileFormFields(props: {
        * que es lo que pinta los errores por campo.
        */
       noValidate
-      className="flex min-w-0 flex-col gap-4 sm:gap-5"
+      className={`flex min-w-0 flex-col ${editing && props.embedded ? "gap-0" : "gap-4 sm:gap-5"}`}
       /*
        * Se escucha en el formulario y no en cada campo: `input` y `change`
        * burbujean, así que un solo par de manejadores alcanza para los
@@ -1504,10 +1509,12 @@ function ProfileFormFields(props: {
         una caja cuadrada flotando en el medio de una página con aire.
       */}
       <div
-        className={`min-w-0 border-line bg-white shadow-panel ${
+        className={`min-w-0 border-line bg-white ${
           editing
-            ? "rounded-card border"
-            : "border-y sm:rounded-card sm:border"
+            ? props.embedded
+              ? ""
+              : "rounded-card border shadow-panel"
+            : "border-y shadow-panel sm:rounded-card sm:border"
         }`}
       >
         {/* Cada panel se oculta con `hidden`, no se desmonta: los valores

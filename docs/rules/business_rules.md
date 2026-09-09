@@ -400,13 +400,15 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 ### BR-034 — Cartas de servicio
 
 - Una carta describe una oferta concreta o paquete y pertenece a un único perfil.
-- Incluye nombre, descripción, especialidad, nivel de propuesta, precio, modalidad, duración, forma de pago, disponibilidad e imagen opcional.
+- Incluye nombre, descripción, especialidad, nivel de propuesta, precio, modalidad, duración, forma de pago, disponibilidad e imágenes opcionales.
+- Cada carta admite hasta cuatro imágenes propias: la primera es la portada y las tres restantes son muestras. Estas imágenes no consumen el cupo de galería del perfil. Si no hay portada, se usa el fondo visual de la categoría.
 - El nivel de propuesta es económico, estándar o premium y describe la oferta; no revela ni depende del plan interno del proveedor.
 - El precio puede ser a convenir, fijo, «desde» o un rango en pesos uruguayos. Un rango válido tiene un máximo igual o mayor que el mínimo.
 - La reputación mostrada es la calificación general del proveedor. No se mantienen opiniones separadas por carta.
 - El proveedor puede dejarla como borrador. Sólo se publica cuando la carta, su especialidad y el perfil están activos y la carta está marcada para publicar.
+- Agregar, modificar y eliminar cartas sólo está disponible en el modo edición. La vista normal del dashboard es exclusivamente de presentación y muestra también sus estados privados.
 - Al superar el límite de un plan se conservan primero las cartas por su orden y antigüedad. Las excedentes siguen editables para su recuperación posterior, pero no son públicas.
-- Cada carta pública tiene una URL estable bajo `/servicios/` y puede aparecer como resultado independiente de búsqueda y dentro del perfil del proveedor.
+- Cada carta pública tiene una URL canónica estable bajo `/profesionales/{proveedor}/servicios/{servicio}` y puede aparecer como resultado independiente de búsqueda y dentro del perfil del proveedor. Las URLs antiguas bajo `/servicios/` redirigen permanentemente a la canónica.
 
 ---
 

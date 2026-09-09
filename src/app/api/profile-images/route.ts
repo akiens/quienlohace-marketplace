@@ -103,6 +103,9 @@ export async function POST(request: Request) {
 
   const field = String(formData.get("field") ?? "");
   if (!isImageField(field)) return fail("Tipo de imagen no válido.");
+  if (field === "service") {
+    return fail("Las imágenes de servicios usan su propio formulario.");
+  }
 
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {

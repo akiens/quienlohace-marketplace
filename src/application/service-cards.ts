@@ -21,6 +21,6 @@ export function countServiceCards(filters: SearchFilters): Promise<number> {
   return repository.count(filters);
 }
 
-export function listPublicServiceCardSlugs(): Promise<string[]> {
-  return repository.listPublicSlugs();
+export function listPublicServiceCardPaths(): Promise<{ providerSlug: string; slug: string }[]> {
+  return repository.listPublicPaths();
 }

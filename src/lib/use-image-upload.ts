@@ -235,10 +235,12 @@ export function useImageUpload({
   field,
   initial,
   max,
+  endpoint = "/api/profile-images",
 }: {
   field: ImageField;
   initial: ProfileImage[];
   max?: number | null;
+  endpoint?: string;
 }) {
   const policy = policyFor(field);
   /*
@@ -313,7 +315,7 @@ export function useImageUpload({
         body.set("field", field);
         body.set("file", optimized);
 
-        const response = await fetch("/api/profile-images", {
+        const response = await fetch(endpoint, {
           method: "POST",
           body,
           signal: controller.signal,
@@ -347,7 +349,7 @@ export function useImageUpload({
         controllers.current.delete(key);
       }
     },
-    [field, patch],
+    [endpoint, field, patch],
   );
 
   /**
@@ -442,7 +444,7 @@ export function useImageUpload({
             );
           } else if (item.image) {
             void fetch(
-              `/api/profile-images?id=${encodeURIComponent(item.image.id)}`,
+              `${endpoint}${endpoint.includes("?") ? "&" : "?"}id=${encodeURIComponent(item.image.id)}`,
               { method: "DELETE" },
             ).catch(() => {
               // Si no se puede ahora, la levanta la limpieza al expirar.
@@ -458,7 +460,7 @@ export function useImageUpload({
 
       return rejected;
     },
-    [field, initial, items, limit, policy.maxCount, send],
+    [endpoint, field, initial, items, limit, policy.maxCount, send],
   );
 
   /** Reintenta una que falló, sin tocar las demás. */
@@ -502,7 +504,7 @@ export function useImageUpload({
         patch(key, { status: "removing" });
         try {
           await fetch(
-            `/api/profile-images?id=${encodeURIComponent(item.image.id)}`,
+            `${endpoint}${endpoint.includes("?") ? "&" : "?"}id=${encodeURIComponent(item.image.id)}`,
             { method: "DELETE" },
           );
         } catch {
@@ -512,7 +514,7 @@ export function useImageUpload({
 
       setItems((current) => current.filter((candidate) => candidate.key !== key));
     },
-    [items, patch],
+    [endpoint, items, patch],
   );
 
   /** Visibilidad voluntaria: no cambia disponibilidad ni cupo (BR-033). */

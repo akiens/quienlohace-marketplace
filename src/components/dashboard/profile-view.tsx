@@ -7,6 +7,7 @@ import { useState } from "react";
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
 import { ServiceCardsManager } from "@/components/dashboard/service-cards-manager";
+import { ServiceOfferCard } from "@/components/service-offer-card";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import { getSpecialty, sectorOfSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
@@ -98,25 +99,28 @@ export function ProfileView({
         y desde este punto del árbol no se puede subir hasta ahí.
       */
       <div className="flex min-w-0 flex-col gap-4 px-1 sm:px-0">
-        <ServiceCardsManager
-          cards={serviceCards}
-          specialtyIds={profile.specialtyIds.slice(0, plan.maxSpecialties ?? undefined)}
-          images={images}
-          limit={plan.maxServiceCards}
-          profilePublished={profile.profileStatus === "active"}
-        />
-        {/*
-          El mismo formulario del alta, abierto de una vez. Comparten campos,
-          validación y acción: una sola definición de qué es un perfil válido,
-          en vez de dos que se desincronizan.
-        */}
-        <ProfileForm
-          profile={profile}
-          plan={plan}
-          images={images}
-          mode="edicion"
-          onCancel={() => setEditing(false)}
-        />
+        <div className="min-w-0 rounded-card border border-line bg-white shadow-panel">
+          <ServiceCardsManager
+            cards={serviceCards}
+            specialtyIds={profile.specialtyIds.slice(0, plan.maxSpecialties ?? undefined)}
+            limit={plan.maxServiceCards}
+            profilePublished={profile.profileStatus === "active"}
+            embedded
+          />
+          {/*
+            El mismo formulario del alta, abierto de una vez. Comparten campos,
+            validación y acción: una sola definición de qué es un perfil válido,
+            en vez de dos que se desincronizan.
+          */}
+          <ProfileForm
+            profile={profile}
+            plan={plan}
+            images={images}
+            mode="edicion"
+            embedded
+            onCancel={() => setEditing(false)}
+          />
+        </div>
       </div>
     );
   }
@@ -172,16 +176,40 @@ export function ProfileView({
         </div>
       </div>
 
-      <ServiceCardsManager
-        cards={serviceCards}
-        specialtyIds={profile.specialtyIds.slice(0, plan.maxSpecialties ?? undefined)}
-        images={images}
-        limit={plan.maxServiceCards}
-        profilePublished={profile.profileStatus === "active"}
-      />
-
       {/* Lo cargado, para revisarlo de un vistazo sin entrar a editar. */}
       <div className="flex flex-col rounded-card border border-line bg-white">
+        <Section title="Cartas de servicio">
+          {serviceCards.length > 0 ? (
+            <>
+              {!published ? (
+                <p className="flex items-start gap-2 rounded-input bg-brand-100 px-3 py-2.5 text-[13px] text-brand-800">
+                  <Icon name="visibility_off" className="mt-0.5 text-[16px]" />
+                  Estas cartas permanecerán privadas hasta que publiques el perfil.
+                </p>
+              ) : null}
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {serviceCards.map((card) => (
+                  <div key={card.id} className="relative min-w-0">
+                    <ServiceOfferCard card={card} interactive={false} />
+                    {(!card.isPublished || !card.isActive) ? (
+                      <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-white/95 px-2.5 py-1 text-[10.5px] font-bold text-ink-soft shadow-card">
+                        {!card.isActive ? "Oculta por el plan" : "Borrador"}
+                      </span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <p className="text-[12.5px] text-ink-faint">
+                Para agregar, modificar o eliminar cartas, entrá en modo edición.
+              </p>
+            </>
+          ) : (
+            <p className="text-[14px] text-ink-faint">
+              Todavía no creaste cartas de servicio. Podés agregarlas desde el modo edición.
+            </p>
+          )}
+        </Section>
+
         <Section title="Imágenes">
           <div className="flex flex-wrap items-center gap-4">
             <Thumb image={avatar} label="Foto de perfil" round />

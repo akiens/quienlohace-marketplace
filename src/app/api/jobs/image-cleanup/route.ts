@@ -1,4 +1,5 @@
 import { cleanupExpiredImages } from "@/infrastructure/d1-profile-images";
+import { cleanupExpiredServiceCardImages } from "@/infrastructure/d1-service-card-images";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 /**
@@ -49,8 +50,14 @@ export async function POST(request: Request) {
   }
 
   try {
+    const serviceImagesRemoved = await cleanupExpiredServiceCardImages();
     const result = await cleanupExpiredImages();
-    return Response.json({ ok: true, ...result });
+    return Response.json({
+      ok: true,
+      removed: result.removed + serviceImagesRemoved,
+      serviceImagesRemoved,
+      failed: result.failed,
+    });
   } catch (error) {
     // TR-041: el detalle al log, nada de eso al que llama.
     console.error("image cleanup failed", error);

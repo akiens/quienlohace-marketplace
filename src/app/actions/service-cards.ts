@@ -7,8 +7,14 @@ import { effectivePlanId } from "@/domain/plan-changes";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
 import { D1ServiceCardRepository } from "@/infrastructure/d1-service-card-repository";
+import {
+  commitServiceCardImages,
+  discardAllServiceCardImages,
+  validateServiceCardImageSelection,
+} from "@/infrastructure/d1-service-card-images";
 import { requireUser } from "@/lib/session";
 import { fieldErrors, serviceCardSchema } from "@/lib/validation";
+import { serviceCardHref } from "@/lib/service-cards";
 
 const cards = new D1ServiceCardRepository();
 
@@ -23,6 +29,7 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
   if (!profile) return { errors: { form: "Primero creá tu perfil." } };
 
   const id = String(formData.get("id") ?? "").trim() || undefined;
+  const imageIds = formData.getAll("serviceImageId").map(String).filter(Boolean);
   const parsed = serviceCardSchema.safeParse({
     specialtyId: formData.get("specialtyId"),
     title: formData.get("title"),
@@ -47,8 +54,12 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
   if (parsed.data.imageId && !profile.images.some((image) => image.id === parsed.data.imageId)) {
     return { errors: { imageId: "Esa imagen no pertenece a tu perfil." } };
   }
-  if (id && !(await cards.findOwned(id, user.id))) {
+  const owned = id ? await cards.findOwned(id, user.id) : null;
+  if (id && !owned) {
     return { errors: { form: "No encontramos esa carta de servicio." } };
+  }
+  if (!(await validateServiceCardImageSelection(imageIds, user.id, profile.id, id))) {
+    return { errors: { serviceImages: "La selección de imágenes no es válida o supera el máximo de cuatro." } };
   }
 
   const planId = effectivePlanId({
@@ -82,12 +93,21 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
       serviceMode: parsed.data.serviceMode,
       paymentMethod: parsed.data.paymentMethod,
       schedule: parsed.data.schedule,
-      imageId: parsed.data.imageId,
+      // `image_id` queda como compatibilidad con cartas creadas antes de la
+      // galería propia. Las nuevas imágenes viven en service_card_images.
+      imageId: owned?.imageId ?? null,
       isPublished: parsed.data.isPublished,
     }, id);
+    await commitServiceCardImages({
+      ids: imageIds,
+      cardId: savedId,
+      userId: user.id,
+      profileId: profile.id,
+      title: parsed.data.title,
+    });
     await cards.applyLimit(profile.id, plan.maxServiceCards);
     const saved = await cards.findOwned(savedId, user.id);
-    if (saved) revalidatePath(`/servicios/${saved.slug}`);
+    if (saved) revalidatePath(serviceCardHref(saved));
   } catch (error) {
     console.error("saveServiceCard failed", error);
     return { errors: { form: "No pudimos guardar la carta. Intentá nuevamente." } };
@@ -105,6 +125,7 @@ export async function deleteServiceCard(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   const owned = profile ? await cards.findOwned(id, user.id) : null;
   if (!profile || !owned) return;
+  await discardAllServiceCardImages(id, user.id);
   await cards.delete(id, profile.id);
   const planId = effectivePlanId({
     planId: profile.planId,
@@ -114,7 +135,7 @@ export async function deleteServiceCard(formData: FormData): Promise<void> {
   const plan = await new D1PlanRepository().findById(planId);
   if (plan) await cards.applyLimit(profile.id, plan.maxServiceCards);
   revalidatePath("/dashboard");
-  revalidatePath(`/servicios/${owned.slug}`);
+  revalidatePath(serviceCardHref(owned));
   revalidatePath(`/profesionales/${profile.slug}`);
   revalidatePath("/buscar");
 }

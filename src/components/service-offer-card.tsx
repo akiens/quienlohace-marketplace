@@ -5,6 +5,7 @@ import { locationLabelById } from "@/data/locations";
 import { getSpecialty, sectorOfSpecialty } from "@/data/taxonomy";
 import {
   SERVICE_TIER_LABELS,
+  serviceCardHref,
   serviceCardFacts,
   serviceCardPrice,
 } from "@/lib/service-cards";
@@ -16,7 +17,7 @@ const TIER_STYLE = {
   premium: "bg-[#F5EAFE] text-[#7D31B8]",
 } as const;
 
-export function ServiceOfferCard({ card }: { card: ServiceCard }) {
+export function ServiceOfferCard({ card, interactive = true }: { card: ServiceCard; interactive?: boolean }) {
   const specialty = getSpecialty(card.specialtyId);
   const sector = sectorOfSpecialty(card.specialtyId);
 
@@ -51,9 +52,11 @@ export function ServiceOfferCard({ card }: { card: ServiceCard }) {
       <div className="flex flex-1 flex-col gap-3.5 p-4">
         <div className="flex items-start justify-between gap-2">
           <h3 className="min-w-0 text-[17px] font-bold leading-snug tracking-[-.2px] text-ink">
-            <Link href={`/servicios/${card.slug}`} className="after:absolute after:inset-0">
-              {card.title}
-            </Link>
+            {interactive ? (
+              <Link href={serviceCardHref(card)} className="after:absolute after:inset-0">
+                {card.title}
+              </Link>
+            ) : card.title}
           </h3>
           <span className={`flex-none rounded-full px-2.5 py-1 text-[11px] font-bold ${TIER_STYLE[card.tier]}`}>
             {SERVICE_TIER_LABELS[card.tier]}

@@ -43,6 +43,8 @@ import type {
   PlanId,
   ProfileStatus,
   ProfileType,
+  ServiceCardPriceKind,
+  ServiceCardTier,
   ServiceModeCode,
 } from "../src/types";
 
@@ -94,16 +96,18 @@ const PLAN_CAPS: Record<
     services: number;
     locations: number | null;
     gallery: number;
+    serviceCards: number;
   }
 > = {
-  cobre: { sectors: 1, specialties: 2, services: 10, locations: 1, gallery: 0 },
-  gold: { sectors: 2, specialties: 6, services: 25, locations: 5, gallery: 5 },
+  cobre: { sectors: 1, specialties: 2, services: 10, locations: 1, gallery: 0, serviceCards: 2 },
+  gold: { sectors: 2, specialties: 6, services: 25, locations: 5, gallery: 5, serviceCards: 10 },
   platinum: {
     sectors: 3,
     specialties: 12,
     services: 50,
     locations: null,
     gallery: 20,
+    serviceCards: 20,
   },
 };
 
@@ -163,6 +167,25 @@ type SeedService = {
   sortOrder: number;
 };
 
+type SeedServiceCard = {
+  id: string;
+  specialtyId: string;
+  slug: string;
+  title: string;
+  description: string;
+  priceKind: ServiceCardPriceKind;
+  priceMinCents: number | null;
+  priceMaxCents: number | null;
+  tier: ServiceCardTier;
+  durationMinMinutes: number | null;
+  durationMaxMinutes: number | null;
+  serviceMode: ServiceModeCode;
+  paymentMethod: PaymentMethod | null;
+  schedule: string;
+  isPublished: boolean;
+  sortOrder: number;
+};
+
 type SeedProfile = {
   userId: string;
   email: string;
@@ -179,6 +202,7 @@ type SeedProfile = {
   /** Las especialidades elegidas; los rubros se derivan de ellas (BR-010). */
   specialtyIds: string[];
   services: SeedService[];
+  serviceCards: SeedServiceCard[];
   serviceModes: ServiceModeCode[];
   serviceAreaIds: string[];
   locations: SeedProfileLocation[];
@@ -199,6 +223,7 @@ type SeedProfile = {
 const LOCALITIES = LOCATIONS.filter((l) => l.type === "locality");
 
 const usedSlugs = new Set<string>();
+const usedServiceCardSlugs = new Set<string>();
 
 /** BR-005: si dos perfiles generan el mismo slug, se desambigua con sufijo. */
 function uniqueSlug(base: string): string {
@@ -210,6 +235,18 @@ function uniqueSlug(base: string): string {
     n += 1;
   }
   usedSlugs.add(candidate);
+  return candidate;
+}
+
+function uniqueServiceCardSlug(base: string): string {
+  const root = slugify(base) || "servicio";
+  let candidate = root;
+  let n = 2;
+  while (usedServiceCardSlugs.has(candidate)) {
+    candidate = `${root}-${n}`;
+    n += 1;
+  }
+  usedServiceCardSlugs.add(candidate);
   return candidate;
 }
 
@@ -394,6 +431,67 @@ function buildProfile(
   const verified =
     planId !== "cobre" && faker.datatype.boolean({ probability: 0.5 });
 
+  const paymentMethods = faker.helpers.arrayElements(PAYMENTS, { min: 1, max: 4 });
+  const scheduleEntries = faker.helpers.arrayElements(SCHEDULE_SUGGESTIONS, {
+    min: 1,
+    max: 4,
+  });
+  const profileStatus: ProfileStatus =
+    index === 0 || !faker.datatype.boolean({ probability: 0.08 })
+      ? "active"
+      : "draft";
+
+  /*
+   * Algunas fichas reciben de 2 a 5 propuestas comparables. Cobre queda en
+   * dos por su cupo; los demás planes no se llenan artificialmente hasta 10 o
+   * 20, porque el seed busca variedad y no sólo probar el máximo.
+   */
+  const maxMockCards = Math.min(5, caps.serviceCards, services.length);
+  const cardCount = maxMockCards >= 2 && faker.datatype.boolean({ probability: 0.45 })
+    ? faker.number.int({ min: 2, max: maxMockCards })
+    : 0;
+  const serviceCards: SeedServiceCard[] = faker.helpers
+    .arrayElements(services, cardCount)
+    .map((service, order) => {
+      const priceKind = faker.helpers.weightedArrayElement<ServiceCardPriceKind>([
+        { weight: 20, value: "quote" },
+        { weight: 35, value: "fixed" },
+        { weight: 25, value: "from" },
+        { weight: 20, value: "range" },
+      ]);
+      const basePrice = faker.number.int({ min: 8, max: 120 }) * 500 * 100;
+      const priceMinCents = priceKind === "quote" ? null : basePrice;
+      const priceMaxCents = priceKind === "range"
+        ? basePrice + faker.number.int({ min: 2, max: 30 }) * 500 * 100
+        : null;
+      const durationMinMinutes = faker.helpers.arrayElement([30, 60, 90, 120, 240, 480]);
+
+      return {
+        id: `seed-card-${slug}-${order}`,
+        specialtyId: service.specialtyId,
+        slug: uniqueServiceCardSlug(`${service.name}-${slug}`),
+        title: service.name,
+        description: `${service.name} con alcance claro, materiales y tiempos a coordinar. Incluye asesoramiento previo y presupuesto detallado sin compromiso.`,
+        priceKind,
+        priceMinCents,
+        priceMaxCents,
+        tier: faker.helpers.weightedArrayElement<ServiceCardTier>([
+          { weight: 25, value: "economy" },
+          { weight: 55, value: "standard" },
+          { weight: 20, value: "premium" },
+        ]),
+        durationMinMinutes,
+        durationMaxMinutes: faker.datatype.boolean({ probability: 0.5 })
+          ? durationMinMinutes + faker.helpers.arrayElement([30, 60, 120, 240])
+          : null,
+        serviceMode: faker.helpers.arrayElement(serviceModes),
+        paymentMethod: faker.helpers.arrayElement(paymentMethods),
+        schedule: faker.helpers.arrayElement(scheduleEntries),
+        isPublished: faker.datatype.boolean({ probability: 0.9 }),
+        sortOrder: order,
+      };
+    });
+
   return {
     userId: `seed-user-${slug}`,
     email: `${slug}@ejemplo.uy`,
@@ -409,21 +507,16 @@ function buildProfile(
     whatsappEnabled: faker.datatype.boolean({ probability: 0.8 }),
     specialtyIds,
     services,
+    serviceCards,
     serviceModes,
     serviceAreaIds: serviceAreasFor(locality),
     locations,
-    paymentMethods: faker.helpers.arrayElements(PAYMENTS, { min: 1, max: 4 }),
+    paymentMethods,
     // BR-024: hasta diez líneas, tomadas de las sugerencias canónicas.
-    scheduleEntries: faker.helpers.arrayElements(SCHEDULE_SUGGESTIONS, {
-      min: 1,
-      max: 4,
-    }),
+    scheduleEntries,
     // El primero de cada especialidad siempre se publica, así ninguna queda
     // vacía; del resto, unos pocos quedan en borrador para probar ese estado.
-    profileStatus:
-      index === 0 || !faker.datatype.boolean({ probability: 0.08 })
-        ? "active"
-        : "draft",
+    profileStatus,
     verificationStatus: verified ? "verified" : "not_requested",
     planId,
     reviews,
@@ -481,6 +574,7 @@ function buildSql(passwordHash: string): string {
     "DELETE FROM review_reports;",
     "DELETE FROM reviews;",
     "DELETE FROM profile_schedule_entries;",
+    "DELETE FROM service_card_images;",
     "DELETE FROM service_cards;",
     "DELETE FROM profile_images;",
     "DELETE FROM services;",
@@ -559,6 +653,12 @@ function buildSql(passwordHash: string): string {
       );
     }
 
+    for (const card of profile.serviceCards) {
+      lines.push(
+        `INSERT INTO service_cards (id, profile_id, specialty_id, slug, title, description, price_kind, price_min_cents, price_max_cents, currency, tier, duration_min_minutes, duration_max_minutes, service_mode, payment_method, schedule, image_id, is_published, is_active, sort_order, created_at, updated_at) VALUES (${sql(card.id)}, ${sql(profile.profileId)}, ${sql(card.specialtyId)}, ${sql(card.slug)}, ${sql(card.title)}, ${sql(card.description)}, ${sql(card.priceKind)}, ${card.priceMinCents ?? "NULL"}, ${card.priceMaxCents ?? "NULL"}, 'UYU', ${sql(card.tier)}, ${card.durationMinMinutes ?? "NULL"}, ${card.durationMaxMinutes ?? "NULL"}, ${sql(card.serviceMode)}, ${nullable(card.paymentMethod)}, ${sql(card.schedule)}, NULL, ${card.isPublished ? 1 : 0}, 1, ${card.sortOrder}, ${sql(NOW)}, ${sql(NOW)});`,
+      );
+    }
+
     for (const areaId of profile.serviceAreaIds) {
       lines.push(
         `INSERT INTO profile_service_areas (profile_id, location_id) VALUES (${sql(profile.profileId)}, ${sql(areaId)});`,
@@ -626,6 +726,7 @@ async function main(): Promise<void> {
   );
 
   const services = profiles.reduce((t, p) => t + p.services.length, 0);
+  const serviceCards = profiles.reduce((t, p) => t + p.serviceCards.length, 0);
 
   console.log("Generado:");
   console.log("  seeds/providers.json");
@@ -645,6 +746,8 @@ async function main(): Promise<void> {
     `  verificados:     ${profiles.filter((p) => p.verificationStatus === "verified").length}`,
   );
   console.log(`  servicios:       ${services}`);
+  console.log(`  cartas:          ${serviceCards}`);
+  console.log(`  con cartas:      ${profiles.filter((p) => p.serviceCards.length > 0).length}`);
   console.log(
     `  con local:       ${profiles.filter((p) => p.locations.length > 0).length}`,
   );
