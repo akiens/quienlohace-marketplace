@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import {
+  findProfileBySlug,
+  findSimilarProfiles,
+  findVisibleProfileBySlug,
+  listReviews,
+} from "@/application/profiles";
 import { Banner } from "@/components/banner";
+import { NotFoundPage } from "@/components/not-found-page";
+import { PublicProfileGallery } from "@/components/public-profile-gallery";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewList } from "@/components/review-list";
 import {
@@ -14,61 +22,35 @@ import {
 import { getSpecialty, sectorOfSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import {
-  findProfileBySlug,
-  findSimilarProfiles,
-  findVisibleProfileBySlug,
-  listReviews,
-} from "@/application/profiles";
-import { NotFoundPage } from "@/components/not-found-page";
-import { PAYMENT_METHOD_LABELS, SERVICE_MODE_LABELS } from "@/types";
-import { getCurrentUser } from "@/lib/session";
-import {
   canShowPhone,
   canUseWhatsapp,
   phoneHref,
   whatsappHref,
 } from "@/lib/contact";
+import { getCurrentUser } from "@/lib/session";
+import {
+  PAYMENT_METHOD_LABELS,
+  SERVICE_MODE_LABELS,
+  type Profile,
+  type SocialPlatform,
+  type Specialty,
+} from "@/types";
 
 type Params = { slug: string };
 
-/**
- * La página depende de quién mira: el dueño ve su perfil aún sin publicar, y
- * cualquier otra persona ve el aviso de que no existe. Una respuesta cacheada
- * y compartida serviría la versión equivocada —incluido un perfil despublicado
- * a quien no debe verlo—, así que se rinde por pedido.
- *
- * Antes era `revalidate = 3600`, que valía cuando la página era igual para
- * todo el mundo.
- */
+/** La vista depende de la sesión porque el dueño puede previsualizar un borrador. */
 export const dynamic = "force-dynamic";
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<Params>;
-}): Promise<Metadata> {
+export async function generateMetadata({ params }: { params: Promise<Params> }): Promise<Metadata> {
   const { slug } = await params;
   const profile = await findProfileBySlug(slug);
-
-  /*
-   * Sólo los publicados aportan metadatos. Uno sin publicar no debería
-   * aparecer en buscadores ni en la vista previa de un enlace compartido,
-   * aunque su dueño sí pueda verlo.
-   */
   if (!profile || profile.profileStatus !== "active") {
     return { title: "Perfil no encontrado", robots: { index: false } };
   }
 
-  /*
-   * Dónde se lo ubica: el local si lo hay, y si no la primera zona donde
-   * trabaja. Un perfil a domicilio no tiene local (BR-015) pero siempre tiene
-   * al menos un área (BR-016).
-   */
-  const where =
-    profile.locations.find((item) => item.isPrimary && item.isActive)
-      ?.locationId ??
-    profile.serviceAreaIds[0] ??
-    "uruguay";
+  const where = profile.locations.find((item) => item.isPrimary && item.isActive)?.locationId
+    ?? profile.serviceAreaIds[0]
+    ?? "uruguay";
 
   return {
     title: `${profile.name} · ${locationLabelById(where)}`,
@@ -77,337 +59,260 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProviderPage({
-  params,
-}: {
-  params: Promise<Params>;
-}) {
+export default async function ProviderPage({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
-
-  /*
-   * Un perfil sin publicar sólo lo ve su dueño, en vista previa. Para
-   * cualquier otra persona la respuesta es la misma que ante un nombre que no
-   * existe: que esté despublicado no es algo que haya que contar.
-   */
   const user = await getCurrentUser();
   const visible = await findVisibleProfileBySlug(slug, user?.id ?? null);
 
   if (!visible) {
-    // El nombre buscado sale de la URL y sirve para sugerir parecidos.
-    const suggestions = await findSimilarProfiles(slug);
     return (
       <NotFoundPage
         title="No existe un perfil público para un proveedor con este nombre"
         message="Puede que el enlace esté desactualizado, que el nombre esté escrito distinto o que ese perfil todavía no se haya publicado."
-        suggestions={suggestions}
+        suggestions={await findSimilarProfiles(slug)}
       />
     );
   }
 
   const { profile, isPreview } = visible;
-
-  /*
-   * Las imágenes vienen con el perfil, ya filtradas por plan: la consulta
-   * pública sólo trae las activas, así que lo que excede el plan no aparece
-   * acá aunque siga guardado (RF-053).
-   */
-  const images = profile.images;
-  const avatar = images.find((image) => image.kind === "avatar") ?? null;
-  const cover = images.find((image) => image.kind === "cover") ?? null;
-  const gallery = images.filter((image) => image.kind === "gallery");
-
-  /*
-   * La especialidad principal es la primera: el formulario las ordena por
-   * prioridad y ése es el criterio estable que también usan los cupos (TR-016).
-   */
-  const subcategory = getSpecialty(profile.specialtyIds[0] ?? "");
-  const category = subcategory ? sectorOfSpecialty(subcategory.id) : undefined;
-
+  const avatar = profile.images.find((image) => image.kind === "avatar") ?? null;
+  const cover = profile.images.find((image) => image.kind === "cover") ?? null;
+  const gallery = profile.images.filter((image) => image.kind === "gallery");
   const reviews = await listReviews(profile.id);
 
-  const primaryLocation = profile.locations.find(
-    (item) => item.isPrimary && item.isActive,
-  );
-  const location = locationLabelById(
-    primaryLocation?.locationId ?? profile.serviceAreaIds[0] ?? "uruguay",
-  );
+  const specialties = profile.specialtyIds
+    .map(getSpecialty)
+    .filter((item): item is Specialty => item !== undefined);
+  const sectors = [...new Map(
+    specialties
+      .map((specialty) => sectorOfSpecialty(specialty.id))
+      .filter((sector) => sector !== undefined)
+      .map((sector) => [sector.id, sector] as const),
+  ).values()];
+  const activeServices = profile.services.filter((service) => service.isActive);
+  const serviceGroups = specialties
+    .map((specialty) => ({
+      specialty,
+      sector: sectorOfSpecialty(specialty.id),
+      services: activeServices.filter((service) => service.specialtyId === specialty.id),
+    }))
+    .filter((group) => group.services.length > 0);
+  const groupedIds = new Set(serviceGroups.flatMap((group) => group.services.map((service) => service.id)));
+  const ungroupedServices = activeServices.filter((service) => !groupedIds.has(service.id));
+  const serviceGroupCount = serviceGroups.length + (ungroupedServices.length > 0 ? 1 : 0);
 
-  // BR-004: los canales se ofrecen sólo si el perfil los hizo públicos.
+  const primaryLocation = profile.locations.find((item) => item.isPrimary && item.isActive);
+  const activeLocations = profile.locations.filter((item) => item.isActive);
+  const location = locationLabelById(primaryLocation?.locationId ?? profile.serviceAreaIds[0] ?? "uruguay");
   const showPhone = canShowPhone(profile);
   const showWhatsapp = canUseWhatsapp(profile);
-  // BR-019: la insignia se muestra únicamente aprobada.
-  const verified = profile.verificationStatus === "verified";
-  const activeServices = profile.services.filter((item) => item.isActive);
+  const socialLinks = profile.socialLinks.filter((link) => link.isActive);
 
-  // Datos estructurados: ayudan a que el perfil se entienda como un negocio local.
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "LocalBusiness",
+    "@type": profile.type === "business" ? "LocalBusiness" : "ProfessionalService",
     name: profile.name,
     description: profile.description,
+    ...(profile.contactEmail ? { email: profile.contactEmail } : {}),
     ...(showPhone ? { telephone: profile.phoneE164 } : {}),
-    areaServed: profile.serviceAreaIds.map((id) => locationLabelById(id)),
-    ...(profile.rating !== null && profile.reviewCount > 0
-      ? {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: profile.rating,
-            reviewCount: profile.reviewCount,
-          },
-        }
-      : {}),
+    areaServed: profile.serviceAreaIds.map(locationLabelById),
+    sameAs: socialLinks.map((link) => link.url),
+    knowsAbout: specialties.map((specialty) => specialty.name),
+    ...(profile.rating !== null && profile.reviewCount > 0 ? {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: profile.rating,
+        reviewCount: profile.reviewCount,
+      },
+    } : {}),
   };
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {isPreview ? (
         <Banner tone="info" icon="visibility_off">
-          <strong className="font-semibold">
-            Vista previa: así se verá tu perfil cuando lo publiques.
-          </strong>{" "}
+          <strong className="font-semibold">Vista previa: así se verá tu perfil cuando lo publiques.</strong>{" "}
           Todavía no es visible para nadie más.{" "}
-          <Link href="/dashboard" className="font-semibold underline">
-            Volver a mi perfil
-          </Link>
+          <Link href="/dashboard" className="font-semibold underline">Volver a mi perfil</Link>
         </Banner>
       ) : null}
 
-      {/* Portada */}
-      {/* z-0 explícito: sin él la portada crea un contexto de apilamiento que
-          se dibuja por encima del header sticky y le tapa el logo. */}
-      <div className="relative z-0 h-[150px] overflow-hidden bg-card-gradient sm:h-[200px]">
+      <section className="relative z-0 h-[190px] overflow-hidden bg-card-gradient sm:h-[270px] lg:h-[320px]">
         {cover ? (
-          /*
-            La imagen que subió el proveedor manda; el degradado con el icono
-            del rubro queda como respaldo para los perfiles que todavía no
-            cargaron una.
-
-            No pasa por `next/image`: la sirve `/media`, que ya la entrega
-            desde R2 con cache inmutable, y el optimizador sólo agregaría un
-            salto más sin nada que optimizar.
-          */
+          // `/media` ya entrega el archivo procesado desde R2.
           // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={cover.url}
-            alt=""
-            className="h-full w-full object-cover"
-          />
+          <img src={cover.url} alt="" className="h-full w-full object-cover" />
         ) : (
           <>
             <div className="absolute inset-0 bg-hatch" />
-            <Icon
-              name={profile.icon}
-              className="pointer-events-none absolute bottom-[-24px] right-6 text-[180px] leading-none text-white/[.12]"
-            />
+            <Icon name={profile.icon} className="pointer-events-none absolute -bottom-9 right-[8%] text-[220px] leading-none text-white/[.1] sm:text-[280px]" />
           </>
         )}
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#101F3C]/70 via-[#101F3C]/10 to-transparent" />
+      </section>
 
-      <div className="shell relative z-10 flex flex-col gap-8 pb-12">
-        {/* La tarjeta monta sobre la portada: necesita z-index propio, si no
-            la portada (que tiene z-0) se dibuja encima y corta el avatar. */}
-        <div className="-mt-12 flex flex-col gap-5 rounded-card border border-line bg-white p-6 shadow-card">
-          <div className="flex flex-wrap items-start gap-4">
-            {/* Con foto se muestra la foto; sin ella, las iniciales, que es
-                lo que había antes y sigue sirviendo de respaldo. */}
-            {avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={avatar.url}
-                alt={`Foto de ${profile.name}`}
-                className="h-[72px] w-[72px] flex-none rounded-[18px] border border-line object-cover"
-              />
-            ) : (
-              <span className="flex h-[72px] w-[72px] flex-none items-center justify-center rounded-[18px] border border-line bg-brand-100 text-[22px] font-extrabold text-brand-800">
-                {profile.name
-                  .split(/\s+/)
-                  .slice(0, 2)
-                  .map((word) => word[0])
-                  .join("")
-                  .toUpperCase()}
-              </span>
-            )}
+      <div className="shell relative z-10 pb-14 sm:pb-16">
+        <section className="-mt-16 rounded-card border border-line bg-white p-4 shadow-panel sm:-mt-20 sm:p-6 lg:p-7">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-6">
+            <ProfileAvatar profile={profile} avatarUrl={avatar?.url} />
 
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
+            <div className="flex min-w-0 flex-1 flex-col gap-3">
               <div className="flex flex-wrap items-center gap-2">
-                {verified ? <VerifiedBadge /> : null}
-                <Chip>
-                  {profile.type === "business"
-                    ? "Empresa"
-                    : "Profesional independiente"}
-                </Chip>
+                {profile.verificationStatus === "verified" ? <VerifiedBadge /> : null}
+                <Chip>{profile.type === "business" ? "Empresa o equipo" : "Profesional independiente"}</Chip>
+                {sectors.map((sector) => <Chip key={sector.id}>{sector.short}</Chip>)}
               </div>
 
-              <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
-                {profile.name}
-              </h1>
-
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                <RatingLine
-                  rating={profile.rating}
-                  reviewCount={profile.reviewCount}
-                />
-                <span className="flex items-center gap-1.5 text-[14px] text-ink-soft">
-                  <Icon name="location_on" className="text-[17px] text-ink-faint" />
-                  {location}
-                </span>
-                {category && subcategory ? (
-                  <Link
-                    href={`/categorias/${category.slug}/${subcategory.slug}`}
-                    className="flex items-center gap-1.5 text-[14px] font-semibold text-brand-800 hover:underline"
-                  >
-                    <Icon name={category.icon} className="text-[17px]" />
-                    {subcategory.name}
-                  </Link>
-                ) : null}
+              <div>
+                <h1 className="break-words text-[27px] font-extrabold leading-tight tracking-[-.6px] text-ink sm:text-[34px]">{profile.name}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-2">
+                  <RatingLine rating={profile.rating} reviewCount={profile.reviewCount} className="font-medium" />
+                  <span className="flex items-center gap-1.5 text-[14px] text-ink-soft">
+                    <Icon name="location_on" className="text-[18px] text-brand-700" />
+                    {location}
+                  </span>
+                </div>
               </div>
+
+              {specialties.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {specialties.map((specialty) => {
+                    const sector = sectorOfSpecialty(specialty.id);
+                    return sector ? (
+                      <Link key={specialty.id} href={`/categorias/${sector.slug}/${specialty.slug}`} className="inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1.5 text-[13px] font-semibold text-brand-800 transition-colors hover:bg-[#E1E7F1]">
+                        <Icon name={sector.icon} className="text-[16px]" />
+                        {specialty.name}
+                      </Link>
+                    ) : <Chip key={specialty.id}>{specialty.name}</Chip>;
+                  })}
+                </div>
+              ) : null}
             </div>
           </div>
 
-          <p className="max-w-3xl text-[15px] leading-relaxed text-ink-muted">
-            {profile.description}
-          </p>
-
-          {/*
-            Contacto directo: sin login, sin intermediarios. Cada canal aparece
-            sólo si el perfil lo tiene habilitado y público (BR-004): ofrecer un
-            teléfono que su dueño ocultó sería publicarlo igual.
-          */}
-          <div className="flex flex-wrap gap-2.5">
-            {showWhatsapp ? (
-              <a
-                href={whatsappHref(profile)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex h-11 items-center gap-2 rounded-input bg-whatsapp px-5 text-[15px] font-bold text-white transition-colors hover:bg-[#1E8C56]"
-              >
-                <Icon name="chat" className="text-[19px]" />
-                Escribir por WhatsApp
-              </a>
-            ) : null}
-            {showPhone ? (
-              <a
-                href={phoneHref(profile)}
-                className={`flex h-11 items-center gap-2 rounded-input px-5 text-[15px] font-semibold ${SECONDARY_SURFACE}`}
-              >
-                <Icon name="call" className="text-[19px] text-brand-800" />
-                {profile.phone}
-              </a>
-            ) : null}
-            {profile.contactEmail ? (
-              <a
-                href={`mailto:${profile.contactEmail}`}
-                className={`flex h-11 items-center gap-2 rounded-input px-5 text-[15px] font-semibold ${SECONDARY_SURFACE}`}
-              >
-                <Icon name="mail" className="text-[19px] text-brand-800" />
-                {profile.contactEmail}
-              </a>
-            ) : null}
+          <div className="mt-5 border-t border-line-soft pt-5 lg:hidden">
+            <ContactActions profile={profile} showWhatsapp={showWhatsapp} showPhone={showPhone} />
           </div>
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="flex flex-col gap-6">
-            <Panel title="Servicios">
-              <div className="flex flex-wrap gap-2">
-                {activeServices.map((service) => (
-                  <Chip key={service.id} className="text-[13.5px]">
-                    {service.name}
-                  </Chip>
-                ))}
-              </div>
-            </Panel>
+        <div className="mt-6 grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
+          <div className="order-2 flex min-w-0 flex-col gap-6 lg:order-1">
+            <ProfilePanel title="Sobre este perfil" icon="person">
+              <p className="whitespace-pre-line text-[15px] leading-7 text-ink-muted">{profile.description}</p>
+            </ProfilePanel>
 
-            {/* La ubicación del profesional es distinta de dónde trabaja. */}
-            <Panel title="Zonas donde trabaja">
-              <div className="flex flex-wrap gap-2">
-                {profile.serviceAreaIds.map((id) => (
-                  <Chip key={id} className="text-[13.5px]">
-                    {locationLabelById(id)}
-                  </Chip>
-                ))}
-              </div>
-            </Panel>
-
-            {/* Sólo con imágenes: un panel vacío diciendo que no hay
-                trabajos cargados no le sirve a quien mira. */}
-            {gallery.length > 0 ? (
-              <Panel title="Trabajos">
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {gallery.map((image) => (
-                    <div
-                      key={image.id}
-                      className="aspect-[4/3] overflow-hidden rounded-card border border-line bg-surface-muted"
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={image.url}
-                        alt={image.alt}
-                        loading="lazy"
-                        className="h-full w-full object-cover"
-                      />
-                    </div>
+            {activeServices.length > 0 ? (
+              <ProfilePanel title="Servicios" icon="handyman" subtitle={`${activeServices.length} ${activeServices.length === 1 ? "servicio disponible" : "servicios disponibles"}`}>
+                <div className="grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))]">
+                  {serviceGroups.map(({ specialty, sector, services }) => (
+                    <ServiceGroup key={specialty.id} title={specialty.name} icon={sector?.icon ?? profile.icon} services={services} wide={serviceGroupCount === 1} />
                   ))}
+                  {ungroupedServices.length > 0 ? <ServiceGroup title="Otros servicios" icon="task_alt" services={ungroupedServices} wide={serviceGroupCount === 1} /> : null}
                 </div>
-              </Panel>
+              </ProfilePanel>
             ) : null}
 
-            <Panel title="Opiniones">
+            {gallery.length > 0 ? (
+              <ProfilePanel title="Trabajos y proyectos" icon="photo_library" subtitle={`${gallery.length} ${gallery.length === 1 ? "foto" : "fotos"}`}>
+                <PublicProfileGallery images={gallery} />
+              </ProfilePanel>
+            ) : null}
+
+            <ProfilePanel title="Opiniones" icon="reviews" subtitle={profile.reviewCount > 0 ? `${profile.reviewCount} ${profile.reviewCount === 1 ? "experiencia compartida" : "experiencias compartidas"}` : undefined}>
               <div className="flex flex-col gap-5">
                 <ReviewList reviews={reviews} totalCount={profile.reviewCount} />
                 <ReviewForm profileId={profile.id} providerSlug={profile.slug} />
               </div>
-            </Panel>
+            </ProfilePanel>
           </div>
 
-          <aside className="flex flex-col gap-6">
-            <Panel title="Información">
-              <dl className="flex flex-col gap-4">
-                {/*
-                  Los horarios son hasta diez líneas de texto libre (BR-024):
-                  van como lista y no unidas por separadores, que es lo que
-                  permite escribir "Domingos: cerrado" en su propio renglón.
-                */}
-                {profile.scheduleEntries.length > 0 ? (
-                  <InfoRow icon="schedule" label="Horarios">
-                    <ul className="flex flex-col gap-0.5">
-                      {profile.scheduleEntries.map((entry) => (
-                        <li key={entry.id}>{entry.text}</li>
-                      ))}
-                    </ul>
-                  </InfoRow>
-                ) : null}
+          <aside className="order-1 flex min-w-0 flex-col gap-5 lg:order-2">
+            <div className="hidden lg:block">
+              <ProfilePanel title="Contactar" icon="contact_phone" emphasized>
+                <ContactActions profile={profile} showWhatsapp={showWhatsapp} showPhone={showPhone} />
+              </ProfilePanel>
+            </div>
 
-                {/*
-                  BR-017: con más de una modalidad la atención es híbrida, y eso
-                  se deriva acá al mostrar en vez de guardarse (TR-001).
-                */}
-                {profile.serviceModes.length > 0 ? (
-                  <InfoRow icon="handshake" label="Cómo atiende">
-                    {profile.serviceModes
-                      .map((mode) => SERVICE_MODE_LABELS[mode])
-                      .join(" · ")}
-                  </InfoRow>
-                ) : null}
+            {profile.scheduleEntries.length > 0 ? (
+              <ProfilePanel title="Horarios" icon="schedule">
+                <ul className="flex flex-col divide-y divide-line-soft">
+                  {profile.scheduleEntries.map((entry) => (
+                    <li key={entry.id} className="flex items-start gap-2.5 py-2.5 first:pt-0 last:pb-0">
+                      <Icon name="schedule" className="mt-0.5 flex-none text-[16px] text-brand-700" />
+                      <span className="text-[14px] leading-relaxed text-ink-muted">{entry.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </ProfilePanel>
+            ) : null}
 
-                <InfoRow icon="location_on" label="Ubicación">
-                  {location}
-                </InfoRow>
+            {(profile.serviceModes.length > 0 || profile.serviceAreaIds.length > 0 || profile.paymentMethods.length > 0) ? (
+              <ProfilePanel title="Cómo trabaja" icon="handshake">
+                <div className="flex flex-col gap-5">
+                  {profile.serviceModes.length > 0 ? (
+                    <InfoBlock label="Modalidad">
+                      <div className="flex flex-wrap gap-1.5">
+                        {profile.serviceModes.map((mode) => <Chip key={mode}>{SERVICE_MODE_LABELS[mode]}</Chip>)}
+                      </div>
+                    </InfoBlock>
+                  ) : null}
+                  {profile.serviceAreaIds.length > 0 ? (
+                    <InfoBlock label="Zonas de cobertura">
+                      <div className="flex flex-wrap gap-1.5">
+                        {profile.serviceAreaIds.map((id) => <Chip key={id}>{locationLabelById(id)}</Chip>)}
+                      </div>
+                    </InfoBlock>
+                  ) : null}
+                  {profile.paymentMethods.length > 0 ? (
+                    <InfoBlock label="Formas de pago">
+                      <ul className="grid grid-cols-2 gap-2">
+                        {profile.paymentMethods.map((method) => (
+                          <li key={method} className="flex items-center gap-1.5 text-[13.5px] text-ink-muted">
+                            <Icon name="check" className="text-[15px] text-success" />
+                            {PAYMENT_METHOD_LABELS[method]}
+                          </li>
+                        ))}
+                      </ul>
+                    </InfoBlock>
+                  ) : null}
+                </div>
+              </ProfilePanel>
+            ) : null}
 
-                {profile.paymentMethods.length > 0 ? (
-                  <InfoRow icon="payments" label="Formas de pago">
-                    {profile.paymentMethods
-                      .map((method) => PAYMENT_METHOD_LABELS[method])
-                      .join(" · ")}
-                  </InfoRow>
-                ) : null}
-              </dl>
-            </Panel>
+            {activeLocations.length > 0 ? (
+              <ProfilePanel title={activeLocations.length === 1 ? "Ubicación" : "Ubicaciones"} icon="location_on">
+                <ul className="flex flex-col gap-3">
+                  {activeLocations.map((item) => (
+                    <li key={item.id} className="rounded-input border border-line-soft bg-surface-muted p-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[14px] font-semibold text-ink">{item.name || locationLabelById(item.locationId)}</span>
+                        {item.isPrimary && activeLocations.length > 1 ? <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-brand-800">Principal</span> : null}
+                      </div>
+                      {item.address ? <p className="mt-1 break-words text-[13.5px] text-ink-muted">{item.address}</p> : null}
+                      {item.name || item.address ? <p className="mt-1 text-[12.5px] text-ink-faint">{locationLabelById(item.locationId)}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              </ProfilePanel>
+            ) : null}
+
+            {socialLinks.length > 0 ? (
+              <ProfilePanel title="Enlaces y redes" icon="share">
+                <div className="grid grid-cols-2 gap-2">
+                  {socialLinks.map((link) => {
+                    const meta = SOCIAL_META[link.platform];
+                    return (
+                      <a key={link.platform} href={link.url} target="_blank" rel="noopener noreferrer" className={`flex min-w-0 items-center gap-2 rounded-input px-3 py-2.5 text-[13px] font-semibold ${SECONDARY_SURFACE}`}>
+                        <Icon name={meta.icon} className="flex-none text-[17px]" />
+                        <span className="truncate">{meta.label}</span>
+                      </a>
+                    );
+                  })}
+                </div>
+              </ProfilePanel>
+            ) : null}
           </aside>
         </div>
       </div>
@@ -415,39 +320,68 @@ export default async function ProviderPage({
   );
 }
 
-function Panel({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function ProfileAvatar({ profile, avatarUrl }: { profile: Profile; avatarUrl?: string }) {
+  const initials = profile.name.split(/\s+/).slice(0, 2).map((word) => word[0]).join("").toUpperCase();
+  return avatarUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={avatarUrl} alt={`Foto de ${profile.name}`} className="h-[88px] w-[88px] flex-none rounded-[22px] border-4 border-white object-cover shadow-card sm:h-[108px] sm:w-[108px]" />
+  ) : (
+    <span className="flex h-[88px] w-[88px] flex-none items-center justify-center rounded-[22px] border-4 border-white bg-brand-100 text-[25px] font-extrabold text-brand-800 shadow-card sm:h-[108px] sm:w-[108px]">{initials}</span>
+  );
+}
+
+function ContactActions({ profile, showWhatsapp, showPhone }: { profile: Profile; showWhatsapp: boolean; showPhone: boolean }) {
+  if (!showWhatsapp && !showPhone && !profile.contactEmail) {
+    return <p className="text-[14px] leading-relaxed text-ink-soft">Este perfil todavía no publicó canales de contacto.</p>;
+  }
   return (
-    <section className="flex flex-col gap-3.5 rounded-card border border-line bg-white p-5">
-      <h2 className="text-[16px] font-bold text-ink">{title}</h2>
+    <div className="grid min-w-0 gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+      {showWhatsapp ? <a href={whatsappHref(profile)} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-2 rounded-input bg-whatsapp px-4 py-2.5 text-center text-[14px] font-bold text-white transition-colors hover:bg-success"><Icon name="chat" className="text-[19px]" />Escribir por WhatsApp</a> : null}
+      {showPhone ? <a href={phoneHref(profile)} className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2.5 text-center text-[14px] font-semibold ${SECONDARY_SURFACE}`}><Icon name="call" className="flex-none text-[18px]" /><span className="truncate">{profile.phone}</span></a> : null}
+      {profile.contactEmail ? <a href={`mailto:${profile.contactEmail}`} className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2.5 text-center text-[14px] font-semibold sm:col-span-2 lg:col-span-1 ${SECONDARY_SURFACE}`}><Icon name="mail" className="flex-none text-[18px]" /><span className="truncate">{profile.contactEmail}</span></a> : null}
+    </div>
+  );
+}
+
+function ServiceGroup({ title, icon, services, wide = false }: { title: string; icon: string; services: Profile["services"]; wide?: boolean }) {
+  return (
+    <article className="flex min-w-0 flex-col gap-3 rounded-input border border-line-soft bg-surface-muted p-4">
+      <div className="flex items-center gap-2">
+        <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-brand-100 text-brand-800"><Icon name={icon} className="text-[17px]" /></span>
+        <h3 className="text-[14px] font-bold text-ink">{title}</h3>
+      </div>
+      <ul className={`grid gap-2 ${wide ? "sm:grid-cols-2 xl:grid-cols-3" : ""}`}>
+        {services.map((service) => <li key={service.id} className="flex items-start gap-2 text-[14px] leading-relaxed text-ink-muted"><Icon name="check_circle" filled className="mt-0.5 flex-none text-[16px] text-success" />{service.name}</li>)}
+      </ul>
+    </article>
+  );
+}
+
+function ProfilePanel({ title, icon, subtitle, emphasized = false, children }: { title: string; icon: string; subtitle?: string; emphasized?: boolean; children: React.ReactNode }) {
+  return (
+    <section className={`min-w-0 rounded-card border bg-white p-4 shadow-card sm:p-5 ${emphasized ? "border-brand-600/35" : "border-line"}`}>
+      <header className="mb-4 flex items-center gap-3 border-b border-line-soft pb-3.5">
+        <span className={`flex h-9 w-9 flex-none items-center justify-center rounded-input ${emphasized ? "bg-brand-800 text-white" : "bg-brand-100 text-brand-800"}`}><Icon name={icon} className="text-[19px]" /></span>
+        <div className="min-w-0">
+          <h2 className="text-[17px] font-bold tracking-[-.2px] text-ink">{title}</h2>
+          {subtitle ? <p className="text-[12.5px] text-ink-faint">{subtitle}</p> : null}
+        </div>
+      </header>
       {children}
     </section>
   );
 }
 
-function InfoRow({
-  icon,
-  label,
-  children,
-}: {
-  icon: string;
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-3">
-      <Icon name={icon} className="mt-0.5 text-[19px] text-brand-800" />
-      <div className="flex flex-col gap-0.5">
-        <dt className="text-[11px] font-bold uppercase tracking-[.5px] text-ink-faint">
-          {label}
-        </dt>
-        <dd className="text-[14px] leading-relaxed text-ink-muted">{children}</dd>
-      </div>
-    </div>
-  );
+function InfoBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return <div className="flex flex-col gap-2"><h3 className="text-[11px] font-bold uppercase tracking-[.55px] text-ink-faint">{label}</h3>{children}</div>;
 }
+
+const SOCIAL_META: Record<SocialPlatform, { label: string; icon: string }> = {
+  instagram: { label: "Instagram", icon: "photo_camera" },
+  facebook: { label: "Facebook", icon: "groups" },
+  linkedin: { label: "LinkedIn", icon: "work" },
+  x: { label: "X", icon: "alternate_email" },
+  tiktok: { label: "TikTok", icon: "music_note" },
+  youtube: { label: "YouTube", icon: "smart_display" },
+  website: { label: "Sitio web", icon: "language" },
+};
