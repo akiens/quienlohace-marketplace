@@ -53,15 +53,15 @@ export function SiteFooter() {
               className="h-[52px] w-auto flex-none"
             />
             <span className="h-[42px] w-[1.5px] flex-none rounded-full bg-[#DDDEE1]/30" />
-            <span className="flex flex-col items-center gap-1.5">
+            <span className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
               <Image
                 src="/brand/logo-word.svg"
                 alt="QuienLoHace"
                 width={210}
                 height={44}
-                className="h-11 w-auto"
+                className="h-auto w-full max-w-[190px] sm:max-w-[210px]"
               />
-              <span className="-mt-[7px] whitespace-nowrap text-center text-[10.5px] tracking-[.2px] text-footer-text">
+              <span className="-mt-[7px] text-center text-[10.5px] tracking-[.2px] text-footer-text sm:whitespace-nowrap">
                 Conectando clientes y profesionales
               </span>
             </span>
