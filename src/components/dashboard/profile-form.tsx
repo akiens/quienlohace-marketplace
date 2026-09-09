@@ -3032,13 +3032,15 @@ function Panel({
 }) {
   if (editing) {
     return (
-      <section className="flex flex-col gap-4 border-b border-line-soft p-4 last:border-b-0 sm:p-5">
+      <section className="flex min-w-0 flex-col border-b border-line-soft last:border-b-0">
         {title ? (
-          <h2 className="text-[15px] font-bold tracking-[-.2px] text-ink">
+          <h2 className="relative z-10 -ml-1 rounded-r-sm bg-header-gradient px-4 py-3 text-[15px] font-bold tracking-[-.2px] text-white shadow-[0_2px_6px_rgba(16,24,40,.18)] [text-shadow:0_1px_1px_rgba(0,0,0,.45)] after:absolute after:left-0 after:top-full after:h-1 after:w-1 after:bg-brand-950 after:[clip-path:polygon(0_0,100%_0,100%_100%)] sm:-ml-3 sm:px-5 sm:after:h-3 sm:after:w-3">
             {title}
           </h2>
         ) : null}
-        {children}
+        <div className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">
+          {children}
+        </div>
       </section>
     );
   }

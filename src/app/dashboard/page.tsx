@@ -141,10 +141,12 @@ export default async function DashboardPage({
             <h1 className="text-[26px] font-bold tracking-[-.5px] text-ink sm:text-[30px]">
               Mi Perfil
             </h1>
-            <span className="ml-1">Edición</span>
+            {editing ? <span className="ml-1">Edición</span> : null}
           </div>
           <p className="text-[15px] text-ink-soft">
-            Editá tu perfil y, cuando esté listo, guardá los cambios.
+            {editing
+              ? "Editá tu perfil y, cuando esté listo, guardá los cambios."
+              : "Revisá cómo está configurado tu perfil y editá lo que necesites."}
           </p>
         </header>
 

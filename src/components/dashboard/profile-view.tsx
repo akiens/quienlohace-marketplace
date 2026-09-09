@@ -324,11 +324,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3 border-b border-line-soft p-5 last:border-b-0">
-      <h2 className="text-[15px] font-bold tracking-[-.2px] text-ink">
+    <section className="flex flex-col border-b border-line-soft last:border-b-0">
+      <h2 className="relative z-10 -ml-1 rounded-r-sm bg-header-gradient px-5 py-3 text-[15px] font-bold tracking-[-.2px] text-white shadow-[0_2px_6px_rgba(16,24,40,.18)] [text-shadow:0_1px_1px_rgba(0,0,0,.45)] after:absolute after:left-0 after:top-full after:h-1 after:w-1 after:bg-brand-950 after:[clip-path:polygon(0_0,100%_0,100%_100%)] sm:-ml-3 sm:after:h-3 sm:after:w-3">
         {title}
       </h2>
-      <dl className="flex flex-col gap-2.5">{children}</dl>
+      <div className="flex flex-col gap-3 p-5">{children}</div>
     </section>
   );
 }
@@ -430,6 +430,8 @@ function Gallery({ images }: { images: ProfileImage[] }) {
 
   return (
     <div className="flex flex-col items-start gap-3">
+      <h3 className="text-[13.5px] font-semibold text-ink-muted">Galería</h3>
+
       <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-5">
         {images.map((image, index) => {
           const collapsedVisibility =
@@ -438,7 +440,7 @@ function Gallery({ images }: { images: ProfileImage[] }) {
           return (
             <div
               key={image.id}
-              className={`aspect-square overflow-hidden rounded-card border border-line bg-surface-muted ${
+              className={`relative aspect-square overflow-hidden rounded-card border border-line bg-surface-muted ${
                 expanded ? "" : collapsedVisibility
               }`}
             >
@@ -449,6 +451,14 @@ function Gallery({ images }: { images: ProfileImage[] }) {
                 alt={image.alt || "Foto de la galería"}
                 className="h-full w-full object-cover"
               />
+
+              {!image.isActive ? (
+                <span className="absolute inset-0 flex items-center justify-center bg-surface-muted/75 px-3 text-center text-[12px] font-semibold leading-snug text-ink">
+                  {image.hiddenReason === "plan"
+                    ? "Oculta por tu plan"
+                    : "Oculta en tu perfil público"}
+                </span>
+              ) : null}
             </div>
           );
         })}
