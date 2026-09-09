@@ -3,6 +3,7 @@ import type { MetadataRoute } from "next";
 import { SERVICE_SECTORS, listSpecialties } from "@/data/taxonomy";
 import { listProfileSlugs } from "@/application/profiles";
 import { siteUrl } from "@/lib/site-url";
+import { listPublicServiceCardSlugs } from "@/application/service-cards";
 
 /**
  * Los perfiles publicados salen de la base, que no existe durante el build.
@@ -46,11 +47,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     })),
   ]);
 
-  const providerRoutes = (await listProfileSlugs()).map((slug) => ({
+  const [profileSlugs, serviceSlugs] = await Promise.all([
+    listProfileSlugs(),
+    listPublicServiceCardSlugs(),
+  ]);
+  const providerRoutes = profileSlugs.map((slug) => ({
     url: `${BASE_URL}/profesionales/${slug}`,
     lastModified: new Date(),
     priority: 0.6,
   }));
 
-  return [...staticRoutes, ...categoryRoutes, ...providerRoutes];
+  const serviceRoutes = serviceSlugs.map((slug) => ({
+    url: `${BASE_URL}/servicios/${slug}`,
+    lastModified: new Date(),
+    priority: 0.65,
+  }));
+
+  return [...staticRoutes, ...categoryRoutes, ...providerRoutes, ...serviceRoutes];
 }

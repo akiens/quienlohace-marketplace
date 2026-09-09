@@ -38,14 +38,12 @@ const PAYMENT_OPTIONS: PaymentMethod[] = [
   "other",
 ];
 
-const RESULT_KIND_OPTIONS: { kind: ResultKind; icon: string; hint?: string }[] = [
+const RESULT_KIND_OPTIONS: { kind: ResultKind; icon: string }[] = [
   { kind: "individual", icon: "person" },
   { kind: "business", icon: "apartment" },
   {
     kind: "service",
     icon: "sell",
-    // La carta de servicio todavía no existe: se avisa en vez de fingir.
-    hint: "Próximamente",
   },
 ];
 
@@ -181,7 +179,7 @@ export function FiltersPanel({
             />
             <DimmedWhenAll dimmed={filters.resultKinds.length === 0}>
               <div className="flex flex-col gap-0.5">
-                {RESULT_KIND_OPTIONS.map(({ kind, icon, hint }) => (
+                {RESULT_KIND_OPTIONS.map(({ kind, icon }) => (
                   <label
                     key={kind}
                     className="flex cursor-pointer items-center gap-2.5 rounded-[7px] p-2 text-[14px] text-ink-muted hover:bg-surface-sunken"
@@ -194,11 +192,6 @@ export function FiltersPanel({
                     />
                     <Icon name={icon} className="text-[18px] text-brand-800" />
                     {RESULT_KIND_LABELS[kind]}
-                    {hint ? (
-                      <span className="ml-auto rounded-full bg-surface-sunken px-2 py-0.5 text-[11px] font-semibold text-ink-faint">
-                        {hint}
-                      </span>
-                    ) : null}
                   </label>
                 ))}
               </div>

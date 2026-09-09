@@ -530,6 +530,22 @@ function relationStatements(
     );
   }
 
+  // Una carta cuya especialidad salió del perfil se conserva, pero no gasta
+  // cupo ni se publica. Las primeras que siguen siendo válidas recuperan su
+  // lugar automáticamente al guardar el perfil.
+  statements.push(
+    db.prepare(
+      `UPDATE service_cards SET is_active = CASE WHEN id IN (
+         SELECT sc.id FROM service_cards sc
+           JOIN profile_specialties ps ON ps.profile_id = sc.profile_id
+             AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1
+          WHERE sc.profile_id = ? ORDER BY sc.sort_order, sc.created_at
+          LIMIT (SELECT pl.max_service_cards FROM profiles p
+                   JOIN plans pl ON pl.id = p.plan_id WHERE p.id = ?)
+       ) THEN 1 ELSE 0 END WHERE profile_id = ?`,
+    ).bind(profileId, profileId, profileId),
+  );
+
   return { statements, now };
 }
 
@@ -766,8 +782,8 @@ export class D1ProfileRepository implements ProfileRepository {
    * disponibles en el acto. Limpia cualquier baja agendada — quien sube deja
    * sin efecto la baja que hubiera pedido antes.
    *
-   * No toca las listas: qué queda activo se recalcula al guardar el perfil,
-   * que es donde se conocen los topes del plan nuevo.
+   * Las cartas de servicio se recalculan acá porque viven fuera del formulario
+   * de perfil. Las demás listas se recalculan al guardar ese formulario.
    */
   async setPlan(
     profileId: string,
@@ -781,8 +797,9 @@ export class D1ProfileRepository implements ProfileRepository {
      */
     subscriptionStatus: "active" | "past_due" = "active",
   ): Promise<void> {
-    await getDb()
-      .prepare(
+    const db = getDb();
+    await db.batch([
+      db.prepare(
         `UPDATE profiles
             SET plan_id = ?, downgrade_plan_id = NULL,
                 plan_expires_at = COALESCE(?, plan_expires_at),
@@ -796,8 +813,17 @@ export class D1ProfileRepository implements ProfileRepository {
         subscriptionStatus,
         new Date().toISOString(),
         profileId,
-      )
-      .run();
+      ),
+      db.prepare(
+        `UPDATE service_cards SET is_active = CASE WHEN id IN (
+           SELECT sc.id FROM service_cards sc
+             JOIN profile_specialties ps ON ps.profile_id = sc.profile_id
+               AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1
+            WHERE sc.profile_id = ? ORDER BY sc.sort_order, sc.created_at
+            LIMIT (SELECT max_service_cards FROM plans WHERE id = ?)
+         ) THEN 1 ELSE 0 END WHERE profile_id = ?`,
+      ).bind(profileId, planId, profileId),
+    ]);
   }
 
   /** Marca el plan como pago: cierra el paso pendiente del asistente. */
@@ -872,8 +898,9 @@ export class D1ProfileRepository implements ProfileRepository {
    * (TR-031): aplicarla dos veces no vuelve a bajar nada.
    */
   async applyDueDowngrade(profileId: string, planId: PlanId): Promise<void> {
-    await getDb()
-      .prepare(
+    const db = getDb();
+    await db.batch([
+      db.prepare(
         `UPDATE profiles
             SET plan_id = ?, downgrade_plan_id = NULL, plan_expires_at = NULL,
                 downgrade_notice_dismissed_at = NULL,
@@ -881,8 +908,17 @@ export class D1ProfileRepository implements ProfileRepository {
                 updated_at = ?
           WHERE id = ? AND downgrade_plan_id = ?`,
       )
-      .bind(planId, new Date().toISOString(), profileId, planId)
-      .run();
+      .bind(planId, new Date().toISOString(), profileId, planId),
+      db.prepare(
+        `UPDATE service_cards SET is_active = CASE WHEN id IN (
+           SELECT sc.id FROM service_cards sc
+             JOIN profile_specialties ps ON ps.profile_id = sc.profile_id
+               AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1
+            WHERE sc.profile_id = ? ORDER BY sc.sort_order, sc.created_at
+            LIMIT (SELECT max_service_cards FROM plans WHERE id = ?)
+         ) THEN 1 ELSE 0 END WHERE profile_id = ?`,
+      ).bind(profileId, planId, profileId),
+    ]);
   }
 
   /**

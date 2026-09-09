@@ -11,6 +11,7 @@ import { hashPassword, verifyPassword } from "../src/lib/password";
 import {
   credentialsSchema,
   profileSchema,
+  serviceCardSchema,
   signupSchema,
   socialLinkSchema,
 } from "../src/lib/validation";
@@ -296,6 +297,29 @@ async function main(): Promise<void> {
     "rechaza descripción demasiado corta",
     !profileSchema.safeParse({ ...VALID_PROFILE, description: "corta" }).success,
   );
+
+  console.log("\nCartas de servicio (BR-034)");
+  const validCard = {
+    specialtyId: "hogar-y-mantenimiento-electricidad",
+    title: "Instalación de luminarias",
+    description: "Incluye colocación, conexión y prueba final de las luminarias.",
+    priceKind: "range" as const,
+    priceMin: 1200,
+    priceMax: 2500,
+    tier: "standard" as const,
+    durationMinMinutes: 60,
+    durationMaxMinutes: 120,
+    serviceMode: "at_customer" as const,
+    paymentMethod: "bank_transfer" as const,
+    schedule: "Coordinando con 48 horas",
+    imageId: null,
+    isPublished: true,
+  };
+  check("acepta una propuesta completa", serviceCardSchema.safeParse(validCard).success);
+  check("un rango exige precio máximo", !serviceCardSchema.safeParse({ ...validCard, priceMax: null }).success);
+  check("el precio máximo no puede ser menor", !serviceCardSchema.safeParse({ ...validCard, priceMax: 500 }).success);
+  check("la duración máxima no puede ser menor", !serviceCardSchema.safeParse({ ...validCard, durationMaxMinutes: 30 }).success);
+  check("acepta precio a convenir", serviceCardSchema.safeParse({ ...validCard, priceKind: "quote", priceMin: null, priceMax: null }).success);
 
   console.log("\nRedes sociales (BR-022, TR-039)");
   const socialCases = [

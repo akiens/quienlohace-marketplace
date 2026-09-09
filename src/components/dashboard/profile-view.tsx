@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
+import { ServiceCardsManager } from "@/components/dashboard/service-cards-manager";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import { getSpecialty, sectorOfSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
@@ -17,6 +18,7 @@ import {
   type PlanLimits,
   type Profile,
   type ProfileImage,
+  type ServiceCard,
 } from "@/types";
 
 /**
@@ -33,10 +35,12 @@ export function ProfileView({
   profile,
   plan,
   images,
+  serviceCards,
 }: {
   profile: Profile;
   plan: PlanLimits;
   images: ProfileImage[];
+  serviceCards: ServiceCard[];
 }) {
   /*
    * El modo edición vive en la URL (`?editar=1`) y no en un estado local.
@@ -94,6 +98,13 @@ export function ProfileView({
         y desde este punto del árbol no se puede subir hasta ahí.
       */
       <div className="flex min-w-0 flex-col gap-4 px-1 sm:px-0">
+        <ServiceCardsManager
+          cards={serviceCards}
+          specialtyIds={profile.specialtyIds.slice(0, plan.maxSpecialties ?? undefined)}
+          images={images}
+          limit={plan.maxServiceCards}
+          profilePublished={profile.profileStatus === "active"}
+        />
         {/*
           El mismo formulario del alta, abierto de una vez. Comparten campos,
           validación y acción: una sola definición de qué es un perfil válido,
@@ -160,6 +171,14 @@ export function ProfileView({
           <PublishToggle status={profile.profileStatus ?? "draft"} />
         </div>
       </div>
+
+      <ServiceCardsManager
+        cards={serviceCards}
+        specialtyIds={profile.specialtyIds.slice(0, plan.maxSpecialties ?? undefined)}
+        images={images}
+        limit={plan.maxServiceCards}
+        profilePublished={profile.profileStatus === "active"}
+      />
 
       {/* Lo cargado, para revisarlo de un vistazo sin entrar a editar. */}
       <div className="flex flex-col rounded-card border border-line bg-white">

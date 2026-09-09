@@ -7,11 +7,13 @@ import {
   findVisibleProfileBySlug,
   listReviews,
 } from "@/application/profiles";
+import { listProfileServiceCards } from "@/application/service-cards";
 import { Banner } from "@/components/banner";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PublicProfileGallery } from "@/components/public-profile-gallery";
 import { ReviewForm } from "@/components/review-form";
 import { ReviewList } from "@/components/review-list";
+import { ServiceOfferCard } from "@/components/service-offer-card";
 import {
   Chip,
   Icon,
@@ -78,7 +80,10 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
   const avatar = profile.images.find((image) => image.kind === "avatar") ?? null;
   const cover = profile.images.find((image) => image.kind === "cover") ?? null;
   const gallery = profile.images.filter((image) => image.kind === "gallery");
-  const reviews = await listReviews(profile.id);
+  const [reviews, serviceCards] = await Promise.all([
+    listReviews(profile.id),
+    listProfileServiceCards(profile.id, isPreview),
+  ]);
 
   const specialties = profile.specialtyIds
     .map(getSpecialty)
@@ -202,6 +207,18 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
             <ProfilePanel title="Sobre este perfil" icon="person">
               <p className="whitespace-pre-line text-[15px] leading-7 text-ink-muted">{profile.description}</p>
             </ProfilePanel>
+
+            {serviceCards.length > 0 ? (
+              <ProfilePanel
+                title="Propuestas de servicio"
+                icon="sell"
+                subtitle={`${serviceCards.length} ${serviceCards.length === 1 ? "opción lista para contratar" : "opciones listas para contratar"}`}
+              >
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {serviceCards.map((card) => <ServiceOfferCard key={card.id} card={card} />)}
+                </div>
+              </ProfilePanel>
+            ) : null}
 
             {activeServices.length > 0 ? (
               <ProfilePanel title="Servicios" icon="handyman" subtitle={`${activeServices.length} ${activeServices.length === 1 ? "servicio disponible" : "servicios disponibles"}`}>

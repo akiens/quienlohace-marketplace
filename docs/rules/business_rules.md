@@ -90,6 +90,7 @@ QuienLoHace ofrece exactamente tres niveles, ordenados de menor a mayor: **Cobre
 | Rubros activos | 1 | 2 | 3 |
 | Especialidades activas | 2 | 6 | 12 |
 | Servicios activos | 10 | 25 | 50 |
+| Cartas de servicio activas | 2 | 10 | 20 |
 | Ubicaciones físicas activas | 1 | 5 | Sin límite |
 | Imágenes activas en galería | 0 | 5 | 20 |
 | Redes sociales | No | Sí | Sí |
@@ -111,6 +112,7 @@ Las posiciones destacadas siguen siendo una capacidad de Platino y ordenan los l
 - Solo cuentan registros activos.
 - Los rubros se derivan de los rubros de las especialidades activas.
 - El límite de servicios es total por perfil, no por especialidad.
+- El límite de cartas de servicio es total por perfil; los borradores activos también consumen cupo.
 - La foto de perfil y la portada no consumen el cupo de la galería.
 - En la galería, el cupo cuenta las imágenes disponibles según el plan, incluidas las ocultas voluntariamente. Ocultar una imagen no libera cupo; las congeladas y semicongeladas quedan fuera del cupo disponible (BR-032 y BR-033).
 - “Sin límite” significa que no hay máximo comercial; no elimina controles razonables contra abuso.
@@ -148,6 +150,7 @@ La jerarquía funcional es `Rubro → Especialidad → Servicio`.
 - Cada servicio del perfil pertenece a una especialidad previamente seleccionada por ese perfil.
 - El perfil selecciona especialidades y sus rubros se derivan automáticamente.
 - Desactivar una especialidad desactiva también sus servicios asociados.
+- Una carta de servicio se vincula con una especialidad seleccionada. Si esa especialidad deja de estar activa, la carta se conserva pero deja de mostrarse públicamente.
 
 ### BR-011 — Selección y texto libre
 
@@ -384,7 +387,8 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 
 - El buscador pide texto libre; todo lo que se elige de una lista vive en un único panel de filtros.
 - Los criterios son: qué se busca, ubicación, calificación, rubros y especialidades, medios de pago y modalidad.
-- **Qué se busca** distingue proveedor independiente, empresa y carta de servicio. La carta de servicio todavía no existe como entidad: se acepta como criterio, pero pedirla sola no devuelve resultados y combinarla con un tipo de perfil no le quita nada a ese tipo.
+- **Qué se busca** distingue proveedor independiente, empresa y carta de servicio. Cada clase se consulta como una entidad propia.
+- Si hay texto buscado, las cartas coincidentes aparecen antes que los perfiles; al explorar sin texto, aparecen primero los perfiles. Ambas clases se presentan en grupos rotulados y no se intercalan en un ranking opaco.
 - Una lista de criterios vacía significa «todos». Elegir varios valores dentro de un criterio significa «cualquiera de estos»; criterios distintos se combinan restringiendo.
 - Ningún criterio limita cuántos valores se pueden elegir. En particular, ubicación y especialidades no tienen tope.
 - Los filtros viven en la URL, de modo que una búsqueda se puede compartir, volver atrás funciona y el estado sobrevive a recargar.
@@ -392,6 +396,17 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 - El número de criterios elegidos se muestra sobre el acceso al panel de filtros. Cuenta valores, no secciones: tres zonas son tres. Lo que está en «todos» no suma, y el texto escrito tampoco —se ve en el propio campo—.
 - La búsqueda se lanza al confirmar, no mientras se escribe.
 - Buscar desde cualquier página lleva a la página de resultados con los criterios aplicados.
+
+### BR-034 — Cartas de servicio
+
+- Una carta describe una oferta concreta o paquete y pertenece a un único perfil.
+- Incluye nombre, descripción, especialidad, nivel de propuesta, precio, modalidad, duración, forma de pago, disponibilidad e imagen opcional.
+- El nivel de propuesta es económico, estándar o premium y describe la oferta; no revela ni depende del plan interno del proveedor.
+- El precio puede ser a convenir, fijo, «desde» o un rango en pesos uruguayos. Un rango válido tiene un máximo igual o mayor que el mínimo.
+- La reputación mostrada es la calificación general del proveedor. No se mantienen opiniones separadas por carta.
+- El proveedor puede dejarla como borrador. Sólo se publica cuando la carta, su especialidad y el perfil están activos y la carta está marcada para publicar.
+- Al superar el límite de un plan se conservan primero las cartas por su orden y antigüedad. Las excedentes siguen editables para su recuperación posterior, pero no son públicas.
+- Cada carta pública tiene una URL estable bajo `/servicios/` y puede aparecer como resultado independiente de búsqueda y dentro del perfil del proveedor.
 
 ---
 

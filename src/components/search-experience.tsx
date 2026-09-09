@@ -5,13 +5,21 @@ import { useState } from "react";
 
 import { FiltersPanel } from "@/components/filters-panel";
 import { ProfileGrid } from "@/components/profile-grid";
+import { ServiceCardGrid } from "@/components/service-card-grid";
 import { SearchPanel } from "@/components/search-panel";
 import { getSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import { filtersToQuery } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
-import { Icon } from "@/components/ui";
-import type { Profile, SearchFilters } from "@/types";
+import { EmptyState, Icon } from "@/components/ui";
+import {
+  PAYMENT_METHOD_LABELS,
+  RESULT_KIND_LABELS,
+  SERVICE_MODE_LABELS,
+  type Profile,
+  type SearchFilters,
+  type ServiceCard,
+} from "@/types";
 
 /**
  * Página de resultados. Los filtros viven en la URL: la búsqueda se puede
@@ -21,12 +29,16 @@ import type { Profile, SearchFilters } from "@/types";
 export function SearchExperience({
   filters,
   results,
-  total,
+  profileTotal,
+  serviceCards,
+  serviceTotal,
 }: {
   filters: SearchFilters;
   results: Profile[];
   /** Coincidencias totales, que pueden ser más que las cargadas. */
-  total: number;
+  profileTotal: number;
+  serviceCards: ServiceCard[];
+  serviceTotal: number;
 }) {
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -41,6 +53,8 @@ export function SearchExperience({
   const [draft, setDraft] = useState<SearchFilters>(filters);
 
   const activeCount = countActiveFilters(filters);
+  const total = profileTotal + serviceTotal;
+  const servicesFirst = Boolean(filters.query.trim());
 
   function update(next: SearchFilters) {
     const query = filtersToQuery(next);
@@ -72,19 +86,23 @@ export function SearchExperience({
             <h1 className="text-[22px] font-bold tracking-[-.3px] text-ink sm:text-[25px]">
               {filters.query
                 ? `Resultados para "${filters.query}"`
-                : "Todos los profesionales"}
+                : "Profesionales y servicios"}
             </h1>
             <p className="text-[14.5px] text-ink-soft">
-              {total}{" "}
-              {total === 1
-                ? "profesional encontrado"
-                : "profesionales encontrados"}
+              {total} {total === 1 ? "resultado encontrado" : "resultados encontrados"}
             </p>
           </div>
         </div>
 
         {activeCount > 0 ? (
           <div className="flex flex-wrap items-center gap-2">
+            {filters.resultKinds.map((kind) => (
+              <FilterChip
+                key={kind}
+                label={RESULT_KIND_LABELS[kind]}
+                onRemove={() => update({ ...draft, resultKinds: draft.resultKinds.filter((value) => value !== kind) })}
+              />
+            ))}
             {filters.locationIds.map((id) => (
               <FilterChip
                 key={id}
@@ -118,7 +136,7 @@ export function SearchExperience({
             {filters.paymentMethods.map((method) => (
               <FilterChip
                 key={method}
-                label={method}
+                label={PAYMENT_METHOD_LABELS[method]}
                 onRemove={() =>
                   update({
                     ...draft,
@@ -127,6 +145,13 @@ export function SearchExperience({
                     ),
                   })
                 }
+              />
+            ))}
+            {filters.serviceModes.map((mode) => (
+              <FilterChip
+                key={mode}
+                label={SERVICE_MODE_LABELS[mode]}
+                onRemove={() => update({ ...draft, serviceModes: draft.serviceModes.filter((value) => value !== mode) })}
               />
             ))}
 
@@ -140,7 +165,21 @@ export function SearchExperience({
           </div>
         ) : null}
 
-        <ProfileGrid profiles={results} showAd />
+        {total === 0 ? (
+          <EmptyState title="No encontramos resultados con esos filtros">
+            Probá quitar algún filtro, ampliar la zona o buscar con otras palabras.
+          </EmptyState>
+        ) : servicesFirst ? (
+          <>
+            <ServiceResults cards={serviceCards} total={serviceTotal} />
+            <ProfileResults profiles={results} total={profileTotal} />
+          </>
+        ) : (
+          <>
+            <ProfileResults profiles={results} total={profileTotal} />
+            <ServiceResults cards={serviceCards} total={serviceTotal} />
+          </>
+        )}
       </div>
 
       {/*
@@ -158,13 +197,35 @@ export function SearchExperience({
   );
 }
 
+function ProfileResults({ profiles, total }: { profiles: Profile[]; total: number }) {
+  if (total === 0) return null;
+  return (
+    <section className="flex flex-col gap-4">
+      <div><h2 className="text-[19px] font-bold text-ink">Profesionales y empresas</h2><p className="text-[13px] text-ink-soft">{total} {total === 1 ? "perfil" : "perfiles"}</p></div>
+      <ProfileGrid profiles={profiles} showAd />
+    </section>
+  );
+}
+
+function ServiceResults({ cards, total }: { cards: ServiceCard[]; total: number }) {
+  if (total === 0) return null;
+  return (
+    <section className="flex flex-col gap-4">
+      <div><h2 className="text-[19px] font-bold text-ink">Propuestas de servicio</h2><p className="text-[13px] text-ink-soft">{total} {total === 1 ? "oferta concreta" : "ofertas concretas"}</p></div>
+      <ServiceCardGrid cards={cards} />
+    </section>
+  );
+}
+
 /** Limpia todo menos el texto buscado. */
 function emptyExceptQuery(filters: SearchFilters): Partial<SearchFilters> {
   return {
+    resultKinds: [],
     locationIds: [],
     specialtyIds: [],
     minRating: null,
     paymentMethods: [],
+    serviceModes: [],
     useMyLocation: false,
     query: filters.query,
   };

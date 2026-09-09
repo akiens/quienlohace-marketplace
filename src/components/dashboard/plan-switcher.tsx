@@ -322,6 +322,7 @@ function PlanOption({
         <li>{cap(option.maxServiceSectors, "rubros")}</li>
         <li>{cap(option.maxSpecialties, "especialidades")}</li>
         <li>{cap(option.maxServices, "servicios")}</li>
+        <li>{cap(option.maxServiceCards, "cartas de servicio")}</li>
         <li>{cap(option.maxLocations, "ubicaciones")}</li>
         <li>
           {option.maxGalleryImages === 0

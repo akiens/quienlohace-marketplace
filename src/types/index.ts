@@ -77,6 +77,41 @@ export type ProfileService = {
   sortOrder: number;
 };
 
+export type ServiceCardPriceKind = "quote" | "fixed" | "from" | "range";
+export type ServiceCardTier = "economy" | "standard" | "premium";
+
+/** Una oferta concreta que aparece por separado del perfil en las búsquedas. */
+export type ServiceCard = {
+  id: string;
+  profileId: string;
+  providerSlug: string;
+  providerName: string;
+  providerIcon: string;
+  providerVerified: boolean;
+  providerRating: number | null;
+  providerReviewCount: number;
+  providerLocationId: string;
+  specialtyId: string;
+  slug: string;
+  title: string;
+  description: string;
+  priceKind: ServiceCardPriceKind;
+  priceMinCents: number | null;
+  priceMaxCents: number | null;
+  currency: "UYU";
+  tier: ServiceCardTier;
+  durationMinMinutes: number | null;
+  durationMaxMinutes: number | null;
+  serviceMode: ServiceModeCode;
+  paymentMethod: PaymentMethod | null;
+  schedule: string;
+  imageId: string | null;
+  imageUrl: string | null;
+  isPublished: boolean;
+  isActive: boolean;
+  sortOrder: number;
+};
+
 // ---------------------------------------------------------------------------
 // Cuentas y perfiles
 // ---------------------------------------------------------------------------
@@ -320,6 +355,7 @@ export type PlanLimits = {
   maxServices: number | null;
   maxLocations: number | null;
   maxGalleryImages: number | null;
+  maxServiceCards: number;
   allowsSocialLinks: boolean;
   allowsVerificationRequest: boolean;
   allowsFeaturedPlacement: boolean;
@@ -393,17 +429,15 @@ export type ReviewReportReason =
  * Qué clase de resultado se busca.
  *
  * Los dos primeros son perfiles, y se distinguen por `Profile.type`. `service`
- * es la carta de servicio —un servicio puntual publicado por un proveedor—,
- * que todavía no existe como entidad: se acepta en el filtro y se serializa,
- * pero hoy no cambia lo que devuelve la búsqueda. Está acá para que el filtro
- * no tenga que cambiar de forma cuando se implemente.
+ * es la carta de servicio —una propuesta puntual publicada por un proveedor—,
+ * que se consulta como entidad independiente.
  */
 export type ResultKind = "individual" | "business" | "service";
 
 export const RESULT_KIND_LABELS: Record<ResultKind, string> = {
   individual: "Proveedor independiente",
   business: "Empresa o equipo",
-  service: "Servicios",
+  service: "Cartas de servicio",
 };
 
 export type SearchFilters = {

@@ -560,6 +560,39 @@ export const reviewSchema = z.object({
   authorName: z.string().trim().min(2, "Escribí tu nombre.").max(60),
 });
 
+/** Datos editables de una carta de servicio. Los importes llegan en pesos. */
+export const serviceCardSchema = z
+  .object({
+    specialtyId,
+    title: z.string().trim().min(3, "Escribí un nombre de al menos 3 caracteres.").max(90, "Máximo 90 caracteres."),
+    description: z.string().trim().min(20, "Contá qué incluye el servicio (mínimo 20 caracteres).").max(800, "Máximo 800 caracteres."),
+    priceKind: z.enum(["quote", "fixed", "from", "range"]),
+    priceMin: z.coerce.number().nonnegative("El precio no puede ser negativo.").nullable(),
+    priceMax: z.coerce.number().nonnegative("El precio no puede ser negativo.").nullable(),
+    tier: z.enum(["economy", "standard", "premium"]),
+    durationMinMinutes: z.coerce.number().int().positive().nullable(),
+    durationMaxMinutes: z.coerce.number().int().positive().nullable(),
+    serviceMode: z.enum(SERVICE_MODES),
+    paymentMethod: z.enum(PAYMENT_METHODS).nullable(),
+    schedule: z.string().trim().max(160, "Máximo 160 caracteres."),
+    imageId: z.string().trim().nullable(),
+    isPublished: z.boolean(),
+  })
+  .superRefine((card, context) => {
+    if (card.priceKind !== "quote" && card.priceMin === null) {
+      context.addIssue({ code: "custom", path: ["priceMin"], message: "Ingresá el precio." });
+    }
+    if (card.priceKind === "range" && card.priceMax === null) {
+      context.addIssue({ code: "custom", path: ["priceMax"], message: "Ingresá el precio máximo." });
+    }
+    if (card.priceMin !== null && card.priceMax !== null && card.priceMax < card.priceMin) {
+      context.addIssue({ code: "custom", path: ["priceMax"], message: "Debe ser igual o mayor al precio mínimo." });
+    }
+    if (card.durationMinMinutes !== null && card.durationMaxMinutes !== null && card.durationMaxMinutes < card.durationMinMinutes) {
+      context.addIssue({ code: "custom", path: ["durationMaxMinutes"], message: "Debe ser igual o mayor a la duración mínima." });
+    }
+  });
+
 /** RF-154: motivos de reporte. El detalle es opcional. */
 export const reviewReportSchema = z.object({
   reviewId: z.string().min(1),

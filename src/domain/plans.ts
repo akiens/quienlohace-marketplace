@@ -15,7 +15,8 @@ export type LimitedField =
   | "specialties"
   | "services"
   | "locations"
-  | "galleryImages";
+  | "galleryImages"
+  | "serviceCards";
 
 /** Sólo las claves de tope: así el índice no puede apuntar a un booleano. */
 type NumericLimitKey = {
@@ -28,6 +29,7 @@ const LIMIT_KEYS: Record<LimitedField, NumericLimitKey> = {
   services: "maxServices",
   locations: "maxLocations",
   galleryImages: "maxGalleryImages",
+  serviceCards: "maxServiceCards",
 };
 
 /**

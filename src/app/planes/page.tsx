@@ -134,6 +134,7 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
           {cap(plan.maxSpecialties, "especialidad", "especialidades")}
         </Feature>
         <Feature>{cap(plan.maxServices, "servicio", "servicios")}</Feature>
+        <Feature>{cap(plan.maxServiceCards, "carta de servicio", "cartas de servicio")}</Feature>
         <Feature>
           {cap(plan.maxLocations, "ubicación física", "ubicaciones físicas")}
         </Feature>

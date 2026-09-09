@@ -204,6 +204,13 @@ if (seedOk) {
 
   const rules: Array<[string, string]> = [
     [
+      "BR-006 — límites de cartas configurados por plan",
+      `SELECT count(*) n FROM plans WHERE
+         (id = 'cobre' AND max_service_cards <> 2)
+         OR (id = 'gold' AND max_service_cards <> 10)
+         OR (id = 'platinum' AND max_service_cards <> 20)`,
+    ],
+    [
       "BR-003 — un perfil activo declara al menos un área",
       `SELECT count(*) n FROM profiles p WHERE p.profile_status = 'active'
          AND NOT EXISTS (SELECT 1 FROM profile_service_areas a WHERE a.profile_id = p.id)`,
@@ -302,6 +309,15 @@ if (seedOk) {
            JOIN plans pl ON pl.id = p.plan_id
           GROUP BY p.id
          HAVING pl.max_services IS NOT NULL AND count(*) > pl.max_services)`,
+    ],
+    [
+      "BR-006 — cartas de servicio activas dentro del tope del plan",
+      `SELECT count(*) n FROM (
+         SELECT p.id FROM profiles p
+           JOIN service_cards sc ON sc.profile_id = p.id AND sc.is_active = 1
+           JOIN plans pl ON pl.id = p.plan_id
+          GROUP BY p.id
+         HAVING count(*) > pl.max_service_cards)`,
     ],
     [
       "BR-006 — ubicaciones activas dentro del tope del plan",

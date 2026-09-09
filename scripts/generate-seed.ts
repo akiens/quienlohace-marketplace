@@ -481,6 +481,7 @@ function buildSql(passwordHash: string): string {
     "DELETE FROM review_reports;",
     "DELETE FROM reviews;",
     "DELETE FROM profile_schedule_entries;",
+    "DELETE FROM service_cards;",
     "DELETE FROM profile_images;",
     "DELETE FROM services;",
     "DELETE FROM professional_credentials;",

@@ -15,6 +15,7 @@ import { hasCloudflareRuntime } from "@/infrastructure/cloudflare";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import { listImagesForUser } from "@/infrastructure/d1-profile-images";
 import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
+import { listProfileServiceCards } from "@/application/service-cards";
 import { getCurrentUser } from "@/lib/session";
 import type { PlanId } from "@/types";
 
@@ -63,9 +64,11 @@ export default async function DashboardPage({
    * que usa el alta, donde el perfil todavía no existe, y así las dos
    * pantallas ven exactamente lo mismo.
    */
-  const images = await listImagesForUser(user.id);
-
-  const allPlans = await new D1PlanRepository().list();
+  const [images, allPlans, serviceCards] = await Promise.all([
+    listImagesForUser(user.id),
+    new D1PlanRepository().list(),
+    listProfileServiceCards(profile.id, true),
+  ]);
 
   /*
    * El plan que rige hoy, no el de la columna: con una baja agendada y el
@@ -158,7 +161,12 @@ export default async function DashboardPage({
           `Banner`, que va a ancho completo, y envuelto acá quedaba con 20px a
           cada lado como cualquier tarjeta.
         */}
-        <ProfileView profile={profile} plan={plan} images={images} />
+        <ProfileView
+          profile={profile}
+          plan={plan}
+          images={images}
+          serviceCards={serviceCards}
+        />
       </div>
     </>
   );
