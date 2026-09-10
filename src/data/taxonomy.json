@@ -167,6 +167,11 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Plomería y sanitaria",
       "slug": "plomeria-y-sanitaria",
+      "aliases": [
+        "plomero",
+        "fontanero",
+        "fontanería"
+      ],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -175,6 +180,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Electricidad",
       "slug": "electricidad",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -183,6 +189,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Construcción",
       "slug": "construccion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -191,6 +198,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Pintura",
       "slug": "pintura",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -199,6 +207,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Carpintería",
       "slug": "carpinteria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -207,6 +216,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Herrería y metal",
       "slug": "herreria-y-metal",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -215,6 +225,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Aberturas",
       "slug": "aberturas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 6
     },
@@ -223,6 +234,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Climatización",
       "slug": "climatizacion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 7
     },
@@ -231,6 +243,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Jardinería",
       "slug": "jardineria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 8
     },
@@ -239,6 +252,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Piscinas",
       "slug": "piscinas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 9
     },
@@ -247,6 +261,7 @@
       "serviceSectorId": "hogar-y-mantenimiento",
       "name": "Control de plagas",
       "slug": "control-de-plagas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 10
     },
@@ -255,6 +270,7 @@
       "serviceSectorId": "reparaciones-y-servicio-tecnico",
       "name": "Electrodomésticos",
       "slug": "electrodomesticos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -263,6 +279,7 @@
       "serviceSectorId": "reparaciones-y-servicio-tecnico",
       "name": "Computación",
       "slug": "computacion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -271,6 +288,7 @@
       "serviceSectorId": "reparaciones-y-servicio-tecnico",
       "name": "Celulares y tablets",
       "slug": "celulares-y-tablets",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -279,6 +297,7 @@
       "serviceSectorId": "reparaciones-y-servicio-tecnico",
       "name": "Televisión y audio",
       "slug": "television-y-audio",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -287,6 +306,7 @@
       "serviceSectorId": "reparaciones-y-servicio-tecnico",
       "name": "Otros equipos",
       "slug": "otros-equipos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -295,6 +315,7 @@
       "serviceSectorId": "limpieza",
       "name": "Limpieza doméstica",
       "slug": "limpieza-domestica",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -303,6 +324,7 @@
       "serviceSectorId": "limpieza",
       "name": "Limpieza profunda",
       "slug": "limpieza-profunda",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -311,6 +333,7 @@
       "serviceSectorId": "limpieza",
       "name": "Limpieza comercial",
       "slug": "limpieza-comercial",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -319,6 +342,7 @@
       "serviceSectorId": "limpieza",
       "name": "Servicios domésticos",
       "slug": "servicios-domesticos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -327,6 +351,7 @@
       "serviceSectorId": "mudanzas-y-transporte",
       "name": "Mudanzas",
       "slug": "mudanzas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -335,6 +360,7 @@
       "serviceSectorId": "mudanzas-y-transporte",
       "name": "Fletes",
       "slug": "fletes",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -343,6 +369,7 @@
       "serviceSectorId": "mudanzas-y-transporte",
       "name": "Logística",
       "slug": "logistica",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -351,6 +378,7 @@
       "serviceSectorId": "mudanzas-y-transporte",
       "name": "Transporte de personas",
       "slug": "transporte-de-personas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -359,6 +387,7 @@
       "serviceSectorId": "automotor",
       "name": "Mecánica",
       "slug": "mecanica",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -367,6 +396,7 @@
       "serviceSectorId": "automotor",
       "name": "Electricidad automotriz",
       "slug": "electricidad-automotriz",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -375,6 +405,7 @@
       "serviceSectorId": "automotor",
       "name": "Neumáticos",
       "slug": "neumaticos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -383,6 +414,7 @@
       "serviceSectorId": "automotor",
       "name": "Carrocería",
       "slug": "carroceria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -391,6 +423,7 @@
       "serviceSectorId": "automotor",
       "name": "Estética automotriz",
       "slug": "estetica-automotriz",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -399,6 +432,7 @@
       "serviceSectorId": "automotor",
       "name": "Accesorios",
       "slug": "accesorios",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -407,6 +441,7 @@
       "serviceSectorId": "salud",
       "name": "Medicina",
       "slug": "medicina",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 0
     },
@@ -415,6 +450,11 @@
       "serviceSectorId": "salud",
       "name": "Odontología",
       "slug": "odontologia",
+      "aliases": [
+        "dentista",
+        "odontólogo",
+        "odontóloga"
+      ],
       "requiresProfessionalCredential": true,
       "sortOrder": 1
     },
@@ -423,6 +463,7 @@
       "serviceSectorId": "salud",
       "name": "Salud mental",
       "slug": "salud-mental",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 2
     },
@@ -431,6 +472,7 @@
       "serviceSectorId": "salud",
       "name": "Rehabilitación",
       "slug": "rehabilitacion",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 3
     },
@@ -439,6 +481,7 @@
       "serviceSectorId": "salud",
       "name": "Nutrición",
       "slug": "nutricion",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 4
     },
@@ -447,6 +490,7 @@
       "serviceSectorId": "salud",
       "name": "Fonoaudiología",
       "slug": "fonoaudiologia",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 5
     },
@@ -455,6 +499,7 @@
       "serviceSectorId": "salud",
       "name": "Podología",
       "slug": "podologia",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 6
     },
@@ -463,6 +508,7 @@
       "serviceSectorId": "salud",
       "name": "Enfermería",
       "slug": "enfermeria",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 7
     },
@@ -471,6 +517,7 @@
       "serviceSectorId": "salud",
       "name": "Centros de salud",
       "slug": "centros-de-salud",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 8
     },
@@ -479,6 +526,7 @@
       "serviceSectorId": "belleza-y-bienestar",
       "name": "Peluquería",
       "slug": "peluqueria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -487,6 +535,7 @@
       "serviceSectorId": "belleza-y-bienestar",
       "name": "Barbería",
       "slug": "barberia",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -495,6 +544,7 @@
       "serviceSectorId": "belleza-y-bienestar",
       "name": "Uñas",
       "slug": "unas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -503,6 +553,7 @@
       "serviceSectorId": "belleza-y-bienestar",
       "name": "Estética",
       "slug": "estetica",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -511,6 +562,7 @@
       "serviceSectorId": "belleza-y-bienestar",
       "name": "Masajes",
       "slug": "masajes",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -519,6 +571,7 @@
       "serviceSectorId": "belleza-y-bienestar",
       "name": "Tatuajes y piercing",
       "slug": "tatuajes-y-piercing",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -527,6 +580,7 @@
       "serviceSectorId": "belleza-y-bienestar",
       "name": "Centros",
       "slug": "centros",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 6
     },
@@ -535,6 +589,7 @@
       "serviceSectorId": "fitness-y-deportes",
       "name": "Entrenamiento",
       "slug": "entrenamiento",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -543,6 +598,7 @@
       "serviceSectorId": "fitness-y-deportes",
       "name": "Gimnasios",
       "slug": "gimnasios",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -551,6 +607,7 @@
       "serviceSectorId": "fitness-y-deportes",
       "name": "Yoga y pilates",
       "slug": "yoga-y-pilates",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -559,6 +616,7 @@
       "serviceSectorId": "fitness-y-deportes",
       "name": "Deportes",
       "slug": "deportes",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -567,6 +625,7 @@
       "serviceSectorId": "fitness-y-deportes",
       "name": "Clases deportivas",
       "slug": "clases-deportivas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -575,6 +634,7 @@
       "serviceSectorId": "servicios-profesionales",
       "name": "Contabilidad",
       "slug": "contabilidad",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 0
     },
@@ -583,6 +643,7 @@
       "serviceSectorId": "servicios-profesionales",
       "name": "Legal",
       "slug": "legal",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 1
     },
@@ -591,6 +652,7 @@
       "serviceSectorId": "servicios-profesionales",
       "name": "Administración",
       "slug": "administracion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -599,6 +661,7 @@
       "serviceSectorId": "servicios-profesionales",
       "name": "Recursos humanos",
       "slug": "recursos-humanos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -607,6 +670,7 @@
       "serviceSectorId": "servicios-profesionales",
       "name": "Consultoría",
       "slug": "consultoria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -615,6 +679,7 @@
       "serviceSectorId": "servicios-profesionales",
       "name": "Seguros",
       "slug": "seguros",
+      "aliases": [],
       "requiresProfessionalCredential": true,
       "sortOrder": 5
     },
@@ -623,6 +688,7 @@
       "serviceSectorId": "tecnologia",
       "name": "Desarrollo",
       "slug": "desarrollo",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -631,6 +697,7 @@
       "serviceSectorId": "tecnologia",
       "name": "Diseño web",
       "slug": "diseno-web",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -639,6 +706,7 @@
       "serviceSectorId": "tecnologia",
       "name": "Soporte IT",
       "slug": "soporte-it",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -647,6 +715,7 @@
       "serviceSectorId": "tecnologia",
       "name": "Datos",
       "slug": "datos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -655,6 +724,7 @@
       "serviceSectorId": "tecnologia",
       "name": "Servicios digitales",
       "slug": "servicios-digitales",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -663,6 +733,7 @@
       "serviceSectorId": "marketing-y-diseno",
       "name": "Marketing",
       "slug": "marketing",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -671,6 +742,7 @@
       "serviceSectorId": "marketing-y-diseno",
       "name": "Social media",
       "slug": "social-media",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -679,6 +751,7 @@
       "serviceSectorId": "marketing-y-diseno",
       "name": "Publicidad digital",
       "slug": "publicidad-digital",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -687,6 +760,7 @@
       "serviceSectorId": "marketing-y-diseno",
       "name": "Diseño",
       "slug": "diseno",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -695,6 +769,7 @@
       "serviceSectorId": "marketing-y-diseno",
       "name": "Audiovisual",
       "slug": "audiovisual",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -703,6 +778,7 @@
       "serviceSectorId": "marketing-y-diseno",
       "name": "Comunicación",
       "slug": "comunicacion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -711,6 +787,7 @@
       "serviceSectorId": "educacion-y-clases",
       "name": "Apoyo académico",
       "slug": "apoyo-academico",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -719,6 +796,7 @@
       "serviceSectorId": "educacion-y-clases",
       "name": "Idiomas",
       "slug": "idiomas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -727,6 +805,7 @@
       "serviceSectorId": "educacion-y-clases",
       "name": "Tecnología",
       "slug": "tecnologia",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -735,6 +814,7 @@
       "serviceSectorId": "educacion-y-clases",
       "name": "Música",
       "slug": "musica",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -743,6 +823,7 @@
       "serviceSectorId": "educacion-y-clases",
       "name": "Arte",
       "slug": "arte",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -751,6 +832,7 @@
       "serviceSectorId": "educacion-y-clases",
       "name": "Clases profesionales",
       "slug": "clases-profesionales",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -759,6 +841,7 @@
       "serviceSectorId": "educacion-y-clases",
       "name": "Academias",
       "slug": "academias",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 6
     },
@@ -767,6 +850,7 @@
       "serviceSectorId": "eventos",
       "name": "Organización",
       "slug": "organizacion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -775,6 +859,7 @@
       "serviceSectorId": "eventos",
       "name": "Fotografía y video",
       "slug": "fotografia-y-video",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -783,6 +868,7 @@
       "serviceSectorId": "eventos",
       "name": "Música",
       "slug": "musica",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -791,6 +877,7 @@
       "serviceSectorId": "eventos",
       "name": "Gastronomía",
       "slug": "gastronomia",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -799,6 +886,7 @@
       "serviceSectorId": "eventos",
       "name": "Decoración",
       "slug": "decoracion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -807,6 +895,7 @@
       "serviceSectorId": "eventos",
       "name": "Entretenimiento",
       "slug": "entretenimiento",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -815,6 +904,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Inmobiliarias",
       "slug": "inmobiliarias",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -823,6 +913,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Agentes inmobiliarios",
       "slug": "agentes-inmobiliarios",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -831,6 +922,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Administración",
       "slug": "administracion",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -839,6 +931,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Tasaciones",
       "slug": "tasaciones",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -847,6 +940,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Arquitectura",
       "slug": "arquitectura",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -855,6 +949,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Ingeniería",
       "slug": "ingenieria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -863,6 +958,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Agrimensura",
       "slug": "agrimensura",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 6
     },
@@ -871,6 +967,7 @@
       "serviceSectorId": "inmuebles",
       "name": "Inspecciones",
       "slug": "inspecciones",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 7
     },
@@ -879,6 +976,7 @@
       "serviceSectorId": "mascotas",
       "name": "Veterinaria",
       "slug": "veterinaria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -887,6 +985,7 @@
       "serviceSectorId": "mascotas",
       "name": "Estética animal",
       "slug": "estetica-animal",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -895,6 +994,7 @@
       "serviceSectorId": "mascotas",
       "name": "Cuidado",
       "slug": "cuidado",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -903,6 +1003,7 @@
       "serviceSectorId": "mascotas",
       "name": "Entrenamiento",
       "slug": "entrenamiento",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -911,6 +1012,7 @@
       "serviceSectorId": "cuidado-y-asistencia",
       "name": "Cuidado de niños",
       "slug": "cuidado-de-ninos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -919,6 +1021,7 @@
       "serviceSectorId": "cuidado-y-asistencia",
       "name": "Adultos mayores",
       "slug": "adultos-mayores",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -927,6 +1030,7 @@
       "serviceSectorId": "cuidado-y-asistencia",
       "name": "Personas con dependencia",
       "slug": "personas-con-dependencia",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -935,6 +1039,7 @@
       "serviceSectorId": "gastronomia",
       "name": "Catering",
       "slug": "catering",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -943,6 +1048,7 @@
       "serviceSectorId": "gastronomia",
       "name": "Chef",
       "slug": "chef",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -951,6 +1057,7 @@
       "serviceSectorId": "gastronomia",
       "name": "Repostería",
       "slug": "reposteria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -959,6 +1066,7 @@
       "serviceSectorId": "gastronomia",
       "name": "Viandas",
       "slug": "viandas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -967,6 +1075,7 @@
       "serviceSectorId": "gastronomia",
       "name": "Bebidas y eventos",
       "slug": "bebidas-y-eventos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -975,6 +1084,7 @@
       "serviceSectorId": "gastronomia",
       "name": "Servicios móviles",
       "slug": "servicios-moviles",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -983,6 +1093,7 @@
       "serviceSectorId": "turismo",
       "name": "Guías",
       "slug": "guias",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -991,6 +1102,7 @@
       "serviceSectorId": "turismo",
       "name": "Tours",
       "slug": "tours",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -999,6 +1111,7 @@
       "serviceSectorId": "turismo",
       "name": "Traslados",
       "slug": "traslados",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -1007,6 +1120,7 @@
       "serviceSectorId": "turismo",
       "name": "Excursiones",
       "slug": "excursiones",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -1015,6 +1129,7 @@
       "serviceSectorId": "turismo",
       "name": "Experiencias",
       "slug": "experiencias",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -1023,6 +1138,7 @@
       "serviceSectorId": "servicios-rurales",
       "name": "Servicios agrícolas",
       "slug": "servicios-agricolas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -1031,6 +1147,7 @@
       "serviceSectorId": "servicios-rurales",
       "name": "Servicios ganaderos",
       "slug": "servicios-ganaderos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -1039,6 +1156,7 @@
       "serviceSectorId": "servicios-rurales",
       "name": "Veterinaria rural",
       "slug": "veterinaria-rural",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -1047,6 +1165,7 @@
       "serviceSectorId": "servicios-rurales",
       "name": "Infraestructura rural",
       "slug": "infraestructura-rural",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -1055,6 +1174,7 @@
       "serviceSectorId": "servicios-rurales",
       "name": "Maquinaria agrícola",
       "slug": "maquinaria-agricola",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -1063,6 +1183,7 @@
       "serviceSectorId": "servicios-rurales",
       "name": "Apicultura",
       "slug": "apicultura",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -1071,6 +1192,7 @@
       "serviceSectorId": "seguridad",
       "name": "Seguridad privada",
       "slug": "seguridad-privada",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 0
     },
@@ -1079,6 +1201,7 @@
       "serviceSectorId": "seguridad",
       "name": "Alarmas",
       "slug": "alarmas",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 1
     },
@@ -1087,6 +1210,7 @@
       "serviceSectorId": "seguridad",
       "name": "Cámaras",
       "slug": "camaras",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 2
     },
@@ -1095,6 +1219,7 @@
       "serviceSectorId": "seguridad",
       "name": "Control de acceso",
       "slug": "control-de-acceso",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 3
     },
@@ -1103,6 +1228,7 @@
       "serviceSectorId": "seguridad",
       "name": "Cercos eléctricos",
       "slug": "cercos-electricos",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 4
     },
@@ -1111,6 +1237,7 @@
       "serviceSectorId": "seguridad",
       "name": "Cerrajería",
       "slug": "cerrajeria",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 5
     },
@@ -1119,6 +1246,7 @@
       "serviceSectorId": "seguridad",
       "name": "Porteros y videoporteros",
       "slug": "porteros-y-videoporteros",
+      "aliases": [],
       "requiresProfessionalCredential": false,
       "sortOrder": 6
     }

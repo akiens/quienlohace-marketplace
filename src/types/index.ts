@@ -48,6 +48,8 @@ export type Specialty = {
   serviceSectorId: string;
   name: string;
   slug: string;
+  /** Oficios y nombres equivalentes que permiten encontrar la especialidad. */
+  aliases: string[];
   /** BR-020: exige una habilitación aprobada y vigente para publicarse. */
   requiresProfessionalCredential: boolean;
   sortOrder: number;
@@ -481,6 +483,12 @@ export type SearchQueryPlan = {
   coreTerms: string[];
   /** Especialidades que ayudan a recuperar oficios o armar relacionados. */
   specialtyIds: string[];
+  /** Servicios canónicos que representan la actividad concreta solicitada. */
+  serviceIds: string[];
+  /** Naturaleza de la intención reconocida; controla qué evidencia alcanza. */
+  intent: "empty" | "specialty" | "service" | "text";
+  /** Expresión útil, sin introducciones como «necesito un». */
+  exactTerms: string[];
   /** Sólo true cuando la consulta representa un oficio/especialidad amplia. */
   allowSpecialtyMatch: boolean;
   label: string | null;

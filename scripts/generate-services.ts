@@ -15,7 +15,7 @@
  *   # <n>. <Rubro>
  *   `<id-rubro>` · corto: *<nombre corto>* · icono: `<icono>`
  *   ## <n>.<m>. <Especialidad>
- *   `<id-especialidad>`
+ *   `<id-especialidad>` · alias: <oficio>, <oficio>
  *   - <Nombre canónico> — alias: <término>, <término>
  *
  * Falla ante ids duplicados, especialidades inexistentes, nombres vacíos o
@@ -43,6 +43,7 @@ type SpecialtyEntry = {
   serviceSectorId: string;
   name: string;
   slug: string;
+  aliases: string[];
   /** BR-020: sus servicios exigen una habilitación aprobada y vigente. */
   requiresProfessionalCredential: boolean;
   sortOrder: number;
@@ -100,6 +101,7 @@ function main(): void {
 
   const sectorIds = new Set<string>();
   const specialtyIds = new Set<string>();
+  const specialtyAliasOwners = new Map<string, string>();
   const serviceIds = new Set<string>();
 
   let sector: ServiceSectorEntry | null = null;
@@ -196,12 +198,37 @@ function main(): void {
           );
         }
 
+        const aliases = (/alias:\s*(.+)$/.exec(line)?.[1] ?? "")
+          .split(",")
+          .map((alias) => alias.trim())
+          .filter(Boolean);
+        const aliasesHere = new Set<string>();
+        for (const alias of aliases) {
+          const normalizedAlias = slugify(alias);
+          if (!normalizedAlias) {
+            problems.push(`${at}: alias vacío o inválido en ${id}`);
+            continue;
+          }
+          if (aliasesHere.has(normalizedAlias)) {
+            problems.push(`${at}: alias duplicado "${alias}" en ${id}`);
+            continue;
+          }
+          aliasesHere.add(normalizedAlias);
+          const owner = specialtyAliasOwners.get(normalizedAlias);
+          if (owner && owner !== id) {
+            problems.push(`${at}: alias "${alias}" compartido por ${owner} y ${id}`);
+          } else {
+            specialtyAliasOwners.set(normalizedAlias, id);
+          }
+        }
+
         specialtyIds.add(id);
         specialty = {
           id,
           serviceSectorId: sector.id,
           name: pendingSpecialty.name,
           slug,
+          aliases,
           requiresProfessionalCredential: isRegulated(sector.id, id),
           sortOrder: specialties.filter((s) => s.serviceSectorId === sector!.id)
             .length,

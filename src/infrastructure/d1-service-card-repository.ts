@@ -5,7 +5,7 @@ import { getDb } from "@/infrastructure/cloudflare";
 import { loadServiceCardImages } from "@/infrastructure/d1-service-card-images";
 import { newId } from "@/lib/id";
 import { slugify } from "@/lib/slug";
-import { textSearchClause } from "@/infrastructure/search-sql";
+import { normalizedSearchField, textSearchClause } from "@/infrastructure/search-sql";
 import type {
   PaymentMethod,
   SearchFilters,
@@ -139,10 +139,17 @@ function buildSearchWhere(filters: SearchFilters, queryPlan?: SearchQueryPlan) {
   const query = filters.query.trim();
   if (query) {
     if (queryPlan) {
-      const text = textSearchClause(["sc.title", "sc.description", "s.name", "p.name"], queryPlan);
+      const text = textSearchClause([
+        normalizedSearchField("sc.title"),
+        normalizedSearchField("sc.description"),
+        normalizedSearchField("s.name"),
+        normalizedSearchField("p.name"),
+      ], queryPlan);
       let queryClause = text.clause;
       values.push(...text.params);
-      if (queryPlan.allowSpecialtyMatch && queryPlan.specialtyIds.length) {
+      // Para actividades concretas, la especialidad amplía sólo candidatos.
+      // La elegibilidad estricta se decide después contra el servicio propio.
+      if (queryPlan.specialtyIds.length) {
         queryClause = `(${queryClause} OR s.specialty_id IN (${queryPlan.specialtyIds.map(() => "?").join(",")}))`;
         values.push(...queryPlan.specialtyIds);
       }
@@ -308,6 +315,16 @@ export class D1ServiceCardRepository {
        ORDER BY CASE WHEN sc.title LIKE ? ESCAPE '\\' THEN 0 ELSE 1 END,
          p.review_count DESC, sc.sort_order LIMIT ?`,
     ).bind(...values, orderTerm ? `%${escapedOrder}%` : "%", limit).all<CardRow>();
+    return hydrateCards(rows.results);
+  }
+
+  /** Candidatos completos: la aplicación aplica evidencia y orden unificados. */
+  async searchAll(filters: SearchFilters, queryPlan: SearchQueryPlan): Promise<ServiceCard[]> {
+    const { where, values } = buildSearchWhere(filters, queryPlan);
+    const rows = await getDb().prepare(
+      `SELECT ${SELECT} ${FROM} WHERE ${where}
+       ORDER BY p.review_count DESC, sc.sort_order, sc.id`,
+    ).bind(...values).all<CardRow>();
     return hydrateCards(rows.results);
   }
 

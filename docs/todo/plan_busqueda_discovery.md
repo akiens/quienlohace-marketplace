@@ -2,6 +2,8 @@
 
 Fecha: 2026-09-09. Estado: MVP implementado el 2026-09-09.
 
+> Actualización (2026-09-10): [Búsqueda pertinente y resultados mezclados](plan_busqueda_relevancia.md) sustituye las decisiones de este documento sobre recuperación, orden, diversidad y presentación. Su comportamiento principal ya está implementado; este documento conserva el antecedente del primer MVP.
+
 ## Estado de implementación
 
 La aplicación ya incorpora interpretación normalizada contra el catálogo, alias y necesidades editoriales iniciales; recuperación por frases y términos centrales; sugerencias tipográficas; ranking por evidencia antes que reputación; diversidad suave entre cartas sin eliminar propuestas; motivos visibles; modalidad inferida como filtro opcional; filtros conservados; comprobaciones acotadas para ampliar filtros; y discovery relacionado o general cuando el total directo es cero.

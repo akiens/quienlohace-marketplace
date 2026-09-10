@@ -52,3 +52,11 @@ Teniendo en cuenta que la prioridad es el servicio cuando un proveedor tiene var
 11. teresa - carta servicio
 12. teresa - carta proveedor
 
+**Mi idea para una busqueda mas efectiva:** 
+Yo creo que para evitar errores de busqueda deberiamos implementar un exact match. Algo como que las especialidades esten relacionadas por muchas palabras que serian servicios y estos servicios a su ves estaran relacionadas con otras palabras
+
+Ejemplo: 
+`Rubro`: Hogar y mantenimiento
+`Especialidad`: Plomeria y sanitaria
+`Servicios`: instalacion de caños, arreglo de fugas de agua, etc
+`criteria`: caños, fontanero, fugas de agua, plomero, sanitaria, sanitario, fontaneria, plomeria

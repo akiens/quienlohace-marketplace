@@ -72,7 +72,10 @@ function editDistance(left: string, right: string): number {
 function typoSuggestion(query: string): string | null {
   if (!query || query.includes(" ") || query.length < 5) return null;
   const candidates = new Set<string>();
-  for (const specialty of SPECIALTIES) candidates.add(normalize(specialty.name));
+  for (const specialty of SPECIALTIES) {
+    candidates.add(normalize(specialty.name));
+    for (const alias of specialty.aliases) candidates.add(normalize(alias));
+  }
   for (const service of SERVICE_INDEX) {
     candidates.add(service.search.name);
     for (const alias of service.search.aliases) candidates.add(alias);
@@ -98,8 +101,9 @@ function inferredMode(query: string): ServiceModeCode | null {
 export function interpretSearchQuery(original: string): SearchQueryPlan {
   const normalized = normalize(original).slice(0, 200);
   if (!normalized) {
-    return { original, normalized, phrases: [], coreTerms: [], specialtyIds: [], allowSpecialtyMatch: false,
-      label: null, suggestedQuery: null, inferredMode: null, exclusions: [] };
+    return { original, normalized, phrases: [], coreTerms: [], specialtyIds: [], serviceIds: [],
+      intent: "empty", exactTerms: [], allowSpecialtyMatch: false, label: null,
+      suggestedQuery: null, inferredMode: null, exclusions: [] };
   }
 
   const queryWords = words(normalized);
@@ -107,42 +111,48 @@ export function interpretSearchQuery(original: string): SearchQueryPlan {
     NEGATIONS.has(word) && queryWords[index + 1] ? [queryWords[index + 1]!] : [],
   );
   const needles = meaningful(normalized).filter((word) => !exclusions.includes(word));
+  const useful = needles.join(" ");
   const forcedIds = SEARCH_NEEDS.filter((need) =>
     need.patterns.some((pattern) => normalized.includes(pattern)),
   ).flatMap((need) => need.serviceIds);
 
   const ranked = SERVICE_INDEX.map((service) => ({
     service,
-    score: forcedIds.includes(service.id) ? 200 : scoreService(service, normalized, needles),
+    score: forcedIds.includes(service.id) ? 200 : scoreService(service, useful || normalized, needles),
   })).filter((entry) => entry.score >= 48).sort((a, b) => b.score - a.score || a.service.name.localeCompare(b.service.name, "es"));
 
   const bestScore = ranked[0]?.score ?? 0;
   const concepts = ranked.filter((entry) => entry.score >= bestScore - 12).slice(0, 4).map((entry) => entry.service);
-  const occupationSpecialty = OCCUPATION_SPECIALTIES[normalized];
+  const occupationSpecialty = OCCUPATION_SPECIALTIES[useful] ?? OCCUPATION_SPECIALTIES[normalized];
+  const specialtyAlias = SPECIALTIES.find((specialty) =>
+    [specialty.name, ...specialty.aliases].some((value) => normalize(value) === useful),
+  )?.id;
   const aliasSpecialties = [...new Set(SERVICE_INDEX.filter((service) =>
-    service.search.aliases.includes(normalized),
+    service.search.aliases.includes(useful),
   ).map((service) => service.specialtyId))];
-  const occupationAlias = queryWords.length <= 2 &&
-    /(ista|ero|era|ologo|ologa|grafo|grafa|tecnico|tecnica|abogado|abogada|contador|contadora)$/.test(normalized) &&
+  const usefulWords = words(useful);
+  const occupationAlias = usefulWords.length <= 2 &&
+    /(ista|ero|era|ologo|ologa|grafo|grafa|tecnico|tecnica|abogado|abogada|contador|contadora)$/.test(useful) &&
     aliasSpecialties.length === 1
     ? aliasSpecialties[0]
     : undefined;
   const conceptSpecialties = [...new Set(concepts.map((service) => service.specialtyId))];
-  const occupationConcept = queryWords.length === 1 &&
-    /(ista|ero|era|ologo|ologa|grafo|grafa|tecnico|tecnica|abogado|abogada|contador|contadora)$/.test(normalized) &&
+  const occupationConcept = usefulWords.length === 1 &&
+    /(ista|ero|era|ologo|ologa|grafo|grafa|tecnico|tecnica|abogado|abogada|contador|contadora)$/.test(useful) &&
     conceptSpecialties.length === 1
     ? conceptSpecialties[0]
     : undefined;
-  const exactSpecialty = SPECIALTIES.find((specialty) => normalize(specialty.name) === normalized)?.id;
+  const exactSpecialty = SPECIALTIES.find((specialty) => normalize(specialty.name) === useful)?.id;
   const exactSector = SERVICE_SECTORS.find((sector) =>
-    normalize(sector.name) === normalized || normalize(sector.short) === normalized,
+    normalize(sector.name) === useful || normalize(sector.short) === useful,
   );
   const sectorSpecialties = exactSector
     ? SPECIALTIES.filter((specialty) => specialty.serviceSectorId === exactSector.id).map((specialty) => specialty.id)
     : [];
-  const allowSpecialtyMatch = Boolean(occupationSpecialty || occupationAlias || occupationConcept || exactSpecialty || exactSector);
+  const allowSpecialtyMatch = Boolean(occupationSpecialty || specialtyAlias || occupationAlias || occupationConcept || exactSpecialty || exactSector);
   const specialtyIds = [...new Set([
     ...(occupationSpecialty ? [occupationSpecialty] : []),
+    ...(specialtyAlias ? [specialtyAlias] : []),
     ...(occupationAlias ? [occupationAlias] : []),
     ...(occupationConcept ? [occupationConcept] : []),
     ...(exactSpecialty ? [exactSpecialty] : []),
@@ -152,6 +162,7 @@ export function interpretSearchQuery(original: string): SearchQueryPlan {
 
   const phrases = [...new Set([
     normalized,
+    useful,
     ...concepts.flatMap((service) => [
       service.name,
       ...service.aliases.filter((alias) => {
@@ -166,12 +177,20 @@ export function interpretSearchQuery(original: string): SearchQueryPlan {
     conceptTokens.size === 0 || [...conceptTokens].some((candidate) => rootsMatch(word, candidate)),
   ).slice(0, 5);
 
-  const label = occupationSpecialty || occupationAlias || occupationConcept || exactSpecialty
-    ? getSpecialty(occupationSpecialty ?? occupationAlias ?? occupationConcept ?? exactSpecialty ?? "")?.name ?? null
+  const label = occupationSpecialty || specialtyAlias || occupationAlias || occupationConcept || exactSpecialty
+    ? getSpecialty(occupationSpecialty ?? specialtyAlias ?? occupationAlias ?? occupationConcept ?? exactSpecialty ?? "")?.name ?? null
     : concepts[0]?.name ?? exactSector?.short ?? null;
 
+  const serviceIds = allowSpecialtyMatch ? [] : concepts.map((service) => service.id);
+  const intent: SearchQueryPlan["intent"] = allowSpecialtyMatch
+    ? "specialty"
+    : serviceIds.length > 0
+      ? "service"
+      : "text";
+
   return {
-    original: original.slice(0, 200), normalized, phrases, coreTerms, specialtyIds,
+    original: original.slice(0, 200), normalized, phrases, coreTerms, specialtyIds, serviceIds,
+    intent, exactTerms: useful ? [useful] : [],
     allowSpecialtyMatch, label, suggestedQuery: ranked.length === 0 ? typoSuggestion(normalized) : null,
     inferredMode: inferredMode(normalized), exclusions,
   };

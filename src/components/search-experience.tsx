@@ -5,14 +5,14 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { FiltersPanel } from "@/components/filters-panel";
-import { ProfileGrid } from "@/components/profile-grid";
-import { ServiceCardGrid } from "@/components/service-card-grid";
+import { ProfileCard } from "@/components/profile-card";
+import { ServiceOfferCard } from "@/components/service-offer-card";
 import { SearchPanel } from "@/components/search-panel";
 import { getSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import { filtersToQuery } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
-import { EmptyState, Icon } from "@/components/ui";
+import { Button, EmptyState, Icon, PROVIDER_GRID } from "@/components/ui";
 import type { MarketplaceSearchResult } from "@/application/search";
 import {
   PAYMENT_METHOD_LABELS,
@@ -46,8 +46,7 @@ export function SearchExperience({
   const [draft, setDraft] = useState<SearchFilters>(filters);
 
   const activeCount = countActiveFilters(filters);
-  const total = search.profileTotal + search.serviceTotal;
-  const servicesFirst = Boolean(filters.query.trim());
+  const total = search.total;
 
   function update(next: SearchFilters) {
     const query = filtersToQuery(next);
@@ -82,7 +81,8 @@ export function SearchExperience({
                 : "Profesionales y servicios"}
             </h1>
             <p className="text-[14.5px] text-ink-soft">
-              {total} {total === 1 ? "resultado encontrado" : "resultados encontrados"}
+              {total} {total === 1 ? "resultado" : "resultados"} de {search.providerTotal}{" "}
+              {search.providerTotal === 1 ? "proveedor" : "proveedores"}
             </p>
           </div>
         </div>
@@ -174,16 +174,11 @@ export function SearchExperience({
 
         {total === 0 ? (
           <NoResults filters={filters} search={search} />
-        ) : servicesFirst ? (
-          <>
-            <ServiceResults search={search} />
-            <ProfileResults search={search} />
-          </>
         ) : (
-          <>
-            <ProfileResults search={search} />
-            <ServiceResults search={search} />
-          </>
+          <MixedResults
+            key={`${search.interpretation.normalized}:${search.results.map((item) => `${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`).join("|")}`}
+            search={search}
+          />
         )}
       </div>
 
@@ -202,35 +197,42 @@ export function SearchExperience({
   );
 }
 
-function ProfileResults({ search }: { search: MarketplaceSearchResult }) {
-  if (search.profileTotal === 0) return null;
-  const matches = Object.fromEntries(Object.entries(search.profileMatches).map(([id, match]) => [id, match.label]));
+function MixedResults({ search }: { search: MarketplaceSearchResult }) {
+  const [visible, setVisible] = useState(12);
+  const shown = search.results.slice(0, visible);
+  const remaining = search.results.length - shown.length;
   return (
-    <section className="flex flex-col gap-4">
-      <div><h2 className="text-[19px] font-bold text-ink">Profesionales y empresas</h2><p className="text-[13px] text-ink-soft">{search.profileTotal} {search.profileTotal === 1 ? "perfil" : "perfiles"}</p></div>
-      <ProfileGrid profiles={search.profiles} matches={matches} initialVisible={6} showAd />
-    </section>
-  );
-}
-
-function ServiceResults({ search }: { search: MarketplaceSearchResult }) {
-  if (search.serviceTotal === 0) return null;
-  const matches = Object.fromEntries(Object.entries(search.cardMatches).map(([id, match]) => [id, match.label]));
-  return (
-    <section className="flex flex-col gap-4">
-      <div>
-        <h2 className="text-[19px] font-bold text-ink">Propuestas de servicio</h2>
-        <p className="text-[13px] text-ink-soft">
-          {search.serviceTotal} {search.serviceTotal === 1 ? "oferta" : "ofertas"} de {search.serviceProviderTotal} {search.serviceProviderTotal === 1 ? "proveedor" : "proveedores"}
-        </p>
+    <section className="flex flex-col gap-6" aria-label="Resultados de búsqueda">
+      <div className={PROVIDER_GRID}>
+        {shown.map((item) => (
+          <div
+            key={`${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`}
+            className="relative min-w-0"
+          >
+            <span className="absolute left-2.5 top-2.5 z-[3] rounded-full bg-white/95 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[.45px] text-brand-800 shadow-sm">
+              {item.kind === "service" ? "Carta de servicio" : "Proveedor"}
+            </span>
+            {item.kind === "service" ? (
+              <ServiceOfferCard card={item.card} match={item.match.label} />
+            ) : (
+              <ProfileCard profile={item.profile} match={item.match.label} />
+            )}
+          </div>
+        ))}
       </div>
-      <ServiceCardGrid key={`${search.interpretation.normalized}:${search.serviceCards.map((card) => card.id).join("|")}`} cards={search.serviceCards} matches={matches} initialVisible={6} />
+      {remaining > 0 ? (
+        <div className="flex justify-center">
+          <Button variant="secondary" onClick={() => setVisible((current) => current + 12)}>
+            Mostrar {Math.min(12, remaining)} más
+            <span className="text-ink-soft">({remaining} restantes)</span>
+          </Button>
+        </div>
+      ) : null}
     </section>
   );
 }
 
 function NoResults({ filters, search }: { filters: SearchFilters; search: MarketplaceSearchResult }) {
-  const hasDiscovery = search.discoveryProfiles.length > 0 || search.discoveryCards.length > 0;
   return (
     <div className="flex flex-col gap-7">
       <EmptyState title="No encontramos lo que buscás">
@@ -246,33 +248,6 @@ function NoResults({ filters, search }: { filters: SearchFilters; search: Market
         ) : null}
 
       </EmptyState>
-
-      {hasDiscovery ? (
-        <section className="flex flex-col gap-5" aria-labelledby="discovery-title">
-          <div>
-            <h2 id="discovery-title" className="text-[21px] font-bold text-ink">
-              No encontramos lo que buscás, pero esto podría interesarte
-            </h2>
-            <p className="text-[14px] text-ink-soft">
-              {search.discoveryRelated
-                ? "Son opciones de especialidades relacionadas; consultá con el proveedor si realiza el trabajo específico."
-                : "Estas opciones son para seguir explorando y no coinciden con tu búsqueda."}
-            </p>
-          </div>
-          {search.discoveryCards.length ? (
-            <div className="flex flex-col gap-3">
-              <h3 className="font-bold text-ink">Propuestas para explorar</h3>
-              <ServiceCardGrid cards={search.discoveryCards} initialVisible={6} />
-            </div>
-          ) : null}
-          {search.discoveryProfiles.length ? (
-            <div className="flex flex-col gap-3">
-              <h3 className="font-bold text-ink">Profesionales a quienes podés consultar</h3>
-              <ProfileGrid profiles={search.discoveryProfiles} initialVisible={6} />
-            </div>
-          ) : null}
-        </section>
-      ) : null}
 
       {search.discoveryLinks.length ? (
         <nav aria-label="Servicios para explorar" className="rounded-card border border-line bg-white p-5">

@@ -16,7 +16,9 @@ import {
   socialLinkSchema,
 } from "../src/lib/validation";
 import { interpretSearchQuery } from "../src/lib/search-intent";
-import { softlyDiversify } from "../src/lib/search-ranking";
+import { matchProfile, matchServiceCard } from "../src/lib/search-matching";
+import { rankMixedSearchResults, softlyDiversify } from "../src/lib/search-ranking";
+import type { Profile, ServiceCard } from "../src/types";
 
 let failures = 0;
 
@@ -65,6 +67,84 @@ async function main(): Promise<void> {
     occupation.allowSpecialtyMatch &&
       occupation.specialtyIds.includes("hogar-y-mantenimiento-electricidad"),
   );
+  const dentist = interpretSearchQuery("Necesito un dentista");
+  check(
+    "una frase de oficio reconoce odontología y admite la especialidad",
+    dentist.intent === "specialty" &&
+      dentist.specialtyIds.includes("salud-odontologia") &&
+      dentist.exactTerms.includes("dentista"),
+  );
+  const pediatricDentist = interpretSearchQuery("dentista para niños");
+  check(
+    "un servicio específico no se degrada al oficio general",
+    pediatricDentist.intent === "service" &&
+      pediatricDentist.serviceIds.includes("salud-odontologia-odontologia-infantil"),
+  );
+  const odontologist = {
+    id: "odontologist",
+    name: "Clínica del Centro",
+    specialtyIds: ["salud-odontologia"],
+    services: [{
+      id: "consultation",
+      specialtyId: "salud-odontologia",
+      name: "Consulta odontológica",
+      isActive: true,
+      sortOrder: 0,
+    }],
+  } as Profile;
+  const unrelated = {
+    id: "cleaner",
+    name: "Limpieza Salud",
+    description: "Limpieza de consultorios de dentistas",
+    specialtyIds: ["limpieza-limpieza-comercial"],
+    services: [{
+      id: "cleaning",
+      specialtyId: "limpieza-limpieza-comercial",
+      name: "Limpieza de consultorios",
+      isActive: true,
+      sortOrder: 0,
+    }],
+  } as Profile;
+  check(
+    "admite un servicio odontológico declarado",
+    matchProfile(odontologist, dentist)?.level === "explicit",
+  );
+  check(
+    "una mención incidental de dentistas no admite otro oficio",
+    matchProfile(unrelated, dentist) === null,
+  );
+  const unrelatedCard = {
+    id: "course",
+    profileId: "teacher",
+    providerName: "Academia Técnica",
+    specialtyId: "educacion-y-clases-formacion-tecnica-y-oficios",
+    serviceName: "Curso de oficios",
+    title: "Curso para ser dentista",
+    description: "Capacitación introductoria",
+  } as ServiceCard;
+  check(
+    "la palabra dentista no convierte una carta ajena en odontología",
+    matchServiceCard(unrelatedCard, dentist) === null,
+  );
+  check(
+    "odontología general no demuestra un servicio infantil específico",
+    matchProfile(odontologist, pediatricDentist) === null,
+  );
+  const plumber = interpretSearchQuery("plomero");
+  const plumberProfile = {
+    id: "plumber",
+    name: "Servicios del hogar",
+    specialtyIds: ["hogar-y-mantenimiento-plomeria-y-sanitaria"],
+    services: [
+      { id: "generic", specialtyId: "hogar-y-mantenimiento-plomeria-y-sanitaria", name: "Reparaciones", isActive: true, sortOrder: 0 },
+      { id: "direct", specialtyId: "hogar-y-mantenimiento-plomeria-y-sanitaria", name: "Plomero a domicilio", isActive: true, sortOrder: 1 },
+    ],
+  } as Profile;
+  const plumberMatch = matchProfile(plumberProfile, plumber);
+  check(
+    "una palabra completa en el servicio pesa más que la especialidad general",
+    plumberMatch?.label === "Plomero a domicilio" && plumberMatch.relevance === 120,
+  );
   const specific = interpretSearchQuery("instalar aire acondicionado");
   check(
     "una actividad concreta no autoriza toda la especialidad",
@@ -103,6 +183,20 @@ async function main(): Promise<void> {
       (item) => item.provider,
       (item) => item.score,
     ).map((item) => item.id).join(",") === "a-1,a-2,b-1",
+  );
+  const mixed = rankMixedSearchResults(
+    [
+      { id: "juan-card", kind: "service" as const, providerId: "juan", match: { level: "explicit" as const, relevance: 120 } },
+      { id: "juan-profile", kind: "profile" as const, providerId: "juan", match: { level: "explicit" as const, relevance: 119 } },
+      { id: "amelia-profile", kind: "profile" as const, providerId: "amelia", match: { level: "explicit" as const, relevance: 118 } },
+      { id: "teresa-profile", kind: "profile" as const, providerId: "teresa", match: { level: "specialty" as const, relevance: 70 } },
+    ],
+    () => 0,
+  );
+  check(
+    "mezcla tipos, diversifica proveedores y no cruza niveles de evidencia",
+    mixed.map((item) => item.id).join(",") ===
+      "juan-card,amelia-profile,juan-profile,teresa-profile",
   );
 
   console.log("\nContraseñas (TR-007)");

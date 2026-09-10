@@ -388,7 +388,7 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 - El buscador pide texto libre; todo lo que se elige de una lista vive en un único panel de filtros.
 - Los criterios son: qué se busca, ubicación, calificación, rubros y especialidades, medios de pago y modalidad.
 - **Qué se busca** distingue proveedor independiente, empresa y carta de servicio. Cada clase se consulta como una entidad propia.
-- Si hay texto buscado, las cartas coincidentes aparecen antes que los perfiles; al explorar sin texto, aparecen primero los perfiles. Ambas clases se presentan en grupos rotulados y no se intercalan en un ranking opaco.
+- Perfiles y cartas se presentan en una sola lista, identificando el tipo de cada resultado. Dentro de un nivel de evidencia se muestra una entidad por proveedor antes de repetirlo; para un mismo proveedor y nivel, sus cartas pertinentes preceden a su perfil.
 - Una lista de criterios vacía significa «todos». Elegir varios valores dentro de un criterio significa «cualquiera de estos»; criterios distintos se combinan restringiendo.
 - Ningún criterio limita cuántos valores se pueden elegir. En particular, ubicación y especialidades no tienen tope.
 - Los filtros viven en la URL, de modo que una búsqueda se puede compartir, volver atrás funciona y el estado sobrevive a recargar.
@@ -397,8 +397,9 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 - La búsqueda se lanza al confirmar, no mientras se escribe.
 - Buscar desde cualquier página lleva a la página de resultados con los criterios aplicados.
 - El texto se interpreta con normalización, alias canónicos y relaciones editoriales conocidas. Una relación con una especialidad no prueba que cada proveedor realice una actividad concreta: las coincidencias principales requieren evidencia declarada, salvo cuando la consulta representa el oficio o la especialidad completa.
-- La relevancia de la coincidencia se aplica antes que la reputación. Entre cartas con relevancia cercana se favorece al proveedor menos mostrado; una carta claramente más relevante conserva su posición aunque ese proveedor ya haya aparecido. La diversidad cambia el orden, pero nunca elimina cartas del conjunto recuperado.
-- Si no hay coincidencias, el total continúa en cero y se pueden mostrar opciones relacionadas o generales en un bloque de exploración identificado. Esas opciones respetan los filtros explícitos; retirar un filtro siempre requiere una acción de la persona usuaria.
+- La relevancia de la coincidencia se aplica antes que la reputación. La oferta explícita —nombre, frase completa o alias validado en el servicio propio— precede a la coincidencia que sólo se apoya en una especialidad. La diversidad opera dentro de cada nivel de evidencia y nunca elimina resultados pertinentes.
+- La descripción de un perfil y el nombre de un proveedor no convierten sus cartas ajenas en coincidencias de un oficio. Una actividad concreta exige evidencia en el servicio o carta; la especialidad general sólo alcanza cuando la consulta representa el oficio completo.
+- Si no hay coincidencias, el total continúa en cero. Se pueden ofrecer correcciones o enlaces para explorar, pero no llenar la lista con proveedores o cartas generales. Retirar un filtro siempre requiere una acción de la persona usuaria.
 
 ### BR-034 — Cartas de servicio
 

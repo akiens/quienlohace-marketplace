@@ -19,6 +19,10 @@ y cada servicio utiliza una viñeta con este formato:
 Los encabezados, nombres, IDs, servicios y aliases de este archivo constituyen
 los datos canónicos. Su interpretación no introduce reglas adicionales.
 
+Una especialidad puede declarar oficios equivalentes en su línea de ID con
+`· alias: término, término`. Los alias de las viñetas pertenecen únicamente al
+servicio de esa viñeta.
+
 ## 2. Referencias normativas
 
 - Terminología, jerarquía y selección: **BR-010** y **BR-011**.
@@ -61,7 +65,7 @@ los datos canónicos. Su interpretación no introduce reglas adicionales.
 
 ## 1.1. Plomería y sanitaria
 
-`hogar-y-mantenimiento-plomeria-y-sanitaria`
+`hogar-y-mantenimiento-plomeria-y-sanitaria` · alias: plomero, fontanero, fontanería
 
 - Reparación de pérdidas de agua — alias: sanitario, plomero, fuga de agua, pérdida de agua
 - Destape de cañerías — alias: desobstrucción, caño tapado, desagüe tapado, destapaciones
@@ -601,7 +605,7 @@ Incluye el taller de motos y bicicletas, que en el sitio no tiene rubro propio.
 
 ## 6.2. Odontología
 
-`salud-odontologia`
+`salud-odontologia` · alias: dentista, odontólogo, odontóloga
 
 - Consulta odontológica — alias: dentista, odontólogo, odontología general
 - Limpieza dental — alias: profilaxis, sarro, limpieza de dientes

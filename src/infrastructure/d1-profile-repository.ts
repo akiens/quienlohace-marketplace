@@ -23,7 +23,7 @@ import { syncGalleryForUser } from "@/infrastructure/d1-profile-images";
 import { getDb } from "@/infrastructure/cloudflare";
 import { slugify } from "@/lib/slug";
 import { newId } from "@/lib/id";
-import { textSearchClause } from "@/infrastructure/search-sql";
+import { normalizedSearchField, textSearchClause } from "@/infrastructure/search-sql";
 
 /**
  * Adapter D1 de ProfileRepository.
@@ -660,6 +660,16 @@ export class D1ProfileRepository implements ProfileRepository {
     return hydrate(results);
   }
 
+  /** Candidatos completos: la aplicación aplica evidencia y orden unificados. */
+  async searchAll(filters: SearchFilters, queryPlan: SearchQueryPlan): Promise<Profile[]> {
+    const { where, params } = buildSearchWhere(filters, queryPlan);
+    const { results } = await getDb()
+      .prepare(`SELECT ${SELECT_COLUMNS} FROM profiles p WHERE ${where} ${ORDER}`)
+      .bind(...params)
+      .all<ProfileRow>();
+    return hydrate(results);
+  }
+
   async countForSearch(filters: SearchFilters, queryPlan?: SearchQueryPlan): Promise<number> {
     const { where, params } = buildSearchWhere(filters, queryPlan);
     const row = await getDb()
@@ -1042,10 +1052,17 @@ function buildSearchWhere(filters: SearchFilters, queryPlan?: SearchQueryPlan): 
     if (queryPlan) {
       const servicesText = `COALESCE((SELECT GROUP_CONCAT(s.name, ' ') FROM services s
         WHERE s.profile_id = p.id AND s.is_active = 1), '')`;
-      const text = textSearchClause(["p.name", "p.description", servicesText], queryPlan);
+      const text = textSearchClause([
+        normalizedSearchField("p.name"),
+        normalizedSearchField("p.description"),
+        normalizedSearchField(servicesText),
+      ], queryPlan);
       let queryClause = text.clause;
       params.push(...text.params);
-      if (queryPlan.allowSpecialtyMatch && queryPlan.specialtyIds.length) {
+      // También se recupera la especialidad de una actividad concreta. La
+      // aplicación exige después evidencia del servicio; acá sólo se evita
+      // perder candidatos porque SQLite no normaliza diacríticos en LIKE.
+      if (queryPlan.specialtyIds.length) {
         const marks = queryPlan.specialtyIds.map(() => "?").join(",");
         queryClause = `(${queryClause} OR EXISTS (SELECT 1 FROM profile_specialties qps
           WHERE qps.profile_id = p.id AND qps.is_active = 1

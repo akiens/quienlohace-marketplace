@@ -1,5 +1,18 @@
 import type { SearchQueryPlan } from "@/types";
 
+/** Normaliza diacríticos frecuentes en una expresión SQL controlada. */
+export function normalizedSearchField(field: string): string {
+  const replacements = [
+    ["á", "a"], ["é", "e"], ["í", "i"], ["ó", "o"], ["ú", "u"],
+    ["ü", "u"], ["ñ", "n"], ["Á", "a"], ["É", "e"], ["Í", "i"],
+    ["Ó", "o"], ["Ú", "u"], ["Ü", "u"], ["Ñ", "n"],
+  ] as const;
+  return replacements.reduce(
+    (expression, [from, to]) => `REPLACE(${expression}, '${from}', '${to}')`,
+    `LOWER(${field})`,
+  );
+}
+
 function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (character) => `\\${character}`);
 }

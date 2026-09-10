@@ -44,3 +44,51 @@ export function softlyDiversify<T>(
 
   return result;
 }
+
+/**
+ * Ordena cartas y perfiles en una lista única. La evidencia manda; dentro de
+ * cada nivel se da una aparición a cada proveedor antes de repetirlo.
+ */
+export function rankMixedSearchResults<T extends {
+  providerId: string;
+  kind: "service" | "profile";
+  match: { level: "explicit" | "specialty" | "discovery"; relevance: number };
+}>(items: T[], quality: (item: T) => number): T[] {
+  const levels = ["explicit", "specialty", "discovery"] as const;
+  const result: T[] = [];
+
+  for (const level of levels) {
+    const candidates = items.filter((item) => item.match.level === level);
+    const byProvider = new Map<string, T[]>();
+    for (const item of candidates) {
+      const queue = byProvider.get(item.providerId);
+      if (queue) queue.push(item);
+      else byProvider.set(item.providerId, [item]);
+    }
+
+    const score = (item: T) => item.match.relevance * 100 + quality(item);
+    for (const queue of byProvider.values()) {
+      queue.sort((left, right) =>
+        (left.kind === right.kind ? 0 : left.kind === "service" ? -1 : 1)
+        || score(right) - score(left));
+    }
+
+    const providers = [...byProvider.entries()].sort((left, right) => {
+      const leftBest = Math.max(...left[1].map(score));
+      const rightBest = Math.max(...right[1].map(score));
+      return rightBest - leftBest || left[0].localeCompare(right[0]);
+    });
+
+    let pending = true;
+    while (pending) {
+      pending = false;
+      for (const [, queue] of providers) {
+        const item = queue.shift();
+        if (!item) continue;
+        result.push(item);
+        pending = true;
+      }
+    }
+  }
+  return result;
+}
