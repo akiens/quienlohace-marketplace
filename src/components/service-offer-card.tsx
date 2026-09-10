@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 import { Icon, RatingLine } from "@/components/ui";
 import { locationLabelById } from "@/data/locations";
@@ -17,13 +18,21 @@ const TIER_STYLE = {
   premium: "bg-[#F5EAFE] text-[#7D31B8]",
 } as const;
 
-export function ServiceOfferCard({ card, interactive = true }: { card: ServiceCard; interactive?: boolean }) {
+export function ServiceOfferCard({
+  card,
+  interactive = true,
+  footer,
+}: {
+  card: ServiceCard;
+  interactive?: boolean;
+  footer?: ReactNode;
+}) {
   const specialty = getSpecialty(card.specialtyId);
   const sector = sectorOfSpecialty(card.specialtyId);
 
   return (
-    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-card border border-line bg-white shadow-card transition-all hover:-translate-y-0.5 hover:border-[#C6CEDC] hover:shadow-card-hover">
-      <div className="relative aspect-[16/10] overflow-hidden bg-card-gradient">
+    <article className="group relative flex h-full w-full min-w-0 max-w-full flex-col overflow-hidden rounded-card border border-line bg-white shadow-card transition-all hover:-translate-y-0.5 hover:border-[#C6CEDC] hover:shadow-card-hover">
+      <div className="relative aspect-[16/10] min-w-0 overflow-hidden bg-card-gradient">
         {card.imageUrl ? (
           // Las imágenes del proveedor ya pasaron por el pipeline de R2.
           // eslint-disable-next-line @next/next/no-img-element
@@ -43,15 +52,15 @@ export function ServiceOfferCard({ card, interactive = true }: { card: ServiceCa
         )}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-[#101F3C]/45 to-transparent" />
         {specialty ? (
-          <span className="absolute bottom-3 left-3 rounded-full bg-white/95 px-2.5 py-1 text-[11.5px] font-bold text-ink shadow-sm">
+          <span className="absolute inset-x-3 bottom-3 w-fit max-w-[calc(100%_-_1.5rem)] truncate rounded-full bg-white/95 px-2.5 py-1 text-[11.5px] font-bold text-ink shadow-sm">
             {specialty.name}
           </span>
         ) : null}
       </div>
 
-      <div className="flex flex-1 flex-col gap-3.5 p-4">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="min-w-0 text-[17px] font-bold leading-snug tracking-[-.2px] text-ink">
+      <div className="flex min-w-0 flex-1 flex-col gap-3.5 p-4">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <h3 className="min-w-0 break-words text-[17px] font-bold leading-snug tracking-[-.2px] text-ink">
             {interactive ? (
               <Link href={serviceCardHref(card)} className="after:absolute after:inset-0">
                 {card.title}
@@ -71,13 +80,13 @@ export function ServiceOfferCard({ card, interactive = true }: { card: ServiceCa
           <RatingLine rating={card.providerRating} reviewCount={card.providerReviewCount} />
         </div>
 
-        <p className="line-clamp-2 text-[13.5px] leading-relaxed text-ink-soft">{card.description}</p>
+        <p className="line-clamp-2 break-words text-[13.5px] leading-relaxed text-ink-soft">{card.description}</p>
 
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 border-t border-line-soft pt-3">
           {serviceCardFacts(card).slice(0, 2).map((fact) => (
-            <span key={fact.icon} className="flex items-center gap-1 text-[12.5px] text-ink-muted">
-              <Icon name={fact.icon} className="text-[15px] text-brand-700" />
-              {fact.label}
+            <span key={fact.icon} className="flex min-w-0 items-center gap-1 text-[12.5px] text-ink-muted">
+              <Icon name={fact.icon} className="flex-none text-[15px] text-brand-700" />
+              <span className="min-w-0 break-words">{fact.label}</span>
             </span>
           ))}
         </div>
@@ -95,6 +104,7 @@ export function ServiceOfferCard({ card, interactive = true }: { card: ServiceCa
           </span>
         </div>
       </div>
+      {footer}
     </article>
   );
 }

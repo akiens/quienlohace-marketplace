@@ -1,20 +1,22 @@
 "use client";
 
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import type { FormState } from "@/app/actions/auth";
 import { deleteServiceCard, saveServiceCard } from "@/app/actions/service-cards";
+import { ServiceDetailDialog } from "@/components/dashboard/service-detail-dialog";
 import { FormAlert } from "@/components/form-alert";
 import { ImageField } from "@/components/image-field";
 import { ServiceOfferCard } from "@/components/service-offer-card";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
-import { getSpecialty, sectorOfSpecialty } from "@/data/taxonomy";
-import { SERVICE_TIER_LABELS, serviceCardPrice } from "@/lib/service-cards";
+import { getSpecialty } from "@/data/taxonomy";
+import { SERVICE_TIER_LABELS } from "@/lib/service-cards";
 import {
   PAYMENT_METHOD_LABELS,
   SERVICE_MODE_LABELS,
   type PaymentMethod,
+  type Profile,
   type ServiceCard,
   type ServiceCardPriceKind,
   type ServiceCardTier,
@@ -35,12 +37,14 @@ const TIERS = Object.keys(SERVICE_TIER_LABELS) as ServiceCardTier[];
 
 export function ServiceCardsManager({
   cards,
+  profile,
   specialtyIds,
   limit,
   profilePublished,
   embedded = false,
 }: {
   cards: ServiceCard[];
+  profile: Profile;
   specialtyIds: string[];
   limit: number;
   profilePublished: boolean;
@@ -65,7 +69,7 @@ export function ServiceCardsManager({
   const canCreate = activeCount < limit;
 
   return (
-    <section className={`min-w-0 bg-white ${embedded ? "border-b border-line-soft" : "overflow-hidden rounded-card border border-line shadow-card"}`}>
+    <section className={`w-full min-w-0 max-w-full bg-white ${embedded ? "border-b border-line-soft" : "overflow-hidden rounded-card border border-line shadow-card"}`}>
       <h2 className="relative z-10 -ml-1 rounded-r-sm bg-header-gradient px-4 py-3 text-[15px] font-bold tracking-[-.2px] text-white shadow-[0_2px_6px_rgba(16,24,40,.18)] [text-shadow:0_1px_1px_rgba(0,0,0,.45)] after:absolute after:left-0 after:top-full after:h-1 after:w-1 after:bg-brand-950 after:[clip-path:polygon(0_0,100%_0,100%_100%)] sm:-ml-3 sm:px-5 sm:after:h-3 sm:after:w-3">
         Cartas de servicio
       </h2>
@@ -77,7 +81,7 @@ export function ServiceCardsManager({
         className="top-[60px]"
       />
 
-      <div className="p-4 sm:p-5">
+      <div className="min-w-0 p-4 sm:p-5">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <p className="text-[12.5px] text-ink-soft">
             {activeCount} de {limit} disponibles en tu plan
@@ -102,49 +106,38 @@ export function ServiceCardsManager({
           </div>
         ) : null}
         {cards.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
             {cards.map((card) => (
-              <article key={card.id} className="min-w-0 overflow-hidden rounded-card border border-line bg-white shadow-card">
-                <div className="flex min-w-0 gap-3 p-3.5">
-                  <div className="relative h-20 w-24 flex-none overflow-hidden rounded-input bg-card-gradient">
-                    {card.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={card.imageUrl} alt="" className="h-full w-full object-cover" />
-                    ) : (
-                      <Icon name={sectorOfSpecialty(card.specialtyId)?.icon ?? "handyman"} className="absolute bottom-[-8px] right-0 text-[62px] text-white/20" />
-                    )}
-                  </div>
-                  <div className="flex min-w-0 flex-1 flex-col gap-1">
-                    <div className="flex min-w-0 items-start justify-between gap-2">
-                      <h3 className="line-clamp-2 text-[14px] font-bold leading-snug text-ink">{card.title}</h3>
-                      <span className="flex-none rounded-full bg-brand-100 px-2 py-0.5 text-[10.5px] font-bold text-brand-800">{SERVICE_TIER_LABELS[card.tier]}</span>
+              <div key={card.id} className="relative min-w-0 max-w-full">
+                <ServiceOfferCard
+                  card={card}
+                  interactive={false}
+                  footer={(
+                    <div className="grid min-w-0 grid-cols-3 border-t border-line-soft bg-surface-muted p-2">
+                      <CardAction icon="visibility" label="Detalles" onClick={() => setPreview(card)} />
+                      <CardAction icon="edit" label="Modificar" disabled={selected !== null} onClick={() => setSelected(card)} />
+                      <form className="min-w-0" action={async (data) => {
+                        if (!window.confirm(`¿Eliminar “${card.title}”?`)) return;
+                        await deleteServiceCard(data);
+                        router.refresh();
+                      }}>
+                        <input type="hidden" name="id" value={card.id} />
+                        <button disabled={selected !== null} className="flex h-9 w-full min-w-0 items-center justify-center gap-0.5 overflow-hidden rounded-input px-0.5 text-[11px] font-semibold text-danger transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-45 min-[360px]:gap-1 min-[360px]:px-1 min-[360px]:text-[12px]">
+                          <Icon name="delete" className="flex-none text-[16px]" />
+                          <span className="min-w-0 truncate">Eliminar</span>
+                        </button>
+                      </form>
                     </div>
-                    <p className="text-[13px] font-bold text-brand-800">{serviceCardPrice(card)}</p>
-                    <div className="mt-auto">
-                      <StatusBadge
-                        card={card}
-                        specialtyActive={specialtyIds.includes(card.specialtyId)}
-                        profilePublished={profilePublished}
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 border-t border-line-soft bg-surface-muted p-2">
-                  <CardAction icon="visibility" label="Visualizar" onClick={() => setPreview(card)} />
-                  <CardAction icon="edit" label="Modificar" disabled={selected !== null} onClick={() => setSelected(card)} />
-                  <form action={async (data) => {
-                    if (!window.confirm(`¿Eliminar “${card.title}”?`)) return;
-                    await deleteServiceCard(data);
-                    router.refresh();
-                  }}>
-                    <input type="hidden" name="id" value={card.id} />
-                    <button disabled={selected !== null} className="flex h-9 w-full items-center justify-center gap-1 rounded-input text-[12px] font-semibold text-danger transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-45">
-                      <Icon name="delete" className="text-[16px]" />
-                      Eliminar
-                    </button>
-                  </form>
-                </div>
-              </article>
+                  )}
+                />
+                <span className="absolute right-2.5 top-2.5 z-10">
+                  <StatusBadge
+                    card={card}
+                    specialtyActive={specialtyIds.includes(card.specialtyId)}
+                    profilePublished={profilePublished}
+                  />
+                </span>
+              </div>
             ))}
           </div>
         ) : (
@@ -173,7 +166,13 @@ export function ServiceCardsManager({
           />
         ) : null}
       </div>
-      {preview ? <ServicePreviewDialog card={preview} onClose={() => setPreview(null)} /> : null}
+      {preview ? (
+        <ServiceDetailDialog
+          card={preview}
+          profile={profile}
+          onClose={() => setPreview(null)}
+        />
+      ) : null}
     </section>
   );
 }
@@ -189,7 +188,7 @@ function StatusBadge({ card, specialtyActive, profilePublished }: { card: Servic
           ? "Publicada"
           : "Lista para publicar";
   const style = specialtyActive && card.isActive && card.isPublished && profilePublished ? "bg-[#E8F6EF] text-[#19734A]" : "bg-white text-ink-soft";
-  return <span className={`rounded-full px-2 py-0.5 text-[10.5px] font-bold ${style}`}>{label}</span>;
+  return <span className={`block max-w-[calc(100vw-3rem)] truncate rounded-full px-2 py-0.5 text-[10.5px] font-bold shadow-card ${style}`}>{label}</span>;
 }
 
 function Editor({ card, specialtyIds, action, pending, errors, onCancel }: {
@@ -322,43 +321,9 @@ function Field({ label, error, counter, wide = false, children }: { label: strin
 
 function CardAction({ icon, label, disabled = false, onClick }: { icon: string; label: string; disabled?: boolean; onClick: () => void }) {
   return (
-    <button type="button" disabled={disabled} onClick={onClick} className="flex h-9 min-w-0 items-center justify-center gap-1 rounded-input px-1 text-[12px] font-semibold text-brand-800 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-45">
-      <Icon name={icon} className="text-[16px]" />
-      {label}
+    <button type="button" disabled={disabled} onClick={onClick} className="flex h-9 min-w-0 items-center justify-center gap-0.5 overflow-hidden rounded-input px-0.5 text-[11px] font-semibold text-brand-800 transition-colors hover:bg-white disabled:cursor-not-allowed disabled:opacity-45 min-[360px]:gap-1 min-[360px]:px-1 min-[360px]:text-[12px]">
+      <Icon name={icon} className="flex-none text-[16px]" />
+      <span className="min-w-0 truncate">{label}</span>
     </button>
-  );
-}
-
-function ServicePreviewDialog({ card, onClose }: { card: ServiceCard; onClose: () => void }) {
-  useEffect(() => {
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onClose]);
-
-  return (
-    <div role="dialog" aria-modal="true" aria-labelledby="service-preview-title" className="fixed inset-0 z-[70] flex items-center justify-center bg-[#101828]/70 p-3 backdrop-blur-sm sm:p-6" onClick={onClose}>
-      <div className="flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-card border border-white/20 bg-white shadow-pop" onClick={(event) => event.stopPropagation()}>
-        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3.5 sm:px-5">
-          <div>
-            <h2 id="service-preview-title" className="text-[16px] font-bold text-ink">Vista previa de la carta</h2>
-            <p className="text-[12.5px] text-ink-soft">Así se presenta en el perfil y en las búsquedas.</p>
-          </div>
-          <button type="button" onClick={onClose} aria-label="Cerrar vista previa" className={`flex h-10 w-10 flex-none items-center justify-center rounded-full ${SECONDARY_SURFACE}`}>
-            <Icon name="close" className="text-[20px]" />
-          </button>
-        </header>
-        <div className="overflow-y-auto bg-surface-muted p-3 sm:p-5">
-          <ServiceOfferCard card={card} interactive={false} />
-        </div>
-      </div>
-    </div>
   );
 }

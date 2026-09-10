@@ -100,7 +100,7 @@ function Header({ signedIn }: { signedIn: boolean }) {
       ref={headerRef}
       className="sticky top-0 z-50 border-b border-[#16294B] bg-header-gradient"
     >
-      <div className="shell flex h-[60px] items-center gap-7">
+      <div className="shell flex h-[60px] min-w-0 items-center gap-2 sm:gap-4 lg:gap-7">
         <Link href="/" className="flex flex-none items-center gap-3">
           {/*
             El logo es la palabra y su bajada, en todos los tamaños. Antes
@@ -293,7 +293,7 @@ function Header({ signedIn }: { signedIn: boolean }) {
           */}
           <Link
             href={signedIn ? "/dashboard" : "/entrar"}
-            className={`flex h-[38px] items-center rounded-[9px] px-3.5 text-[14px] ${
+            className={`${offersSearch ? "hidden min-[390px]:flex" : "hidden min-[350px]:flex"} h-[38px] items-center rounded-[9px] px-3.5 text-[14px] ${
               signedIn
                 ? "bg-accent font-bold text-ink transition-colors hover:bg-accent-hover"
                 : "border border-white/30 font-semibold text-white"

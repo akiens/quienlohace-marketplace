@@ -1,8 +1,7 @@
-# Carta de Servicio(s)
-- Las operaciones de agregar, modifica y eliminar deberian estar presentes solo en el modo edicion.
-- En el dashboard solo la presentacion siguiend el mismo flujo y estilos de seccion. Como una carta de servicio va a aparecer con casi el mismo formato de un proveedor, debemos permitir que se le agregue al menos una imagen que represente al servicio y quizas 3 imagenes de muestra el servicio (o sea una para fondo que se muestra en la card, si no tiene una por defecto como hacemos con el proveedor y de 2 a 3 para muestra del servicio). Esto tengo que valorarlo quizas puedas ayudarme a tomar una decision aca.
-- Deberias mejorar los seeds para agregar generacion mock. Para que algunos proveedores tengan de 2 a 5 servicios.
-- Tambien implementa una pagina para mostrar el servicio seleccionado y manten una buen diseno de url para el seo de la persona.
+# issues to solve
+- After service card implementation we get an horizontal scroll on mobile. All the implementation related to this service card is broken have a horizontal scroll. Remember for smaller devices we use px-1 so we use all the available width.
+- On dashboard (profile) I want to incorporate a popup that show how the services is going to look like if we navigate to that service. So you can add a button bellow to the card created, the button can say something like: `Ver detalles`. You can do the same on edit mode, I mean in edit mode when we create a service card we can directly show it as it is present in production mode, then we show 3 buttons bellow the card: `Detalles`, `Modificar`, `Eliminar`. If we do click in `Detalles` then we do the same as profile.
+
 
 
 

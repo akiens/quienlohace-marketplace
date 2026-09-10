@@ -6,6 +6,7 @@ import { useState } from "react";
 
 import { ProfileForm } from "@/components/dashboard/profile-form";
 import { PublishToggle } from "@/components/dashboard/publish-toggle";
+import { ServiceDetailDialog } from "@/components/dashboard/service-detail-dialog";
 import { ServiceCardsManager } from "@/components/dashboard/service-cards-manager";
 import { ServiceOfferCard } from "@/components/service-offer-card";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
@@ -59,6 +60,7 @@ export function ProfileView({
   const router = useRouter();
   const params = useSearchParams();
   const editing = params.get("editar") === "1";
+  const [preview, setPreview] = useState<ServiceCard | null>(null);
 
   const setEditing = (on: boolean) => {
     // `replace` y no `push`: entrar y salir de edición no son pasos del
@@ -98,10 +100,11 @@ export function ProfileView({
         monta antes del título: los avisos van pegados al encabezado del sitio
         y desde este punto del árbol no se puede subir hasta ahí.
       */
-      <div className="flex min-w-0 flex-col gap-4 px-1 sm:px-0">
-        <div className="min-w-0 rounded-card border border-line bg-white shadow-panel">
+      <div className="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-clip px-1 sm:px-0">
+        <div className="w-full min-w-0 max-w-full rounded-card border border-line bg-white shadow-panel">
           <ServiceCardsManager
             cards={serviceCards}
+            profile={profile}
             specialtyIds={profile.specialtyIds.slice(0, plan.maxSpecialties ?? undefined)}
             limit={plan.maxServiceCards}
             profilePublished={profile.profileStatus === "active"}
@@ -130,9 +133,9 @@ export function ProfileView({
   return (
     // El padding lateral va acá y no en la página: en edición el aviso tiene
     // que poder salirse de él.
-    <div className="flex flex-col gap-5 px-1 sm:px-0">
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-5 overflow-x-clip px-1 sm:px-0">
       {/* Estado y acciones: publicar, editar y ver cómo se ve por fuera. */}
-      <div className="flex flex-wrap items-center gap-2.5 rounded-card border border-line bg-white p-4">
+      <div className="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2.5 rounded-card border border-line bg-white p-4">
         <span
           className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[13px] font-bold ${
             published
@@ -154,7 +157,7 @@ export function ProfileView({
             : "Sólo vos podés verlo."}
         </span>
 
-        <div className="ml-auto flex flex-wrap items-center gap-2.5">
+        <div className="ml-auto flex w-full min-w-0 flex-wrap items-center gap-2.5 sm:w-auto">
           <Link
             href={`/profesionales/${profile.slug}`}
             className={`flex h-10 items-center gap-1.5 rounded-input px-4 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
@@ -177,7 +180,7 @@ export function ProfileView({
       </div>
 
       {/* Lo cargado, para revisarlo de un vistazo sin entrar a editar. */}
-      <div className="flex flex-col rounded-card border border-line bg-white">
+      <div className="flex w-full min-w-0 max-w-full flex-col rounded-card border border-line bg-white">
         <Section title="Cartas de servicio">
           {serviceCards.length > 0 ? (
             <>
@@ -187,10 +190,25 @@ export function ProfileView({
                   Estas cartas permanecerán privadas hasta que publiques el perfil.
                 </p>
               ) : null}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {serviceCards.map((card) => (
-                  <div key={card.id} className="relative min-w-0">
-                    <ServiceOfferCard card={card} interactive={false} />
+                  <div key={card.id} className="relative min-w-0 max-w-full">
+                    <ServiceOfferCard
+                      card={card}
+                      interactive={false}
+                      footer={(
+                        <div className="border-t border-line-soft bg-surface-muted p-2">
+                          <button
+                            type="button"
+                            onClick={() => setPreview(card)}
+                            className={`flex h-10 w-full min-w-0 items-center justify-center gap-1.5 rounded-input px-3 text-[13px] font-semibold ${SECONDARY_SURFACE}`}
+                          >
+                            <Icon name="visibility" className="flex-none text-[17px]" />
+                            Ver detalles
+                          </button>
+                        </div>
+                      )}
+                    />
                     {(!card.isPublished || !card.isActive) ? (
                       <span className="absolute right-2.5 top-2.5 z-10 rounded-full bg-white/95 px-2.5 py-1 text-[10.5px] font-bold text-ink-soft shadow-card">
                         {!card.isActive ? "Oculta por el plan" : "Borrador"}
@@ -354,6 +372,13 @@ export function ProfileView({
         ) : null}
 
       </div>
+      {preview ? (
+        <ServiceDetailDialog
+          card={preview}
+          profile={profile}
+          onClose={() => setPreview(null)}
+        />
+      ) : null}
     </div>
   );
 }
@@ -371,11 +396,11 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="flex flex-col border-b border-line-soft last:border-b-0">
+    <section className="flex w-full min-w-0 max-w-full flex-col border-b border-line-soft last:border-b-0">
       <h2 className="relative z-10 -ml-1 rounded-r-sm bg-header-gradient px-5 py-3 text-[15px] font-bold tracking-[-.2px] text-white shadow-[0_2px_6px_rgba(16,24,40,.18)] [text-shadow:0_1px_1px_rgba(0,0,0,.45)] after:absolute after:left-0 after:top-full after:h-1 after:w-1 after:bg-brand-950 after:[clip-path:polygon(0_0,100%_0,100%_100%)] sm:-ml-3 sm:after:h-3 sm:after:w-3">
         {title}
       </h2>
-      <div className="flex flex-col gap-3 p-5">{children}</div>
+      <div className="flex min-w-0 max-w-full flex-col gap-3 p-4 sm:p-5">{children}</div>
     </section>
   );
 }
@@ -389,9 +414,9 @@ function Row({
   children: React.ReactNode;
 }) {
   return (
-    <div className="grid gap-0.5 sm:grid-cols-[180px_1fr] sm:gap-4">
+    <div className="grid min-w-0 max-w-full gap-0.5 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-4">
       <dt className="text-[13.5px] font-semibold text-ink-muted">{label}</dt>
-      <dd className="text-[14.5px] leading-relaxed text-ink">{children}</dd>
+      <dd className="min-w-0 break-words text-[14.5px] leading-relaxed text-ink">{children}</dd>
     </div>
   );
 }
@@ -409,11 +434,11 @@ function Chips({ values }: { values: (string | ChipValue)[] }) {
   );
 
   return (
-    <span className="flex flex-wrap gap-1.5">
+    <span className="flex min-w-0 max-w-full flex-wrap gap-1.5">
       {chips.map((chip) => (
         <span
           key={chip.context ? `${chip.context}|${chip.label}` : chip.label}
-          className={`bg-brand-100 text-[13px] font-semibold text-brand-800 ${
+          className={`max-w-full break-words bg-brand-100 text-[13px] font-semibold text-brand-800 ${
             chip.context
               ? "flex flex-col rounded-card px-3 py-1 leading-tight"
               : "rounded-full px-3 py-1"
