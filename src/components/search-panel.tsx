@@ -17,7 +17,7 @@ const QUICK_SEARCHES = [
 ];
 
 type SearchPanelProps = {
-  /** Los filtros vigentes. Es de dónde parte el borrador del panel. */
+  /** El borrador compartido del que parten los controles. */
   filters: SearchFilters;
   /**
    * Avisa que se pidió buscar: al enviar el formulario o al tocar una búsqueda
@@ -44,6 +44,7 @@ type SearchPanelProps = {
   title?: string;
   subtitle?: string;
   onOpenFilters?: () => void;
+  loading?: boolean;
 };
 
 /**
@@ -59,6 +60,7 @@ export function SearchPanel({
   title = "¿Qué servicio necesitás?",
   subtitle = "Encontrá profesionales y empresas verificadas en todo Uruguay.",
   onOpenFilters,
+  loading = false,
 }: SearchPanelProps) {
   const router = useRouter();
   const [openPopover, setOpenPopover] = useState<"location" | "category" | null>(
@@ -254,8 +256,10 @@ export function SearchPanel({
 
             <button
               type="submit"
-              aria-label={isCompact ? "Buscar" : undefined}
-              className={`flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-input bg-brand-800 text-[15px] font-bold text-white transition-colors hover:bg-brand-950 ${
+              disabled={loading}
+              aria-label={isCompact ? (loading ? "Buscando" : "Buscar") : undefined}
+              aria-busy={loading}
+              className={`flex h-12 items-center justify-center gap-2 whitespace-nowrap rounded-input bg-brand-800 text-[15px] font-bold text-white transition-colors hover:bg-brand-950 disabled:cursor-not-allowed disabled:opacity-60 ${
                 isCompact ? "w-11 flex-none px-0 lg:w-auto lg:flex-1 lg:px-6" : "flex-1 px-6"
               }`}
             >
@@ -264,9 +268,9 @@ export function SearchPanel({
                 input era decoración —no se puede tocar— y repetía lo que ya
                 dice el placeholder. En el botón nombra la acción.
               */}
-              <Icon name="search" className="text-[20px]" />
+              <Icon name={loading ? "progress_activity" : "search"} className={`text-[20px] ${loading ? "animate-spin" : ""}`} />
               <span className={isCompact ? "hidden lg:inline" : undefined}>
-                Buscar
+                {loading ? "Buscando…" : "Buscar"}
               </span>
             </button>
           </div>

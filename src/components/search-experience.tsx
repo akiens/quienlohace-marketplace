@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 
 import { FiltersPanel } from "@/components/filters-panel";
 import { TrackedResult } from "@/components/analytics/tracked-result";
@@ -11,7 +11,7 @@ import { ServiceOfferCard } from "@/components/service-offer-card";
 import { SearchPanel } from "@/components/search-panel";
 import { getSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
-import { filtersToQuery } from "@/lib/query";
+import { filtersToQuery, paginatedSearchHref, searchCriteriaKey } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
 import { initializeAnalytics, trackAnalytics } from "@/lib/analytics/client";
 import { Button, EmptyState, Icon, PROVIDER_GRID } from "@/components/ui";
@@ -35,8 +35,24 @@ export function SearchExperience({
   filters: SearchFilters;
   search: MarketplaceSearchResult;
 }) {
+  /*
+   * Una búsqueda distinta remonta el editor y adopta sus filtros. Cambiar sólo
+   * `page` conserva el componente, por lo que "Mostrar más" no pierde estado.
+   */
+  return <SearchExperienceContent key={searchCriteriaKey(filters)} filters={filters} search={search} />;
+}
+
+function SearchExperienceContent({
+  filters,
+  search,
+}: {
+  filters: SearchFilters;
+  search: MarketplaceSearchResult;
+}) {
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [isSearching, startSearchTransition] = useTransition();
+  const [repeatedSearchAttempt, setRepeatedSearchAttempt] = useState(0);
   const recordedSearch = useRef<string | null>(null);
 
   /*
@@ -50,6 +66,13 @@ export function SearchExperience({
 
   const activeCount = countActiveFilters(filters);
   const total = search.total;
+  const appliedCriteria = searchCriteriaKey(filters);
+
+  useEffect(() => {
+    if (repeatedSearchAttempt === 0) return;
+    const timeout = window.setTimeout(() => setRepeatedSearchAttempt(0), 5000);
+    return () => window.clearTimeout(timeout);
+  }, [repeatedSearchAttempt]);
 
   useEffect(() => {
     if (recordedSearch.current === search.analytics.searchId) return;
@@ -63,13 +86,15 @@ export function SearchExperience({
         pending = JSON.parse(sessionStorage.getItem(pendingKey) ?? "null") as PendingSearch | null;
         sessionStorage.removeItem(pendingKey);
       } catch {}
-      trackAnalytics({
-        eventName: "search_submitted", observationKind: "interaction", searchId: search.analytics.searchId,
-        previousSearchId: pending?.previousSearchId,
-        searchExecutionId: search.analytics.searchExecutionId, resultSetId: search.analytics.resultSetId,
-        surface: "search_results", properties: { filters, reason: pending ? "filter" : "initial", normalizerVersion: 1 },
-      });
-      if (pending) {
+      if (search.pagination.page === 1) {
+        trackAnalytics({
+          eventName: "search_submitted", observationKind: "interaction", searchId: search.analytics.searchId,
+          previousSearchId: pending?.previousSearchId,
+          searchExecutionId: search.analytics.searchExecutionId, resultSetId: search.analytics.resultSetId,
+          surface: "search_results", properties: { filters, reason: pending ? "filter" : "initial", normalizerVersion: 1 },
+        });
+      }
+      if (pending && search.pagination.page === 1) {
         const keys = (Object.keys(pending.after) as Array<keyof SearchFilters>).filter((key) => JSON.stringify(pending?.before[key]) !== JSON.stringify(pending?.after[key]));
         if (keys.length) trackAnalytics({
           eventName: "search_filter_applied", observationKind: "interaction", searchId: search.analytics.searchId,
@@ -81,21 +106,34 @@ export function SearchExperience({
         eventName: "search_results_viewed", observationKind: "client_observation", searchId: search.analytics.searchId,
         searchExecutionId: search.analytics.searchExecutionId, resultSetId: search.analytics.resultSetId,
         listViewId: `list_${search.analytics.resultSetId}`, surface: "search_results",
-        properties: { total: search.total, providerTotal: search.providerTotal, presentedCount: Math.min(12, search.total) },
+        properties: { total: search.total, providerTotal: search.providerTotal, presentedCount: search.results.length },
       });
       trackAnalytics({
         eventName: "list_viewed", observationKind: "client_observation", searchId: search.analytics.searchId,
         resultSetId: search.analytics.resultSetId, listViewId: `list_${search.analytics.resultSetId}`,
-        surface: "search_results", properties: { itemCount: Math.min(12, search.total), listType: "search_results" },
+        surface: "search_results", properties: { itemCount: search.results.length, listType: "search_results" },
       });
     });
   }, [filters, search]);
 
   function update(next: SearchFilters) {
+    setDraft(next);
     const query = filtersToQuery(next);
+    // Evita una nueva navegación/render del servidor si la búsqueda es igual.
+    if (searchCriteriaKey(next) === appliedCriteria) {
+      setRepeatedSearchAttempt((attempt) => attempt + 1);
+      return;
+    }
+    setRepeatedSearchAttempt(0);
     try { sessionStorage.setItem("qlh:analytics:pending-search:v1", JSON.stringify({ before: filters, after: next, previousSearchId: search.analytics.searchId })); } catch {}
-    // `scroll: false` evita saltar al tope cada vez que se toca un filtro.
-    router.replace(query ? `/buscar?${query}` : "/buscar", { scroll: false });
+    startSearchTransition(() => {
+      router.replace(query ? `/buscar?${query}` : "/buscar", { scroll: false });
+    });
+  }
+
+  function editDraft(next: SearchFilters) {
+    setDraft(next);
+    setRepeatedSearchAttempt(0);
   }
 
   return (
@@ -105,18 +143,39 @@ export function SearchExperience({
         `onChange`. Antes cada tecla y cada categoría elegida iban a la URL, y
         el servidor buscaba con frases a medio escribir.
 
-        Los chips de abajo y el panel lateral sí siguen aplicando al instante:
-        ahí no se está componiendo una búsqueda sino corrigiendo una hecha.
+        El panel lateral comparte ese borrador y sólo lo aplica desde su botón
+        "Buscar". Los chips de abajo son atajos explícitos sobre lo ya aplicado.
       */}
       <SearchPanel
-        filters={filters}
+        filters={draft}
         onSubmit={update}
-        onDraftChange={setDraft}
+        onDraftChange={editDraft}
         variant="compact"
         onOpenFilters={() => setFiltersOpen(true)}
+        loading={isSearching}
       />
 
       <div className="shell flex flex-col gap-5 py-8">
+        {repeatedSearchAttempt > 0 ? (
+          <div
+            key={repeatedSearchAttempt}
+            className="flex items-center gap-2 rounded-card border border-brand-200 bg-brand-100 px-4 py-3 text-[13.5px] text-ink"
+          >
+            <Icon name="info" className="shrink-0 text-[19px] text-brand-800" />
+            <p role="status" aria-live="polite" className="flex-1">
+              No hace falta volver a buscar: no cambiaste el texto ni los filtros.
+            </p>
+            <button
+              type="button"
+              onClick={() => setRepeatedSearchAttempt(0)}
+              aria-label="Cerrar aviso"
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-white/70 hover:text-ink"
+            >
+              <Icon name="close" className="text-[17px]" />
+            </button>
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
             <h1 className="text-[22px] font-bold tracking-[-.3px] text-ink sm:text-[25px]">
@@ -222,29 +281,35 @@ export function SearchExperience({
           <MixedResults
             key={`${search.interpretation.normalized}:${search.results.map((item) => `${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`).join("|")}`}
             search={search}
+            filters={filters}
           />
         )}
       </div>
 
-      {/*
-        Parte del borrador y no de lo aplicado: si hay algo escrito sin buscar,
-        aplicar un filtro acá lo tiene que conservar, no descartarlo.
-      */}
+      {/* El panel edita el borrador y sólo `onSubmit` actualiza la URL. */}
       <FiltersPanel
         open={filtersOpen}
         filters={draft}
-        resultCount={total}
-        onChange={update}
+        onChange={editDraft}
+        onSubmit={() => update(draft)}
         onClose={() => setFiltersOpen(false)}
+        loading={isSearching}
       />
     </>
   );
 }
 
-function MixedResults({ search }: { search: MarketplaceSearchResult }) {
-  const [visible, setVisible] = useState(12);
-  const shown = search.results.slice(0, visible);
-  const remaining = search.results.length - shown.length;
+function MixedResults({ search, filters }: { search: MarketplaceSearchResult; filters: SearchFilters }) {
+  const router = useRouter();
+  const [isLoadingMore, startLoadingMoreTransition] = useTransition();
+  const shown = search.results;
+  const remaining = search.pagination.remaining;
+
+  function loadMore() {
+    startLoadingMoreTransition(() => {
+      router.replace(paginatedSearchHref(filters, search.pagination.page + 1), { scroll: false });
+    });
+  }
   return (
     <section className="flex flex-col gap-6" aria-label="Resultados de búsqueda">
       <div className={PROVIDER_GRID}>
@@ -278,11 +343,25 @@ function MixedResults({ search }: { search: MarketplaceSearchResult }) {
           </TrackedResult>
         ))}
       </div>
-      {remaining > 0 ? (
+      {search.pagination.hasMore ? (
         <div className="flex justify-center">
-          <Button variant="secondary" onClick={() => setVisible((current) => current + 12)}>
-            Mostrar {Math.min(12, remaining)} más
-            <span className="text-ink-soft">({remaining} restantes)</span>
+          <Button
+            variant="secondary"
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            aria-busy={isLoadingMore}
+          >
+            {isLoadingMore ? (
+              <>
+                <Icon name="progress_activity" className="animate-spin text-[18px]" />
+                Cargando…
+              </>
+            ) : (
+              <>
+                Mostrar {Math.min(search.pagination.pageSize, remaining)} más
+                <span className="text-ink-soft">({remaining} restantes)</span>
+              </>
+            )}
           </Button>
         </div>
       ) : null}

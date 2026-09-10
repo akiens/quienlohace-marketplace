@@ -18,7 +18,8 @@ import {
 import { interpretSearchQuery } from "../src/lib/search-intent";
 import { matchProfile, matchServiceCard } from "../src/lib/search-matching";
 import { rankMixedSearchResults, softlyDiversify } from "../src/lib/search-ranking";
-import type { Profile, ServiceCard } from "../src/types";
+import { paginatedSearchHref, searchCriteriaKey, searchPageFromParams } from "../src/lib/query";
+import { EMPTY_FILTERS, type Profile, type ServiceCard } from "../src/types";
 
 let failures = 0;
 
@@ -53,6 +54,25 @@ const VALID_PROFILE = {
 
 async function main(): Promise<void> {
   console.log("\nBúsqueda y discovery");
+  check("la paginación empieza en 1", searchPageFromParams({}) === 1);
+  check("acepta una página válida", searchPageFromParams({ page: "2" }) === 2);
+  check("rechaza páginas negativas", searchPageFromParams({ page: "-4" }) === 1);
+  check(
+    "la siguiente página conserva filtros",
+    paginatedSearchHref({ ...EMPTY_FILTERS, query: "plomero" }, 2) === "/buscar?q=plomero&page=2",
+  );
+  check(
+    "el orden de selección no cambia la identidad de la búsqueda",
+    searchCriteriaKey({
+      ...EMPTY_FILTERS,
+      resultKinds: ["service", "individual"],
+      paymentMethods: ["cash", "credit_card"],
+    }) === searchCriteriaKey({
+      ...EMPTY_FILTERS,
+      resultKinds: ["individual", "service"],
+      paymentMethods: ["credit_card", "cash"],
+    }),
+  );
   const longQuery = interpretSearchQuery(
     "Necesito alguien que venga a casa porque el aire acondicionado prende pero no enfría",
   );

@@ -85,8 +85,41 @@ export function filtersToQuery(filters: SearchFilters): string {
   return params.toString();
 }
 
+/**
+ * Identidad semántica de una búsqueda. El orden en que se marcaron opciones
+ * no cambia el criterio, por eso las listas se ordenan sólo para comparar.
+ */
+export function searchCriteriaKey(filters: SearchFilters): string {
+  return filtersToQuery({
+    ...filters,
+    resultKinds: [...filters.resultKinds].sort(),
+    locationIds: [...filters.locationIds].sort(),
+    specialtyIds: [...filters.specialtyIds].sort(),
+    paymentMethods: [...filters.paymentMethods].sort(),
+    serviceModes: [...filters.serviceModes].sort(),
+  });
+}
+
 export function searchHref(filters: SearchFilters): string {
   const query = filtersToQuery(filters);
+  return query ? `/buscar?${query}` : "/buscar";
+}
+
+/** Página solicitada desde una URL pública; evita valores negativos o enormes. */
+export function searchPageFromParams(
+  params: URLSearchParams | Record<string, string | string[] | undefined>,
+): number {
+  const raw = params instanceof URLSearchParams
+    ? params.get("page")
+    : Array.isArray(params.page) ? params.page[0] : params.page;
+  const page = Number(raw);
+  return Number.isSafeInteger(page) && page > 0 ? Math.min(page, 100) : 1;
+}
+
+export function paginatedSearchHref(filters: SearchFilters, page: number): string {
+  const params = new URLSearchParams(filtersToQuery(filters));
+  if (page > 1) params.set("page", String(page));
+  const query = params.toString();
   return query ? `/buscar?${query}` : "/buscar";
 }
 

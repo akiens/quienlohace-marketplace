@@ -13,6 +13,7 @@ import {
   type SearchMatch,
 } from "@/lib/search-matching";
 import { rankMixedSearchResults } from "@/lib/search-ranking";
+import { PAGE_SIZE } from "@/types";
 import type {
   Profile,
   SearchFilters,
@@ -42,6 +43,12 @@ export type MarketplaceSearchResult = {
     resultSetId: string;
     resultItemIds: string[];
     snapshotIds: string[];
+  };
+  pagination: {
+    page: number;
+    pageSize: number;
+    hasMore: boolean;
+    remaining: number;
   };
 };
 
@@ -110,7 +117,7 @@ async function candidates(filters: SearchFilters, plan: SearchQueryPlan) {
   ]);
 }
 
-export async function searchMarketplace(filters: SearchFilters): Promise<MarketplaceSearchResult> {
+export async function searchMarketplace(filters: SearchFilters, requestedPage = 1): Promise<MarketplaceSearchResult> {
   const started = performance.now();
   const searchId = `search_${crypto.randomUUID()}`;
   const searchExecutionId = `execution_${crypto.randomUUID()}`;
@@ -128,7 +135,12 @@ export async function searchMarketplace(filters: SearchFilters): Promise<Marketp
     if (match) eligible.push({ kind: "service", providerId: card.profileId, card, match });
   }
 
-  const results = rankMixedSearchResults(eligible, itemQuality);
+  const rankedResults = rankMixedSearchResults(eligible, itemQuality);
+  const total = rankedResults.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(Math.max(1, requestedPage), totalPages);
+  const results = rankedResults.slice(0, page * PAGE_SIZE);
+  const providerTotal = new Set(rankedResults.map((item) => item.providerId)).size;
   const searchDurationMs = Math.max(0, Math.round(performance.now() - started));
   const suggestedActions: SearchSuggestion[] = [];
   if (results.length === 0 && interpretation.suggestedQuery) {
@@ -165,8 +177,8 @@ export async function searchMarketplace(filters: SearchFilters): Promise<Marketp
     try {
       runInBackground(recordServerSearch({
         searchId, executionId: searchExecutionId, resultSetId, executedAt: new Date().toISOString(),
-        durationMs: searchDurationMs, total: results.length,
-        providerTotal: new Set(results.map((item) => item.providerId)).size,
+        durationMs: searchDurationMs, total,
+        providerTotal,
         interpretation: {
           specialtyIds: interpretation.specialtyIds,
           serviceIds: interpretation.serviceIds,
@@ -198,10 +210,16 @@ export async function searchMarketplace(filters: SearchFilters): Promise<Marketp
   return {
     interpretation,
     results,
-    total: results.length,
-    providerTotal: new Set(results.map((item) => item.providerId)).size,
+    total,
+    providerTotal,
     discoveryLinks: discoveryLinks(filters, interpretation),
     suggestedActions,
     analytics: { searchId, searchExecutionId, resultSetId, resultItemIds, snapshotIds: snapshots.map((item) => item.snapshotId) },
+    pagination: {
+      page,
+      pageSize: PAGE_SIZE,
+      hasMore: results.length < total,
+      remaining: Math.max(0, total - results.length),
+    },
   };
 }

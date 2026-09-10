@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
 import { SearchExperience } from "@/components/search-experience";
-import { filtersFromParams } from "@/lib/query";
+import { filtersFromParams, searchPageFromParams } from "@/lib/query";
 import { searchMarketplace } from "@/application/search";
 
 /** Los resultados dependen de los filtros y de la base: siempre por pedido. */
@@ -25,8 +25,9 @@ export default async function SearchPage({
 }) {
   const params = await searchParams;
   const filters = filtersFromParams(params);
+  const page = searchPageFromParams(params);
 
-  const search = await searchMarketplace(filters);
+  const search = await searchMarketplace(filters, page);
 
   return <SearchExperience filters={filters} search={search} />;
 }
