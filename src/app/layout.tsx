@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Suspense } from "react";
 
+import { AnalyticsProvider } from "@/components/analytics/analytics-provider";
 import { HeaderWithAuth } from "@/components/header-auth";
 import { siteUrl } from "@/lib/site-url";
 import { SiteFooter } from "@/components/site-footer";
@@ -87,6 +89,9 @@ export default function RootLayout({
           Con grid-rows-[auto_1fr_auto] el sticky funciona y el footer sigue
           quedando abajo aunque la página sea corta. */}
       <body className="grid min-h-screen grid-rows-[auto_1fr_auto] font-sans">
+        <Suspense fallback={null}>
+          <AnalyticsProvider />
+        </Suspense>
         <a
           href="#contenido"
           className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-input focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-brand-800 focus:shadow-pop"

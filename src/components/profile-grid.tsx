@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useId, useState } from "react";
 
+import { TrackedResult } from "@/components/analytics/tracked-result";
 import { ProfileCard, ProfileCardSkeleton } from "@/components/profile-card";
 import { AdSlot, Button, EmptyState, PROVIDER_GRID } from "@/components/ui";
 import { PAGE_SIZE, type Profile } from "@/types";
+import { initializeAnalytics, trackAnalytics } from "@/lib/analytics/client";
 
 /**
  * Listado paginado. Se muestran 12 resultados y el resto se pide en tandas con
@@ -48,6 +50,16 @@ function Grid({
   initialVisible?: number;
 }) {
   const [visible, setVisible] = useState(initialVisible);
+  const listViewId = `list_${useId().replaceAll(":", "_")}`;
+  const shown = profiles.slice(0, visible);
+  const remaining = profiles.length - shown.length;
+
+  useEffect(() => {
+    if (loading || shown.length === 0) return;
+    void initializeAnalytics().then((ready) => {
+      if (ready) trackAnalytics({ eventName: "list_viewed", observationKind: "client_observation", listViewId, surface: "profile_grid", properties: { itemCount: shown.length, listType: "profile_grid" } });
+    });
+  }, [listViewId, loading, shown.length]);
 
   if (loading) {
     return (
@@ -72,14 +84,23 @@ function Grid({
     );
   }
 
-  const shown = profiles.slice(0, visible);
-  const remaining = profiles.length - shown.length;
-
   return (
     <div className="flex flex-col gap-6">
       <div className={PROVIDER_GRID}>
-        {shown.map((profile) => (
-          <ProfileCard key={profile.id} profile={profile} match={matches?.[profile.id]} />
+        {shown.map((profile, index) => (
+          <TrackedResult
+            key={profile.id}
+            resultKind="profile"
+            position={index + 1}
+            listViewId={listViewId}
+            resultItemId={`${listViewId}:item:${index + 1}`}
+            entityType="provider_profile"
+            providerProfileId={profile.id}
+            specialtyId={profile.specialtyIds[0]}
+            surface="profile_grid"
+          >
+            <ProfileCard profile={profile} match={matches?.[profile.id]} />
+          </TrackedResult>
         ))}
       </div>
 

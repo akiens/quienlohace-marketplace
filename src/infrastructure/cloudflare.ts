@@ -29,6 +29,47 @@ export function getDb(): D1Database {
   return db;
 }
 
+export function getAnalyticsDb(): D1Database {
+  const db = (env() as CloudflareEnv & { ANALYTICS_DB?: D1Database }).ANALYTICS_DB;
+  if (!db) throw new Error("Falta el binding D1 `ANALYTICS_DB`.");
+  return db;
+}
+
+export function getAnalyticsRawBucket(): R2Bucket {
+  const bucket = (env() as CloudflareEnv & { ANALYTICS_RAW?: R2Bucket }).ANALYTICS_RAW;
+  if (!bucket) throw new Error("Falta el binding R2 privado `ANALYTICS_RAW`.");
+  return bucket;
+}
+
+export function analyticsEnabled(): boolean {
+  try {
+    return String((env() as CloudflareEnv & { ANALYTICS_ENABLED?: string }).ANALYTICS_ENABLED) !== "false";
+  } catch {
+    return false;
+  }
+}
+
+export function getAnalyticsSessionSecret(): string | null {
+  let boundValue: string | undefined;
+  try {
+    boundValue = (env() as CloudflareEnv & { ANALYTICS_SESSION_SECRET?: string }).ANALYTICS_SESSION_SECRET;
+  } catch {}
+  const value = boundValue ?? process.env.ANALYTICS_SESSION_SECRET;
+  return value && new TextEncoder().encode(value).byteLength >= 32 ? value : null;
+}
+
+/** Mantiene telemetría fuera del tiempo crítico de una respuesta de negocio. */
+export function runInBackground(task: Promise<unknown>): void {
+  const guarded = task.catch((error) => {
+    console.error("background task failed", error instanceof Error ? `${error.name}: ${error.message}` : "unknown");
+  });
+  try {
+    getCloudflareContext().ctx.waitUntil(guarded);
+  } catch {
+    void guarded;
+  }
+}
+
 export function getMediaBucket(): R2Bucket {
   const bucket = env().MEDIA;
   if (!bucket) {

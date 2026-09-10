@@ -9,7 +9,9 @@ next-env.d.ts
 
 # Cloudflare
 .open-next/
+.open-next-stale/
 .wrangler/
+.dev.vars
 
 # Seed generado (regenerar con npm run seed:generate)
 seeds/dev-seed.sql

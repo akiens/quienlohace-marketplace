@@ -1,5 +1,9 @@
 import type { DowngradeNoticeStage } from "@/domain/plan-changes";
 import type {
+  AnalyticsIngestResult,
+  AnalyticsSegment,
+} from "@/domain/analytics";
+import type {
   PaymentMethod,
   PlanId,
   Profile,
@@ -206,4 +210,19 @@ export interface FileStorage {
   }): Promise<StoredFile>;
   delete(key: string): Promise<void>;
   getPublicUrl(key: string): string;
+}
+
+/** Persistencia append-only de observaciones analíticas ya validadas. */
+export interface AnalyticsRepository {
+  ingestBrowserSegment(
+    segment: AnalyticsSegment,
+    context: {
+      receivedAt: string;
+      countryCode: string | null;
+      regionCode: string | null;
+      payloadHash: string;
+      internalProfileIds: string[];
+      suspicious: boolean;
+    },
+  ): Promise<AnalyticsIngestResult>;
 }

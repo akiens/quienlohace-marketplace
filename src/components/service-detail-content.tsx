@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PublicProfileGallery } from "@/components/public-profile-gallery";
+import { TrackedContactLink } from "@/components/analytics/tracked-contact-link";
 import { Chip, Icon, RatingLine, SECONDARY_SURFACE } from "@/components/ui";
 import { locationLabelById } from "@/data/locations";
 import { getSpecialty, sectorOfSpecialty } from "@/data/taxonomy";
@@ -118,7 +119,7 @@ export function ServiceDetailContent({
               <p className="mb-4 text-[13.5px] text-ink-soft">
                 Fotos adicionales de esta propuesta.
               </p>
-              <PublicProfileGallery images={samples} />
+              <PublicProfileGallery images={samples} analytics={{ entityType: "service_card", providerProfileId: profile.id, profileServiceId: card.serviceId, serviceCardId: card.id, specialtyId: card.specialtyId }} />
             </section>
           ) : null}
 
@@ -166,7 +167,14 @@ export function ServiceDetailContent({
             <div className="my-4 h-px bg-line-soft" />
             <div className="grid min-w-0 gap-2.5">
               {showWhatsapp ? (
-                <a
+                <TrackedContactLink
+                  channel="whatsapp"
+                  entityType="service_card"
+                  providerProfileId={profile.id}
+                  profileServiceId={card.serviceId}
+                  serviceCardId={card.id}
+                  specialtyId={card.specialtyId}
+                  surface="service_detail_contact"
                   href={whatsappHref(profile, message)}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -176,25 +184,39 @@ export function ServiceDetailContent({
                   <span className="min-w-0 break-words">
                     Consultar por WhatsApp
                   </span>
-                </a>
+                </TrackedContactLink>
               ) : null}
               {showPhone ? (
-                <a
+                <TrackedContactLink
+                  channel="phone"
+                  entityType="service_card"
+                  providerProfileId={profile.id}
+                  profileServiceId={card.serviceId}
+                  serviceCardId={card.id}
+                  specialtyId={card.specialtyId}
+                  surface="service_detail_contact"
                   href={phoneHref(profile)}
                   className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
                 >
                   <Icon name="call" className="flex-none text-[18px]" />
                   Llamar
-                </a>
+                </TrackedContactLink>
               ) : null}
               {profile.contactEmail ? (
-                <a
+                <TrackedContactLink
+                  channel="email"
+                  entityType="service_card"
+                  providerProfileId={profile.id}
+                  profileServiceId={card.serviceId}
+                  serviceCardId={card.id}
+                  specialtyId={card.specialtyId}
+                  surface="service_detail_contact"
                   href={`mailto:${profile.contactEmail}?subject=${encodeURIComponent(card.title)}`}
                   className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2 text-[14px] font-semibold ${SECONDARY_SURFACE}`}
                 >
                   <Icon name="mail" className="flex-none text-[18px]" />
                   Enviar correo
-                </a>
+                </TrackedContactLink>
               ) : null}
             </div>
           </section>

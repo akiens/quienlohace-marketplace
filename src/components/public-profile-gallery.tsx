@@ -1,16 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
+import type { AnalyticsEntity } from "@/domain/analytics";
+import { trackAnalytics } from "@/lib/analytics/client";
 import type { ProfileImage } from "@/types";
 
 type GalleryImage = Pick<ProfileImage, "id" | "url" | "alt">;
 
 /** Galería pública con resumen responsive y visor a pantalla completa. */
-export function PublicProfileGallery({ images }: { images: GalleryImage[] }) {
+export function PublicProfileGallery({ images, analytics }: { images: GalleryImage[]; analytics?: AnalyticsEntity }) {
   const [expanded, setExpanded] = useState(false);
   const [selected, setSelected] = useState<number | null>(null);
+  const imageSetVersion = useMemo(() => `gallery_${images.length}_${images[0]?.id ?? "empty"}_${images.at(-1)?.id ?? "empty"}`.slice(0, 120), [images]);
+
+  useEffect(() => {
+    if (selected === null || !analytics) return;
+    const image = images[selected];
+    if (!image) return;
+    trackAnalytics({ ...analytics, eventName: "gallery_item_viewed", observationKind: "interaction", surface: "public_gallery", properties: { imageId: image.id, position: selected + 1 } });
+  }, [analytics, images, selected]);
 
   useEffect(() => {
     if (selected === null) return;
@@ -54,7 +64,10 @@ export function PublicProfileGallery({ images }: { images: GalleryImage[] }) {
             <button
               key={image.id}
               type="button"
-              onClick={() => setSelected(index)}
+              onClick={() => {
+                if (analytics) trackAnalytics({ ...analytics, eventName: "gallery_opened", observationKind: "interaction", surface: "public_gallery", properties: { imageSetVersion, itemCount: images.length } });
+                setSelected(index);
+              }}
               aria-label={`Abrir imagen ${index + 1} de ${images.length}`}
               className={`group relative aspect-[4/3] overflow-hidden rounded-card border border-line bg-surface-muted ${
                 expanded ? "" : collapsedVisibility

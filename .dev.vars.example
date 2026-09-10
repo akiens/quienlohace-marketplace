@@ -1,0 +1,2 @@
+# Copiar a .dev.vars y reemplazar por un valor aleatorio de al menos 32 bytes.
+ANALYTICS_SESSION_SECRET="replace-me"

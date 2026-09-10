@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { findProfileBySlug } from "@/application/profiles";
 import { findPublicServiceCard } from "@/application/service-cards";
 import { NotFoundPage } from "@/components/not-found-page";
+import { AnalyticsPageContext } from "@/components/analytics/page-context";
 import { ServiceDetailContent } from "@/components/service-detail-content";
 import { locationLabelById } from "@/data/locations";
 import { getSpecialty } from "@/data/taxonomy";
@@ -88,6 +89,15 @@ export async function ServiceDetailPage({
 
   return (
     <>
+      <AnalyticsPageContext
+        pageType="service_detail"
+        surface="service_detail"
+        entityType="service_card"
+        providerProfileId={profile.id}
+        profileServiceId={card.serviceId}
+        serviceCardId={card.id}
+        specialtyId={card.specialtyId}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

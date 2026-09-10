@@ -23,6 +23,14 @@
 			"database_name": "quienlohace",
 			"database_id": "be93c0ea-e93a-45a8-95cb-08ff9933ed28",
 			"migrations_dir": "migrations"
+		},
+		{
+			"binding": "ANALYTICS_DB",
+			"database_name": "quienlohace-analytics",
+			// Reemplazar por el ID que devuelve `wrangler d1 create quienlohace-analytics`
+			// antes del primer deploy remoto. El UUID nulo permite trabajar con D1 local.
+			"database_id": "00000000-0000-0000-0000-000000000000",
+			"migrations_dir": "analytics-migrations"
 		}
 	],
 	// Cloudflare Images: decodifica y recomprime dentro del worker (TR-042).
@@ -47,9 +55,14 @@
 		{
 			"binding": "MEDIA",
 			"bucket_name": "quienlohace-media"
+		},
+		{
+			"binding": "ANALYTICS_RAW",
+			"bucket_name": "quienlohace-analytics-raw"
 		}
 	],
 	"vars": {
-		"APP_URL": "https://quienlohace-marketplace.akiens-dev.workers.dev"
+		"APP_URL": "https://quienlohace-marketplace.akiens-dev.workers.dev",
+		"ANALYTICS_ENABLED": "true"
 	}
 }

@@ -135,7 +135,7 @@ export function SiteFooter() {
           </p>
           <div className="flex gap-5">
             <Link
-              href="/faq"
+              href="/privacidad"
               className="text-[13px] text-footer-text transition-colors hover:text-white"
             >
               Privacidad

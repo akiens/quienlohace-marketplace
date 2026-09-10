@@ -2,9 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { FiltersPanel } from "@/components/filters-panel";
+import { TrackedResult } from "@/components/analytics/tracked-result";
 import { ProfileCard } from "@/components/profile-card";
 import { ServiceOfferCard } from "@/components/service-offer-card";
 import { SearchPanel } from "@/components/search-panel";
@@ -12,6 +13,7 @@ import { getSpecialty } from "@/data/taxonomy";
 import { locationLabelById } from "@/data/locations";
 import { filtersToQuery } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
+import { initializeAnalytics, trackAnalytics } from "@/lib/analytics/client";
 import { Button, EmptyState, Icon, PROVIDER_GRID } from "@/components/ui";
 import type { MarketplaceSearchResult } from "@/application/search";
 import {
@@ -35,6 +37,7 @@ export function SearchExperience({
 }) {
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const recordedSearch = useRef<string | null>(null);
 
   /*
    * Lo que se está escribiendo en el buscador y todavía no se confirmó.
@@ -48,8 +51,49 @@ export function SearchExperience({
   const activeCount = countActiveFilters(filters);
   const total = search.total;
 
+  useEffect(() => {
+    if (recordedSearch.current === search.analytics.searchId) return;
+    recordedSearch.current = search.analytics.searchId;
+    void initializeAnalytics().then((ready) => {
+      if (!ready) return;
+      const pendingKey = "qlh:analytics:pending-search:v1";
+      type PendingSearch = { before: SearchFilters; after: SearchFilters; previousSearchId?: string };
+      let pending: PendingSearch | null = null;
+      try {
+        pending = JSON.parse(sessionStorage.getItem(pendingKey) ?? "null") as PendingSearch | null;
+        sessionStorage.removeItem(pendingKey);
+      } catch {}
+      trackAnalytics({
+        eventName: "search_submitted", observationKind: "interaction", searchId: search.analytics.searchId,
+        previousSearchId: pending?.previousSearchId,
+        searchExecutionId: search.analytics.searchExecutionId, resultSetId: search.analytics.resultSetId,
+        surface: "search_results", properties: { filters, reason: pending ? "filter" : "initial", normalizerVersion: 1 },
+      });
+      if (pending) {
+        const keys = (Object.keys(pending.after) as Array<keyof SearchFilters>).filter((key) => JSON.stringify(pending?.before[key]) !== JSON.stringify(pending?.after[key]));
+        if (keys.length) trackAnalytics({
+          eventName: "search_filter_applied", observationKind: "interaction", searchId: search.analytics.searchId,
+          searchExecutionId: search.analytics.searchExecutionId, resultSetId: search.analytics.resultSetId,
+          surface: "search_results", properties: { changedFields: keys, before: pending.before, after: pending.after },
+        });
+      }
+      trackAnalytics({
+        eventName: "search_results_viewed", observationKind: "client_observation", searchId: search.analytics.searchId,
+        searchExecutionId: search.analytics.searchExecutionId, resultSetId: search.analytics.resultSetId,
+        listViewId: `list_${search.analytics.resultSetId}`, surface: "search_results",
+        properties: { total: search.total, providerTotal: search.providerTotal, presentedCount: Math.min(12, search.total) },
+      });
+      trackAnalytics({
+        eventName: "list_viewed", observationKind: "client_observation", searchId: search.analytics.searchId,
+        resultSetId: search.analytics.resultSetId, listViewId: `list_${search.analytics.resultSetId}`,
+        surface: "search_results", properties: { itemCount: Math.min(12, search.total), listType: "search_results" },
+      });
+    });
+  }, [filters, search]);
+
   function update(next: SearchFilters) {
     const query = filtersToQuery(next);
+    try { sessionStorage.setItem("qlh:analytics:pending-search:v1", JSON.stringify({ before: filters, after: next, previousSearchId: search.analytics.searchId })); } catch {}
     // `scroll: false` evita saltar al tope cada vez que se toca un filtro.
     router.replace(query ? `/buscar?${query}` : "/buscar", { scroll: false });
   }
@@ -204,10 +248,24 @@ function MixedResults({ search }: { search: MarketplaceSearchResult }) {
   return (
     <section className="flex flex-col gap-6" aria-label="Resultados de búsqueda">
       <div className={PROVIDER_GRID}>
-        {shown.map((item) => (
-          <div
+        {shown.map((item, index) => (
+          <TrackedResult
             key={`${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`}
             className="relative min-w-0"
+            resultKind={item.kind}
+            position={index + 1}
+            searchId={search.analytics.searchId}
+            searchExecutionId={search.analytics.searchExecutionId}
+            resultSetId={search.analytics.resultSetId}
+            listViewId={`list_${search.analytics.resultSetId}`}
+            resultItemId={search.analytics.resultItemIds[index]!}
+            entitySnapshotId={search.analytics.snapshotIds[index]}
+            entityType={item.kind === "service" ? "service_card" : "provider_profile"}
+            providerProfileId={item.providerId}
+            profileServiceId={item.kind === "service" ? item.card.serviceId : undefined}
+            serviceCardId={item.kind === "service" ? item.card.id : undefined}
+            specialtyId={item.kind === "service" ? item.card.specialtyId : item.profile.specialtyIds[0]}
+            surface="search_results"
           >
             <span className="absolute left-2.5 top-2.5 z-[3] rounded-full bg-white/95 px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[.45px] text-brand-800 shadow-sm">
               {item.kind === "service" ? "Carta de servicio" : "Proveedor"}
@@ -217,7 +275,7 @@ function MixedResults({ search }: { search: MarketplaceSearchResult }) {
             ) : (
               <ProfileCard profile={item.profile} match={item.match.label} />
             )}
-          </div>
+          </TrackedResult>
         ))}
       </div>
       {remaining > 0 ? (

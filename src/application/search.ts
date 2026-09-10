@@ -3,6 +3,8 @@ import "server-only";
 import { SERVICE_SECTORS, getSpecialty } from "@/data/taxonomy";
 import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
 import { D1ServiceCardRepository } from "@/infrastructure/d1-service-card-repository";
+import { analyticsEnabled, runInBackground } from "@/infrastructure/cloudflare";
+import { recordServerSearch } from "@/infrastructure/d1-analytics-repository";
 import { filtersToQuery } from "@/lib/query";
 import { interpretSearchQuery } from "@/lib/search-intent";
 import {
@@ -34,7 +36,23 @@ export type MarketplaceSearchResult = {
   providerTotal: number;
   discoveryLinks: SearchSuggestion[];
   suggestedActions: SearchSuggestion[];
+  analytics: {
+    searchId: string;
+    searchExecutionId: string;
+    resultSetId: string;
+    resultItemIds: string[];
+    snapshotIds: string[];
+  };
 };
+
+function snapshotId(entityKey: string, value: Record<string, unknown>): string {
+  let hash = 0xcbf29ce484222325n;
+  for (const byte of new TextEncoder().encode(`${entityKey}:${JSON.stringify(value)}`)) {
+    hash ^= BigInt(byte);
+    hash = BigInt.asUintN(64, hash * 0x100000001b3n);
+  }
+  return `snapshot_${hash.toString(16).padStart(16, "0")}`;
+}
 
 function includeProfiles(filters: SearchFilters): boolean {
   return filters.resultKinds.length === 0 || filters.resultKinds.some((kind) => kind !== "service");
@@ -93,6 +111,10 @@ async function candidates(filters: SearchFilters, plan: SearchQueryPlan) {
 }
 
 export async function searchMarketplace(filters: SearchFilters): Promise<MarketplaceSearchResult> {
+  const started = performance.now();
+  const searchId = `search_${crypto.randomUUID()}`;
+  const searchExecutionId = `execution_${crypto.randomUUID()}`;
+  const resultSetId = `results_${crypto.randomUUID()}`;
   const interpretation = interpretSearchQuery(filters.query);
   const [profiles, cards] = await candidates(filters, interpretation);
   const eligible: MarketplaceSearchItem[] = [];
@@ -107,6 +129,7 @@ export async function searchMarketplace(filters: SearchFilters): Promise<Marketp
   }
 
   const results = rankMixedSearchResults(eligible, itemQuality);
+  const searchDurationMs = Math.max(0, Math.round(performance.now() - started));
   const suggestedActions: SearchSuggestion[] = [];
   if (results.length === 0 && interpretation.suggestedQuery) {
     suggestedActions.push({
@@ -116,6 +139,62 @@ export async function searchMarketplace(filters: SearchFilters): Promise<Marketp
     });
   }
 
+  const snapshots = results.map((item) => {
+    const snapshot = item.kind === "profile" ? {
+      type: item.profile.type, planId: item.profile.planId, status: item.profile.profileStatus,
+      verificationStatus: item.profile.verificationStatus, rating: item.profile.rating,
+      reviewCount: item.profile.reviewCount, specialtyIds: item.profile.specialtyIds,
+      serviceModes: item.profile.serviceModes, serviceAreaIds: item.profile.serviceAreaIds,
+      activeServiceIds: item.profile.services.filter((service) => service.isActive).map((service) => service.id),
+      paymentMethods: item.profile.paymentMethods,
+      enabledChannels: [item.profile.whatsappEnabled ? "whatsapp" : null, item.profile.phonePublic ? "phone" : null, item.profile.contactEmail ? "email" : null].filter(Boolean),
+    } : {
+      priceKind: item.card.priceKind, priceMinCents: item.card.priceMinCents,
+      priceMaxCents: item.card.priceMaxCents, currency: item.card.currency, tier: item.card.tier,
+      serviceMode: item.card.serviceMode, paymentMethod: item.card.paymentMethod,
+      durationMinMinutes: item.card.durationMinMinutes, durationMaxMinutes: item.card.durationMaxMinutes,
+      imageVersion: item.card.images.map((image) => image.id),
+      isPublished: item.card.isPublished, isActive: item.card.isActive,
+    };
+    const entityKey = item.kind === "profile" ? `profile:${item.profile.id}` : `card:${item.card.id}`;
+    return { snapshot, snapshotId: snapshotId(entityKey, snapshot) };
+  });
+  const resultItemIds = results.map((_, index) => `${resultSetId}:item:${index + 1}`);
+
+  if (analyticsEnabled()) {
+    try {
+      runInBackground(recordServerSearch({
+        searchId, executionId: searchExecutionId, resultSetId, executedAt: new Date().toISOString(),
+        durationMs: searchDurationMs, total: results.length,
+        providerTotal: new Set(results.map((item) => item.providerId)).size,
+        interpretation: {
+          specialtyIds: interpretation.specialtyIds,
+          serviceIds: interpretation.serviceIds,
+          inferredMode: interpretation.inferredMode,
+          correctionStatus: interpretation.suggestedQuery ? "suggested" : "none",
+          normalizerVersion: 1,
+          filters: {
+            resultKinds: filters.resultKinds, locationIds: filters.locationIds,
+            specialtyIds: filters.specialtyIds, minRating: filters.minRating,
+            paymentMethods: filters.paymentMethods, serviceModes: filters.serviceModes,
+            useMyLocation: filters.useMyLocation, queryPresent: Boolean(filters.query.trim()),
+          },
+        },
+        items: results.map((item, index) => ({
+          resultItemId: resultItemIds[index]!, position: index + 1, resultKind: item.kind,
+          providerProfileId: item.providerId,
+          profileServiceId: item.kind === "service" ? item.card.serviceId : null,
+          serviceCardId: item.kind === "service" ? item.card.id : null,
+          specialtyId: item.kind === "service" ? item.card.specialtyId : item.profile.specialtyIds[0] ?? null,
+          snapshotId: snapshots[index]!.snapshotId, snapshot: snapshots[index]!.snapshot,
+          matchReason: item.match.reason,
+        })),
+      }));
+    } catch (error) {
+      console.error("analytics search capture failed", error instanceof Error ? `${error.name}: ${error.message}` : "unknown");
+    }
+  }
+
   return {
     interpretation,
     results,
@@ -123,5 +202,6 @@ export async function searchMarketplace(filters: SearchFilters): Promise<Marketp
     providerTotal: new Set(results.map((item) => item.providerId)).size,
     discoveryLinks: discoveryLinks(filters, interpretation),
     suggestedActions,
+    analytics: { searchId, searchExecutionId, resultSetId, resultItemIds, snapshotIds: snapshots.map((item) => item.snapshotId) },
   };
 }

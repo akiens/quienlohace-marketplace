@@ -9,6 +9,8 @@ import {
 } from "@/application/profiles";
 import { listProfileServiceCards } from "@/application/service-cards";
 import { Banner } from "@/components/banner";
+import { AnalyticsPageContext } from "@/components/analytics/page-context";
+import { TrackedContactLink } from "@/components/analytics/tracked-contact-link";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PublicProfileGallery } from "@/components/public-profile-gallery";
 import { ReviewForm } from "@/components/review-form";
@@ -134,6 +136,13 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
 
   return (
     <>
+      <AnalyticsPageContext
+        pageType="provider_profile"
+        surface="provider_profile"
+        entityType="provider_profile"
+        providerProfileId={profile.id}
+        disabled={isPreview}
+      />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {isPreview ? (
@@ -233,7 +242,7 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
 
             {gallery.length > 0 ? (
               <ProfilePanel title="Trabajos y proyectos" icon="photo_library" subtitle={`${gallery.length} ${gallery.length === 1 ? "foto" : "fotos"}`}>
-                <PublicProfileGallery images={gallery} />
+              <PublicProfileGallery images={gallery} analytics={{ entityType: "provider_profile", providerProfileId: profile.id }} />
               </ProfilePanel>
             ) : null}
 
@@ -321,10 +330,10 @@ export default async function ProviderPage({ params }: { params: Promise<Params>
                   {socialLinks.map((link) => {
                     const meta = SOCIAL_META[link.platform];
                     return (
-                      <a key={link.platform} href={link.url} target="_blank" rel="noopener noreferrer" className={`flex min-w-0 items-center gap-2 rounded-input px-3 py-2.5 text-[13px] font-semibold ${SECONDARY_SURFACE}`}>
+                      <TrackedContactLink key={link.platform} channel={link.platform === "website" ? "website" : "social"} entityType="provider_profile" providerProfileId={profile.id} surface="provider_profile_social" href={link.url} target="_blank" rel="noopener noreferrer" className={`flex min-w-0 items-center gap-2 rounded-input px-3 py-2.5 text-[13px] font-semibold ${SECONDARY_SURFACE}`}>
                         <Icon name={meta.icon} className="flex-none text-[17px]" />
                         <span className="truncate">{meta.label}</span>
-                      </a>
+                      </TrackedContactLink>
                     );
                   })}
                 </div>
@@ -353,9 +362,9 @@ function ContactActions({ profile, showWhatsapp, showPhone }: { profile: Profile
   }
   return (
     <div className="grid min-w-0 gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
-      {showWhatsapp ? <a href={whatsappHref(profile)} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-2 rounded-input bg-whatsapp px-4 py-2.5 text-center text-[14px] font-bold text-white transition-colors hover:bg-success"><Icon name="chat" className="text-[19px]" />Escribir por WhatsApp</a> : null}
-      {showPhone ? <a href={phoneHref(profile)} className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2.5 text-center text-[14px] font-semibold ${SECONDARY_SURFACE}`}><Icon name="call" className="flex-none text-[18px]" /><span className="truncate">{profile.phone}</span></a> : null}
-      {profile.contactEmail ? <a href={`mailto:${profile.contactEmail}`} className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2.5 text-center text-[14px] font-semibold sm:col-span-2 lg:col-span-1 ${SECONDARY_SURFACE}`}><Icon name="mail" className="flex-none text-[18px]" /><span className="truncate">{profile.contactEmail}</span></a> : null}
+      {showWhatsapp ? <TrackedContactLink channel="whatsapp" entityType="provider_profile" providerProfileId={profile.id} surface="provider_profile_contact" href={whatsappHref(profile)} target="_blank" rel="noopener noreferrer" className="flex min-h-11 items-center justify-center gap-2 rounded-input bg-whatsapp px-4 py-2.5 text-center text-[14px] font-bold text-white transition-colors hover:bg-success"><Icon name="chat" className="text-[19px]" />Escribir por WhatsApp</TrackedContactLink> : null}
+      {showPhone ? <TrackedContactLink channel="phone" entityType="provider_profile" providerProfileId={profile.id} surface="provider_profile_contact" href={phoneHref(profile)} className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2.5 text-center text-[14px] font-semibold ${SECONDARY_SURFACE}`}><Icon name="call" className="flex-none text-[18px]" /><span className="truncate">{profile.phone}</span></TrackedContactLink> : null}
+      {profile.contactEmail ? <TrackedContactLink channel="email" entityType="provider_profile" providerProfileId={profile.id} surface="provider_profile_contact" href={`mailto:${profile.contactEmail}`} className={`flex min-h-11 min-w-0 items-center justify-center gap-2 rounded-input px-4 py-2.5 text-center text-[14px] font-semibold sm:col-span-2 lg:col-span-1 ${SECONDARY_SURFACE}`}><Icon name="mail" className="flex-none text-[18px]" /><span className="truncate">{profile.contactEmail}</span></TrackedContactLink> : null}
     </div>
   );
 }

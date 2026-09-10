@@ -1,12 +1,11 @@
 import { HomeHero } from "@/components/home-hero";
-import { ProfileCard } from "@/components/profile-card";
+import { ProfileGrid } from "@/components/profile-grid";
 import { SectorGrid } from "@/components/sector-grid";
 import { TrialBanner } from "@/components/trial-banner";
 import {
   AdSlot,
   ButtonLink,
   Icon,
-  PROVIDER_GRID,
   SectionHeading,
 } from "@/components/ui";
 import { SERVICE_SECTORS, SPECIALTIES, listSpecialties } from "@/data/taxonomy";
@@ -140,11 +139,7 @@ export default async function HomePage() {
               </ButtonLink>
             }
           />
-          <div className={PROVIDER_GRID}>
-            {featured.map((provider) => (
-              <ProfileCard key={provider.id} profile={provider} />
-            ))}
-          </div>
+          <ProfileGrid profiles={featured} initialVisible={HOME_SECTION_SIZE} />
         </section>
       </div>
 
@@ -187,11 +182,7 @@ export default async function HomePage() {
               </ButtonLink>
             }
           />
-          <div className={PROVIDER_GRID}>
-            {topRated.map((provider) => (
-              <ProfileCard key={provider.id} profile={provider} />
-            ))}
-          </div>
+          <ProfileGrid profiles={topRated} initialVisible={HOME_SECTION_SIZE} />
         </section>
 
         {/*

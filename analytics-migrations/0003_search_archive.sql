@@ -1,0 +1,3 @@
+ALTER TABLE analytics_search_executions ADD COLUMN archived_manifest_id TEXT;
+CREATE INDEX analytics_search_executions_archive_idx
+  ON analytics_search_executions(archived_manifest_id, executed_at);
