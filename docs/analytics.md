@@ -12,6 +12,7 @@ Implementación inicial del contrato descrito en `docs/todo/metrics-plan.md`.
 6. Revisar y aprobar la base jurídica y el texto público de privacidad antes de habilitar producción. `ANALYTICS_ENABLED=false` apaga la ingesta del backend; `NEXT_PUBLIC_ANALYTICS_ENABLED=false` debe incorporarse al build para apagar también el colector y descartar su cola.
 
 `ANALYTICS_DB` nunca se comparte con la D1 de negocio y `ANALYTICS_RAW` no se sirve desde `/media`.
+La configuración incluida mantiene `ANALYTICS_ENABLED=false` hasta que D1, R2, las migraciones y el secreto estén disponibles. Aunque la bandera se active por error, la captura se deshabilita automáticamente si falta `ANALYTICS_DB`.
 
 ## Contrato v1
 

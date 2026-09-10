@@ -63,6 +63,6 @@
 	],
 	"vars": {
 		"APP_URL": "https://quienlohace-marketplace.akiens-dev.workers.dev",
-		"ANALYTICS_ENABLED": "true"
+		"ANALYTICS_ENABLED": "false"
 	}
 }

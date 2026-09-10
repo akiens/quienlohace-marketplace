@@ -2,7 +2,7 @@ import "server-only";
 
 import type { AnalyticsRepository } from "@/domain/ports";
 import type { AnalyticsIngestResult, AnalyticsSegment, StoredAnalyticsEvent } from "@/domain/analytics";
-import { getAnalyticsDb } from "@/infrastructure/cloudflare";
+import { getAnalyticsDb, getOptionalAnalyticsDb } from "@/infrastructure/cloudflare";
 import { queryLengthBucket, sanitizeSearchQuery } from "@/lib/analytics/privacy";
 
 export class AnalyticsConflictError extends Error {}
@@ -138,7 +138,8 @@ export async function recordServerSearch(input: {
   interpretation: Record<string, unknown>;
   items: ServerSearchItem[];
 }): Promise<void> {
-  const db = getAnalyticsDb();
+  const db = getOptionalAnalyticsDb();
+  if (!db) return;
   const statements: D1PreparedStatement[] = [
     db.prepare(`INSERT INTO analytics_search_executions
       (search_execution_id, search_id, result_set_id, executed_at, duration_ms, status, total_results, provider_total, ranking_version, interpretation_json)

@@ -29,8 +29,16 @@ export function getDb(): D1Database {
   return db;
 }
 
+export function getOptionalAnalyticsDb(): D1Database | null {
+  try {
+    return (env() as CloudflareEnv & { ANALYTICS_DB?: D1Database }).ANALYTICS_DB ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function getAnalyticsDb(): D1Database {
-  const db = (env() as CloudflareEnv & { ANALYTICS_DB?: D1Database }).ANALYTICS_DB;
+  const db = getOptionalAnalyticsDb();
   if (!db) throw new Error("Falta el binding D1 `ANALYTICS_DB`.");
   return db;
 }
@@ -43,7 +51,8 @@ export function getAnalyticsRawBucket(): R2Bucket {
 
 export function analyticsEnabled(): boolean {
   try {
-    return String((env() as CloudflareEnv & { ANALYTICS_ENABLED?: string }).ANALYTICS_ENABLED) !== "false";
+    const runtime = env() as CloudflareEnv & { ANALYTICS_ENABLED?: string };
+    return String(runtime.ANALYTICS_ENABLED) !== "false" && Boolean(getOptionalAnalyticsDb());
   } catch {
     return false;
   }
