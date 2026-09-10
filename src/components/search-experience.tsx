@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useState } from "react";
 
 import { FiltersPanel } from "@/components/filters-panel";
@@ -12,13 +13,12 @@ import { locationLabelById } from "@/data/locations";
 import { filtersToQuery } from "@/lib/query";
 import { countActiveFilters } from "@/lib/search";
 import { EmptyState, Icon } from "@/components/ui";
+import type { MarketplaceSearchResult } from "@/application/search";
 import {
   PAYMENT_METHOD_LABELS,
   RESULT_KIND_LABELS,
   SERVICE_MODE_LABELS,
-  type Profile,
   type SearchFilters,
-  type ServiceCard,
 } from "@/types";
 
 /**
@@ -28,17 +28,10 @@ import {
  */
 export function SearchExperience({
   filters,
-  results,
-  profileTotal,
-  serviceCards,
-  serviceTotal,
+  search,
 }: {
   filters: SearchFilters;
-  results: Profile[];
-  /** Coincidencias totales, que pueden ser más que las cargadas. */
-  profileTotal: number;
-  serviceCards: ServiceCard[];
-  serviceTotal: number;
+  search: MarketplaceSearchResult;
 }) {
   const router = useRouter();
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -53,7 +46,7 @@ export function SearchExperience({
   const [draft, setDraft] = useState<SearchFilters>(filters);
 
   const activeCount = countActiveFilters(filters);
-  const total = profileTotal + serviceTotal;
+  const total = search.profileTotal + search.serviceTotal;
   const servicesFirst = Boolean(filters.query.trim());
 
   function update(next: SearchFilters) {
@@ -165,19 +158,31 @@ export function SearchExperience({
           </div>
         ) : null}
 
+        {search.interpretation.inferredMode && filters.serviceModes.length === 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-brand-100 px-4 py-3 text-[13.5px] text-ink">
+            <span>
+              Interpretamos una preferencia por <strong>{SERVICE_MODE_LABELS[search.interpretation.inferredMode].toLocaleLowerCase("es")}</strong>.
+            </span>
+            <Link
+              href={`/buscar?${filtersToQuery({ ...filters, serviceModes: [search.interpretation.inferredMode] })}`}
+              className="font-bold text-brand-800 underline underline-offset-2"
+            >
+              Aplicar este filtro
+            </Link>
+          </div>
+        ) : null}
+
         {total === 0 ? (
-          <EmptyState title="No encontramos resultados con esos filtros">
-            Probá quitar algún filtro, ampliar la zona o buscar con otras palabras.
-          </EmptyState>
+          <NoResults filters={filters} search={search} />
         ) : servicesFirst ? (
           <>
-            <ServiceResults cards={serviceCards} total={serviceTotal} />
-            <ProfileResults profiles={results} total={profileTotal} />
+            <ServiceResults search={search} />
+            <ProfileResults search={search} />
           </>
         ) : (
           <>
-            <ProfileResults profiles={results} total={profileTotal} />
-            <ServiceResults cards={serviceCards} total={serviceTotal} />
+            <ProfileResults search={search} />
+            <ServiceResults search={search} />
           </>
         )}
       </div>
@@ -197,23 +202,94 @@ export function SearchExperience({
   );
 }
 
-function ProfileResults({ profiles, total }: { profiles: Profile[]; total: number }) {
-  if (total === 0) return null;
+function ProfileResults({ search }: { search: MarketplaceSearchResult }) {
+  if (search.profileTotal === 0) return null;
+  const matches = Object.fromEntries(Object.entries(search.profileMatches).map(([id, match]) => [id, match.label]));
   return (
     <section className="flex flex-col gap-4">
-      <div><h2 className="text-[19px] font-bold text-ink">Profesionales y empresas</h2><p className="text-[13px] text-ink-soft">{total} {total === 1 ? "perfil" : "perfiles"}</p></div>
-      <ProfileGrid profiles={profiles} showAd />
+      <div><h2 className="text-[19px] font-bold text-ink">Profesionales y empresas</h2><p className="text-[13px] text-ink-soft">{search.profileTotal} {search.profileTotal === 1 ? "perfil" : "perfiles"}</p></div>
+      <ProfileGrid profiles={search.profiles} matches={matches} initialVisible={6} showAd />
     </section>
   );
 }
 
-function ServiceResults({ cards, total }: { cards: ServiceCard[]; total: number }) {
-  if (total === 0) return null;
+function ServiceResults({ search }: { search: MarketplaceSearchResult }) {
+  if (search.serviceTotal === 0) return null;
+  const matches = Object.fromEntries(Object.entries(search.cardMatches).map(([id, match]) => [id, match.label]));
   return (
     <section className="flex flex-col gap-4">
-      <div><h2 className="text-[19px] font-bold text-ink">Propuestas de servicio</h2><p className="text-[13px] text-ink-soft">{total} {total === 1 ? "oferta concreta" : "ofertas concretas"}</p></div>
-      <ServiceCardGrid cards={cards} />
+      <div>
+        <h2 className="text-[19px] font-bold text-ink">Propuestas de servicio</h2>
+        <p className="text-[13px] text-ink-soft">
+          {search.serviceTotal} {search.serviceTotal === 1 ? "oferta" : "ofertas"} de {search.serviceProviderTotal} {search.serviceProviderTotal === 1 ? "proveedor" : "proveedores"}
+        </p>
+      </div>
+      <ServiceCardGrid key={`${search.interpretation.normalized}:${search.serviceCards.map((card) => card.id).join("|")}`} cards={search.serviceCards} matches={matches} initialVisible={6} />
     </section>
+  );
+}
+
+function NoResults({ filters, search }: { filters: SearchFilters; search: MarketplaceSearchResult }) {
+  const hasDiscovery = search.discoveryProfiles.length > 0 || search.discoveryCards.length > 0;
+  return (
+    <div className="flex flex-col gap-7">
+      <EmptyState title="No encontramos lo que buscás">
+        <p>Probá reformular la búsqueda o elegí una de estas opciones.</p>
+        {search.suggestedActions.length ? (
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {search.suggestedActions.map((action) => (
+              <Link key={action.href} href={action.href} className="rounded-input bg-brand-100 px-3 py-2 font-semibold text-brand-800 hover:bg-[#E4E9F2]">
+                {action.label}
+              </Link>
+            ))}
+          </div>
+        ) : null}
+
+      </EmptyState>
+
+      {hasDiscovery ? (
+        <section className="flex flex-col gap-5" aria-labelledby="discovery-title">
+          <div>
+            <h2 id="discovery-title" className="text-[21px] font-bold text-ink">
+              No encontramos lo que buscás, pero esto podría interesarte
+            </h2>
+            <p className="text-[14px] text-ink-soft">
+              {search.discoveryRelated
+                ? "Son opciones de especialidades relacionadas; consultá con el proveedor si realiza el trabajo específico."
+                : "Estas opciones son para seguir explorando y no coinciden con tu búsqueda."}
+            </p>
+          </div>
+          {search.discoveryCards.length ? (
+            <div className="flex flex-col gap-3">
+              <h3 className="font-bold text-ink">Propuestas para explorar</h3>
+              <ServiceCardGrid cards={search.discoveryCards} initialVisible={6} />
+            </div>
+          ) : null}
+          {search.discoveryProfiles.length ? (
+            <div className="flex flex-col gap-3">
+              <h3 className="font-bold text-ink">Profesionales a quienes podés consultar</h3>
+              <ProfileGrid profiles={search.discoveryProfiles} initialVisible={6} />
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {search.discoveryLinks.length ? (
+        <nav aria-label="Servicios para explorar" className="rounded-card border border-line bg-white p-5">
+          <h2 className="text-[17px] font-bold text-ink">Explorá otros servicios</h2>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {search.discoveryLinks.map((link) => (
+              <Link key={link.href} href={link.href} title={link.detail} className="rounded-full border border-line bg-surface-sunken px-3 py-2 text-[13px] font-semibold text-brand-800 hover:border-line-strong">
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      ) : null}
+      {!filters.query.trim() ? null : (
+        <p className="text-center text-[12.5px] text-ink-faint">Las propuestas para explorar no se suman a tus resultados.</p>
+      )}
+    </div>
   );
 }
 

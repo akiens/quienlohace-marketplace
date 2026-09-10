@@ -22,10 +22,12 @@ export function ServiceOfferCard({
   card,
   interactive = true,
   footer,
+  match,
 }: {
   card: ServiceCard;
   interactive?: boolean;
   footer?: ReactNode;
+  match?: string;
 }) {
   const specialty = getSpecialty(card.specialtyId);
   const sector = sectorOfSpecialty(card.specialtyId);
@@ -81,6 +83,12 @@ export function ServiceOfferCard({
         </div>
 
         <p className="line-clamp-2 break-words text-[13.5px] leading-relaxed text-ink-soft">{card.description}</p>
+
+        {match ? (
+          <p className="rounded-input bg-brand-100 px-3 py-2 text-[12.5px] font-semibold text-brand-800">
+            Coincide con: {match}
+          </p>
+        ) : null}
 
         <div className="flex flex-wrap gap-x-3 gap-y-1.5 border-t border-line-soft pt-3">
           {serviceCardFacts(card).slice(0, 2).map((fact) => (

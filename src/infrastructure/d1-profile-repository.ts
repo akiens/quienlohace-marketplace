@@ -13,6 +13,7 @@ import type {
   ProfileStatus,
   ProfileType,
   SearchFilters,
+  SearchQueryPlan,
   ServiceModeCode,
   SocialLink,
 } from "@/types";
@@ -22,6 +23,7 @@ import { syncGalleryForUser } from "@/infrastructure/d1-profile-images";
 import { getDb } from "@/infrastructure/cloudflare";
 import { slugify } from "@/lib/slug";
 import { newId } from "@/lib/id";
+import { textSearchClause } from "@/infrastructure/search-sql";
 
 /**
  * Adapter D1 de ProfileRepository.
@@ -604,8 +606,9 @@ export class D1ProfileRepository implements ProfileRepository {
     filters: SearchFilters,
     limit: number,
     offset: number,
+    queryPlan?: SearchQueryPlan,
   ): Promise<Profile[]> {
-    const { where, params } = buildSearchWhere(filters);
+    const { where, params } = buildSearchWhere(filters, queryPlan);
     const { results } = await getDb()
       .prepare(
         `SELECT ${SELECT_COLUMNS} FROM profiles p WHERE ${where} ${ORDER} LIMIT ? OFFSET ?`,
@@ -616,8 +619,8 @@ export class D1ProfileRepository implements ProfileRepository {
     return hydrate(results);
   }
 
-  async countForSearch(filters: SearchFilters): Promise<number> {
-    const { where, params } = buildSearchWhere(filters);
+  async countForSearch(filters: SearchFilters, queryPlan?: SearchQueryPlan): Promise<number> {
+    const { where, params } = buildSearchWhere(filters, queryPlan);
     const row = await getDb()
       .prepare(`SELECT COUNT(*) AS total FROM profiles p WHERE ${where}`)
       .bind(...params)
@@ -966,29 +969,21 @@ export class D1ProfileRepository implements ProfileRepository {
  * Arma el WHERE de búsqueda. Los valores viajan siempre por bind(); lo único
  * que se concatena son placeholders `?` generados por cantidad.
  */
-function buildSearchWhere(filters: SearchFilters): {
+function buildSearchWhere(filters: SearchFilters, queryPlan?: SearchQueryPlan): {
   where: string;
   params: (string | number)[];
 } {
   const clauses = [PUBLIC_WHERE];
   const params: (string | number)[] = [];
 
-  /*
-   * Qué clase de resultado se pide.
-   *
-   * `individual` y `business` son valores de `p.type`. `service` todavía no
-   * tiene entidad —la carta de servicio no existe— y por eso no aporta
-   * ninguna condición: pedir sólo servicios no puede devolver perfiles, así
-   * que devuelve vacío; pedirlo junto a un tipo de perfil no le quita nada a
-   * ese tipo. Cuando exista, este es el lugar donde se suma su rama.
-   */
+  /* `service` se consulta en su propio repositorio; esta rama sólo devuelve perfiles. */
   if (filters.resultKinds.length > 0) {
     const profileTypes = filters.resultKinds.filter(
       (kind) => kind === "individual" || kind === "business",
     );
 
     if (profileTypes.length === 0) {
-      // Sólo se pidieron servicios, que aún no existen: ningún perfil aplica.
+      // Sólo se pidieron cartas: ningún perfil aplica.
       clauses.push("0 = 1");
     } else if (profileTypes.length < 2) {
       const marks = profileTypes.map(() => "?").join(",");
@@ -998,19 +993,31 @@ function buildSearchWhere(filters: SearchFilters): {
     // Con los dos tipos elegidos no se agrega nada: no acota.
   }
 
-  if (filters.query) {
-    /*
-     * El texto busca en el nombre, la descripción y los servicios del perfil.
-     * Los servicios están en otra tabla, así que van por EXISTS: un JOIN
-     * duplicaría el perfil una vez por servicio que coincida.
-     */
-    clauses.push(
-      `(p.name LIKE ? OR p.description LIKE ? OR EXISTS (
-          SELECT 1 FROM services s
-           WHERE s.profile_id = p.id AND s.is_active = 1 AND s.name LIKE ?))`,
-    );
-    const like = `%${filters.query}%`;
-    params.push(like, like, like);
+  if (filters.query.trim()) {
+    if (queryPlan) {
+      const servicesText = `COALESCE((SELECT GROUP_CONCAT(s.name, ' ') FROM services s
+        WHERE s.profile_id = p.id AND s.is_active = 1), '')`;
+      const text = textSearchClause(["p.name", "p.description", servicesText], queryPlan);
+      let queryClause = text.clause;
+      params.push(...text.params);
+      if (queryPlan.allowSpecialtyMatch && queryPlan.specialtyIds.length) {
+        const marks = queryPlan.specialtyIds.map(() => "?").join(",");
+        queryClause = `(${queryClause} OR EXISTS (SELECT 1 FROM profile_specialties qps
+          WHERE qps.profile_id = p.id AND qps.is_active = 1
+            AND qps.specialty_id IN (${marks})))`;
+        params.push(...queryPlan.specialtyIds);
+      }
+      clauses.push(queryClause);
+    } else {
+      clauses.push(
+        `(p.name LIKE ? ESCAPE '\' OR p.description LIKE ? ESCAPE '\' OR EXISTS (
+            SELECT 1 FROM services s
+             WHERE s.profile_id = p.id AND s.is_active = 1 AND s.name LIKE ? ESCAPE '\'))`,
+      );
+      const escaped = filters.query.replace(/[\\%_]/g, (character) => `\\${character}`);
+      const like = `%${escaped}%`;
+      params.push(like, like, like);
+    }
   }
 
   if (filters.locationIds.length > 0) {

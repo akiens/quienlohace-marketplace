@@ -5,6 +5,8 @@ import {
   type SearchFilters,
   type ServiceModeCode,
 } from "@/types";
+import { locationExists } from "@/data/locations";
+import { specialtyExists } from "@/data/taxonomy";
 
 /**
  * Los filtros viven en la URL: así una búsqueda se puede compartir, volver
@@ -26,7 +28,7 @@ const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"
 
 function list(value: string | null | undefined): string[] {
   if (!value) return [];
-  return value.split(",").map((v) => v.trim()).filter(Boolean);
+  return [...new Set(value.split(",").map((v) => v.trim()).filter(Boolean))];
 }
 
 export function filtersFromParams(
@@ -48,12 +50,12 @@ export function filtersFromParams(
    * filtraría nada y llegaría hasta la consulta.
    */
   return {
-    query: read("q") ?? "",
+    query: (read("q") ?? "").trim().slice(0, 200),
     resultKinds: list(read("tipo")).filter((k): k is ResultKind =>
       RESULT_KINDS.includes(k as ResultKind),
     ),
-    locationIds: list(read("loc")),
-    specialtyIds: list(read("esp")),
+    locationIds: list(read("loc")).filter(locationExists),
+    specialtyIds: list(read("esp")).filter(specialtyExists),
     minRating: Number.isFinite(rating) && rating > 0 ? rating : null,
     paymentMethods: list(read("pago")).filter((p): p is PaymentMethod =>
       PAYMENT_METHODS.includes(p as PaymentMethod),

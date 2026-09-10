@@ -460,6 +460,38 @@ export type SearchFilters = {
   useMyLocation: boolean;
 };
 
+export type SearchMatchReason =
+  | "provider_name"
+  | "declared_service"
+  | "card_title"
+  | "description"
+  | "specialty"
+  | "discovery";
+
+/** Interpretación serializable de la frase que usa la búsqueda pública. */
+export type SearchQueryPlan = {
+  original: string;
+  normalized: string;
+  /** Frases equivalentes comprobadas contra el catálogo, en orden de fuerza. */
+  phrases: string[];
+  /** Términos centrales para frases que no coinciden como bloque. */
+  coreTerms: string[];
+  /** Especialidades que ayudan a recuperar oficios o armar relacionados. */
+  specialtyIds: string[];
+  /** Sólo true cuando la consulta representa un oficio/especialidad amplia. */
+  allowSpecialtyMatch: boolean;
+  label: string | null;
+  suggestedQuery: string | null;
+  inferredMode: ServiceModeCode | null;
+  exclusions: string[];
+};
+
+export type SearchSuggestion = {
+  label: string;
+  href: string;
+  detail: string;
+};
+
 export const EMPTY_FILTERS: SearchFilters = {
   query: "",
   resultKinds: [],

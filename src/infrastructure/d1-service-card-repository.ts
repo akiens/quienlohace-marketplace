@@ -5,9 +5,11 @@ import { getDb } from "@/infrastructure/cloudflare";
 import { loadServiceCardImages } from "@/infrastructure/d1-service-card-images";
 import { newId } from "@/lib/id";
 import { slugify } from "@/lib/slug";
+import { textSearchClause } from "@/infrastructure/search-sql";
 import type {
   PaymentMethod,
   SearchFilters,
+  SearchQueryPlan,
   ServiceCard,
   ServiceCardPriceKind,
   ServiceCardTier,
@@ -123,14 +125,26 @@ async function hydrateCards(rows: CardRow[]): Promise<ServiceCard[]> {
   return rows.map((row) => toCard(row, images.get(row.id) ?? []));
 }
 
-function buildSearchWhere(filters: SearchFilters) {
+function buildSearchWhere(filters: SearchFilters, queryPlan?: SearchQueryPlan) {
   const where = ["sc.is_active = 1", "sc.is_published = 1", "p.profile_status = 'active'",
     "EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1)"];
   const values: (string | number)[] = [];
   const query = filters.query.trim();
   if (query) {
-    where.push("(sc.title LIKE ? OR sc.description LIKE ? OR p.name LIKE ?)");
-    values.push(`%${query}%`, `%${query}%`, `%${query}%`);
+    if (queryPlan) {
+      const text = textSearchClause(["sc.title", "sc.description", "p.name"], queryPlan);
+      let queryClause = text.clause;
+      values.push(...text.params);
+      if (queryPlan.allowSpecialtyMatch && queryPlan.specialtyIds.length) {
+        queryClause = `(${queryClause} OR sc.specialty_id IN (${queryPlan.specialtyIds.map(() => "?").join(",")}))`;
+        values.push(...queryPlan.specialtyIds);
+      }
+      where.push(queryClause);
+    } else {
+      const escaped = query.replace(/[\\%_]/g, (character) => `\\${character}`);
+      where.push("(sc.title LIKE ? ESCAPE '\\' OR sc.description LIKE ? ESCAPE '\\' OR p.name LIKE ? ESCAPE '\\')");
+      values.push(`%${escaped}%`, `%${escaped}%`, `%${escaped}%`);
+    }
   }
   if (filters.specialtyIds.length) {
     where.push(`sc.specialty_id IN (${filters.specialtyIds.map(() => "?").join(",")})`);
@@ -269,20 +283,30 @@ export class D1ServiceCardRepository {
     ]);
   }
 
-  async search(filters: SearchFilters, limit = 48): Promise<ServiceCard[]> {
-    const { where, values, query } = buildSearchWhere(filters);
+  async search(filters: SearchFilters, limit = 48, queryPlan?: SearchQueryPlan): Promise<ServiceCard[]> {
+    const { where, values, query } = buildSearchWhere(filters, queryPlan);
+    const orderTerm = queryPlan?.phrases.find((phrase) => phrase.length <= 64) ?? query;
+    const escapedOrder = orderTerm.replace(/[\\%_]/g, (character) => `\\${character}`);
     const rows = await getDb().prepare(
       `SELECT ${SELECT} ${FROM} WHERE ${where}
-       ORDER BY CASE WHEN sc.title LIKE ? THEN 0 ELSE 1 END,
+       ORDER BY CASE WHEN sc.title LIKE ? ESCAPE '\\' THEN 0 ELSE 1 END,
          p.review_count DESC, sc.sort_order LIMIT ?`,
-    ).bind(...values, query ? `%${query}%` : "%", limit).all<CardRow>();
+    ).bind(...values, orderTerm ? `%${escapedOrder}%` : "%", limit).all<CardRow>();
     return hydrateCards(rows.results);
   }
 
-  async count(filters: SearchFilters): Promise<number> {
-    const { where, values } = buildSearchWhere(filters);
+  async count(filters: SearchFilters, queryPlan?: SearchQueryPlan): Promise<number> {
+    const { where, values } = buildSearchWhere(filters, queryPlan);
     const row = await getDb().prepare(
       `SELECT COUNT(*) AS total ${FROM} WHERE ${where}`,
+    ).bind(...values).first<{ total: number }>();
+    return row?.total ?? 0;
+  }
+
+  async countProviders(filters: SearchFilters, queryPlan?: SearchQueryPlan): Promise<number> {
+    const { where, values } = buildSearchWhere(filters, queryPlan);
+    const row = await getDb().prepare(
+      `SELECT COUNT(DISTINCT p.id) AS total ${FROM} WHERE ${where}`,
     ).bind(...values).first<{ total: number }>();
     return row?.total ?? 0;
   }

@@ -363,6 +363,10 @@ La purga comprueba de nuevo que el dato continúa excedente. Una mejora o reacti
 - Al leer la query se descartan los códigos que no pertenecen al catálogo; las listas no se recortan.
 - El filtrado ocurre en la base, en una única cláusula construida a partir de los filtros. No existe una segunda implementación en memoria: dos versiones de la misma regla terminan discrepando y la que se ve no es la que manda.
 - La modalidad se resuelve contra `service_modes.code` a través de `profile_service_modes`; el tipo de perfil es una columna de `profiles`.
+- La interpretación textual conserva la consulta original, limita el trabajo interno, elimina diferencias de mayúsculas y diacríticos y usa equivalencias provenientes del catálogo o de una fuente editorial versionada.
+- Los patrones enviados a SQL están parametrizados, escapan `%`, `_` y `\\`, y se acotan para respetar los límites de complejidad de D1. Los filtros de elegibilidad continúan resolviéndose en la base.
+- Los conteos directos y el discovery se consultan por separado. El discovery quita solamente el texto en su consulta y no se suma al total de coincidencias.
+- La diversidad de cartas es estable y suave: sólo reordena candidatos dentro de una ventana de relevancia definida y conserva todos los elementos. Una alternativa fuera de esa ventana no adelanta una carta mejor para cumplir una cuota de proveedor.
 
 ---
 

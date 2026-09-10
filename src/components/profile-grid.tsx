@@ -17,11 +17,16 @@ export function ProfileGrid(props: {
   emptyTitle?: string;
   emptyBody?: React.ReactNode;
   showAd?: boolean;
+  matches?: Record<string, string>;
+  initialVisible?: number;
 }) {
   // La lista de IDs identifica al conjunto de resultados: si cambia, React
   // remonta el componente y la paginación vuelve sola a la primera tanda,
   // sin necesidad de un efecto que reinicie el estado.
-  const resetKey = props.profiles.map((profile) => profile.id).join("|");
+  const resetKey = [
+    props.initialVisible ?? PAGE_SIZE,
+    ...props.profiles.map((profile) => `${profile.id}:${props.matches?.[profile.id] ?? ""}`),
+  ].join("|");
   return <Grid key={resetKey} {...props} />;
 }
 
@@ -31,14 +36,18 @@ function Grid({
   emptyTitle = "No encontramos profesionales con esos filtros",
   emptyBody,
   showAd = false,
+  matches,
+  initialVisible = PAGE_SIZE,
 }: {
   profiles: Profile[];
   loading?: boolean;
   emptyTitle?: string;
   emptyBody?: React.ReactNode;
   showAd?: boolean;
+  matches?: Record<string, string>;
+  initialVisible?: number;
 }) {
-  const [visible, setVisible] = useState(PAGE_SIZE);
+  const [visible, setVisible] = useState(initialVisible);
 
   if (loading) {
     return (
@@ -70,7 +79,7 @@ function Grid({
     <div className="flex flex-col gap-6">
       <div className={PROVIDER_GRID}>
         {shown.map((profile) => (
-          <ProfileCard key={profile.id} profile={profile} />
+          <ProfileCard key={profile.id} profile={profile} match={matches?.[profile.id]} />
         ))}
       </div>
 

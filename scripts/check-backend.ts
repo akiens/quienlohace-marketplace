@@ -15,6 +15,8 @@ import {
   signupSchema,
   socialLinkSchema,
 } from "../src/lib/validation";
+import { interpretSearchQuery } from "../src/lib/search-intent";
+import { softlyDiversify } from "../src/lib/search-ranking";
 
 let failures = 0;
 
@@ -48,6 +50,61 @@ const VALID_PROFILE = {
 };
 
 async function main(): Promise<void> {
+  console.log("\nBúsqueda y discovery");
+  const longQuery = interpretSearchQuery(
+    "Necesito alguien que venga a casa porque el aire acondicionado prende pero no enfría",
+  );
+  check(
+    "interpreta una frase larga como reparación de aire acondicionado",
+    longQuery.phrases.some((phrase) => phrase.includes("reparacion de aire acondicionado")),
+  );
+  check("detecta atención a domicilio sin convertirla en filtro", longQuery.inferredMode === "at_customer");
+  const occupation = interpretSearchQuery("electricista");
+  check(
+    "un oficio puede recuperar su especialidad",
+    occupation.allowSpecialtyMatch &&
+      occupation.specialtyIds.includes("hogar-y-mantenimiento-electricidad"),
+  );
+  const specific = interpretSearchQuery("instalar aire acondicionado");
+  check(
+    "una actividad concreta no autoriza toda la especialidad",
+    !specific.allowSpecialtyMatch,
+  );
+  check(
+    "sugiere corrección conservadora para un error breve",
+    interpretSearchQuery("plomreo").suggestedQuery === "plomero",
+  );
+  check(
+    "conserva la exclusión que sigue a una negación",
+    interpretSearchQuery("quiero reparar no comprar").exclusions.includes("comprar"),
+  );
+  const diversified = softlyDiversify(
+    [
+      { id: "a-1", provider: "a", score: 100 },
+      { id: "a-2", provider: "a", score: 98 },
+      { id: "b-1", provider: "b", score: 96 },
+      { id: "c-1", provider: "c", score: 60 },
+    ],
+    (item) => item.provider,
+    (item) => item.score,
+  );
+  check(
+    "diversifica cartas cercanas sin eliminar ninguna",
+    diversified.map((item) => item.id).join(",") === "a-1,b-1,a-2,c-1",
+  );
+  check(
+    "no adelanta una carta claramente menos relevante",
+    softlyDiversify(
+      [
+        { id: "a-1", provider: "a", score: 100 },
+        { id: "a-2", provider: "a", score: 96 },
+        { id: "b-1", provider: "b", score: 70 },
+      ],
+      (item) => item.provider,
+      (item) => item.score,
+    ).map((item) => item.id).join(",") === "a-1,a-2,b-1",
+  );
+
   console.log("\nContraseñas (TR-007)");
   const hash = await hashPassword("una-clave-segura");
   check("el hash no contiene la contraseña", !hash.includes("una-clave-segura"));

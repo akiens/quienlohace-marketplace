@@ -6,8 +6,16 @@ import { ServiceOfferCard } from "@/components/service-offer-card";
 import { Button, EmptyState, PROVIDER_GRID } from "@/components/ui";
 import { PAGE_SIZE, type ServiceCard } from "@/types";
 
-export function ServiceCardGrid({ cards }: { cards: ServiceCard[] }) {
-  const [visible, setVisible] = useState(PAGE_SIZE);
+export function ServiceCardGrid({
+  cards,
+  matches,
+  initialVisible = PAGE_SIZE,
+}: {
+  cards: ServiceCard[];
+  matches?: Record<string, string>;
+  initialVisible?: number;
+}) {
+  const [visible, setVisible] = useState(initialVisible);
   if (cards.length === 0) {
     return (
       <EmptyState icon="sell" title="No encontramos cartas de servicio con esos filtros">
@@ -20,7 +28,7 @@ export function ServiceCardGrid({ cards }: { cards: ServiceCard[] }) {
   return (
     <div className="flex flex-col gap-6">
       <div className={PROVIDER_GRID}>
-        {shown.map((card) => <ServiceOfferCard key={card.id} card={card} />)}
+        {shown.map((card) => <ServiceOfferCard key={card.id} card={card} match={matches?.[card.id]} />)}
       </div>
       {remaining > 0 ? (
         <div className="flex justify-center">

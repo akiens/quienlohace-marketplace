@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 
 import { SearchExperience } from "@/components/search-experience";
 import { filtersFromParams } from "@/lib/query";
-import { countProfiles, searchProfiles } from "@/application/profiles";
-import { countServiceCards, searchServiceCards } from "@/application/service-cards";
+import { searchMarketplace } from "@/application/search";
 
 /** Los resultados dependen de los filtros y de la base: siempre por pedido. */
 export const dynamic = "force-dynamic";
@@ -27,16 +26,7 @@ export default async function SearchPage({
   const params = await searchParams;
   const filters = filtersFromParams(params);
 
-  // `results` trae sólo la primera tanda; `total` es cuántos coinciden de
-  // verdad, para no informar el tamaño de la página como si fuera el total.
-  const includeServices =
-    filters.resultKinds.length === 0 || filters.resultKinds.includes("service");
-  const [results, profileTotal, serviceCards, serviceTotal] = await Promise.all([
-    searchProfiles(filters),
-    countProfiles(filters),
-    includeServices ? searchServiceCards(filters) : Promise.resolve([]),
-    includeServices ? countServiceCards(filters) : Promise.resolve(0),
-  ]);
+  const search = await searchMarketplace(filters);
 
-  return <SearchExperience filters={filters} results={results} profileTotal={profileTotal} serviceCards={serviceCards} serviceTotal={serviceTotal} />;
+  return <SearchExperience filters={filters} search={search} />;
 }

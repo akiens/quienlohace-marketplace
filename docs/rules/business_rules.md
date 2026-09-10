@@ -396,6 +396,9 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 - El número de criterios elegidos se muestra sobre el acceso al panel de filtros. Cuenta valores, no secciones: tres zonas son tres. Lo que está en «todos» no suma, y el texto escrito tampoco —se ve en el propio campo—.
 - La búsqueda se lanza al confirmar, no mientras se escribe.
 - Buscar desde cualquier página lleva a la página de resultados con los criterios aplicados.
+- El texto se interpreta con normalización, alias canónicos y relaciones editoriales conocidas. Una relación con una especialidad no prueba que cada proveedor realice una actividad concreta: las coincidencias principales requieren evidencia declarada, salvo cuando la consulta representa el oficio o la especialidad completa.
+- La relevancia de la coincidencia se aplica antes que la reputación. Entre cartas con relevancia cercana se favorece al proveedor menos mostrado; una carta claramente más relevante conserva su posición aunque ese proveedor ya haya aparecido. La diversidad cambia el orden, pero nunca elimina cartas del conjunto recuperado.
+- Si no hay coincidencias, el total continúa en cero y se pueden mostrar opciones relacionadas o generales en un bloque de exploración identificado. Esas opciones respetan los filtros explícitos; retirar un filtro siempre requiere una acción de la persona usuaria.
 
 ### BR-034 — Cartas de servicio
 

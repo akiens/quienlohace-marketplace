@@ -8,6 +8,7 @@ import type {
   Review,
   ReviewReportReason,
   SearchFilters,
+  SearchQueryPlan,
   ServiceModeCode,
   SocialLink,
   User,
@@ -91,8 +92,8 @@ export interface ProfileRepository {
   /** Perfiles publicados con nombre parecido, para sugerir ante un 404. */
   findSimilarByName(slug: string, limit: number): Promise<Profile[]>;
   findByUserId(userId: string): Promise<Profile | null>;
-  search(filters: SearchFilters, limit: number, offset: number): Promise<Profile[]>;
-  countForSearch(filters: SearchFilters): Promise<number>;
+  search(filters: SearchFilters, limit: number, offset: number, queryPlan?: SearchQueryPlan): Promise<Profile[]>;
+  countForSearch(filters: SearchFilters, queryPlan?: SearchQueryPlan): Promise<number>;
   /** Perfiles de un rubro, resuelto a través de sus especialidades. */
   listByServiceSector(serviceSectorId: string): Promise<Profile[]>;
   listBySpecialty(specialtyId: string): Promise<Profile[]>;
