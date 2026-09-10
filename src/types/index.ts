@@ -92,6 +92,9 @@ export type ServiceCard = {
   providerReviewCount: number;
   providerLocationId: string;
   specialtyId: string;
+  /** Servicio concreto del perfil del que nace esta oferta. */
+  serviceId: string;
+  serviceName: string;
   slug: string;
   title: string;
   description: string;

@@ -27,6 +27,8 @@ type CardRow = {
   review_count: number;
   provider_location_id: string | null;
   specialty_id: string;
+  service_id: string;
+  service_name: string;
   slug: string;
   title: string;
   description: string;
@@ -48,7 +50,7 @@ type CardRow = {
 };
 
 export type ServiceCardInput = {
-  specialtyId: string;
+  serviceId: string;
   title: string;
   description: string;
   priceKind: ServiceCardPriceKind;
@@ -74,7 +76,8 @@ const SELECT = `sc.id, sc.profile_id, p.slug AS provider_slug,
     (SELECT psa.location_id FROM profile_service_areas psa
       WHERE psa.profile_id = p.id LIMIT 1), 'uruguay'
   ) AS provider_location_id,
-  sc.specialty_id, sc.slug, sc.title, sc.description, sc.price_kind,
+  s.specialty_id, sc.service_id, s.name AS service_name,
+  sc.slug, sc.title, sc.description, sc.price_kind,
   sc.price_min_cents, sc.price_max_cents, sc.currency, sc.tier,
   sc.duration_min_minutes, sc.duration_max_minutes, sc.service_mode,
   sc.payment_method, sc.schedule, sc.image_id,
@@ -83,6 +86,8 @@ const SELECT = `sc.id, sc.profile_id, p.slug AS provider_slug,
 
 const FROM = `FROM service_cards sc
   JOIN profiles p ON p.id = sc.profile_id
+  JOIN services s ON s.id = sc.service_id
+    AND s.profile_id = sc.profile_id
   LEFT JOIN profile_images pi ON pi.id = sc.image_id
     AND pi.is_active = 1 AND pi.lifecycle = 'confirmed'`;
 
@@ -98,6 +103,8 @@ function toCard(row: CardRow, images: ServiceCard["images"] = []): ServiceCard {
     providerReviewCount: row.review_count,
     providerLocationId: row.provider_location_id ?? "uruguay",
     specialtyId: row.specialty_id,
+    serviceId: row.service_id,
+    serviceName: row.service_name,
     slug: row.slug,
     title: row.title,
     description: row.description,
@@ -126,28 +133,28 @@ async function hydrateCards(rows: CardRow[]): Promise<ServiceCard[]> {
 }
 
 function buildSearchWhere(filters: SearchFilters, queryPlan?: SearchQueryPlan) {
-  const where = ["sc.is_active = 1", "sc.is_published = 1", "p.profile_status = 'active'",
-    "EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1)"];
+  const where = ["sc.is_active = 1", "sc.is_published = 1", "s.is_active = 1", "p.profile_status = 'active'",
+    "EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id AND ps.specialty_id = s.specialty_id AND ps.is_active = 1)"];
   const values: (string | number)[] = [];
   const query = filters.query.trim();
   if (query) {
     if (queryPlan) {
-      const text = textSearchClause(["sc.title", "sc.description", "p.name"], queryPlan);
+      const text = textSearchClause(["sc.title", "sc.description", "s.name", "p.name"], queryPlan);
       let queryClause = text.clause;
       values.push(...text.params);
       if (queryPlan.allowSpecialtyMatch && queryPlan.specialtyIds.length) {
-        queryClause = `(${queryClause} OR sc.specialty_id IN (${queryPlan.specialtyIds.map(() => "?").join(",")}))`;
+        queryClause = `(${queryClause} OR s.specialty_id IN (${queryPlan.specialtyIds.map(() => "?").join(",")}))`;
         values.push(...queryPlan.specialtyIds);
       }
       where.push(queryClause);
     } else {
       const escaped = query.replace(/[\\%_]/g, (character) => `\\${character}`);
-      where.push("(sc.title LIKE ? ESCAPE '\\' OR sc.description LIKE ? ESCAPE '\\' OR p.name LIKE ? ESCAPE '\\')");
-      values.push(`%${escaped}%`, `%${escaped}%`, `%${escaped}%`);
+      where.push("(sc.title LIKE ? ESCAPE '\\' OR sc.description LIKE ? ESCAPE '\\' OR s.name LIKE ? ESCAPE '\\' OR p.name LIKE ? ESCAPE '\\')");
+      values.push(`%${escaped}%`, `%${escaped}%`, `%${escaped}%`, `%${escaped}%`);
     }
   }
   if (filters.specialtyIds.length) {
-    where.push(`sc.specialty_id IN (${filters.specialtyIds.map(() => "?").join(",")})`);
+    where.push(`s.specialty_id IN (${filters.specialtyIds.map(() => "?").join(",")})`);
     values.push(...filters.specialtyIds);
   }
   if (filters.serviceModes.length) {
@@ -189,9 +196,11 @@ export class D1ServiceCardRepository {
     const result = await getDb().prepare(
       `SELECT p.slug AS providerSlug, sc.slug FROM service_cards sc
        JOIN profiles p ON p.id = sc.profile_id
+       JOIN services s ON s.id = sc.service_id AND s.profile_id = sc.profile_id
        WHERE sc.is_active = 1 AND sc.is_published = 1 AND p.profile_status = 'active'
+         AND s.is_active = 1
          AND EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id
-           AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1)
+           AND ps.specialty_id = s.specialty_id AND ps.is_active = 1)
        ORDER BY sc.updated_at DESC`,
     ).all<{ providerSlug: string; slug: string }>();
     return result.results;
@@ -199,9 +208,10 @@ export class D1ServiceCardRepository {
 
   async listForProfile(profileId: string, owner = false): Promise<ServiceCard[]> {
     const condition = owner ? "" : `AND sc.is_active = 1 AND sc.is_published = 1
+      AND s.is_active = 1
       AND p.profile_status = 'active'
       AND EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id
-        AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1)`;
+        AND ps.specialty_id = s.specialty_id AND ps.is_active = 1)`;
     const result = await getDb().prepare(
       `SELECT ${SELECT} ${FROM} WHERE sc.profile_id = ? ${condition} ORDER BY sc.sort_order, sc.created_at`,
     ).bind(profileId).all<CardRow>();
@@ -212,9 +222,9 @@ export class D1ServiceCardRepository {
     const row = await getDb().prepare(
       `SELECT ${SELECT} ${FROM}
        WHERE sc.slug = ? COLLATE NOCASE AND sc.is_active = 1
-         AND sc.is_published = 1 AND p.profile_status = 'active'
+         AND sc.is_published = 1 AND s.is_active = 1 AND p.profile_status = 'active'
          AND EXISTS (SELECT 1 FROM profile_specialties ps WHERE ps.profile_id = p.id
-           AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1)`,
+           AND ps.specialty_id = s.specialty_id AND ps.is_active = 1)`,
     ).bind(slug).first<CardRow>();
     if (!row) return null;
     return (await hydrateCards([row]))[0] ?? null;
@@ -233,12 +243,14 @@ export class D1ServiceCardRepository {
     const now = new Date().toISOString();
     if (id) {
       await db.prepare(
-        `UPDATE service_cards SET specialty_id = ?, title = ?, description = ?,
+        `UPDATE service_cards SET service_id = ?,
+          specialty_id = (SELECT specialty_id FROM services WHERE id = ?),
+          title = ?, description = ?,
           price_kind = ?, price_min_cents = ?, price_max_cents = ?, tier = ?,
           duration_min_minutes = ?, duration_max_minutes = ?, service_mode = ?,
           payment_method = ?, schedule = ?, image_id = ?, is_published = ?, updated_at = ?
          WHERE id = ? AND profile_id = ?`,
-      ).bind(input.specialtyId, input.title, input.description, input.priceKind,
+      ).bind(input.serviceId, input.serviceId, input.title, input.description, input.priceKind,
         input.priceMinCents, input.priceMaxCents, input.tier, input.durationMinMinutes,
         input.durationMaxMinutes, input.serviceMode, input.paymentMethod, input.schedule,
         input.imageId, input.isPublished ? 1 : 0, now, id, profileId).run();
@@ -250,12 +262,12 @@ export class D1ServiceCardRepository {
     const order = await db.prepare("SELECT COUNT(*) AS total FROM service_cards WHERE profile_id = ?")
       .bind(profileId).first<{ total: number }>();
     await db.prepare(
-      `INSERT INTO service_cards (id, profile_id, specialty_id, slug, title, description,
+      `INSERT INTO service_cards (id, profile_id, service_id, specialty_id, slug, title, description,
         price_kind, price_min_cents, price_max_cents, tier, duration_min_minutes,
         duration_max_minutes, service_mode, payment_method, schedule, image_id,
         is_published, is_active, sort_order, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
-    ).bind(cardId, profileId, input.specialtyId, slug, input.title, input.description,
+       VALUES (?, ?, ?, (SELECT specialty_id FROM services WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+    ).bind(cardId, profileId, input.serviceId, input.serviceId, slug, input.title, input.description,
       input.priceKind, input.priceMinCents, input.priceMaxCents, input.tier,
       input.durationMinMinutes, input.durationMaxMinutes, input.serviceMode,
       input.paymentMethod, input.schedule, input.imageId, input.isPublished ? 1 : 0,
@@ -274,8 +286,12 @@ export class D1ServiceCardRepository {
       getDb().prepare(
         `UPDATE service_cards SET is_active = 1 WHERE id IN (
            SELECT sc.id FROM service_cards sc WHERE sc.profile_id = ?
+             AND EXISTS (SELECT 1 FROM services s
+               WHERE s.id = sc.service_id AND s.profile_id = sc.profile_id
+                 AND s.is_active = 1)
              AND EXISTS (SELECT 1 FROM profile_specialties ps
-               WHERE ps.profile_id = sc.profile_id AND ps.specialty_id = sc.specialty_id
+               WHERE ps.profile_id = sc.profile_id
+                 AND ps.specialty_id = (SELECT specialty_id FROM services WHERE id = sc.service_id)
                  AND ps.is_active = 1)
            ORDER BY sc.sort_order, sc.created_at LIMIT ?
          )`,

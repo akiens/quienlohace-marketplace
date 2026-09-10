@@ -30,7 +30,7 @@ Recomendación inicial: **búsqueda textual normalizada + alias + interpretació
 | --- | --- | --- |
 | `profiles` | Representa al profesional o empresa. | Es la entidad que presta y responde por el servicio. |
 | `services` | Texto confirmado por el proveedor, asociado a una especialidad. | Sirve como evidencia de lo que ofrece; no necesita una carta. |
-| `service_cards` | Oferta independiente ligada al perfil y a una especialidad; no tiene una relación directa con una fila de `services`. | No se debe asumir una correspondencia automática carta–servicio declarado. |
+| `service_cards` | Oferta independiente ligada al perfil y a una fila concreta de `services`; la especialidad se deriva de ese servicio. | El nombre del servicio vinculado participa de la recuperación textual de la carta. |
 | `src/data/services.ts` | Ya normaliza texto y busca nombres, alias, especialidades y rubros para autocompletado. | Hay una base útil para interpretar consultas, aunque no constituye el buscador público de proveedores. |
 | `D1ProfileRepository.search` | Usa `LIKE` con la frase en nombre, descripción o servicio activo; ordena por promedio de reseñas y cantidad. | Una buena coincidencia puede perder frente a una mención secundaria con más reputación. |
 | `D1ServiceCardRepository.search` | Busca la frase en título, descripción o nombre del proveedor; prioriza título y luego reseñas y orden manual. | El nombre del proveedor puede hacer aparecer todas sus cartas; no hay límite de diversidad por proveedor. |

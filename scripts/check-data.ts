@@ -326,6 +326,13 @@ if (seedOk) {
           GROUP BY profile_id HAVING count(*) < 2 OR count(*) > 5)`,
     ],
     [
+      "BR-034: toda carta se vincula a un servicio del mismo perfil y especialidad",
+      `SELECT count(*) n FROM service_cards sc
+         LEFT JOIN services s ON s.id = sc.service_id
+        WHERE s.id IS NULL OR s.profile_id <> sc.profile_id
+           OR s.specialty_id <> sc.specialty_id`,
+    ],
+    [
       "BR-006 — ubicaciones activas dentro del tope del plan",
       `SELECT count(*) n FROM (
          SELECT p.id FROM profiles p

@@ -365,15 +365,12 @@ function relationStatements(
   const now = new Date().toISOString();
 
   /*
-   * El orden importa: `services` tiene una FK compuesta contra
-   * `profile_specialties`, así que se borra antes que ellas y se inserta
-   * después. Al revés, la base rechazaría el lote.
+   * Especialidades y servicios se actualizan más abajo sin destruir primero
+   * las filas que siguen existiendo. Sus ids son referencias estables de las
+   * cartas de servicio; reescribirlos en cada guardado dejaría esas cartas
+   * huérfanas.
    */
   const statements = [
-    db.prepare(`DELETE FROM services WHERE profile_id = ?`).bind(profileId),
-    db
-      .prepare(`DELETE FROM profile_specialties WHERE profile_id = ?`)
-      .bind(profileId),
     db
       .prepare(`DELETE FROM profile_service_modes WHERE profile_id = ?`)
       .bind(profileId),
@@ -410,7 +407,11 @@ function relationStatements(
         .prepare(
           `INSERT INTO profile_specialties
              (profile_id, specialty_id, is_active, sort_order, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?)
+           ON CONFLICT(profile_id, specialty_id) DO UPDATE SET
+             is_active = excluded.is_active,
+             sort_order = excluded.sort_order,
+             updated_at = excluded.updated_at`,
         )
         .bind(profileId, specialtyId, isActive ? 1 : 0, index, now, now),
     );
@@ -434,7 +435,11 @@ function relationStatements(
         .prepare(
           `INSERT INTO services
              (id, profile_id, specialty_id, name, is_active, sort_order, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+           ON CONFLICT(profile_id, specialty_id, name COLLATE NOCASE) DO UPDATE SET
+             is_active = excluded.is_active,
+             sort_order = excluded.sort_order,
+             updated_at = excluded.updated_at`,
         )
         .bind(
           newId(),
@@ -448,6 +453,40 @@ function relationStatements(
         ),
     );
   });
+
+  // Lo que ya no figura en el borrador sí se elimina. ON DELETE CASCADE
+  // quita también una carta ligada a un servicio que la persona retiró.
+  const servicePredicates = draft.services.map(
+    () => "(specialty_id = ? AND name = ? COLLATE NOCASE)",
+  );
+  statements.push(
+    db
+      .prepare(
+        `DELETE FROM services WHERE profile_id = ?${
+          servicePredicates.length
+            ? ` AND NOT (${servicePredicates.join(" OR ")})`
+            : ""
+        }`,
+      )
+      .bind(
+        profileId,
+        ...draft.services.flatMap((service) => [
+          service.specialtyId,
+          service.name,
+        ]),
+      ),
+  );
+
+  const specialtyMarks = draft.specialtyIds.map(() => "?").join(",");
+  statements.push(
+    db
+      .prepare(
+        `DELETE FROM profile_specialties WHERE profile_id = ?${
+          specialtyMarks ? ` AND specialty_id NOT IN (${specialtyMarks})` : ""
+        }`,
+      )
+      .bind(profileId, ...draft.specialtyIds),
+  );
 
   for (const mode of draft.serviceModes) {
     statements.push(
@@ -539,8 +578,10 @@ function relationStatements(
     db.prepare(
       `UPDATE service_cards SET is_active = CASE WHEN id IN (
          SELECT sc.id FROM service_cards sc
+           JOIN services s ON s.id = sc.service_id
+             AND s.profile_id = sc.profile_id AND s.is_active = 1
            JOIN profile_specialties ps ON ps.profile_id = sc.profile_id
-             AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1
+             AND ps.specialty_id = s.specialty_id AND ps.is_active = 1
           WHERE sc.profile_id = ? ORDER BY sc.sort_order, sc.created_at
           LIMIT (SELECT pl.max_service_cards FROM profiles p
                    JOIN plans pl ON pl.id = p.plan_id WHERE p.id = ?)
@@ -820,8 +861,10 @@ export class D1ProfileRepository implements ProfileRepository {
       db.prepare(
         `UPDATE service_cards SET is_active = CASE WHEN id IN (
            SELECT sc.id FROM service_cards sc
+             JOIN services s ON s.id = sc.service_id
+               AND s.profile_id = sc.profile_id AND s.is_active = 1
              JOIN profile_specialties ps ON ps.profile_id = sc.profile_id
-               AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1
+               AND ps.specialty_id = s.specialty_id AND ps.is_active = 1
             WHERE sc.profile_id = ? ORDER BY sc.sort_order, sc.created_at
             LIMIT (SELECT max_service_cards FROM plans WHERE id = ?)
          ) THEN 1 ELSE 0 END WHERE profile_id = ?`,
@@ -915,8 +958,10 @@ export class D1ProfileRepository implements ProfileRepository {
       db.prepare(
         `UPDATE service_cards SET is_active = CASE WHEN id IN (
            SELECT sc.id FROM service_cards sc
+             JOIN services s ON s.id = sc.service_id
+               AND s.profile_id = sc.profile_id AND s.is_active = 1
              JOIN profile_specialties ps ON ps.profile_id = sc.profile_id
-               AND ps.specialty_id = sc.specialty_id AND ps.is_active = 1
+               AND ps.specialty_id = s.specialty_id AND ps.is_active = 1
             WHERE sc.profile_id = ? ORDER BY sc.sort_order, sc.created_at
             LIMIT (SELECT max_service_cards FROM plans WHERE id = ?)
          ) THEN 1 ELSE 0 END WHERE profile_id = ?`,

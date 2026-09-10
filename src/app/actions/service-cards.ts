@@ -24,6 +24,15 @@ function nullableNumber(value: FormDataEntryValue | null): number | null {
 }
 
 export async function saveServiceCard(_previous: FormState, formData: FormData): Promise<FormState> {
+  try {
+    return await saveServiceCardUnsafe(formData);
+  } catch (error) {
+    console.error("saveServiceCard failed", error);
+    return { errors: { form: "No pudimos guardar la carta. Intentá nuevamente." } };
+  }
+}
+
+async function saveServiceCardUnsafe(formData: FormData): Promise<FormState> {
   const user = await requireUser();
   const profile = await new D1ProfileRepository().findByUserId(user.id);
   if (!profile) return { errors: { form: "Primero creá tu perfil." } };
@@ -31,7 +40,7 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
   const id = String(formData.get("id") ?? "").trim() || undefined;
   const imageIds = formData.getAll("serviceImageId").map(String).filter(Boolean);
   const parsed = serviceCardSchema.safeParse({
-    specialtyId: formData.get("specialtyId"),
+    serviceId: formData.get("serviceId"),
     title: formData.get("title"),
     description: formData.get("description"),
     priceKind: formData.get("priceKind"),
@@ -48,8 +57,14 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
   });
   if (!parsed.success) return { errors: fieldErrors(parsed.error) };
 
-  if (!profile.specialtyIds.includes(parsed.data.specialtyId)) {
-    return { errors: { specialtyId: "Elegí una especialidad activa de tu perfil." } };
+  const linkedService = profile.services.find(
+    (service) => service.id === parsed.data.serviceId,
+  );
+  if (!linkedService || !linkedService.isActive) {
+    return { errors: { serviceId: "Elegí un servicio activo de tu perfil." } };
+  }
+  if (!profile.specialtyIds.includes(linkedService.specialtyId)) {
+    return { errors: { serviceId: "Ese servicio no pertenece a una especialidad activa de tu perfil." } };
   }
   if (parsed.data.imageId && !profile.images.some((image) => image.id === parsed.data.imageId)) {
     return { errors: { imageId: "Esa imagen no pertenece a tu perfil." } };
@@ -70,8 +85,8 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
   const plan = await new D1PlanRepository().findById(planId);
   if (!plan) return { errors: { form: "No pudimos comprobar el límite de tu plan." } };
   const activeSpecialtyIds = profile.specialtyIds.slice(0, plan.maxSpecialties ?? undefined);
-  if (!activeSpecialtyIds.includes(parsed.data.specialtyId)) {
-    return { errors: { specialtyId: "Esa especialidad está fuera del cupo de tu plan." } };
+  if (!activeSpecialtyIds.includes(linkedService.specialtyId)) {
+    return { errors: { serviceId: "Ese servicio está fuera del cupo de tu plan." } };
   }
 
   const existingCards = await cards.listForProfile(profile.id, true);
@@ -81,7 +96,7 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
 
   try {
     const savedId = await cards.save(profile.id, {
-      specialtyId: parsed.data.specialtyId,
+      serviceId: linkedService.id,
       title: parsed.data.title,
       description: parsed.data.description,
       priceKind: parsed.data.priceKind,
@@ -120,6 +135,15 @@ export async function saveServiceCard(_previous: FormState, formData: FormData):
 }
 
 export async function deleteServiceCard(formData: FormData): Promise<void> {
+  try {
+    await deleteServiceCardUnsafe(formData);
+  } catch (error) {
+    // La acción de borrado no expone detalles de infraestructura al cliente.
+    console.error("deleteServiceCard failed", error);
+  }
+}
+
+async function deleteServiceCardUnsafe(formData: FormData): Promise<void> {
   const user = await requireUser();
   const profile = await new D1ProfileRepository().findByUserId(user.id);
   const id = String(formData.get("id") ?? "");

@@ -100,7 +100,7 @@ export function ProfileView({
         monta antes del título: los avisos van pegados al encabezado del sitio
         y desde este punto del árbol no se puede subir hasta ahí.
       */
-      <div className="flex w-full min-w-0 max-w-full flex-col gap-4 overflow-x-clip px-1 sm:px-0">
+      <div className="flex w-full min-w-0 max-w-full flex-col gap-4 px-1 sm:px-0">
         <div className="w-full min-w-0 max-w-full rounded-card border border-line bg-white shadow-panel">
           <ServiceCardsManager
             cards={serviceCards}
@@ -133,7 +133,7 @@ export function ProfileView({
   return (
     // El padding lateral va acá y no en la página: en edición el aviso tiene
     // que poder salirse de él.
-    <div className="flex w-full min-w-0 max-w-full flex-col gap-5 overflow-x-clip px-1 sm:px-0">
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-5 px-1 sm:px-0">
       {/* Estado y acciones: publicar, editar y ver cómo se ve por fuera. */}
       <div className="flex w-full min-w-0 max-w-full flex-wrap items-center gap-2.5 rounded-card border border-line bg-white p-4">
         <span

@@ -357,7 +357,7 @@ async function main(): Promise<void> {
 
   console.log("\nCartas de servicio (BR-034)");
   const validCard = {
-    specialtyId: "hogar-y-mantenimiento-electricidad",
+    serviceId: "service-electricidad",
     title: "Instalación de luminarias",
     description: "Incluye colocación, conexión y prueba final de las luminarias.",
     priceKind: "range" as const,

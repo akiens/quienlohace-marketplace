@@ -563,7 +563,7 @@ export const reviewSchema = z.object({
 /** Datos editables de una carta de servicio. Los importes llegan en pesos. */
 export const serviceCardSchema = z
   .object({
-    specialtyId,
+    serviceId: z.string().trim().min(1, "Elegí uno de los servicios de tu perfil."),
     title: z.string().trim().min(3, "Escribí un nombre de al menos 3 caracteres.").max(90, "Máximo 90 caracteres."),
     description: z.string().trim().min(20, "Contá qué incluye el servicio (mínimo 20 caracteres).").max(800, "Máximo 800 caracteres."),
     priceKind: z.enum(["quote", "fixed", "from", "range"]),
@@ -592,6 +592,10 @@ export const serviceCardSchema = z
       context.addIssue({ code: "custom", path: ["durationMaxMinutes"], message: "Debe ser igual o mayor a la duración mínima." });
     }
   });
+
+/** Reglas de la carta por campo, compartidas con el editor del navegador. */
+export const serviceCardFieldSchemas: Record<string, z.ZodTypeAny> =
+  serviceCardSchema.shape;
 
 /** RF-154: motivos de reporte. El detalle es opcional. */
 export const reviewReportSchema = z.object({
