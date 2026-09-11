@@ -198,7 +198,7 @@ repositorio.
    https://quienlohace-marketplace.akiens-dev.workers.dev/auth/google/callback
    ```
 
-   Para probar en local, sumá también `http://localhost:8787/auth/google/callback`.
+   Para probar en local, sumá también `http://localhost:3000/auth/google/callback`.
 3. Cargá las credenciales como secretos del Worker:
 
    ```bash

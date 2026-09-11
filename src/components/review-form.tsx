@@ -33,6 +33,7 @@ export function ReviewForm({
   // HTML: se pide aparte, igual que el estado de sesión del header.
   const [context, setContext] = useState<ReviewContext | null>(null);
   const [open, setOpen] = useState(false);
+  const [authError, setAuthError] = useState("");
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
   /*
@@ -56,12 +57,26 @@ export function ReviewForm({
 
   useEffect(() => {
     let active = true;
+    const currentUrl = new URL(window.location.href);
+    const authStatus = currentUrl.searchParams.get("auth");
+    const authErrorMessage = authStatus
+      ? authStatus === "suspended"
+        ? "Esta cuenta no está habilitada para publicar opiniones."
+        : "No pudimos completar el ingreso con Google. Intentá nuevamente."
+      : "";
+    if (authStatus) {
+      currentUrl.searchParams.delete("auth");
+      window.history.replaceState(null, "", currentUrl);
+    }
+
     fetch(`/api/review-context?profileId=${encodeURIComponent(profileId)}`)
       .then((response) =>
         response.ok ? (response.json() as Promise<ReviewContext>) : null,
       )
       .then((data) => {
-        if (!active || !data) return;
+        if (!active) return;
+        if (authErrorMessage) setAuthError(authErrorMessage);
+        if (!data) return;
         setContext(data);
         setRating(data.existing?.rating ?? 0);
         setComment(data.existing?.comment ?? "");
@@ -71,6 +86,7 @@ export function ReviewForm({
         }
       })
       .catch(() => {
+        if (active && authErrorMessage) setAuthError(authErrorMessage);
         // Que falle esta consulta no debe romper la lectura de opiniones.
       });
     return () => {
@@ -124,6 +140,14 @@ export function ReviewForm({
   if (!consumer) {
     return (
       <div className="flex flex-wrap items-center gap-3 rounded-input bg-surface-muted p-3.5">
+        {authError ? (
+          <p
+            role="alert"
+            className="w-full text-[13px] font-medium text-[#B42318]"
+          >
+            {authError}
+          </p>
+        ) : null}
         <p className="flex-1 text-[13.5px] text-ink-soft">
           ¿Trabajaste con este profesional? Contá tu experiencia.
         </p>

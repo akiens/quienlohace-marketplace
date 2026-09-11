@@ -179,6 +179,23 @@ for (const file of readdirSync("migrations").sort()) {
 }
 if (schemaOk) check("las migraciones aplican en orden", true);
 
+if (schemaOk) {
+  const consumerRepository = readFileSync(
+    "src/infrastructure/d1-consumer-repository.ts",
+    "utf8",
+  );
+  check(
+    "las consultas de sesión de Google usan el esquema migrado",
+    consumerRepository.includes(
+      "(id, consumer_user_id, expires_at, created_at)",
+    ) &&
+      consumerRepository.includes(
+        "SELECT consumer_user_id FROM consumer_sessions",
+      ) &&
+      !consumerRepository.includes("SELECT user_id FROM consumer_sessions"),
+  );
+}
+
 let seedOk = false;
 if (schemaOk) {
   try {

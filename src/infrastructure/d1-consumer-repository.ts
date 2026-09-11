@@ -132,7 +132,8 @@ export class D1ConsumerSessionRepository {
   }): Promise<void> {
     await getDb()
       .prepare(
-        `INSERT INTO consumer_sessions (id, user_id, expires_at, created_at)
+        `INSERT INTO consumer_sessions
+           (id, consumer_user_id, expires_at, created_at)
          VALUES (?, ?, ?, ?)`,
       )
       .bind(
@@ -147,12 +148,12 @@ export class D1ConsumerSessionRepository {
   async findValid(id: string, now: Date): Promise<{ userId: string } | null> {
     const row = await getDb()
       .prepare(
-        `SELECT user_id FROM consumer_sessions
+        `SELECT consumer_user_id FROM consumer_sessions
          WHERE id = ? AND expires_at > ?`,
       )
       .bind(id, now.toISOString())
-      .first<{ user_id: string }>();
-    return row ? { userId: row.user_id } : null;
+      .first<{ consumer_user_id: string }>();
+    return row ? { userId: row.consumer_user_id } : null;
   }
 
   async delete(id: string): Promise<void> {

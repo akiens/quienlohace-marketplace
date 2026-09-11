@@ -145,7 +145,12 @@ export async function exchangeCodeForIdentity(
     }),
   });
 
-  if (!response.ok) return null;
+  if (!response.ok) {
+    // El status alcanza para distinguir credenciales/callback inválidos de
+    // una caída de Google sin registrar el código ni el cuerpo de respuesta.
+    console.error("Google OAuth token exchange failed", response.status);
+    return null;
+  }
 
   const token = (await response.json()) as TokenResponse;
   if (!token.id_token) return null;
