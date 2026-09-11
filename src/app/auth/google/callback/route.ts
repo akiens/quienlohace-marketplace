@@ -33,25 +33,49 @@ export async function GET(request: Request): Promise<Response> {
   const { nonce, purpose, returnTo } = decodeState(
     stateIsValid ? rawState : (expectedState ?? ""),
   );
-  const back = (params?: Record<string, string>) => {
-    const target = new URL(returnTo, url.origin);
+  const redirectBack = (
+    destination: string,
+    params?: Record<string, string>,
+  ) => {
+    const target = new URL(destination, url.origin);
     for (const [key, value] of Object.entries(params ?? {})) {
       target.searchParams.set(key, value);
     }
     return Response.redirect(target, 302);
   };
+  const back = (params?: Record<string, string>) =>
+    redirectBack(returnTo, params);
+  // Las rutas protegidas no pueden mostrar un error si la sesión no llegó a
+  // crearse: redirigir allí sólo produce un segundo salto silencioso a
+  // `/entrar`. En un alta fallida se vuelve al formulario que inició OAuth.
+  const fail = (params?: Record<string, string>) =>
+    redirectBack(
+      purpose === "provider-login"
+        ? returnTo === "/dashboard/crear"
+          ? "/registro"
+          : "/entrar"
+        : returnTo,
+      params,
+    );
 
   // El usuario canceló en la pantalla de Google: no es un error que valga
   // la pena mostrar, se vuelve a donde estaba.
-  if (url.searchParams.get("error")) return back();
+  if (url.searchParams.get("error")) {
+    console.error("Google OAuth authorization was not completed");
+    return fail();
+  }
 
   const code = url.searchParams.get("code");
   if (!code || !stateIsValid || !nonce) {
-    return back({ auth: "error" });
+    console.error(
+      "Google OAuth callback validation failed",
+      !code ? "code" : !stateIsValid ? "state" : "nonce",
+    );
+    return fail({ auth: "error" });
   }
 
   const identity = await exchangeCodeForIdentity(code, nonce);
-  if (!identity) return back({ auth: "error" });
+  if (!identity) return fail({ auth: "error" });
 
   if (purpose === "provider-login" || purpose === "provider-link") {
     try {
@@ -61,7 +85,7 @@ export async function GET(request: Request): Promise<Response> {
           ? await linkCurrentProvider(users, identity)
           : await users.signInWithGoogle(identity);
 
-      if (!user.isActive) return back({ auth: "suspended" });
+      if (!user.isActive) return fail({ auth: "suspended" });
       if (purpose === "provider-login") await createSession(user.id);
 
       // Si antes había opinado con esta misma identidad de Google, también
@@ -87,7 +111,7 @@ export async function GET(request: Request): Promise<Response> {
         "Provider Google OAuth failed",
         error instanceof Error ? `${error.name}: ${error.message}` : "unknown",
       );
-      return back({
+      return fail({
         auth:
           error instanceof GoogleIdentityConflictError ? "conflict" : "error",
       });
@@ -97,7 +121,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const consumers = new D1ConsumerRepository();
     const consumer = await consumers.upsertFromGoogle(identity);
-    if (consumer.status !== "active") return back({ auth: "suspended" });
+    if (consumer.status !== "active") return fail({ auth: "suspended" });
 
     await createConsumerSession(consumer.id);
 
@@ -126,7 +150,7 @@ export async function GET(request: Request): Promise<Response> {
       "Google OAuth persistence failed",
       error instanceof Error ? `${error.name}: ${error.message}` : "unknown",
     );
-    return back({ auth: "error" });
+    return fail({ auth: "error" });
   }
 
   // `?opinar=1` reabre el formulario de opinión en el punto donde se quedó.

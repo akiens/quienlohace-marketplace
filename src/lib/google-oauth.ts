@@ -189,9 +189,16 @@ export async function exchangeCodeForIdentity(
   });
 
   if (!response.ok) {
-    // El status alcanza para distinguir credenciales/callback inválidos de
-    // una caída de Google sin registrar el código ni el cuerpo de respuesta.
-    console.error("Google OAuth token exchange failed", response.status);
+    // El status y el identificador normalizado alcanzan para diagnosticar sin
+    // registrar el código, el token ni el cuerpo completo de la respuesta.
+    let reason = "unknown";
+    try {
+      const payload = (await response.json()) as { error?: unknown };
+      if (typeof payload.error === "string") reason = payload.error;
+    } catch {
+      // El status HTTP sigue permitiendo diagnosticar una respuesta no JSON.
+    }
+    console.error("Google OAuth token exchange failed", response.status, reason);
     return null;
   }
 
@@ -200,15 +207,29 @@ export async function exchangeCodeForIdentity(
 
   const claims = decodeJwtPayload(token.id_token);
   if (!claims?.sub || !claims.email || claims.email_verified !== true) {
+    console.error("Google OAuth ID token validation failed", "identity");
     return null;
   }
 
   const issuerOk =
     claims.iss === "https://accounts.google.com" ||
     claims.iss === "accounts.google.com";
-  if (!issuerOk || claims.aud !== config.clientId) return null;
-  if (!claims.exp || claims.exp * 1000 < Date.now()) return null;
-  if (!expectedNonce || claims.nonce !== expectedNonce) return null;
+  if (!issuerOk) {
+    console.error("Google OAuth ID token validation failed", "issuer");
+    return null;
+  }
+  if (claims.aud !== config.clientId) {
+    console.error("Google OAuth ID token validation failed", "audience");
+    return null;
+  }
+  if (!claims.exp || claims.exp * 1000 < Date.now()) {
+    console.error("Google OAuth ID token validation failed", "expiration");
+    return null;
+  }
+  if (!expectedNonce || claims.nonce !== expectedNonce) {
+    console.error("Google OAuth ID token validation failed", "nonce");
+    return null;
+  }
 
   return {
     providerUserId: claims.sub,
