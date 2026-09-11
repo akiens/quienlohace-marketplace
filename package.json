@@ -29,6 +29,8 @@
     "db:reset:remote": "wrangler d1 execute quienlohace --remote --file=./seeds/truncate.sql",
     "generate:locations": "tsx scripts/generate-locations.ts",
     "generate:schedules": "tsx scripts/generate-schedules.ts",
+    "showcase:generate": "tsx scripts/generate-showcase.ts",
+    "showcase:generate:remote": "tsx scripts/generate-showcase.ts --remote",
     "generate:data": "npm run generate:locations && npm run generate:services && npm run generate:schedules"
   },
   "dependencies": {

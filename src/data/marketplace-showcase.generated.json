@@ -1,0 +1,3348 @@
+{
+  "selection": {
+    "home": {
+      "featuredProviderIds": [],
+      "topRatedProviderIds": []
+    },
+    "search": {
+      "items": []
+    }
+  },
+  "home": {
+    "featured": [
+      {
+        "id": "seed-prof-aberturas-florez-salazar",
+        "userId": "seed-user-aberturas-florez-salazar",
+        "slug": "aberturas-florez-salazar",
+        "name": "Aberturas Flórez Salazar",
+        "type": "business",
+        "description": "Aberturas Flórez Salazar ofrece servicios de aberturas en Punta Ballena, Maldonado y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "home_repair_service",
+        "contactEmail": "aberturas-florez-salazar@ejemplo.uy",
+        "phone": "096069046",
+        "phoneE164": "+59896069046",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.833333333333333,
+        "reviewCount": 6,
+        "specialtyIds": [
+          "hogar-y-mantenimiento-aberturas",
+          "hogar-y-mantenimiento-plomeria-y-sanitaria"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-aberturas-florez-salazar-0",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Mosquiteros a medida",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-1",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Aberturas de PVC",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-2",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Ventanas de aluminio",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-3",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Cortinas de enrollar",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-4",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Instalación de persianas",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-5",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Cerramientos de aluminio",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-6",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Reparación de pérdidas de agua",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-7",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Reparación de desagües",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-8",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Instalación y reparación de grifería",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-9",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Reparación de cisternas",
+            "isActive": true,
+            "sortOrder": 9
+          }
+        ],
+        "serviceModes": [
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "maldonado-la-barra",
+          "maldonado-manantiales",
+          "maldonado-punta-ballena"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "cash"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-aberturas-florez-salazar-h0",
+            "text": "Viernes de 09:00 a 18:00",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      },
+      {
+        "id": "seed-prof-aberturas-nunez-jaramillo",
+        "userId": "seed-user-aberturas-nunez-jaramillo",
+        "slug": "aberturas-nunez-jaramillo",
+        "name": "Aberturas Núñez Jaramillo",
+        "type": "business",
+        "description": "Aberturas Núñez Jaramillo ofrece servicios de aberturas en Cerrillos, Canelones y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "home_repair_service",
+        "contactEmail": "aberturas-nunez-jaramillo@ejemplo.uy",
+        "phone": "092247333",
+        "phoneE164": "+59892247333",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": false,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 3,
+        "specialtyIds": [
+          "hogar-y-mantenimiento-aberturas"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-0",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Instalación de vidrios",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-1",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Cerramientos de aluminio",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-2",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Vidrios templados y blindex",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-3",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Reparación de aberturas",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-4",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Instalación de persianas",
+            "isActive": true,
+            "sortOrder": 4
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "canelones-cerrillos"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-aberturas-nunez-jaramillo-0",
+            "locationId": "canelones-cerrillos",
+            "name": null,
+            "address": "Parcela Pedro 746",
+            "isPrimary": true,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "credit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-aberturas-nunez-jaramillo-h0",
+            "text": "Sábados de 14:00 a 20:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-aberturas-nunez-jaramillo-h1",
+            "text": "Miércoles de 13:00 a 18:00",
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-prof-aberturas-nunez-jaramillo-h2",
+            "text": "Martes a sábado de 09:00 a 18:00",
+            "sortOrder": 2
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      },
+      {
+        "id": "seed-prof-accesorios-gaitan-saenz",
+        "userId": "seed-user-accesorios-gaitan-saenz",
+        "slug": "accesorios-gaitan-saenz",
+        "name": "Accesorios Gaitán Sáenz",
+        "type": "business",
+        "description": "Accesorios Gaitán Sáenz ofrece servicios de accesorios en Scavino, San José y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "directions_car",
+        "contactEmail": "accesorios-gaitan-saenz@ejemplo.uy",
+        "phone": "096820500",
+        "phoneE164": "+59896820500",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.5,
+        "reviewCount": 6,
+        "specialtyIds": [
+          "automotor-accesorios"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-0",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de audio para automóvil",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-1",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de cámaras y sensores",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-2",
+            "specialtyId": "automotor-accesorios",
+            "name": "Colocación de gráficas y vinilos",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-3",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de enganches y portaequipajes",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-4",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de equipos de GNC",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-5",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de alarma para vehículo",
+            "isActive": true,
+            "sortOrder": 5
+          }
+        ],
+        "serviceModes": [
+          "at_business"
+        ],
+        "serviceAreaIds": [
+          "canelones-olmos",
+          "san-jose"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-accesorios-gaitan-saenz-0",
+            "locationId": "san-jose-scavino",
+            "name": null,
+            "address": "Muelle Mónica 775",
+            "isPrimary": true,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "debit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-accesorios-gaitan-saenz-h0",
+            "text": "Jueves de 09:00 a 19:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-accesorios-gaitan-saenz-h1",
+            "text": "Atención las 24 horas",
+            "sortOrder": 1
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      },
+      {
+        "id": "seed-prof-accesorios-naranjo-bustamante",
+        "userId": "seed-user-accesorios-naranjo-bustamante",
+        "slug": "accesorios-naranjo-bustamante",
+        "name": "Accesorios Naranjo Bustamante",
+        "type": "business",
+        "description": "Accesorios Naranjo Bustamante ofrece servicios de accesorios en Punta de Carretera, Tacuarembó y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "directions_car",
+        "contactEmail": "accesorios-naranjo-bustamante@ejemplo.uy",
+        "phone": "097482717",
+        "phoneE164": "+59897482717",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "gold",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 2,
+        "specialtyIds": [
+          "automotor-accesorios",
+          "automotor-mecanica",
+          "automotor-neumaticos",
+          "automotor-estetica-automotriz",
+          "automotor-carroceria"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-0",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de enganches y portaequipajes",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-1",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de equipos de GNC",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-2",
+            "specialtyId": "automotor-mecanica",
+            "name": "Mecánico a domicilio",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-3",
+            "specialtyId": "automotor-mecanica",
+            "name": "Diagnóstico computarizado",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-4",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación de embrague",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-5",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación de frenos",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-6",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Arranque de batería",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-7",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Reparación de pinchazos",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-8",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Alineación y balanceo",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-9",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Gomería móvil",
+            "isActive": true,
+            "sortOrder": 9
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-10",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Remolque de vehículos",
+            "isActive": true,
+            "sortOrder": 10
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-11",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado de motos y motocicletas",
+            "isActive": true,
+            "sortOrder": 11
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-12",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Tratamiento cerámico",
+            "isActive": true,
+            "sortOrder": 12
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-13",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Pulido de automóvil",
+            "isActive": true,
+            "sortOrder": 13
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-14",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado de automóvil",
+            "isActive": true,
+            "sortOrder": 14
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-15",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado a domicilio",
+            "isActive": true,
+            "sortOrder": 15
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-16",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de capotas y techos corredizos",
+            "isActive": true,
+            "sortOrder": 16
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-17",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de paragolpes",
+            "isActive": true,
+            "sortOrder": 17
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-18",
+            "specialtyId": "automotor-carroceria",
+            "name": "Enderezado de chasis",
+            "isActive": true,
+            "sortOrder": 18
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-19",
+            "specialtyId": "automotor-carroceria",
+            "name": "Chapa y pintura",
+            "isActive": true,
+            "sortOrder": 19
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-20",
+            "specialtyId": "automotor-carroceria",
+            "name": "Tapicería automotriz",
+            "isActive": true,
+            "sortOrder": 20
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "tacuarembo-punta-de-carretera"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-accesorios-naranjo-bustamante-0",
+            "locationId": "tacuarembo-punta-de-carretera",
+            "name": null,
+            "address": "Travesía Carlos Perales Mena 1912",
+            "isPrimary": true,
+            "isActive": true
+          },
+          {
+            "id": "seed-loc-accesorios-naranjo-bustamante-1",
+            "locationId": "cerro-largo-centurion",
+            "name": "Sucursal 2",
+            "address": "Parcela Patricia Zapata Báez 3953",
+            "isPrimary": false,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "cash",
+          "debit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-accesorios-naranjo-bustamante-h0",
+            "text": "Jueves de 14:00 a 20:00",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    ],
+    "topRated": [
+      {
+        "id": "seed-prof-traslados-rosado-rolon",
+        "userId": "seed-user-traslados-rosado-rolon",
+        "slug": "traslados-rosado-rolon",
+        "name": "Traslados Rosado Rolón",
+        "type": "business",
+        "description": "Traslados Rosado Rolón ofrece servicios de traslados en Migues, Canelones y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "travel_explore",
+        "contactEmail": "traslados-rosado-rolon@ejemplo.uy",
+        "phone": "093707189",
+        "phoneE164": "+59893707189",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 9,
+        "specialtyIds": [
+          "turismo-traslados"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-traslados-rosado-rolon-0",
+            "specialtyId": "turismo-traslados",
+            "name": "Traslados turísticos",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-traslados-rosado-rolon-1",
+            "specialtyId": "turismo-traslados",
+            "name": "Alquiler de vehículo con chofer",
+            "isActive": true,
+            "sortOrder": 1
+          }
+        ],
+        "serviceModes": [
+          "at_customer",
+          "remote"
+        ],
+        "serviceAreaIds": [
+          "canelones-canada-grande",
+          "canelones-marindia",
+          "canelones-migues",
+          "canelones-suarez"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "bank_transfer",
+          "debit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-traslados-rosado-rolon-h0",
+            "text": "Servicio de urgencias las 24 horas",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      },
+      {
+        "id": "seed-prof-bernardo-alicea-aranda",
+        "userId": "seed-user-bernardo-alicea-aranda",
+        "slug": "bernardo-alicea-aranda",
+        "name": "Bernardo Alicea Aranda",
+        "type": "individual",
+        "description": "Veterinaria rural en Paso Farías, Artigas. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.",
+        "icon": "agriculture",
+        "contactEmail": "bernardo-alicea-aranda@ejemplo.uy",
+        "phone": "098151845",
+        "phoneE164": "+59898151845",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 8,
+        "specialtyIds": [
+          "servicios-rurales-veterinaria-rural"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-bernardo-alicea-aranda-0",
+            "specialtyId": "servicios-rurales-veterinaria-rural",
+            "name": "Asesoramiento reproductivo",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-bernardo-alicea-aranda-1",
+            "specialtyId": "servicios-rurales-veterinaria-rural",
+            "name": "Atención veterinaria de equinos",
+            "isActive": true,
+            "sortOrder": 1
+          }
+        ],
+        "serviceModes": [
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "artigas-paso-farias"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "bank_transfer",
+          "cash",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-bernardo-alicea-aranda-h0",
+            "text": "Atención con agenda previa",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      },
+      {
+        "id": "seed-prof-idiomas-cazares-monroy-s-r-l",
+        "userId": "seed-user-idiomas-cazares-monroy-s-r-l",
+        "slug": "idiomas-cazares-monroy-s-r-l",
+        "name": "Idiomas Cazares Monroy S.R.L.",
+        "type": "business",
+        "description": "Idiomas Cazares Monroy S.R.L. ofrece servicios de idiomas en Cerro de las Cuentas, Cerro Largo y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "school",
+        "contactEmail": "idiomas-cazares-monroy-s-r-l@ejemplo.uy",
+        "phone": "092730406",
+        "phoneE164": "+59892730406",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "verified",
+        "planId": "gold",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 8,
+        "specialtyIds": [
+          "educacion-y-clases-idiomas",
+          "educacion-y-clases-arte",
+          "educacion-y-clases-academias",
+          "educacion-y-clases-tecnologia",
+          "educacion-y-clases-apoyo-academico",
+          "educacion-y-clases-musica"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-0",
+            "specialtyId": "educacion-y-clases-idiomas",
+            "name": "Conversación en idiomas",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-1",
+            "specialtyId": "educacion-y-clases-idiomas",
+            "name": "Clases de alemán",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-2",
+            "specialtyId": "educacion-y-clases-arte",
+            "name": "Clases de escritura creativa",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-3",
+            "specialtyId": "educacion-y-clases-arte",
+            "name": "Clases de costura y textil",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-4",
+            "specialtyId": "educacion-y-clases-arte",
+            "name": "Clases de fotografía",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-5",
+            "specialtyId": "educacion-y-clases-arte",
+            "name": "Clases de dibujo",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-6",
+            "specialtyId": "educacion-y-clases-arte",
+            "name": "Clases de cerámica",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-7",
+            "specialtyId": "educacion-y-clases-arte",
+            "name": "Clases de manualidades",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-8",
+            "specialtyId": "educacion-y-clases-academias",
+            "name": "Centro de capacitación laboral",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-9",
+            "specialtyId": "educacion-y-clases-academias",
+            "name": "Academia de idiomas",
+            "isActive": true,
+            "sortOrder": 9
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-10",
+            "specialtyId": "educacion-y-clases-tecnologia",
+            "name": "Clases de programación",
+            "isActive": true,
+            "sortOrder": 10
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-11",
+            "specialtyId": "educacion-y-clases-tecnologia",
+            "name": "Clases de diseño gráfico",
+            "isActive": true,
+            "sortOrder": 11
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-12",
+            "specialtyId": "educacion-y-clases-tecnologia",
+            "name": "Clases de Excel",
+            "isActive": true,
+            "sortOrder": 12
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-13",
+            "specialtyId": "educacion-y-clases-tecnologia",
+            "name": "Clases de informática",
+            "isActive": true,
+            "sortOrder": 13
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-14",
+            "specialtyId": "educacion-y-clases-tecnologia",
+            "name": "Clases de inteligencia artificial",
+            "isActive": true,
+            "sortOrder": 14
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-15",
+            "specialtyId": "educacion-y-clases-tecnologia",
+            "name": "Clases de ofimática",
+            "isActive": true,
+            "sortOrder": 15
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-16",
+            "specialtyId": "educacion-y-clases-apoyo-academico",
+            "name": "Preparación de exámenes",
+            "isActive": true,
+            "sortOrder": 16
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-17",
+            "specialtyId": "educacion-y-clases-apoyo-academico",
+            "name": "Clases de historia y geografía",
+            "isActive": true,
+            "sortOrder": 17
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-18",
+            "specialtyId": "educacion-y-clases-apoyo-academico",
+            "name": "Técnicas de estudio",
+            "isActive": true,
+            "sortOrder": 18
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-19",
+            "specialtyId": "educacion-y-clases-apoyo-academico",
+            "name": "Clases de biología",
+            "isActive": true,
+            "sortOrder": 19
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-20",
+            "specialtyId": "educacion-y-clases-apoyo-academico",
+            "name": "Apoyo para dificultades de aprendizaje",
+            "isActive": true,
+            "sortOrder": 20
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-21",
+            "specialtyId": "educacion-y-clases-apoyo-academico",
+            "name": "Clases de química",
+            "isActive": true,
+            "sortOrder": 21
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-22",
+            "specialtyId": "educacion-y-clases-musica",
+            "name": "Clases de percusión",
+            "isActive": true,
+            "sortOrder": 22
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-23",
+            "specialtyId": "educacion-y-clases-musica",
+            "name": "Clases de saxofón y vientos",
+            "isActive": true,
+            "sortOrder": 23
+          },
+          {
+            "id": "seed-svc-idiomas-cazares-monroy-s-r-l-24",
+            "specialtyId": "educacion-y-clases-musica",
+            "name": "Clases de batería",
+            "isActive": true,
+            "sortOrder": 24
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer",
+          "remote"
+        ],
+        "serviceAreaIds": [
+          "cerro-largo-arbolito-de-cerro-largo",
+          "cerro-largo-cerro-de-las-cuentas",
+          "cerro-largo-quebracho-de-cerro-largo",
+          "cerro-largo-toledo-de-cerro-largo"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-idiomas-cazares-monroy-s-r-l-0",
+            "locationId": "cerro-largo-cerro-de-las-cuentas",
+            "name": null,
+            "address": "Prolongación Elsa 428",
+            "isPrimary": true,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "cash"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-idiomas-cazares-monroy-s-r-l-h0",
+            "text": "Miércoles de 09:00 a 13:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-idiomas-cazares-monroy-s-r-l-h1",
+            "text": "Viernes de 08:00 a 18:00",
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-prof-idiomas-cazares-monroy-s-r-l-h2",
+            "text": "Lunes a sábado de 09:00 a 18:00",
+            "sortOrder": 2
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      },
+      {
+        "id": "seed-prof-viandas-zelaya-mayorga-s-r-l",
+        "userId": "seed-user-viandas-zelaya-mayorga-s-r-l",
+        "slug": "viandas-zelaya-mayorga-s-r-l",
+        "name": "Viandas Zelaya Mayorga S.R.L.",
+        "type": "business",
+        "description": "Viandas Zelaya Mayorga S.R.L. ofrece servicios de viandas en Pueblo Cuaró, Artigas y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "restaurant",
+        "contactEmail": "viandas-zelaya-mayorga-s-r-l@ejemplo.uy",
+        "phone": "094868824",
+        "phoneE164": "+59894868824",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": false,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 8,
+        "specialtyIds": [
+          "gastronomia-viandas",
+          "gastronomia-catering"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-viandas-zelaya-mayorga-s-r-l-0",
+            "specialtyId": "gastronomia-viandas",
+            "name": "Viandas deportivas",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-viandas-zelaya-mayorga-s-r-l-1",
+            "specialtyId": "gastronomia-viandas",
+            "name": "Viandas saludables",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-viandas-zelaya-mayorga-s-r-l-2",
+            "specialtyId": "gastronomia-viandas",
+            "name": "Menú vegetariano y vegano",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-viandas-zelaya-mayorga-s-r-l-3",
+            "specialtyId": "gastronomia-viandas",
+            "name": "Viandas semanales",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-viandas-zelaya-mayorga-s-r-l-4",
+            "specialtyId": "gastronomia-catering",
+            "name": "Catering de cumpleaños",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-viandas-zelaya-mayorga-s-r-l-5",
+            "specialtyId": "gastronomia-catering",
+            "name": "Catering para eventos",
+            "isActive": true,
+            "sortOrder": 5
+          }
+        ],
+        "serviceModes": [
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "artigas"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "bank_transfer",
+          "cash"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-viandas-zelaya-mayorga-s-r-l-h0",
+            "text": "Servicio de urgencias las 24 horas",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-viandas-zelaya-mayorga-s-r-l-h1",
+            "text": "Sábados de 09:00 a 18:00",
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-prof-viandas-zelaya-mayorga-s-r-l-h2",
+            "text": "Horario a convenir",
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-prof-viandas-zelaya-mayorga-s-r-l-h3",
+            "text": "Lunes de 08:00 a 18:00",
+            "sortOrder": 3
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    ]
+  },
+  "search": [
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-aberturas-florez-salazar",
+        "userId": "seed-user-aberturas-florez-salazar",
+        "slug": "aberturas-florez-salazar",
+        "name": "Aberturas Flórez Salazar",
+        "type": "business",
+        "description": "Aberturas Flórez Salazar ofrece servicios de aberturas en Punta Ballena, Maldonado y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "home_repair_service",
+        "contactEmail": "aberturas-florez-salazar@ejemplo.uy",
+        "phone": "096069046",
+        "phoneE164": "+59896069046",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.833333333333333,
+        "reviewCount": 6,
+        "specialtyIds": [
+          "hogar-y-mantenimiento-aberturas",
+          "hogar-y-mantenimiento-plomeria-y-sanitaria"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-aberturas-florez-salazar-0",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Mosquiteros a medida",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-1",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Aberturas de PVC",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-2",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Ventanas de aluminio",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-3",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Cortinas de enrollar",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-4",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Instalación de persianas",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-5",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Cerramientos de aluminio",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-6",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Reparación de pérdidas de agua",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-7",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Reparación de desagües",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-8",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Instalación y reparación de grifería",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-aberturas-florez-salazar-9",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Reparación de cisternas",
+            "isActive": true,
+            "sortOrder": 9
+          }
+        ],
+        "serviceModes": [
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "maldonado-la-barra",
+          "maldonado-manantiales",
+          "maldonado-punta-ballena"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "cash"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-aberturas-florez-salazar-h0",
+            "text": "Viernes de 09:00 a 18:00",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-aberturas-nunez-jaramillo",
+        "userId": "seed-user-aberturas-nunez-jaramillo",
+        "slug": "aberturas-nunez-jaramillo",
+        "name": "Aberturas Núñez Jaramillo",
+        "type": "business",
+        "description": "Aberturas Núñez Jaramillo ofrece servicios de aberturas en Cerrillos, Canelones y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "home_repair_service",
+        "contactEmail": "aberturas-nunez-jaramillo@ejemplo.uy",
+        "phone": "092247333",
+        "phoneE164": "+59892247333",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": false,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 3,
+        "specialtyIds": [
+          "hogar-y-mantenimiento-aberturas"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-0",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Instalación de vidrios",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-1",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Cerramientos de aluminio",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-2",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Vidrios templados y blindex",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-3",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Reparación de aberturas",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-aberturas-nunez-jaramillo-4",
+            "specialtyId": "hogar-y-mantenimiento-aberturas",
+            "name": "Instalación de persianas",
+            "isActive": true,
+            "sortOrder": 4
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "canelones-cerrillos"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-aberturas-nunez-jaramillo-0",
+            "locationId": "canelones-cerrillos",
+            "name": null,
+            "address": "Parcela Pedro 746",
+            "isPrimary": true,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "credit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-aberturas-nunez-jaramillo-h0",
+            "text": "Sábados de 14:00 a 20:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-aberturas-nunez-jaramillo-h1",
+            "text": "Miércoles de 13:00 a 18:00",
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-prof-aberturas-nunez-jaramillo-h2",
+            "text": "Martes a sábado de 09:00 a 18:00",
+            "sortOrder": 2
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-accesorios-gaitan-saenz",
+        "userId": "seed-user-accesorios-gaitan-saenz",
+        "slug": "accesorios-gaitan-saenz",
+        "name": "Accesorios Gaitán Sáenz",
+        "type": "business",
+        "description": "Accesorios Gaitán Sáenz ofrece servicios de accesorios en Scavino, San José y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "directions_car",
+        "contactEmail": "accesorios-gaitan-saenz@ejemplo.uy",
+        "phone": "096820500",
+        "phoneE164": "+59896820500",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.5,
+        "reviewCount": 6,
+        "specialtyIds": [
+          "automotor-accesorios"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-0",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de audio para automóvil",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-1",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de cámaras y sensores",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-2",
+            "specialtyId": "automotor-accesorios",
+            "name": "Colocación de gráficas y vinilos",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-3",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de enganches y portaequipajes",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-4",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de equipos de GNC",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-accesorios-gaitan-saenz-5",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de alarma para vehículo",
+            "isActive": true,
+            "sortOrder": 5
+          }
+        ],
+        "serviceModes": [
+          "at_business"
+        ],
+        "serviceAreaIds": [
+          "canelones-olmos",
+          "san-jose"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-accesorios-gaitan-saenz-0",
+            "locationId": "san-jose-scavino",
+            "name": null,
+            "address": "Muelle Mónica 775",
+            "isPrimary": true,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "debit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-accesorios-gaitan-saenz-h0",
+            "text": "Jueves de 09:00 a 19:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-accesorios-gaitan-saenz-h1",
+            "text": "Atención las 24 horas",
+            "sortOrder": 1
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-accesorios-naranjo-bustamante",
+        "userId": "seed-user-accesorios-naranjo-bustamante",
+        "slug": "accesorios-naranjo-bustamante",
+        "name": "Accesorios Naranjo Bustamante",
+        "type": "business",
+        "description": "Accesorios Naranjo Bustamante ofrece servicios de accesorios en Punta de Carretera, Tacuarembó y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "directions_car",
+        "contactEmail": "accesorios-naranjo-bustamante@ejemplo.uy",
+        "phone": "097482717",
+        "phoneE164": "+59897482717",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "gold",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 2,
+        "specialtyIds": [
+          "automotor-accesorios",
+          "automotor-mecanica",
+          "automotor-neumaticos",
+          "automotor-estetica-automotriz",
+          "automotor-carroceria"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-0",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de enganches y portaequipajes",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-1",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de equipos de GNC",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-2",
+            "specialtyId": "automotor-mecanica",
+            "name": "Mecánico a domicilio",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-3",
+            "specialtyId": "automotor-mecanica",
+            "name": "Diagnóstico computarizado",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-4",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación de embrague",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-5",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación de frenos",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-6",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Arranque de batería",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-7",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Reparación de pinchazos",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-8",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Alineación y balanceo",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-9",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Gomería móvil",
+            "isActive": true,
+            "sortOrder": 9
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-10",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Remolque de vehículos",
+            "isActive": true,
+            "sortOrder": 10
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-11",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado de motos y motocicletas",
+            "isActive": true,
+            "sortOrder": 11
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-12",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Tratamiento cerámico",
+            "isActive": true,
+            "sortOrder": 12
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-13",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Pulido de automóvil",
+            "isActive": true,
+            "sortOrder": 13
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-14",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado de automóvil",
+            "isActive": true,
+            "sortOrder": 14
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-15",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado a domicilio",
+            "isActive": true,
+            "sortOrder": 15
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-16",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de capotas y techos corredizos",
+            "isActive": true,
+            "sortOrder": 16
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-17",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de paragolpes",
+            "isActive": true,
+            "sortOrder": 17
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-18",
+            "specialtyId": "automotor-carroceria",
+            "name": "Enderezado de chasis",
+            "isActive": true,
+            "sortOrder": 18
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-19",
+            "specialtyId": "automotor-carroceria",
+            "name": "Chapa y pintura",
+            "isActive": true,
+            "sortOrder": 19
+          },
+          {
+            "id": "seed-svc-accesorios-naranjo-bustamante-20",
+            "specialtyId": "automotor-carroceria",
+            "name": "Tapicería automotriz",
+            "isActive": true,
+            "sortOrder": 20
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "tacuarembo-punta-de-carretera"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-accesorios-naranjo-bustamante-0",
+            "locationId": "tacuarembo-punta-de-carretera",
+            "name": null,
+            "address": "Travesía Carlos Perales Mena 1912",
+            "isPrimary": true,
+            "isActive": true
+          },
+          {
+            "id": "seed-loc-accesorios-naranjo-bustamante-1",
+            "locationId": "cerro-largo-centurion",
+            "name": "Sucursal 2",
+            "address": "Parcela Patricia Zapata Báez 3953",
+            "isPrimary": false,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "cash",
+          "debit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-accesorios-naranjo-bustamante-h0",
+            "text": "Jueves de 14:00 a 20:00",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-accesorios-orosco-mercado",
+        "userId": "seed-user-accesorios-orosco-mercado",
+        "slug": "accesorios-orosco-mercado",
+        "name": "Accesorios Orosco Mercado",
+        "type": "business",
+        "description": "Accesorios Orosco Mercado ofrece servicios de accesorios en Fortín de Santa Rosa, Canelones y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "directions_car",
+        "contactEmail": "accesorios-orosco-mercado@ejemplo.uy",
+        "phone": "093008989",
+        "phoneE164": "+59893008989",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": false,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "verified",
+        "planId": "gold",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": null,
+        "reviewCount": 0,
+        "specialtyIds": [
+          "automotor-accesorios",
+          "automotor-electricidad-automotriz",
+          "automotor-neumaticos",
+          "automotor-estetica-automotriz",
+          "automotor-mecanica",
+          "automotor-carroceria"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-0",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de accesorios de seguridad",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-1",
+            "specialtyId": "automotor-accesorios",
+            "name": "Instalación de audio para automóvil",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-2",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Reparación de cierre centralizado y alzacristales",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-3",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Reparación de motor de arranque",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-4",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Reparación de alternador",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-5",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Remolque de vehículos",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-6",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Reparación de pinchazos",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-7",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Auxilio mecánico",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-8",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Gomería móvil",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-9",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado a domicilio",
+            "isActive": true,
+            "sortOrder": 9
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-10",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Encerado y sellado de pintura",
+            "isActive": true,
+            "sortOrder": 10
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-11",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Lavado de automóvil",
+            "isActive": true,
+            "sortOrder": 11
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-12",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Detailing automotriz",
+            "isActive": true,
+            "sortOrder": 12
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-13",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Pulido de automóvil",
+            "isActive": true,
+            "sortOrder": 13
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-14",
+            "specialtyId": "automotor-estetica-automotriz",
+            "name": "Tratamiento cerámico",
+            "isActive": true,
+            "sortOrder": 14
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-15",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación del sistema de refrigeración",
+            "isActive": true,
+            "sortOrder": 15
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-16",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación de suspensión",
+            "isActive": true,
+            "sortOrder": 16
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-17",
+            "specialtyId": "automotor-mecanica",
+            "name": "Cambio de aceite y filtros",
+            "isActive": true,
+            "sortOrder": 17
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-18",
+            "specialtyId": "automotor-mecanica",
+            "name": "Service de bicicletas",
+            "isActive": true,
+            "sortOrder": 18
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-19",
+            "specialtyId": "automotor-mecanica",
+            "name": "Service de automóvil",
+            "isActive": true,
+            "sortOrder": 19
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-20",
+            "specialtyId": "automotor-mecanica",
+            "name": "Preparación para inspección técnica",
+            "isActive": true,
+            "sortOrder": 20
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-21",
+            "specialtyId": "automotor-carroceria",
+            "name": "Chapa y pintura",
+            "isActive": true,
+            "sortOrder": 21
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-22",
+            "specialtyId": "automotor-carroceria",
+            "name": "Restauración de vehículos",
+            "isActive": true,
+            "sortOrder": 22
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-23",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de abolladuras",
+            "isActive": true,
+            "sortOrder": 23
+          },
+          {
+            "id": "seed-svc-accesorios-orosco-mercado-24",
+            "specialtyId": "automotor-carroceria",
+            "name": "Tapicería automotriz",
+            "isActive": true,
+            "sortOrder": 24
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "canelones",
+          "lavalleja-jose-batlle-y-ordonez-norte"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-accesorios-orosco-mercado-0",
+            "locationId": "canelones-fortin-de-santa-rosa",
+            "name": null,
+            "address": "Extrarradio Ramón Pérez Calderón 1989",
+            "isPrimary": true,
+            "isActive": true
+          },
+          {
+            "id": "seed-loc-accesorios-orosco-mercado-1",
+            "locationId": "rivera-amarillo",
+            "name": "Sucursal 2",
+            "address": "Vía Pública Lucía 4781",
+            "isPrimary": false,
+            "isActive": true
+          },
+          {
+            "id": "seed-loc-accesorios-orosco-mercado-2",
+            "locationId": "rocha-aguas-dulces",
+            "name": "Sucursal 3",
+            "address": "Monte Isabela 3699",
+            "isPrimary": false,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-accesorios-orosco-mercado-h0",
+            "text": "Jueves de 08:00 a 19:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-accesorios-orosco-mercado-h1",
+            "text": "Viernes de 08:00 a 18:00",
+            "sortOrder": 1
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-adan-espinoza-alvarez",
+        "userId": "seed-user-adan-espinoza-alvarez",
+        "slug": "adan-espinoza-alvarez",
+        "name": "Adán Espinoza Álvarez",
+        "type": "individual",
+        "description": "Control de acceso en Las Piedras, Canelones. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.",
+        "icon": "shield",
+        "contactEmail": "adan-espinoza-alvarez@ejemplo.uy",
+        "phone": "091404800",
+        "phoneE164": "+59891404800",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "gold",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.625,
+        "reviewCount": 8,
+        "specialtyIds": [
+          "seguridad-control-de-acceso",
+          "seguridad-cercos-electricos",
+          "seguridad-seguridad-privada",
+          "seguridad-cerrajeria",
+          "seguridad-camaras",
+          "seguridad-alarmas"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-0",
+            "specialtyId": "seguridad-control-de-acceso",
+            "name": "Instalación de portones automáticos",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-1",
+            "specialtyId": "seguridad-control-de-acceso",
+            "name": "Control de asistencia de personal",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-2",
+            "specialtyId": "seguridad-cercos-electricos",
+            "name": "Sistemas de detección perimetral",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-3",
+            "specialtyId": "seguridad-cercos-electricos",
+            "name": "Instalación de concertinas",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-4",
+            "specialtyId": "seguridad-cercos-electricos",
+            "name": "Mantenimiento de cercos eléctricos",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-5",
+            "specialtyId": "seguridad-cercos-electricos",
+            "name": "Cercos perimetrales de seguridad",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-6",
+            "specialtyId": "seguridad-cercos-electricos",
+            "name": "Cercos eléctricos rurales",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-7",
+            "specialtyId": "seguridad-seguridad-privada",
+            "name": "Seguridad para obras y depósitos",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-8",
+            "specialtyId": "seguridad-seguridad-privada",
+            "name": "Custodia de mercadería y traslados",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-9",
+            "specialtyId": "seguridad-cerrajeria",
+            "name": "Reparación de cerraduras",
+            "isActive": true,
+            "sortOrder": 9
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-10",
+            "specialtyId": "seguridad-cerrajeria",
+            "name": "Cerrajero a domicilio",
+            "isActive": true,
+            "sortOrder": 10
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-11",
+            "specialtyId": "seguridad-cerrajeria",
+            "name": "Apertura de cajas fuertes",
+            "isActive": true,
+            "sortOrder": 11
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-12",
+            "specialtyId": "seguridad-cerrajeria",
+            "name": "Cerrajería automotriz",
+            "isActive": true,
+            "sortOrder": 12
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-13",
+            "specialtyId": "seguridad-cerrajeria",
+            "name": "Instalación de cerraduras inteligentes",
+            "isActive": true,
+            "sortOrder": 13
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-14",
+            "specialtyId": "seguridad-cerrajeria",
+            "name": "Cerrajero de urgencia",
+            "isActive": true,
+            "sortOrder": 14
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-15",
+            "specialtyId": "seguridad-camaras",
+            "name": "Instalación de grabadores DVR y NVR",
+            "isActive": true,
+            "sortOrder": 15
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-16",
+            "specialtyId": "seguridad-camaras",
+            "name": "Mantenimiento de sistemas de videovigilancia",
+            "isActive": true,
+            "sortOrder": 16
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-17",
+            "specialtyId": "seguridad-camaras",
+            "name": "Cámaras para comercios",
+            "isActive": true,
+            "sortOrder": 17
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-18",
+            "specialtyId": "seguridad-alarmas",
+            "name": "Botón antipánico",
+            "isActive": true,
+            "sortOrder": 18
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-19",
+            "specialtyId": "seguridad-alarmas",
+            "name": "Mantenimiento de sistemas de alarma",
+            "isActive": true,
+            "sortOrder": 19
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-20",
+            "specialtyId": "seguridad-alarmas",
+            "name": "Instalación de alarmas",
+            "isActive": true,
+            "sortOrder": 20
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-21",
+            "specialtyId": "seguridad-alarmas",
+            "name": "Monitoreo de alarmas",
+            "isActive": true,
+            "sortOrder": 21
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-22",
+            "specialtyId": "seguridad-alarmas",
+            "name": "Instalación de sensores y detectores",
+            "isActive": true,
+            "sortOrder": 22
+          },
+          {
+            "id": "seed-svc-adan-espinoza-alvarez-23",
+            "specialtyId": "seguridad-alarmas",
+            "name": "Alarmas comunitarias",
+            "isActive": true,
+            "sortOrder": 23
+          }
+        ],
+        "serviceModes": [
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "canelones-barros-blancos",
+          "canelones-las-piedras",
+          "canelones-los-titanes",
+          "canelones-neptunia"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-adan-espinoza-alvarez-h0",
+            "text": "Atención según disponibilidad",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-adan-quinonez-collazo",
+        "userId": "seed-user-adan-quinonez-collazo",
+        "slug": "adan-quinonez-collazo",
+        "name": "Adán Quiñónez Collazo",
+        "type": "individual",
+        "description": "Plomería y sanitaria en Blanquillo, Colonia. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.",
+        "icon": "home_repair_service",
+        "contactEmail": "adan-quinonez-collazo@ejemplo.uy",
+        "phone": "095237819",
+        "phoneE164": "+59895237819",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 3,
+        "specialtyIds": [
+          "hogar-y-mantenimiento-plomeria-y-sanitaria"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-adan-quinonez-collazo-0",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Instalación de tanque de agua",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-adan-quinonez-collazo-1",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Sanitario de urgencia",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-adan-quinonez-collazo-2",
+            "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+            "name": "Detección de fugas",
+            "isActive": true,
+            "sortOrder": 2
+          }
+        ],
+        "serviceModes": [
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "colonia-blanquillo",
+          "colonia-juan-lacaze"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-adan-quinonez-collazo-h0",
+            "text": "Atención remota con agenda previa",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-adan-quinonez-collazo-h1",
+            "text": "Viernes de 09:00 a 19:00",
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-prof-adan-quinonez-collazo-h2",
+            "text": "Consultá disponibilidad",
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-prof-adan-quinonez-collazo-h3",
+            "text": "Martes de 09:00 a 13:00",
+            "sortOrder": 3
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-adela-concepcion-gamez",
+        "userId": "seed-user-adela-concepcion-gamez",
+        "slug": "adela-concepcion-gamez",
+        "name": "Adela Concepción Gámez",
+        "type": "individual",
+        "description": "Mecánica en Paso de los Toros, Tacuarembó. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.",
+        "icon": "directions_car",
+        "contactEmail": "adela-concepcion-gamez@ejemplo.uy",
+        "phone": "097031000",
+        "phoneE164": "+59897031000",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "gold",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": null,
+        "reviewCount": 0,
+        "specialtyIds": [
+          "automotor-mecanica",
+          "automotor-neumaticos",
+          "automotor-electricidad-automotriz",
+          "automotor-carroceria"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-adela-concepcion-gamez-0",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación de motor",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-1",
+            "specialtyId": "automotor-mecanica",
+            "name": "Reparación de bicicletas eléctricas",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-2",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Reparación de pinchazos",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-3",
+            "specialtyId": "automotor-neumaticos",
+            "name": "Gomería móvil",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-4",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Reparación de cierre centralizado y alzacristales",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-5",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Reparación de motor de arranque",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-6",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Reparación de sistema de luces",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-7",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Electricidad automotriz",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-8",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Diagnóstico electrónico automotriz",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-9",
+            "specialtyId": "automotor-electricidad-automotriz",
+            "name": "Cambio de batería",
+            "isActive": true,
+            "sortOrder": 9
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-10",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de capotas y techos corredizos",
+            "isActive": true,
+            "sortOrder": 10
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-11",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de paragolpes",
+            "isActive": true,
+            "sortOrder": 11
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-12",
+            "specialtyId": "automotor-carroceria",
+            "name": "Chapa y pintura",
+            "isActive": true,
+            "sortOrder": 12
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-13",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación de abolladuras",
+            "isActive": true,
+            "sortOrder": 13
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-14",
+            "specialtyId": "automotor-carroceria",
+            "name": "Tapicería automotriz",
+            "isActive": true,
+            "sortOrder": 14
+          },
+          {
+            "id": "seed-svc-adela-concepcion-gamez-15",
+            "specialtyId": "automotor-carroceria",
+            "name": "Reparación y cambio de parabrisas",
+            "isActive": true,
+            "sortOrder": 15
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "tacuarembo-paso-de-los-toros"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-adela-concepcion-gamez-0",
+            "locationId": "tacuarembo-paso-de-los-toros",
+            "name": null,
+            "address": "Urbanización José María Sedillo Soria 4317",
+            "isPrimary": true,
+            "isActive": true
+          },
+          {
+            "id": "seed-loc-adela-concepcion-gamez-1",
+            "locationId": "rivera-minas-de-corrales",
+            "name": "Sucursal 2",
+            "address": "Poblado Alejandro Barreto Jaimes 4955",
+            "isPrimary": false,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "cash",
+          "credit_card",
+          "debit_card"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-adela-concepcion-gamez-h0",
+            "text": "Sábados de 09:00 a 14:00",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-adela-delafuente-paredes",
+        "userId": "seed-user-adela-delafuente-paredes",
+        "slug": "adela-delafuente-paredes",
+        "name": "Adela Delafuente Paredes",
+        "type": "individual",
+        "description": "Herrería y metal en La Pedrera, Rocha. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.",
+        "icon": "home_repair_service",
+        "contactEmail": "adela-delafuente-paredes@ejemplo.uy",
+        "phone": "094234040",
+        "phoneE164": "+59894234040",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": false,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 5,
+        "reviewCount": 4,
+        "specialtyIds": [
+          "hogar-y-mantenimiento-herreria-y-metal"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-adela-delafuente-paredes-0",
+            "specialtyId": "hogar-y-mantenimiento-herreria-y-metal",
+            "name": "Escaleras y barandas",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-adela-delafuente-paredes-1",
+            "specialtyId": "hogar-y-mantenimiento-herreria-y-metal",
+            "name": "Portones de hierro",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-adela-delafuente-paredes-2",
+            "specialtyId": "hogar-y-mantenimiento-herreria-y-metal",
+            "name": "Cercas y cerramientos metálicos",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-adela-delafuente-paredes-3",
+            "specialtyId": "hogar-y-mantenimiento-herreria-y-metal",
+            "name": "Herrería artística",
+            "isActive": true,
+            "sortOrder": 3
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "uruguay"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-adela-delafuente-paredes-0",
+            "locationId": "rocha-la-pedrera",
+            "name": null,
+            "address": "Extramuros Rosario 3766",
+            "isPrimary": true,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "debit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-adela-delafuente-paredes-h0",
+            "text": "Martes a sábado de 09:00 a 18:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-adela-delafuente-paredes-h1",
+            "text": "Miércoles de 09:00 a 18:00",
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-prof-adela-delafuente-paredes-h2",
+            "text": "Martes de 08:00 a 19:00",
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-prof-adela-delafuente-paredes-h3",
+            "text": "Domingos: cerrado",
+            "sortOrder": 3
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-adela-matos-sierra",
+        "userId": "seed-user-adela-matos-sierra",
+        "slug": "adela-matos-sierra",
+        "name": "Adela Matos Sierra",
+        "type": "individual",
+        "description": "Social media en Porvenir de Flores, Flores. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.",
+        "icon": "campaign",
+        "contactEmail": "adela-matos-sierra@ejemplo.uy",
+        "phone": "092155855",
+        "phoneE164": "+59892155855",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "verified",
+        "planId": "gold",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.5,
+        "reviewCount": 2,
+        "specialtyIds": [
+          "marketing-y-diseno-social-media",
+          "marketing-y-diseno-comunicacion",
+          "marketing-y-diseno-publicidad-digital",
+          "marketing-y-diseno-marketing"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-adela-matos-sierra-0",
+            "specialtyId": "marketing-y-diseno-social-media",
+            "name": "Estrategia de redes sociales",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-1",
+            "specialtyId": "marketing-y-diseno-social-media",
+            "name": "Gestión de redes sociales",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-2",
+            "specialtyId": "marketing-y-diseno-social-media",
+            "name": "Diseño de piezas para redes",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-3",
+            "specialtyId": "marketing-y-diseno-comunicacion",
+            "name": "Comunicación interna",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-4",
+            "specialtyId": "marketing-y-diseno-comunicacion",
+            "name": "Guion y storytelling",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-5",
+            "specialtyId": "marketing-y-diseno-publicidad-digital",
+            "name": "SEO local",
+            "isActive": true,
+            "sortOrder": 5
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-6",
+            "specialtyId": "marketing-y-diseno-publicidad-digital",
+            "name": "Gestión de presupuesto publicitario",
+            "isActive": true,
+            "sortOrder": 6
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-7",
+            "specialtyId": "marketing-y-diseno-publicidad-digital",
+            "name": "Publicidad en LinkedIn",
+            "isActive": true,
+            "sortOrder": 7
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-8",
+            "specialtyId": "marketing-y-diseno-publicidad-digital",
+            "name": "Optimización de conversiones",
+            "isActive": true,
+            "sortOrder": 8
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-9",
+            "specialtyId": "marketing-y-diseno-publicidad-digital",
+            "name": "Campañas de remarketing",
+            "isActive": true,
+            "sortOrder": 9
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-10",
+            "specialtyId": "marketing-y-diseno-marketing",
+            "name": "Analítica digital",
+            "isActive": true,
+            "sortOrder": 10
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-11",
+            "specialtyId": "marketing-y-diseno-marketing",
+            "name": "Marketing para ecommerce",
+            "isActive": true,
+            "sortOrder": 11
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-12",
+            "specialtyId": "marketing-y-diseno-marketing",
+            "name": "Marketing para comercios locales",
+            "isActive": true,
+            "sortOrder": 12
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-13",
+            "specialtyId": "marketing-y-diseno-marketing",
+            "name": "Consultoría de marketing",
+            "isActive": true,
+            "sortOrder": 13
+          },
+          {
+            "id": "seed-svc-adela-matos-sierra-14",
+            "specialtyId": "marketing-y-diseno-marketing",
+            "name": "Investigación de mercado",
+            "isActive": true,
+            "sortOrder": 14
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "remote"
+        ],
+        "serviceAreaIds": [
+          "flores-canada-nieto-de-flores",
+          "flores-porvenir-de-flores"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-adela-matos-sierra-0",
+            "locationId": "flores-porvenir-de-flores",
+            "name": null,
+            "address": "Prolongación Rebeca 725",
+            "isPrimary": true,
+            "isActive": true
+          },
+          {
+            "id": "seed-loc-adela-matos-sierra-1",
+            "locationId": "maldonado-el-chorro",
+            "name": "Sucursal 2",
+            "address": "Manzana Guillermo Pichardo Ballesteros 3820",
+            "isPrimary": false,
+            "isActive": true
+          },
+          {
+            "id": "seed-loc-adela-matos-sierra-2",
+            "locationId": "canelones-pinamar",
+            "name": "Sucursal 3",
+            "address": "Terrenos Bernardo Girón Marroquín 216",
+            "isPrimary": false,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "credit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-adela-matos-sierra-h0",
+            "text": "Atención las 24 horas",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-adela-sanchez-jaimes",
+        "userId": "seed-user-adela-sanchez-jaimes",
+        "slug": "adela-sanchez-jaimes",
+        "name": "Adela Sánchez Jaimes",
+        "type": "individual",
+        "description": "Control de plagas en Aguas Dulces, Rocha. Trabajo prolijo, precios claros y respuesta rápida. Consultá sin compromiso por WhatsApp.",
+        "icon": "home_repair_service",
+        "contactEmail": "adela-sanchez-jaimes@ejemplo.uy",
+        "phone": "092109936",
+        "phoneE164": "+59892109936",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.6,
+        "reviewCount": 5,
+        "specialtyIds": [
+          "hogar-y-mantenimiento-control-de-plagas"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-adela-sanchez-jaimes-0",
+            "specialtyId": "hogar-y-mantenimiento-control-de-plagas",
+            "name": "Control de hormigas",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-adela-sanchez-jaimes-1",
+            "specialtyId": "hogar-y-mantenimiento-control-de-plagas",
+            "name": "Control de termitas",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-adela-sanchez-jaimes-2",
+            "specialtyId": "hogar-y-mantenimiento-control-de-plagas",
+            "name": "Control de mosquitos",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-adela-sanchez-jaimes-3",
+            "specialtyId": "hogar-y-mantenimiento-control-de-plagas",
+            "name": "Control de roedores",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-adela-sanchez-jaimes-4",
+            "specialtyId": "hogar-y-mantenimiento-control-de-plagas",
+            "name": "Fumigación de cucarachas",
+            "isActive": true,
+            "sortOrder": 4
+          },
+          {
+            "id": "seed-svc-adela-sanchez-jaimes-5",
+            "specialtyId": "hogar-y-mantenimiento-control-de-plagas",
+            "name": "Certificado de fumigación",
+            "isActive": true,
+            "sortOrder": 5
+          }
+        ],
+        "serviceModes": [
+          "at_business",
+          "at_customer"
+        ],
+        "serviceAreaIds": [
+          "rocha-aguas-dulces",
+          "rocha-punta-rubia",
+          "rocha-velazquez"
+        ],
+        "locations": [
+          {
+            "id": "seed-loc-adela-sanchez-jaimes-0",
+            "locationId": "rocha-aguas-dulces",
+            "name": null,
+            "address": "Municipio Micaela 1015",
+            "isPrimary": true,
+            "isActive": true
+          }
+        ],
+        "paymentMethods": [
+          "bank_transfer",
+          "credit_card",
+          "debit_card",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-adela-sanchez-jaimes-h0",
+            "text": "Lunes a viernes de 10:00 a 19:00",
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-prof-adela-sanchez-jaimes-h1",
+            "text": "Sábados de 09:00 a 14:00",
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-prof-adela-sanchez-jaimes-h2",
+            "text": "Miércoles: cerrado",
+            "sortOrder": 2
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "profile",
+      "profile": {
+        "id": "seed-prof-administracion-delapaz-garrido",
+        "userId": "seed-user-administracion-delapaz-garrido",
+        "slug": "administracion-delapaz-garrido",
+        "name": "Administración Delapaz Garrido",
+        "type": "business",
+        "description": "Administración Delapaz Garrido ofrece servicios de administración en La Esmeralda, Rocha y alrededores. Equipo propio, presupuesto sin cargo y trabajos con garantía.",
+        "icon": "apartment",
+        "contactEmail": "administracion-delapaz-garrido@ejemplo.uy",
+        "phone": "094897636",
+        "phoneE164": "+59894897636",
+        "phoneVerifiedAt": null,
+        "whatsappEnabled": true,
+        "phonePublic": true,
+        "profileStatus": "active",
+        "verificationStatus": "not_requested",
+        "planId": "cobre",
+        "subscriptionStatus": "active",
+        "planExpiresAt": null,
+        "downgradePlanId": null,
+        "downgradeNoticeDismissedAt": null,
+        "downgradeNoticeRemindedAt": null,
+        "rating": 4.833333333333333,
+        "reviewCount": 6,
+        "specialtyIds": [
+          "inmuebles-administracion"
+        ],
+        "services": [
+          {
+            "id": "seed-svc-administracion-delapaz-garrido-0",
+            "specialtyId": "inmuebles-administracion",
+            "name": "Mantenimiento de propiedades en alquiler",
+            "isActive": true,
+            "sortOrder": 0
+          },
+          {
+            "id": "seed-svc-administracion-delapaz-garrido-1",
+            "specialtyId": "inmuebles-administracion",
+            "name": "Gestión de gastos comunes",
+            "isActive": true,
+            "sortOrder": 1
+          },
+          {
+            "id": "seed-svc-administracion-delapaz-garrido-2",
+            "specialtyId": "inmuebles-administracion",
+            "name": "Gestión de alquileres temporarios",
+            "isActive": true,
+            "sortOrder": 2
+          },
+          {
+            "id": "seed-svc-administracion-delapaz-garrido-3",
+            "specialtyId": "inmuebles-administracion",
+            "name": "Rendición de cuentas y liquidaciones",
+            "isActive": true,
+            "sortOrder": 3
+          },
+          {
+            "id": "seed-svc-administracion-delapaz-garrido-4",
+            "specialtyId": "inmuebles-administracion",
+            "name": "Administración de edificios",
+            "isActive": true,
+            "sortOrder": 4
+          }
+        ],
+        "serviceModes": [
+          "at_customer",
+          "remote"
+        ],
+        "serviceAreaIds": [
+          "rocha-chuy",
+          "rocha-la-esmeralda",
+          "rocha-la-paloma",
+          "rocha-san-luis-al-medio"
+        ],
+        "locations": [],
+        "paymentMethods": [
+          "bank_transfer",
+          "cash",
+          "other"
+        ],
+        "scheduleEntries": [
+          {
+            "id": "seed-prof-administracion-delapaz-garrido-h0",
+            "text": "Retiro y entrega en horario coordinado",
+            "sortOrder": 0
+          }
+        ],
+        "socialLinks": [],
+        "images": []
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-accesorios-gaitan-saenz-0",
+        "profileId": "seed-prof-accesorios-gaitan-saenz",
+        "providerSlug": "accesorios-gaitan-saenz",
+        "providerName": "Accesorios Gaitán Sáenz",
+        "providerIcon": "directions_car",
+        "providerVerified": false,
+        "providerRating": 4.5,
+        "providerReviewCount": 6,
+        "providerLocationId": "san-jose-scavino",
+        "specialtyId": "automotor-accesorios",
+        "serviceId": "seed-svc-accesorios-gaitan-saenz-1",
+        "serviceName": "Instalación de cámaras y sensores",
+        "slug": "instalacion-de-camaras-y-sensores-accesorios-gaitan-saenz",
+        "title": "Instalación de cámaras y sensores",
+        "description": "Incluye instalación de cámaras y sensores, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el local del proveedor con horario coordinado. El rango cubre los casos habituales y se confirma antes de comenzar.",
+        "priceKind": "range",
+        "priceMinCents": 785000,
+        "priceMaxCents": 1020000,
+        "currency": "UYU",
+        "tier": "standard",
+        "durationMinMinutes": 60,
+        "durationMaxMinutes": 90,
+        "serviceMode": "at_business",
+        "paymentMethod": "bank_transfer",
+        "schedule": "Atención las 24 horas",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 0
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-accesorios-gaitan-saenz-1",
+        "profileId": "seed-prof-accesorios-gaitan-saenz",
+        "providerSlug": "accesorios-gaitan-saenz",
+        "providerName": "Accesorios Gaitán Sáenz",
+        "providerIcon": "directions_car",
+        "providerVerified": false,
+        "providerRating": 4.5,
+        "providerReviewCount": 6,
+        "providerLocationId": "san-jose-scavino",
+        "specialtyId": "automotor-accesorios",
+        "serviceId": "seed-svc-accesorios-gaitan-saenz-5",
+        "serviceName": "Instalación de alarma para vehículo",
+        "slug": "instalacion-de-alarma-para-vehiculo-accesorios-gaitan-saenz",
+        "title": "Instalación de alarma para vehículo",
+        "description": "Incluye instalación de alarma para vehículo, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el local del proveedor con horario coordinado. El precio publicado es una base y puede variar según complejidad o insumos.",
+        "priceKind": "from",
+        "priceMinCents": 330000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "standard",
+        "durationMinMinutes": 30,
+        "durationMaxMinutes": null,
+        "serviceMode": "at_business",
+        "paymentMethod": "other",
+        "schedule": "Atención las 24 horas",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 1
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-accesorios-orosco-mercado-0",
+        "profileId": "seed-prof-accesorios-orosco-mercado",
+        "providerSlug": "accesorios-orosco-mercado",
+        "providerName": "Accesorios Orosco Mercado",
+        "providerIcon": "directions_car",
+        "providerVerified": true,
+        "providerRating": null,
+        "providerReviewCount": 0,
+        "providerLocationId": "canelones-fortin-de-santa-rosa",
+        "specialtyId": "automotor-estetica-automotriz",
+        "serviceId": "seed-svc-accesorios-orosco-mercado-13",
+        "serviceName": "Pulido de automóvil",
+        "slug": "pulido-de-automovil-accesorios-orosco-mercado",
+        "title": "Pulido de automóvil",
+        "description": "Incluye pulido de automóvil, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el domicilio o lugar indicado dentro del área de cobertura. El precio publicado es una base y puede variar según complejidad o insumos.",
+        "priceKind": "from",
+        "priceMinCents": 610000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "economy",
+        "durationMinMinutes": 240,
+        "durationMaxMinutes": null,
+        "serviceMode": "at_customer",
+        "paymentMethod": "other",
+        "schedule": "Jueves de 08:00 a 19:00",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 0
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-accesorios-orosco-mercado-1",
+        "profileId": "seed-prof-accesorios-orosco-mercado",
+        "providerSlug": "accesorios-orosco-mercado",
+        "providerName": "Accesorios Orosco Mercado",
+        "providerIcon": "directions_car",
+        "providerVerified": true,
+        "providerRating": null,
+        "providerReviewCount": 0,
+        "providerLocationId": "canelones-fortin-de-santa-rosa",
+        "specialtyId": "automotor-mecanica",
+        "serviceId": "seed-svc-accesorios-orosco-mercado-18",
+        "serviceName": "Service de bicicletas",
+        "slug": "service-de-bicicletas-accesorios-orosco-mercado",
+        "title": "Service de bicicletas",
+        "description": "Incluye service de bicicletas, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el local del proveedor con horario coordinado. El precio publicado es una base y puede variar según complejidad o insumos.",
+        "priceKind": "from",
+        "priceMinCents": 820000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "premium",
+        "durationMinMinutes": 30,
+        "durationMaxMinutes": 90,
+        "serviceMode": "at_business",
+        "paymentMethod": "other",
+        "schedule": "Viernes de 08:00 a 18:00",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 1
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-accesorios-orosco-mercado-2",
+        "profileId": "seed-prof-accesorios-orosco-mercado",
+        "providerSlug": "accesorios-orosco-mercado",
+        "providerName": "Accesorios Orosco Mercado",
+        "providerIcon": "directions_car",
+        "providerVerified": true,
+        "providerRating": null,
+        "providerReviewCount": 0,
+        "providerLocationId": "canelones-fortin-de-santa-rosa",
+        "specialtyId": "automotor-carroceria",
+        "serviceId": "seed-svc-accesorios-orosco-mercado-24",
+        "serviceName": "Tapicería automotriz",
+        "slug": "tapiceria-automotriz-accesorios-orosco-mercado",
+        "title": "Tapicería automotriz",
+        "description": "Incluye tapicería automotriz, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el domicilio o lugar indicado dentro del área de cobertura. El precio publicado es una base y puede variar según complejidad o insumos.",
+        "priceKind": "from",
+        "priceMinCents": 1205000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "economy",
+        "durationMinMinutes": 60,
+        "durationMaxMinutes": 90,
+        "serviceMode": "at_customer",
+        "paymentMethod": "other",
+        "schedule": "Jueves de 08:00 a 19:00",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 2
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-adan-espinoza-alvarez-0",
+        "profileId": "seed-prof-adan-espinoza-alvarez",
+        "providerSlug": "adan-espinoza-alvarez",
+        "providerName": "Adán Espinoza Álvarez",
+        "providerIcon": "shield",
+        "providerVerified": false,
+        "providerRating": 4.625,
+        "providerReviewCount": 8,
+        "providerLocationId": "canelones-barros-blancos",
+        "specialtyId": "seguridad-control-de-acceso",
+        "serviceId": "seed-svc-adan-espinoza-alvarez-1",
+        "serviceName": "Control de asistencia de personal",
+        "slug": "control-de-asistencia-de-personal-adan-espinoza-alvarez",
+        "title": "Control de asistencia de personal",
+        "description": "Incluye control de asistencia de personal, relevamiento de riesgos, instalación o cobertura acordada y prueba final del servicio. Se realiza en el domicilio o lugar indicado dentro del área de cobertura. El precio final se confirma después de conocer el alcance.",
+        "priceKind": "quote",
+        "priceMinCents": null,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "standard",
+        "durationMinMinutes": 720,
+        "durationMaxMinutes": 1200,
+        "serviceMode": "at_customer",
+        "paymentMethod": "other",
+        "schedule": "Atención según disponibilidad",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 0
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-adan-espinoza-alvarez-1",
+        "profileId": "seed-prof-adan-espinoza-alvarez",
+        "providerSlug": "adan-espinoza-alvarez",
+        "providerName": "Adán Espinoza Álvarez",
+        "providerIcon": "shield",
+        "providerVerified": false,
+        "providerRating": 4.625,
+        "providerReviewCount": 8,
+        "providerLocationId": "canelones-barros-blancos",
+        "specialtyId": "seguridad-cerrajeria",
+        "serviceId": "seed-svc-adan-espinoza-alvarez-11",
+        "serviceName": "Apertura de cajas fuertes",
+        "slug": "apertura-de-cajas-fuertes-adan-espinoza-alvarez",
+        "title": "Apertura de cajas fuertes",
+        "description": "Incluye apertura de cajas fuertes, relevamiento de riesgos, instalación o cobertura acordada y prueba final del servicio. Se realiza en el domicilio o lugar indicado dentro del área de cobertura. El rango cubre los casos habituales y se confirma antes de comenzar.",
+        "priceKind": "range",
+        "priceMinCents": 2570000,
+        "priceMaxCents": 3625000,
+        "currency": "UYU",
+        "tier": "economy",
+        "durationMinMinutes": 720,
+        "durationMaxMinutes": 960,
+        "serviceMode": "at_customer",
+        "paymentMethod": "other",
+        "schedule": "Atención según disponibilidad",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 1
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-adan-quinonez-collazo-0",
+        "profileId": "seed-prof-adan-quinonez-collazo",
+        "providerSlug": "adan-quinonez-collazo",
+        "providerName": "Adán Quiñónez Collazo",
+        "providerIcon": "home_repair_service",
+        "providerVerified": false,
+        "providerRating": 5,
+        "providerReviewCount": 3,
+        "providerLocationId": "colonia-blanquillo",
+        "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+        "serviceId": "seed-svc-adan-quinonez-collazo-1",
+        "serviceName": "Sanitario de urgencia",
+        "slug": "sanitario-de-urgencia-adan-quinonez-collazo",
+        "title": "Sanitario de urgencia",
+        "description": "Incluye sanitario de urgencia, evaluación inicial, mano de obra y detalle separado de materiales. Se realiza en el domicilio o lugar indicado dentro del área de cobertura. El importe corresponde al alcance publicado y cualquier adicional se acuerda antes.",
+        "priceKind": "fixed",
+        "priceMinCents": 390000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "standard",
+        "durationMinMinutes": 30,
+        "durationMaxMinutes": 90,
+        "serviceMode": "at_customer",
+        "paymentMethod": "other",
+        "schedule": "Martes de 09:00 a 13:00",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 0
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-adan-quinonez-collazo-1",
+        "profileId": "seed-prof-adan-quinonez-collazo",
+        "providerSlug": "adan-quinonez-collazo",
+        "providerName": "Adán Quiñónez Collazo",
+        "providerIcon": "home_repair_service",
+        "providerVerified": false,
+        "providerRating": 5,
+        "providerReviewCount": 3,
+        "providerLocationId": "colonia-blanquillo",
+        "specialtyId": "hogar-y-mantenimiento-plomeria-y-sanitaria",
+        "serviceId": "seed-svc-adan-quinonez-collazo-2",
+        "serviceName": "Detección de fugas",
+        "slug": "deteccion-de-fugas-adan-quinonez-collazo",
+        "title": "Detección de fugas",
+        "description": "Incluye detección de fugas, evaluación inicial, mano de obra y detalle separado de materiales. Se realiza en el domicilio o lugar indicado dentro del área de cobertura. El importe corresponde al alcance publicado y cualquier adicional se acuerda antes.",
+        "priceKind": "fixed",
+        "priceMinCents": 1285000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "premium",
+        "durationMinMinutes": 60,
+        "durationMaxMinutes": 120,
+        "serviceMode": "at_customer",
+        "paymentMethod": "other",
+        "schedule": "Consultá disponibilidad",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 1
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-adela-concepcion-gamez-1",
+        "profileId": "seed-prof-adela-concepcion-gamez",
+        "providerSlug": "adela-concepcion-gamez",
+        "providerName": "Adela Concepción Gámez",
+        "providerIcon": "directions_car",
+        "providerVerified": false,
+        "providerRating": null,
+        "providerReviewCount": 0,
+        "providerLocationId": "tacuarembo-paso-de-los-toros",
+        "specialtyId": "automotor-mecanica",
+        "serviceId": "seed-svc-adela-concepcion-gamez-1",
+        "serviceName": "Reparación de bicicletas eléctricas",
+        "slug": "reparacion-de-bicicletas-electricas-adela-concepcion-gamez",
+        "title": "Reparación de bicicletas eléctricas",
+        "description": "Incluye reparación de bicicletas eléctricas, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el local del proveedor con horario coordinado. El importe corresponde al alcance publicado y cualquier adicional se acuerda antes.",
+        "priceKind": "fixed",
+        "priceMinCents": 105000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "standard",
+        "durationMinMinutes": 120,
+        "durationMaxMinutes": null,
+        "serviceMode": "at_business",
+        "paymentMethod": "credit_card",
+        "schedule": "Sábados de 09:00 a 14:00",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 1
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-adela-concepcion-gamez-3",
+        "profileId": "seed-prof-adela-concepcion-gamez",
+        "providerSlug": "adela-concepcion-gamez",
+        "providerName": "Adela Concepción Gámez",
+        "providerIcon": "directions_car",
+        "providerVerified": false,
+        "providerRating": null,
+        "providerReviewCount": 0,
+        "providerLocationId": "tacuarembo-paso-de-los-toros",
+        "specialtyId": "automotor-electricidad-automotriz",
+        "serviceId": "seed-svc-adela-concepcion-gamez-6",
+        "serviceName": "Reparación de sistema de luces",
+        "slug": "reparacion-de-sistema-de-luces-adela-concepcion-gamez",
+        "title": "Reparación de sistema de luces",
+        "description": "Incluye reparación de sistema de luces, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el local del proveedor con horario coordinado. El precio final se confirma después de conocer el alcance.",
+        "priceKind": "quote",
+        "priceMinCents": null,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "standard",
+        "durationMinMinutes": 90,
+        "durationMaxMinutes": 150,
+        "serviceMode": "at_business",
+        "paymentMethod": "debit_card",
+        "schedule": "Sábados de 09:00 a 14:00",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 3
+      }
+    },
+    {
+      "kind": "service",
+      "card": {
+        "id": "seed-card-adela-concepcion-gamez-4",
+        "profileId": "seed-prof-adela-concepcion-gamez",
+        "providerSlug": "adela-concepcion-gamez",
+        "providerName": "Adela Concepción Gámez",
+        "providerIcon": "directions_car",
+        "providerVerified": false,
+        "providerRating": null,
+        "providerReviewCount": 0,
+        "providerLocationId": "tacuarembo-paso-de-los-toros",
+        "specialtyId": "automotor-neumaticos",
+        "serviceId": "seed-svc-adela-concepcion-gamez-2",
+        "serviceName": "Reparación de pinchazos",
+        "slug": "reparacion-de-pinchazos-adela-concepcion-gamez",
+        "title": "Reparación de pinchazos",
+        "description": "Incluye reparación de pinchazos, revisión del vehículo, mano de obra y autorización previa para repuestos adicionales. Se realiza en el local del proveedor con horario coordinado. El precio publicado es una base y puede variar según complejidad o insumos.",
+        "priceKind": "from",
+        "priceMinCents": 1825000,
+        "priceMaxCents": null,
+        "currency": "UYU",
+        "tier": "premium",
+        "durationMinMinutes": 480,
+        "durationMaxMinutes": 720,
+        "serviceMode": "at_business",
+        "paymentMethod": "debit_card",
+        "schedule": "Sábados de 09:00 a 14:00",
+        "imageId": null,
+        "imageUrl": null,
+        "images": [],
+        "isPublished": true,
+        "isActive": true,
+        "sortOrder": 4
+      }
+    }
+  ]
+}

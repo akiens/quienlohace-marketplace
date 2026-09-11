@@ -69,6 +69,9 @@ function SearchExperienceContent({
   }, [repeatedSearchAttempt]);
 
   useEffect(() => {
+    // La portada preparada es discovery, no una búsqueda enviada por alguien.
+    // Además sus ids son estáticos y no corresponden a una ejecución en D1.
+    if (search.prepared) return;
     if (recordedSearch.current === search.analytics.searchId) return;
     recordedSearch.current = search.analytics.searchId;
     void initializeAnalytics().then((ready) => {
@@ -242,12 +245,14 @@ function MixedResults({ search, filters }: { search: MarketplaceSearchResult; fi
             className="relative min-w-0"
             resultKind={item.kind}
             position={index + 1}
-            searchId={search.analytics.searchId}
-            searchExecutionId={search.analytics.searchExecutionId}
-            resultSetId={search.analytics.resultSetId}
-            listViewId={`list_${search.analytics.resultSetId}`}
+            {...(search.prepared ? {} : {
+              searchId: search.analytics.searchId,
+              searchExecutionId: search.analytics.searchExecutionId,
+              resultSetId: search.analytics.resultSetId,
+            })}
+            listViewId={search.prepared ? "list_prepared_search" : `list_${search.analytics.resultSetId}`}
             resultItemId={search.analytics.resultItemIds[index]!}
-            entitySnapshotId={search.analytics.snapshotIds[index]}
+            entitySnapshotId={search.prepared ? undefined : search.analytics.snapshotIds[index]}
             entityType={item.kind === "service" ? "service_card" : "provider_profile"}
             providerProfileId={item.providerId}
             profileServiceId={item.kind === "service" ? item.card.serviceId : undefined}

@@ -31,6 +31,7 @@ export type MarketplaceSearchItem =
   | { kind: "service"; providerId: string; card: ServiceCard; match: SearchMatch };
 
 export type MarketplaceSearchResult = {
+  prepared: boolean;
   interpretation: SearchQueryPlan;
   results: MarketplaceSearchItem[];
   total: number;
@@ -117,7 +118,10 @@ async function candidates(filters: SearchFilters, plan: SearchQueryPlan) {
   ]);
 }
 
-export async function searchMarketplace(filters: SearchFilters, requestedPage = 1): Promise<MarketplaceSearchResult> {
+export async function searchMarketplace(
+  filters: SearchFilters,
+  requestedPage = 1,
+): Promise<MarketplaceSearchResult> {
   const started = performance.now();
   const searchId = `search_${crypto.randomUUID()}`;
   const searchExecutionId = `execution_${crypto.randomUUID()}`;
@@ -208,6 +212,7 @@ export async function searchMarketplace(filters: SearchFilters, requestedPage = 
   }
 
   return {
+    prepared: false,
     interpretation,
     results,
     total,

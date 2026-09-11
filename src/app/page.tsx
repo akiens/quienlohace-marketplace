@@ -9,16 +9,7 @@ import {
   SectionHeading,
 } from "@/components/ui";
 import { SERVICE_SECTORS, SPECIALTIES, listSpecialties } from "@/data/taxonomy";
-import { listFeatured, listTopRated } from "@/application/profiles";
-import { HOME_SECTION_SIZE } from "@/types";
-
-/**
- * Los destacados y los mejor puntuados salen de la base, que no existe durante
- * el build: la portada se arma por pedido. Además cambia sola al publicarse un
- * perfil o al sumarse una opinión, así que congelarla mostraría un recorte
- * viejo.
- */
-export const dynamic = "force-dynamic";
+import { getPreparedHomeSections } from "@/application/showcase";
 
 const STEPS = [
   {
@@ -38,57 +29,8 @@ const STEPS = [
   },
 ];
 
-/**
- * `count` elementos al azar, sin repetir.
- *
- * Fisher-Yates sobre una copia: `sort(() => Math.random() - .5)` es el atajo
- * conocido para esto y está mal —el comparador es inconsistente, así que el
- * resultado no es uniforme y depende del algoritmo de ordenamiento—. Con
- * pocos elementos el sesgo se nota: algunos perfiles saldrían mucho más
- * seguido que otros.
- */
-function pickRandom<T>(items: T[], count: number): T[] {
-  const pool = [...items];
-  for (let i = pool.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    /*
-     * El intercambio va por variable y no desestructurando `[a, b] = [b, a]`:
-     * con `noUncheckedIndexedAccess` el índice devuelve `T | undefined` y el
-     * swap no compila. Acá `i` y `j` están dentro del rango por construcción.
-     */
-    const swap = pool[i] as T;
-    pool[i] = pool[j] as T;
-    pool[j] = swap;
-  }
-  return pool.slice(0, count);
-}
-
-export default async function HomePage() {
-  const featured = (await listFeatured()).slice(0, HOME_SECTION_SIZE);
-
-  /*
-   * Los destacados ya tienen su sección: repetirlos acá le sacaría el lugar a
-   * un perfil que no aparece en ninguna otra parte. "Destacado" ahora es una
-   * capacidad del plan (BR-006) y no una marca del perfil, así que se compara
-   * contra la lista y no contra un campo suyo.
-   */
-  const featuredIds = new Set(featured.map((profile) => profile.id));
-  const candidates = (await listTopRated()).filter(
-    (profile) => !featuredIds.has(profile.id),
-  );
-
-  /*
-   * Los mejor calificados salen sorteados entre los mejores, no siempre los
-   * mismos cuatro.
-   *
-   * `listTopRated` ya devuelve una docena ordenada por promedio, así que el
-   * sorteo es entre perfiles que se ganaron el lugar: rota quién se muestra
-   * sin dejar entrar a cualquiera. Sin esto, con la lista fija, los puestos
-   * cinco en adelante no aparecían nunca en la portada.
-   *
-   * La página es `force-dynamic`, así que el sorteo corre en cada pedido.
-   */
-  const topRated = pickRandom(candidates, HOME_SECTION_SIZE);
+export default function HomePage() {
+  const { featured, topRated } = getPreparedHomeSections();
 
   /*
    * Las tarjetas de rubro, ya contadas.
@@ -139,7 +81,7 @@ export default async function HomePage() {
               </ButtonLink>
             }
           />
-          <ProfileGrid profiles={featured} initialVisible={HOME_SECTION_SIZE} />
+          <ProfileGrid profiles={featured} initialVisible={featured.length} />
         </section>
       </div>
 
@@ -182,7 +124,7 @@ export default async function HomePage() {
               </ButtonLink>
             }
           />
-          <ProfileGrid profiles={topRated} initialVisible={HOME_SECTION_SIZE} />
+          <ProfileGrid profiles={topRated} initialVisible={topRated.length} />
         </section>
 
         {/*
