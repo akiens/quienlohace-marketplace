@@ -332,6 +332,12 @@ export async function commitImageSelection(input: {
         planState !== 'available' ? 'plan' : ownerHidden ? 'owner' : null,
         ownerHidden, planState, hiddenAt, now, row.id, userId, row.kind, ...guardArgs));
   }
+
+  // Avatar y portada forman parte del formulario aunque la persona no haya
+  // subido ninguna imagen. En ese caso no hay nada que confirmar: D1 rechaza
+  // `batch([])`, así que el resultado correcto es terminar sin escribir.
+  if (statements.length === 0) return;
+
   const results = await db.batch(statements);
   if (state && results[0]?.meta.changes !== 1) throw new Error("La galería cambió. Recargá la página.");
 }
