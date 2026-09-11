@@ -26,6 +26,21 @@ const RESULT_KINDS: ResultKind[] = ["individual", "business", "service"];
 
 const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"];
 
+/** Distingue una búsqueda general enviada de la navegación normal a `/buscar`. */
+const SEARCH_REQUEST_PARAM = "buscar";
+const SEARCH_REQUEST_KEYS = [
+  SEARCH_REQUEST_PARAM,
+  "q",
+  "tipo",
+  "loc",
+  "esp",
+  "rating",
+  "pago",
+  "modo",
+  "geo",
+  "page",
+] as const;
+
 function list(value: string | null | undefined): string[] {
   if (!value) return [];
   return [...new Set(value.split(",").map((v) => v.trim()).filter(Boolean))];
@@ -100,9 +115,14 @@ export function searchCriteriaKey(filters: SearchFilters): string {
   });
 }
 
+/** Indica si la URL representa una búsqueda solicitada y no sólo discovery. */
+export function hasSearchRequest(params: URLSearchParams): boolean {
+  return SEARCH_REQUEST_KEYS.some((key) => params.has(key));
+}
+
 export function searchHref(filters: SearchFilters): string {
   const query = filtersToQuery(filters);
-  return query ? `/buscar?${query}` : "/buscar";
+  return query ? `/buscar?${query}` : `/buscar?${SEARCH_REQUEST_PARAM}=1`;
 }
 
 /** Página solicitada desde una URL pública; evita valores negativos o enormes. */
@@ -119,8 +139,9 @@ export function searchPageFromParams(
 export function paginatedSearchHref(filters: SearchFilters, page: number): string {
   const params = new URLSearchParams(filtersToQuery(filters));
   if (page > 1) params.set("page", String(page));
+  if (params.size === 0) params.set(SEARCH_REQUEST_PARAM, "1");
   const query = params.toString();
-  return query ? `/buscar?${query}` : "/buscar";
+  return `/buscar?${query}`;
 }
 
 export { EMPTY_FILTERS };

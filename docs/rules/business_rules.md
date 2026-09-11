@@ -400,6 +400,7 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 - La búsqueda se lanza al confirmar, no mientras se escribe.
 - Buscar desde cualquier página lleva a la página de resultados con los criterios aplicados.
 - La lista preparada que aparece al entrar a Buscar sin criterios es descubrimiento, no una búsqueda ya ejecutada. Confirmar desde ese estado siempre lanza una búsqueda, incluso con criterios vacíos.
+- Entrar a Buscar desde el menú, sin una búsqueda enviada, muestra la lista preparada. En cambio, confirmar el buscador desde Inicio o desde otra página siempre navega inmediatamente a Buscar y ejecuta una búsqueda real; si no se eligió ningún criterio, ejecuta una búsqueda general y nunca usa la lista preparada como resultado.
 - Al confirmar desde otra página se navega inmediatamente a Buscar. Mientras se esperan resultados, la grilla anterior se reemplaza por esqueletos, el botón indica que está buscando y no admite otro envío.
 - Después de una búsqueda ejecutada, cambiar texto o filtros vuelve a buscar y muestra el mismo estado de espera. Confirmar sin cambiar ningún criterio no consulta otra vez y avisa que el resultado ya está disponible.
 - Pedir más resultados mantiene visibles las cartas ya obtenidas y agrega al final exactamente tantos esqueletos como resultados se esperan de la siguiente página. Al terminar, esos esqueletos se sustituyen por las nuevas cartas.

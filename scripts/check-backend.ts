@@ -28,7 +28,13 @@ import {
 import { interpretSearchQuery } from "../src/lib/search-intent";
 import { matchProfile, matchServiceCard } from "../src/lib/search-matching";
 import { rankMixedSearchResults, softlyDiversify } from "../src/lib/search-ranking";
-import { paginatedSearchHref, searchCriteriaKey, searchPageFromParams } from "../src/lib/query";
+import {
+  hasSearchRequest,
+  paginatedSearchHref,
+  searchCriteriaKey,
+  searchHref,
+  searchPageFromParams,
+} from "../src/lib/query";
 import { EMPTY_FILTERS, type Profile, type ServiceCard } from "../src/types";
 
 let failures = 0;
@@ -113,6 +119,11 @@ async function main(): Promise<void> {
   check("la paginación empieza en 1", searchPageFromParams({}) === 1);
   check("acepta una página válida", searchPageFromParams({ page: "2" }) === 2);
   check("rechaza páginas negativas", searchPageFromParams({ page: "-4" }) === 1);
+  check(
+    "una búsqueda general se distingue de la portada preparada",
+    searchHref(EMPTY_FILTERS) === "/buscar?buscar=1" &&
+      hasSearchRequest(new URLSearchParams("buscar=1")),
+  );
   check(
     "la siguiente página conserva filtros",
     paginatedSearchHref({ ...EMPTY_FILTERS, query: "plomero" }, 2) === "/buscar?q=plomero&page=2",

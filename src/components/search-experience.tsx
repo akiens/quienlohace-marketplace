@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { runMarketplaceSearch } from "@/app/actions/search";
 import { FiltersPanel } from "@/components/filters-panel";
@@ -10,7 +10,12 @@ import { ProfileCard, ProfileCardSkeleton } from "@/components/profile-card";
 import { ServiceOfferCard } from "@/components/service-offer-card";
 import { SearchPanel } from "@/components/search-panel";
 import { SearchResultsSkeleton } from "@/components/search-results-skeleton";
-import { filtersFromParams, paginatedSearchHref, searchCriteriaKey } from "@/lib/query";
+import {
+  filtersFromParams,
+  hasSearchRequest,
+  paginatedSearchHref,
+  searchCriteriaKey,
+} from "@/lib/query";
 import { initializeAnalytics, trackAnalytics } from "@/lib/analytics/client";
 import { Button, EmptyState, Icon, PROVIDER_GRID } from "@/components/ui";
 import type { MarketplaceSearchResult } from "@/application/search";
@@ -82,9 +87,7 @@ export function SearchExperience({
 
   const executeFromUrl = useCallback((query: string) => {
     const params = new URLSearchParams(query);
-    const hasSearch = ["q", "tipo", "loc", "esp", "rating", "pago", "modo", "geo", "page"]
-      .some((key) => params.has(key));
-    if (!hasSearch) return;
+    if (!hasSearchRequest(params)) return;
     void (async () => {
       if (inFlight.current) return;
       inFlight.current = true;
@@ -104,7 +107,7 @@ export function SearchExperience({
     })();
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     executeFromUrl(window.location.search.slice(1));
     const restore = () => executeFromUrl(window.location.search.slice(1));
     window.addEventListener("popstate", restore);
