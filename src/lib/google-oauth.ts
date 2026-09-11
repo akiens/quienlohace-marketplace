@@ -20,7 +20,21 @@ import type { GoogleIdentity } from "@/types";
 const AUTH_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
+/** Nombre anterior; se conserva sólo para completar intentos ya iniciados. */
 export const OAUTH_STATE_COOKIE = "qlh_oauth_state";
+const OAUTH_STATE_COOKIE_PREFIX = `${OAUTH_STATE_COOKIE}_`;
+
+/**
+ * Cada intento usa su propia cookie. Una segunda pestaña o un reintento no
+ * puede reemplazar el `state` del flujo que ya está abierto en Google.
+ */
+export function oauthStateCookieName(nonce: string): string {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    nonce,
+  )
+    ? `${OAUTH_STATE_COOKIE_PREFIX}${nonce}`
+    : OAUTH_STATE_COOKIE;
+}
 
 type GoogleConfig = { clientId: string; clientSecret: string };
 
@@ -141,6 +155,21 @@ type GoogleClaims = {
   email_verified?: boolean;
 };
 
+export type GoogleOAuthExchangeResult =
+  | { ok: true; identity: GoogleIdentity }
+  | {
+      ok: false;
+      reason:
+        | "configuration"
+        | "exchange"
+        | "token"
+        | "identity"
+        | "issuer"
+        | "audience"
+        | "expiration"
+        | "nonce";
+    };
+
 /** Decodifica el payload de un JWT. No valida la firma. */
 function decodeJwtPayload(token: string): GoogleClaims | null {
   const parts = token.split(".");
@@ -172,21 +201,31 @@ function decodeJwtPayload(token: string): GoogleClaims | null {
 export async function exchangeCodeForIdentity(
   code: string,
   expectedNonce: string,
-): Promise<GoogleIdentity | null> {
+): Promise<GoogleOAuthExchangeResult> {
   const config = googleConfig();
-  if (!config) return null;
+  if (!config) return { ok: false, reason: "configuration" };
 
-  const response = await fetch(TOKEN_ENDPOINT, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: config.clientId,
-      client_secret: config.clientSecret,
-      redirect_uri: redirectUri(),
-      grant_type: "authorization_code",
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(TOKEN_ENDPOINT, {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: config.clientId,
+        client_secret: config.clientSecret,
+        redirect_uri: redirectUri(),
+        grant_type: "authorization_code",
+      }),
+    });
+  } catch (error) {
+    console.error(
+      "Google OAuth token exchange failed",
+      "network",
+      error instanceof Error ? error.name : "unknown",
+    );
+    return { ok: false, reason: "exchange" };
+  }
 
   if (!response.ok) {
     // El status y el identificador normalizado alcanzan para diagnosticar sin
@@ -199,16 +238,25 @@ export async function exchangeCodeForIdentity(
       // El status HTTP sigue permitiendo diagnosticar una respuesta no JSON.
     }
     console.error("Google OAuth token exchange failed", response.status, reason);
-    return null;
+    return { ok: false, reason: "exchange" };
   }
 
-  const token = (await response.json()) as TokenResponse;
-  if (!token.id_token) return null;
+  let token: TokenResponse;
+  try {
+    token = (await response.json()) as TokenResponse;
+  } catch {
+    console.error("Google OAuth token response validation failed", "json");
+    return { ok: false, reason: "token" };
+  }
+  if (!token.id_token) {
+    console.error("Google OAuth token response validation failed", "id_token");
+    return { ok: false, reason: "token" };
+  }
 
   const claims = decodeJwtPayload(token.id_token);
   if (!claims?.sub || !claims.email || claims.email_verified !== true) {
     console.error("Google OAuth ID token validation failed", "identity");
-    return null;
+    return { ok: false, reason: "identity" };
   }
 
   const issuerOk =
@@ -216,25 +264,28 @@ export async function exchangeCodeForIdentity(
     claims.iss === "accounts.google.com";
   if (!issuerOk) {
     console.error("Google OAuth ID token validation failed", "issuer");
-    return null;
+    return { ok: false, reason: "issuer" };
   }
   if (claims.aud !== config.clientId) {
     console.error("Google OAuth ID token validation failed", "audience");
-    return null;
+    return { ok: false, reason: "audience" };
   }
   if (!claims.exp || claims.exp * 1000 < Date.now()) {
     console.error("Google OAuth ID token validation failed", "expiration");
-    return null;
+    return { ok: false, reason: "expiration" };
   }
   if (!expectedNonce || claims.nonce !== expectedNonce) {
     console.error("Google OAuth ID token validation failed", "nonce");
-    return null;
+    return { ok: false, reason: "nonce" };
   }
 
   return {
-    providerUserId: claims.sub,
-    email: claims.email,
-    displayName: claims.name ?? claims.email.split("@")[0] ?? "Usuario",
-    avatarUrl: claims.picture ?? "",
+    ok: true,
+    identity: {
+      providerUserId: claims.sub,
+      email: claims.email,
+      displayName: claims.name ?? claims.email.split("@")[0] ?? "Usuario",
+      avatarUrl: claims.picture ?? "",
+    },
   };
 }

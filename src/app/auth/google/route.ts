@@ -4,6 +4,7 @@ import {
   OAUTH_STATE_COOKIE,
   authorizationUrl,
   encodeState,
+  oauthStateCookieName,
   safeReturnTo,
 } from "@/lib/google-oauth";
 
@@ -39,13 +40,16 @@ export async function GET(request: Request): Promise<Response> {
   const store = await cookies();
   // Se guarda el state entero: así también quedan vinculados al nonce la
   // intención (cliente/proveedor) y el destino de vuelta.
-  store.set(OAUTH_STATE_COOKIE, state, {
+  store.set(oauthStateCookieName(nonce), state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 600, // El intercambio dura segundos; 10 minutos es margen de sobra.
   });
+  // Limpia la cookie global usada por versiones anteriores. Los intentos
+  // nuevos quedan aislados por nonce y pueden convivir durante esos 10 min.
+  store.delete(OAUTH_STATE_COOKIE);
 
   return Response.redirect(target, 302);
 }

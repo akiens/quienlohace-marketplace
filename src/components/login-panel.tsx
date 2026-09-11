@@ -64,9 +64,17 @@ export function LoginPanel({
       ? "Esta cuenta no está habilitada para ingresar."
       : authStatus === "conflict"
         ? "Esta cuenta de Google ya está vinculada a otra cuenta profesional."
-        : authStatus === "error"
-          ? "No pudimos completar el ingreso con Google. Intentá nuevamente."
-          : "";
+        : authStatus === "state"
+          ? "El intento de ingreso venció o fue reemplazado. Iniciá nuevamente desde este botón."
+          : authStatus === "exchange"
+            ? "Google no pudo completar el ingreso. Intentá nuevamente."
+            : authStatus === "identity"
+              ? "No pudimos validar la identidad devuelta por Google. Intentá nuevamente."
+              : authStatus === "storage"
+                ? "Google confirmó tu identidad, pero no pudimos crear o vincular tu cuenta profesional."
+                : authStatus === "callback" || authStatus === "error"
+                  ? "No pudimos completar el ingreso con Google. Intentá nuevamente."
+                  : "";
 
   /**
    * Errores detectados en el cliente, con los mismos schemas que usa la

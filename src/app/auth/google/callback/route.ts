@@ -10,6 +10,7 @@ import {
   OAUTH_STATE_COOKIE,
   decodeState,
   exchangeCodeForIdentity,
+  oauthStateCookieName,
 } from "@/lib/google-oauth";
 import { createSession, getCurrentUser } from "@/lib/session";
 
@@ -25,10 +26,16 @@ export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const store = await cookies();
 
-  const expectedState = store.get(OAUTH_STATE_COOKIE)?.value;
-  store.delete(OAUTH_STATE_COOKIE);
-
   const rawState = url.searchParams.get("state") ?? "";
+  const rawNonce = decodeState(rawState).nonce;
+  const attemptCookie = oauthStateCookieName(rawNonce);
+  const expectedState =
+    store.get(attemptCookie)?.value ?? store.get(OAUTH_STATE_COOKIE)?.value;
+  store.delete(attemptCookie);
+  if (attemptCookie !== OAUTH_STATE_COOKIE) {
+    store.delete(OAUTH_STATE_COOKIE);
+  }
+
   const stateIsValid = Boolean(expectedState && rawState === expectedState);
   const { nonce, purpose, returnTo } = decodeState(
     stateIsValid ? rawState : (expectedState ?? ""),
@@ -67,15 +74,24 @@ export async function GET(request: Request): Promise<Response> {
 
   const code = url.searchParams.get("code");
   if (!code || !stateIsValid || !nonce) {
+    const reason = !code ? "callback" : !stateIsValid ? "state" : "identity";
     console.error(
       "Google OAuth callback validation failed",
       !code ? "code" : !stateIsValid ? "state" : "nonce",
     );
-    return fail({ auth: "error" });
+    return fail({ auth: reason });
   }
 
-  const identity = await exchangeCodeForIdentity(code, nonce);
-  if (!identity) return fail({ auth: "error" });
+  const exchange = await exchangeCodeForIdentity(code, nonce);
+  if (!exchange.ok) {
+    return fail({
+      auth:
+        exchange.reason === "configuration" || exchange.reason === "exchange"
+          ? "exchange"
+          : "identity",
+    });
+  }
+  const { identity } = exchange;
 
   if (purpose === "provider-login" || purpose === "provider-link") {
     try {
@@ -113,7 +129,7 @@ export async function GET(request: Request): Promise<Response> {
       );
       return fail({
         auth:
-          error instanceof GoogleIdentityConflictError ? "conflict" : "error",
+          error instanceof GoogleIdentityConflictError ? "conflict" : "storage",
       });
     }
   }
@@ -150,7 +166,7 @@ export async function GET(request: Request): Promise<Response> {
       "Google OAuth persistence failed",
       error instanceof Error ? `${error.name}: ${error.message}` : "unknown",
     );
-    return fail({ auth: "error" });
+    return fail({ auth: "storage" });
   }
 
   // `?opinar=1` reabre el formulario de opinión en el punto donde se quedó.

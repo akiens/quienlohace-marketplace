@@ -9,6 +9,11 @@
  */
 import { hashPassword, verifyPassword } from "../src/lib/password";
 import {
+  decodeState,
+  encodeState,
+  oauthStateCookieName,
+} from "../src/lib/google-oauth";
+import {
   credentialsSchema,
   passwordUpdateSchema,
   profileSchema,
@@ -54,6 +59,30 @@ const VALID_PROFILE = {
 };
 
 async function main(): Promise<void> {
+  console.log("\nOAuth de Google");
+  const firstNonce = "10000000-0000-4000-8000-000000000001";
+  const secondNonce = "20000000-0000-4000-8000-000000000002";
+  const oauthState = encodeState(
+    firstNonce,
+    "/dashboard/crear",
+    "provider-login",
+  );
+  const decodedOauthState = decodeState(oauthState);
+  check(
+    "state conserva intención y destino del registro",
+    decodedOauthState.nonce === firstNonce &&
+      decodedOauthState.purpose === "provider-login" &&
+      decodedOauthState.returnTo === "/dashboard/crear",
+  );
+  check(
+    "cada intento OAuth usa una cookie diferente",
+    oauthStateCookieName(firstNonce) !== oauthStateCookieName(secondNonce),
+  );
+  check(
+    "un nonce manipulado nunca forma un nombre de cookie",
+    oauthStateCookieName("../../cookie") === "qlh_oauth_state",
+  );
+
   console.log("\nBúsqueda y discovery");
   check("la paginación empieza en 1", searchPageFromParams({}) === 1);
   check("acepta una página válida", searchPageFromParams({ page: "2" }) === 2);
