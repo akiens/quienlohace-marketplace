@@ -9,14 +9,14 @@
 -- cancelaba la edición.
 --
 -- Con esto una imagen nace `pending`, pertenece a quien la subió y expira
--- sola. Guardar el formulario la confirma; cancelar la deja expirar; la
+-- sola. Guardar el formulario la confirma, cancelar la deja expirar y la
 -- limpieza automática se lleva lo que nadie confirmó.
 
 -- 1. El estado de la imagen dentro del ciclo de vida.
 --
 --    `pending`  recién subida, todavía no la confirmó ningún guardado.
 --    `confirmed` guardada con el formulario: es la que se muestra.
---    `discarded` marcada para limpieza; ya no se muestra en ningún lado.
+--    `discarded` marcada para limpieza y ya no se muestra en ningún lado.
 --
 --    Las filas que ya existen son de perfiles guardados, así que nacen
 --    confirmadas: tratarlas como pendientes las haría desaparecer del perfil

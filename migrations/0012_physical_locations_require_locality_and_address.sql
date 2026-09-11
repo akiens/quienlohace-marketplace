@@ -11,7 +11,7 @@
 -- corregido— y alguna sin dirección, de cuando el campo era opcional.
 --
 -- Se corrige acá y no en el seed porque el seed sólo se aplica a una base
--- recién creada; esto tiene que alcanzar también a las que ya existen.
+-- recién creada. Esto tiene que alcanzar también a las que ya existen.
 
 -- 1. El local que apunta a un departamento pasa a la capital de ese
 --    departamento, que es el punto más cercano al dato original: se conserva

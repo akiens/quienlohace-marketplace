@@ -8,13 +8,13 @@
  *
  *   * `providers` guardaba un rubro y una subcategoría por perfil, y el modelo
  *     define `profiles` con especialidades muchos a muchos y los rubros
- *     derivados de ellas (BR-010);
+ *     derivados de ellas (BR-010).
  *   * la geografía vivía en el código con cuatro niveles, incluidos barrios, y
- *     ahora es la tabla jerárquica `locations` de tres niveles (BR-014);
+ *     ahora es la tabla jerárquica `locations` de tres niveles (BR-014).
  *   * la modalidad era una columna con 'hybrid' adentro, y ahora son varias
- *     filas: híbrida se deriva de tener más de una (BR-017);
+ *     filas: híbrida se deriva de tener más de una (BR-017).
  *   * los horarios eran una fila por día de semana, y ahora son hasta diez
- *     líneas de texto libre (BR-024);
+ *     líneas de texto libre (BR-024).
  *   * los planes tenían topes de subcategorías y de integrantes de equipo, y
  *     el modelo cuenta rubros, especialidades, servicios, ubicaciones y
  *     galería, en pesos uruguayos (BR-006).
@@ -101,7 +101,7 @@ DROP INDEX IF EXISTS idx_users_email;
 DROP TABLE users;
 ALTER TABLE users_new RENAME TO users;
 
--- El correo se guarda en minúsculas; NOCASE lo hace único sin distinguirlas.
+-- El correo se guarda en minúsculas. NOCASE lo hace único sin distinguirlas.
 CREATE UNIQUE INDEX idx_users_email ON users (email COLLATE NOCASE);
 
 -- ---------------------------------------------------------------------------
@@ -331,7 +331,7 @@ CREATE TABLE profile_social_links (
 
 CREATE TABLE profile_payment_methods (
   profile_id TEXT NOT NULL REFERENCES profiles (id) ON DELETE CASCADE,
-  -- Códigos en inglés (TR-001); las etiquetas en español son de la UI.
+  -- Códigos en inglés (TR-001). Las etiquetas en español son de la UI.
   method     TEXT NOT NULL
              CHECK (method IN ('cash', 'bank_transfer', 'debit_card',
                                'credit_card', 'other')),
@@ -365,7 +365,7 @@ CREATE UNIQUE INDEX idx_profile_locations_active_primary
   ON profile_locations (profile_id) WHERE is_primary = 1 AND is_active = 1;
 
 -- Dónde presta servicio (BR-016). Puede ser el país, un departamento o una
--- localidad; la normalización que evita solapamientos es TR-018.
+-- localidad. La normalización que evita solapamientos es TR-018.
 CREATE TABLE profile_service_areas (
   profile_id  TEXT NOT NULL REFERENCES profiles (id) ON DELETE CASCADE,
   location_id TEXT NOT NULL REFERENCES locations (id) ON DELETE RESTRICT,
@@ -427,7 +427,7 @@ CREATE INDEX idx_professional_credentials_status_expiry
   ON professional_credentials (status, expires_at);
 CREATE UNIQUE INDEX idx_professional_credentials_storage_key
   ON professional_credentials (document_storage_key);
--- Una sola solicitud viva por perfil y especialidad; las resueltas no estorban.
+-- Una sola solicitud viva por perfil y especialidad. Las resueltas no estorban.
 CREATE UNIQUE INDEX idx_professional_credentials_current
   ON professional_credentials (profile_id, specialty_id)
   WHERE status IN ('pending', 'verified');

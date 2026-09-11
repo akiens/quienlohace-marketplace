@@ -27,9 +27,7 @@
 		{
 			"binding": "ANALYTICS_DB",
 			"database_name": "quienlohace-analytics",
-			// Reemplazar por el ID que devuelve `wrangler d1 create quienlohace-analytics`
-			// antes del primer deploy remoto. El UUID nulo permite trabajar con D1 local.
-			"database_id": "00000000-0000-0000-0000-000000000000",
+			"database_id": "94375bec-7c9f-4e8d-9341-1da8cb861554",
 			"migrations_dir": "analytics-migrations"
 		}
 	],

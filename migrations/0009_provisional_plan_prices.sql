@@ -7,7 +7,7 @@
  * tarifa definitiva: hay que reemplazarlos por los reales antes de cobrarle a
  * nadie.
  *
- * Hasta ahora los tres planes valían 0. En Cobre eso significa "gratis"; en
+ * Hasta ahora los tres planes valían 0. En Cobre eso significa "gratis" y en
  * Oro y Platino significaba "todavía sin definir" (BR-008, TR-014), y ese 0
  * los mantenía sin contratar —`isPurchasable()` los bloquea— y sin paso de
  * pago en el asistente, que se muestra sólo si `price_cents > 0`. Con un
@@ -15,11 +15,11 @@
  *
  * El paso de pago sigue siendo un placeholder: no cobra ni consulta ninguna
  * pasarela, sólo deja constancia de que se revisó. Poner precio lo hace
- * visible; no lo convierte en un cobro real.
+ * visible. No lo convierte en un cobro real.
  *
  * Los importes se guardan en centavos y en UYU, que es lo único que admite la
  * columna (`CHECK (currency IN ('UYU'))`). Los valores de referencia eran 5 y
- * 20 dólares; se cargan como 5 y 20 en la moneda de la tabla en vez de
+ * 20 dólares. Se cargan como 5 y 20 en la moneda de la tabla en vez de
  * recrearla para admitir USD, porque son cifras temporales y el cambio de
  * moneda —si hace falta— conviene hacerlo junto con los precios definitivos.
  */

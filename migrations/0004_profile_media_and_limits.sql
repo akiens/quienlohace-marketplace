@@ -19,7 +19,7 @@ CREATE UNIQUE INDEX idx_provider_images_single
  * queda guardado pero inactivo, para que vuelva solo si se recontrata el
  * plan anterior.
  *
- * Las consultas públicas filtran por `active = 1`; el panel muestra todo,
+ * Las consultas públicas filtran por `active = 1` y el panel muestra todo,
  * marcando lo que está fuera del plan.
  */
 ALTER TABLE provider_images ADD COLUMN active INTEGER NOT NULL DEFAULT 1
@@ -35,5 +35,5 @@ ALTER TABLE provider_team_members ADD COLUMN active INTEGER NOT NULL DEFAULT 1
 ALTER TABLE provider_social_links ADD COLUMN active INTEGER NOT NULL DEFAULT 1
   CHECK (active IN (0, 1));
 
--- El documento pide subtítulo por integrante; la tabla tenía sólo `role`.
+-- El documento pide subtítulo por integrante. La tabla tenía sólo `role`.
 ALTER TABLE provider_team_members ADD COLUMN subtitle TEXT NOT NULL DEFAULT '';

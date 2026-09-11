@@ -47,7 +47,10 @@ type ImageRow = {
 const COLUMNS = `id, storage_key, alt, kind, sort_order, is_active, hidden_reason,
                  gallery_state, owner_hidden, hidden_at, lifecycle, width, height`;
 
-function toImage(row: ImageRow): ProfileImage {
+function toImage(
+  row: ImageRow,
+  gallery?: Pick<GalleryState, "revision" | "selection_pending"> | null,
+): ProfileImage {
   return {
     id: row.id,
     storageKey: row.storage_key,
@@ -60,8 +63,8 @@ function toImage(row: ImageRow): ProfileImage {
     galleryState: row.gallery_state,
     ownerHidden: Number(row.owner_hidden) === 1,
     hiddenAt: row.hidden_at,
-    galleryRevision: null,
-    gallerySelectionPending: false,
+    galleryRevision: gallery?.revision ?? null,
+    gallerySelectionPending: gallery?.selection_pending === 1,
     lifecycle: row.lifecycle as ProfileImage["lifecycle"],
     width: Number(row.width),
     height: Number(row.height),
@@ -94,11 +97,7 @@ export async function listImagesForUser(
     .bind(userId)
     .all<ImageRow>();
 
-  return (results ?? []).map((row) => ({
-    ...toImage(row),
-    galleryRevision: state?.revision ?? null,
-    gallerySelectionPending: state?.selection_pending === 1,
-  }));
+  return (results ?? []).map((row) => toImage(row, state));
 }
 
 /** Sólo las confirmadas: lo que el perfil muestra de verdad. */
@@ -116,11 +115,7 @@ export async function listConfirmedImages(
     .bind(userId)
     .all<ImageRow>();
 
-  return (results ?? []).map((row) => ({
-    ...toImage(row),
-    galleryRevision: state?.revision ?? null,
-    gallerySelectionPending: state?.selection_pending === 1,
-  }));
+  return (results ?? []).map((row) => toImage(row, state));
 }
 
 /**

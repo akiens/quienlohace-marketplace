@@ -1,5 +1,5 @@
 -- Cada carta representa una oferta concreta de uno de los servicios que el
--- perfil ya declaró. La FK evita relaciones huérfanas; si se elimina ese
+-- perfil ya declaró. La FK evita relaciones huérfanas y, si se elimina ese
 -- servicio, también deja de tener sentido conservar su carta.
 
 ALTER TABLE service_cards
@@ -35,10 +35,8 @@ BEGIN
         ORDER BY s.is_active DESC, s.sort_order, s.created_at LIMIT 1
      )
    WHERE id = NEW.id;
-  SELECT CASE
-    WHEN (SELECT service_id FROM service_cards WHERE id = NEW.id) IS NULL
-    THEN RAISE(ABORT, 'service card requires service')
-  END;
+  SELECT RAISE(ABORT, 'service card requires service')
+   WHERE (SELECT service_id FROM service_cards WHERE id = NEW.id) IS NULL;
 END;
 
 CREATE TRIGGER service_cards_require_service_update
