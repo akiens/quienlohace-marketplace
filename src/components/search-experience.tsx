@@ -9,16 +9,11 @@ import { TrackedResult } from "@/components/analytics/tracked-result";
 import { ProfileCard } from "@/components/profile-card";
 import { ServiceOfferCard } from "@/components/service-offer-card";
 import { SearchPanel } from "@/components/search-panel";
-import { getSpecialty } from "@/data/taxonomy";
-import { locationLabelById } from "@/data/locations";
 import { filtersToQuery, paginatedSearchHref, searchCriteriaKey } from "@/lib/query";
-import { countActiveFilters } from "@/lib/search";
 import { initializeAnalytics, trackAnalytics } from "@/lib/analytics/client";
 import { Button, EmptyState, Icon, PROVIDER_GRID } from "@/components/ui";
 import type { MarketplaceSearchResult } from "@/application/search";
 import {
-  PAYMENT_METHOD_LABELS,
-  RESULT_KIND_LABELS,
   SERVICE_MODE_LABELS,
   type SearchFilters,
 } from "@/types";
@@ -64,7 +59,6 @@ function SearchExperienceContent({
    */
   const [draft, setDraft] = useState<SearchFilters>(filters);
 
-  const activeCount = countActiveFilters(filters);
   const total = search.total;
   const appliedCriteria = searchCriteriaKey(filters);
 
@@ -144,7 +138,7 @@ function SearchExperienceContent({
         el servidor buscaba con frases a medio escribir.
 
         El panel lateral comparte ese borrador y sólo lo aplica desde su botón
-        "Buscar". Los chips de abajo son atajos explícitos sobre lo ya aplicado.
+        "Buscar".
       */}
       <SearchPanel
         filters={draft}
@@ -189,77 +183,6 @@ function SearchExperienceContent({
             </p>
           </div>
         </div>
-
-        {activeCount > 0 ? (
-          <div className="flex flex-wrap items-center gap-2">
-            {filters.resultKinds.map((kind) => (
-              <FilterChip
-                key={kind}
-                label={RESULT_KIND_LABELS[kind]}
-                onRemove={() => update({ ...draft, resultKinds: draft.resultKinds.filter((value) => value !== kind) })}
-              />
-            ))}
-            {filters.locationIds.map((id) => (
-              <FilterChip
-                key={id}
-                label={locationLabelById(id)}
-                onRemove={() =>
-                  update({
-                    ...draft,
-                    locationIds: draft.locationIds.filter((x) => x !== id),
-                  })
-                }
-              />
-            ))}
-            {filters.specialtyIds.map((id) => (
-              <FilterChip
-                key={id}
-                label={getSpecialty(id)?.name ?? id}
-                onRemove={() =>
-                  update({
-                    ...draft,
-                    specialtyIds: draft.specialtyIds.filter((x) => x !== id),
-                  })
-                }
-              />
-            ))}
-            {filters.minRating !== null ? (
-              <FilterChip
-                label={`${filters.minRating}+ estrellas`}
-                onRemove={() => update({ ...draft, minRating: null })}
-              />
-            ) : null}
-            {filters.paymentMethods.map((method) => (
-              <FilterChip
-                key={method}
-                label={PAYMENT_METHOD_LABELS[method]}
-                onRemove={() =>
-                  update({
-                    ...draft,
-                    paymentMethods: draft.paymentMethods.filter(
-                      (x) => x !== method,
-                    ),
-                  })
-                }
-              />
-            ))}
-            {filters.serviceModes.map((mode) => (
-              <FilterChip
-                key={mode}
-                label={SERVICE_MODE_LABELS[mode]}
-                onRemove={() => update({ ...draft, serviceModes: draft.serviceModes.filter((value) => value !== mode) })}
-              />
-            ))}
-
-            <button
-              type="button"
-              onClick={() => update({ ...draft, ...emptyExceptQuery(draft) })}
-              className="text-[13px] font-semibold text-ink-soft underline underline-offset-2 hover:text-ink"
-            >
-              Limpiar filtros
-            </button>
-          </div>
-        ) : null}
 
         {search.interpretation.inferredMode && filters.serviceModes.length === 0 ? (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-brand-100 px-4 py-3 text-[13.5px] text-ink">
@@ -402,36 +325,5 @@ function NoResults({ filters, search }: { filters: SearchFilters; search: Market
         <p className="text-center text-[12.5px] text-ink-faint">Las propuestas para explorar no se suman a tus resultados.</p>
       )}
     </div>
-  );
-}
-
-/** Limpia todo menos el texto buscado. */
-function emptyExceptQuery(filters: SearchFilters): Partial<SearchFilters> {
-  return {
-    resultKinds: [],
-    locationIds: [],
-    specialtyIds: [],
-    minRating: null,
-    paymentMethods: [],
-    serviceModes: [],
-    useMyLocation: false,
-    query: filters.query,
-  };
-}
-
-function FilterChip({
-  label,
-  onRemove,
-}: {
-  label: string;
-  onRemove: () => void;
-}) {
-  return (
-    <span className="flex items-center gap-1.5 rounded-full border border-line bg-white py-1.5 pl-3 pr-2 text-[13px] font-semibold text-ink">
-      {label}
-      <button type="button" onClick={onRemove} aria-label={`Quitar ${label}`}>
-        <Icon name="close" className="text-[16px] text-ink-soft hover:text-ink" />
-      </button>
-    </span>
   );
 }
