@@ -1,15 +1,16 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import { runMarketplaceSearch } from "@/app/actions/search";
 import { FiltersPanel } from "@/components/filters-panel";
 import { TrackedResult } from "@/components/analytics/tracked-result";
 import { ProfileCard } from "@/components/profile-card";
 import { ServiceOfferCard } from "@/components/service-offer-card";
 import { SearchPanel } from "@/components/search-panel";
-import { filtersToQuery, paginatedSearchHref, searchCriteriaKey } from "@/lib/query";
+import { SearchResultsSkeleton } from "@/components/search-results-skeleton";
+import { filtersFromParams, paginatedSearchHref, searchCriteriaKey } from "@/lib/query";
 import { initializeAnalytics, trackAnalytics } from "@/lib/analytics/client";
 import { Button, EmptyState, Icon, PROVIDER_GRID } from "@/components/ui";
 import type { MarketplaceSearchResult } from "@/application/search";
@@ -24,49 +25,160 @@ import {
  * El filtrado ocurre en el servidor; acá sólo se manejan los controles.
  */
 export function SearchExperience({
-  filters,
-  search,
+  filters: initialFilters,
+  search: initialSearch,
 }: {
   filters: SearchFilters;
   search: MarketplaceSearchResult;
 }) {
-  /*
-   * Una búsqueda distinta remonta el editor y adopta sus filtros. Cambiar sólo
-   * `page` conserva el componente, por lo que "Mostrar más" no pierde estado.
-   */
-  return <SearchExperienceContent key={searchCriteriaKey(filters)} filters={filters} search={search} />;
-}
-
-function SearchExperienceContent({
-  filters,
-  search,
-}: {
-  filters: SearchFilters;
-  search: MarketplaceSearchResult;
-}) {
-  const router = useRouter();
-  const [filtersOpen, setFiltersOpen] = useState(false);
-  const [isSearching, startSearchTransition] = useTransition();
+  const [filters, setFilters] = useState(initialFilters);
+  const [search, setSearch] = useState(initialSearch);
+  const [draft, setDraft] = useState(initialFilters);
+  const [isSearching, setIsSearching] = useState(false);
   const [repeatedSearchAttempt, setRepeatedSearchAttempt] = useState(0);
-  const recordedSearch = useRef<string | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const inFlight = useRef(false);
 
-  /*
-   * Lo que se está escribiendo en el buscador y todavía no se confirmó.
-   *
-   * Vive acá y no sólo dentro del panel porque el panel lateral de filtros
-   * tiene que partir de esto: aplicar un filtro ahí mientras hay texto sin
-   * buscar descartaba lo tipeado y devolvía la búsqueda anterior.
-   */
-  const [draft, setDraft] = useState<SearchFilters>(filters);
+  async function execute(
+    next: SearchFilters,
+    page: number,
+    options: { updateUrl: boolean; recordPending: boolean },
+  ) {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setIsSearching(true);
+    setSearchError(null);
+    setRepeatedSearchAttempt(0);
 
-  const total = search.total;
-  const appliedCriteria = searchCriteriaKey(filters);
+    const href = paginatedSearchHref(next, page);
+    const query = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
+    if (options.updateUrl) window.history.replaceState(null, "", href);
+    if (options.recordPending) {
+      try {
+        sessionStorage.setItem("qlh:analytics:pending-search:v1", JSON.stringify({
+          before: filters,
+          after: next,
+          previousSearchId: search.prepared ? undefined : search.analytics.searchId,
+        }));
+      } catch {}
+    }
+
+    try {
+      const result = await runMarketplaceSearch(query);
+      setFilters(result.filters);
+      setDraft(result.filters);
+      setSearch(result.search);
+    } catch {
+      setSearchError("No pudimos completar la búsqueda. Intentá nuevamente.");
+    } finally {
+      inFlight.current = false;
+      setIsSearching(false);
+    }
+  }
+
+  const executeFromUrl = useCallback((query: string) => {
+    const params = new URLSearchParams(query);
+    const hasSearch = ["q", "tipo", "loc", "esp", "rating", "pago", "modo", "geo", "page"]
+      .some((key) => params.has(key));
+    if (!hasSearch) return;
+    void (async () => {
+      if (inFlight.current) return;
+      inFlight.current = true;
+      setIsSearching(true);
+      setSearchError(null);
+      try {
+        const result = await runMarketplaceSearch(params.toString());
+        setFilters(result.filters);
+        setDraft(result.filters);
+        setSearch(result.search);
+      } catch {
+        setSearchError("No pudimos completar la búsqueda. Intentá nuevamente.");
+      } finally {
+        inFlight.current = false;
+        setIsSearching(false);
+      }
+    })();
+  }, []);
+
+  useEffect(() => {
+    executeFromUrl(window.location.search.slice(1));
+    const restore = () => executeFromUrl(window.location.search.slice(1));
+    window.addEventListener("popstate", restore);
+    return () => window.removeEventListener("popstate", restore);
+  }, [executeFromUrl]);
 
   useEffect(() => {
     if (repeatedSearchAttempt === 0) return;
     const timeout = window.setTimeout(() => setRepeatedSearchAttempt(0), 5000);
     return () => window.clearTimeout(timeout);
   }, [repeatedSearchAttempt]);
+
+  function submit(next: SearchFilters) {
+    setDraft(next);
+    if (!search.prepared && searchCriteriaKey(next) === searchCriteriaKey(filters)) {
+      setRepeatedSearchAttempt((attempt) => attempt + 1);
+      return;
+    }
+    void execute(next, 1, { updateUrl: true, recordPending: true });
+  }
+
+  function submitSearchHref(href: string) {
+    const query = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
+    submit(filtersFromParams(new URLSearchParams(query)));
+  }
+
+  return (
+    <SearchExperienceContent
+      filters={filters}
+      search={search}
+      draft={draft}
+      loading={isSearching}
+      repeatedSearchAttempt={repeatedSearchAttempt}
+      searchError={searchError}
+      onDraftChange={(next) => {
+        setDraft(next);
+        setRepeatedSearchAttempt(0);
+      }}
+      onSubmit={submit}
+      onSearchHref={submitSearchHref}
+      onDismissRepeated={() => setRepeatedSearchAttempt(0)}
+      onLoadMore={() => void execute(filters, search.pagination.page + 1, {
+        updateUrl: true,
+        recordPending: false,
+      })}
+    />
+  );
+}
+
+function SearchExperienceContent({
+  filters,
+  search,
+  draft,
+  loading,
+  repeatedSearchAttempt,
+  searchError,
+  onDraftChange,
+  onSubmit,
+  onSearchHref,
+  onDismissRepeated,
+  onLoadMore,
+}: {
+  filters: SearchFilters;
+  search: MarketplaceSearchResult;
+  draft: SearchFilters;
+  loading: boolean;
+  repeatedSearchAttempt: number;
+  searchError: string | null;
+  onDraftChange: (filters: SearchFilters) => void;
+  onSubmit: (filters: SearchFilters) => void;
+  onSearchHref: (href: string) => void;
+  onDismissRepeated: () => void;
+  onLoadMore: () => void;
+}) {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const recordedSearch = useRef<string | null>(null);
+
+  const total = search.total;
 
   useEffect(() => {
     // La portada preparada es discovery, no una búsqueda enviada por alguien.
@@ -113,26 +225,6 @@ function SearchExperienceContent({
     });
   }, [filters, search]);
 
-  function update(next: SearchFilters) {
-    setDraft(next);
-    const query = filtersToQuery(next);
-    // Evita una nueva navegación/render del servidor si la búsqueda es igual.
-    if (searchCriteriaKey(next) === appliedCriteria) {
-      setRepeatedSearchAttempt((attempt) => attempt + 1);
-      return;
-    }
-    setRepeatedSearchAttempt(0);
-    try { sessionStorage.setItem("qlh:analytics:pending-search:v1", JSON.stringify({ before: filters, after: next, previousSearchId: search.analytics.searchId })); } catch {}
-    startSearchTransition(() => {
-      router.replace(query ? `/buscar?${query}` : "/buscar", { scroll: false });
-    });
-  }
-
-  function editDraft(next: SearchFilters) {
-    setDraft(next);
-    setRepeatedSearchAttempt(0);
-  }
-
   return (
     <>
       {/*
@@ -145,33 +237,41 @@ function SearchExperienceContent({
       */}
       <SearchPanel
         filters={draft}
-        onSubmit={update}
-        onDraftChange={editDraft}
+        onSubmit={onSubmit}
+        onDraftChange={onDraftChange}
         variant="compact"
         onOpenFilters={() => setFiltersOpen(true)}
-        loading={isSearching}
+        loading={loading}
       />
 
-      <div className="shell flex flex-col gap-5 py-8">
-        {repeatedSearchAttempt > 0 ? (
-          <div
-            key={repeatedSearchAttempt}
-            className="flex items-center gap-2 rounded-card border border-brand-200 bg-brand-100 px-4 py-3 text-[13.5px] text-ink"
-          >
-            <Icon name="info" className="shrink-0 text-[19px] text-brand-800" />
-            <p role="status" aria-live="polite" className="flex-1">
-              No hace falta volver a buscar: no cambiaste el texto ni los filtros.
-            </p>
-            <button
-              type="button"
-              onClick={() => setRepeatedSearchAttempt(0)}
-              aria-label="Cerrar aviso"
-              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-white/70 hover:text-ink"
+      {loading ? (
+        <SearchResultsSkeleton />
+      ) : (
+        <div className="shell flex flex-col gap-5 py-8">
+          {searchError ? (
+            <div className="rounded-card border border-danger/30 bg-danger/5 px-4 py-3 text-[13.5px] text-danger" role="alert">
+              {searchError}
+            </div>
+          ) : null}
+          {repeatedSearchAttempt > 0 ? (
+            <div
+              key={repeatedSearchAttempt}
+              className="flex items-center gap-2 rounded-card border border-brand-200 bg-brand-100 px-4 py-3 text-[13.5px] text-ink"
             >
-              <Icon name="close" className="text-[17px]" />
-            </button>
-          </div>
-        ) : null}
+              <Icon name="info" className="shrink-0 text-[19px] text-brand-800" />
+              <p role="status" aria-live="polite" className="flex-1">
+                No hace falta volver a buscar: no cambiaste el texto ni los filtros.
+              </p>
+              <button
+                type="button"
+                onClick={onDismissRepeated}
+                aria-label="Cerrar aviso"
+                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-ink-soft hover:bg-white/70 hover:text-ink"
+              >
+                <Icon name="close" className="text-[17px]" />
+              </button>
+            </div>
+          ) : null}
 
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="flex flex-col gap-1">
@@ -192,50 +292,50 @@ function SearchExperienceContent({
             <span>
               Interpretamos una preferencia por <strong>{SERVICE_MODE_LABELS[search.interpretation.inferredMode].toLocaleLowerCase("es")}</strong>.
             </span>
-            <Link
-              href={`/buscar?${filtersToQuery({ ...filters, serviceModes: [search.interpretation.inferredMode] })}`}
+            <button
+              type="button"
+              onClick={() => onSubmit({ ...filters, serviceModes: [search.interpretation.inferredMode!] })}
               className="font-bold text-brand-800 underline underline-offset-2"
             >
               Aplicar este filtro
-            </Link>
+            </button>
           </div>
         ) : null}
 
-        {total === 0 ? (
-          <NoResults filters={filters} search={search} />
-        ) : (
-          <MixedResults
-            key={`${search.interpretation.normalized}:${search.results.map((item) => `${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`).join("|")}`}
-            search={search}
-            filters={filters}
-          />
-        )}
-      </div>
+          {total === 0 ? (
+            <NoResults filters={filters} search={search} onSearchHref={onSearchHref} />
+          ) : (
+            <MixedResults
+              key={`${search.interpretation.normalized}:${search.results.map((item) => `${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`).join("|")}`}
+              search={search}
+              onLoadMore={onLoadMore}
+            />
+          )}
+        </div>
+      )}
 
       {/* El panel edita el borrador y sólo `onSubmit` actualiza la URL. */}
       <FiltersPanel
         open={filtersOpen}
         filters={draft}
-        onChange={editDraft}
-        onSubmit={() => update(draft)}
+        onChange={onDraftChange}
+        onSubmit={() => onSubmit(draft)}
         onClose={() => setFiltersOpen(false)}
-        loading={isSearching}
+        loading={loading}
       />
     </>
   );
 }
 
-function MixedResults({ search, filters }: { search: MarketplaceSearchResult; filters: SearchFilters }) {
-  const router = useRouter();
-  const [isLoadingMore, startLoadingMoreTransition] = useTransition();
+function MixedResults({
+  search,
+  onLoadMore,
+}: {
+  search: MarketplaceSearchResult;
+  onLoadMore: () => void;
+}) {
   const shown = search.results;
   const remaining = search.pagination.remaining;
-
-  function loadMore() {
-    startLoadingMoreTransition(() => {
-      router.replace(paginatedSearchHref(filters, search.pagination.page + 1), { scroll: false });
-    });
-  }
   return (
     <section className="flex flex-col gap-6" aria-label="Resultados de búsqueda">
       <div className={PROVIDER_GRID}>
@@ -275,21 +375,10 @@ function MixedResults({ search, filters }: { search: MarketplaceSearchResult; fi
         <div className="flex justify-center">
           <Button
             variant="secondary"
-            onClick={loadMore}
-            disabled={isLoadingMore}
-            aria-busy={isLoadingMore}
+            onClick={onLoadMore}
           >
-            {isLoadingMore ? (
-              <>
-                <Icon name="progress_activity" className="animate-spin text-[18px]" />
-                Cargando…
-              </>
-            ) : (
-              <>
-                Mostrar {Math.min(search.pagination.pageSize, remaining)} más
-                <span className="text-ink-soft">({remaining} restantes)</span>
-              </>
-            )}
+            Mostrar {Math.min(search.pagination.pageSize, remaining)} más
+            <span className="text-ink-soft">({remaining} restantes)</span>
           </Button>
         </div>
       ) : null}
@@ -297,7 +386,15 @@ function MixedResults({ search, filters }: { search: MarketplaceSearchResult; fi
   );
 }
 
-function NoResults({ filters, search }: { filters: SearchFilters; search: MarketplaceSearchResult }) {
+function NoResults({
+  filters,
+  search,
+  onSearchHref,
+}: {
+  filters: SearchFilters;
+  search: MarketplaceSearchResult;
+  onSearchHref: (href: string) => void;
+}) {
   return (
     <div className="flex flex-col gap-7">
       <EmptyState title="No encontramos lo que buscás">
@@ -305,9 +402,14 @@ function NoResults({ filters, search }: { filters: SearchFilters; search: Market
         {search.suggestedActions.length ? (
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             {search.suggestedActions.map((action) => (
-              <Link key={action.href} href={action.href} className="rounded-input bg-brand-100 px-3 py-2 font-semibold text-brand-800 hover:bg-[#E4E9F2]">
+              <button
+                key={action.href}
+                type="button"
+                onClick={() => onSearchHref(action.href)}
+                className="rounded-input bg-brand-100 px-3 py-2 font-semibold text-brand-800 hover:bg-[#E4E9F2]"
+              >
                 {action.label}
-              </Link>
+              </button>
             ))}
           </div>
         ) : null}
@@ -318,7 +420,17 @@ function NoResults({ filters, search }: { filters: SearchFilters; search: Market
         <nav aria-label="Servicios para explorar" className="rounded-card border border-line bg-white p-5">
           <h2 className="text-[17px] font-bold text-ink">Explorá otros servicios</h2>
           <div className="mt-3 flex flex-wrap gap-2">
-            {search.discoveryLinks.map((link) => (
+            {search.discoveryLinks.map((link) => link.href.startsWith("/buscar") ? (
+              <button
+                key={link.href}
+                type="button"
+                onClick={() => onSearchHref(link.href)}
+                title={link.detail}
+                className="rounded-full border border-line bg-surface-sunken px-3 py-2 text-[13px] font-semibold text-brand-800 hover:border-line-strong"
+              >
+                {link.label}
+              </button>
+            ) : (
               <Link key={link.href} href={link.href} title={link.detail} className="rounded-full border border-line bg-surface-sunken px-3 py-2 text-[13px] font-semibold text-brand-800 hover:border-line-strong">
                 {link.label}
               </Link>
