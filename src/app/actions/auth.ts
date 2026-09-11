@@ -1,11 +1,22 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { D1ConsumerRepository } from "@/infrastructure/d1-consumer-repository";
 import { D1UserRepository } from "@/infrastructure/d1-repositories";
+import {
+  createConsumerSession,
+  destroyConsumerSession,
+} from "@/lib/consumer-session";
 import { hashPassword, verifyPassword } from "@/lib/password";
-import { createSession, destroySession } from "@/lib/session";
-import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
+import { createSession, destroySession, requireUser } from "@/lib/session";
+import {
+  credentialsSchema,
+  fieldErrors,
+  passwordUpdateSchema,
+  signupSchema,
+} from "@/lib/validation";
 
 /**
  * Server Actions de autenticación. Corren sólo en el servidor: la validación
@@ -130,15 +141,103 @@ export async function login(
 
   // Mismo mensaje para "no existe" y "contraseña incorrecta": no confirmamos
   // qué correos están registrados.
-  if (!user || !valid) {
+  if (!user || !user.isActive || !valid) {
     return { errors: { form: "Correo o contraseña incorrectos." } };
   }
 
   await createSession(user.id);
+  const consumer = await new D1ConsumerRepository().findByUserId(user.id);
+  if (consumer?.status === "active") {
+    try {
+      await createConsumerSession(consumer.id);
+    } catch (error) {
+      // La sesión principal permite recuperar la identidad vinculada aunque
+      // no se haya podido crear esta cookie auxiliar.
+      console.error(
+        "Linked consumer session creation failed",
+        error instanceof Error ? error.message : "unknown",
+      );
+    }
+  }
   redirect("/dashboard");
 }
 
 export async function logout(): Promise<void> {
   await destroySession();
+  // Cuando ambas facetas están vinculadas, salir del panel también cierra la
+  // identidad usada para opinar: una sola experiencia de cuenta.
+  try {
+    await destroyConsumerSession();
+  } catch (error) {
+    console.error(
+      "Consumer session cleanup failed",
+      error instanceof Error ? error.message : "unknown",
+    );
+  }
   redirect("/");
+}
+
+/** Crea una contraseña para una cuenta Google o cambia la que ya existe. */
+export async function updatePassword(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const user = await requireUser();
+  const parsed = passwordUpdateSchema.safeParse({
+    currentPassword: String(formData.get("currentPassword") ?? ""),
+    newPassword: formData.get("newPassword"),
+    passwordConfirm: formData.get("passwordConfirm"),
+  });
+  if (!parsed.success) return { errors: fieldErrors(parsed.error) };
+
+  try {
+    const account = await users.findByEmail(user.email);
+    if (!account?.isActive) {
+      return { errors: { form: "No pudimos actualizar esta cuenta." } };
+    }
+
+    if (account.hasPassword) {
+      if (!parsed.data.currentPassword) {
+        return {
+          errors: { currentPassword: "Ingresá tu contraseña actual." },
+        };
+      }
+      const currentIsValid = await verifyPassword(
+        parsed.data.currentPassword,
+        account.passwordHash,
+      );
+      if (!currentIsValid) {
+        return {
+          errors: { currentPassword: "La contraseña actual no es correcta." },
+        };
+      }
+      if (
+        await verifyPassword(parsed.data.newPassword, account.passwordHash)
+      ) {
+        return {
+          errors: {
+            newPassword: "Elegí una contraseña diferente de la actual.",
+          },
+        };
+      }
+    }
+
+    await users.updatePassword(
+      user.id,
+      await hashPassword(parsed.data.newPassword),
+    );
+    revalidatePath("/dashboard");
+    return {
+      message: account.hasPassword
+        ? "Contraseña actualizada."
+        : "Contraseña creada. Ya podés entrar también con tu correo.",
+    };
+  } catch (error) {
+    console.error("password update failed", error);
+    return {
+      errors: {
+        form: "No pudimos guardar la contraseña. Intentá nuevamente.",
+      },
+    };
+  }
 }

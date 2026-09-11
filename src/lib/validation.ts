@@ -593,6 +593,24 @@ export const serviceCardSchema = z
     }
   });
 
+/** Crear o cambiar la contraseña desde una sesión profesional autenticada. */
+export const passwordUpdateSchema = z
+  .object({
+    currentPassword: z
+      .string()
+      .max(200, "La contraseña actual es demasiado larga.")
+      .optional()
+      .default(""),
+    newPassword: passwordSchema,
+    passwordConfirm: z
+      .string({ error: "Debe repetir la contraseña nueva." })
+      .min(1, "Debe repetir la contraseña nueva."),
+  })
+  .refine((data) => data.newPassword === data.passwordConfirm, {
+    message: "Las contraseñas no coinciden.",
+    path: ["passwordConfirm"],
+  });
+
 /** Reglas de la carta por campo, compartidas con el editor del navegador. */
 export const serviceCardFieldSchemas: Record<string, z.ZodTypeAny> =
   serviceCardSchema.shape;

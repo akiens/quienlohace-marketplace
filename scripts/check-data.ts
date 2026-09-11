@@ -180,6 +180,76 @@ for (const file of readdirSync("migrations").sort()) {
 if (schemaOk) check("las migraciones aplican en orden", true);
 
 if (schemaOk) {
+  const oauthColumns = db
+    .prepare("PRAGMA table_info(user_oauth_identities)")
+    .all()
+    .map((column) => String((column as { name: string }).name));
+  check(
+    "Google de proveedores tiene identidad propia vinculada a users",
+    [
+      "user_id",
+      "auth_provider",
+      "provider_user_id",
+      "provider_email",
+      "created_at",
+      "updated_at",
+    ].every((column) => oauthColumns.includes(column)) &&
+      db
+        .prepare("PRAGMA foreign_key_list(user_oauth_identities)")
+        .all()
+        .some(
+          (foreignKey) =>
+            (foreignKey as { table: string; from: string }).table === "users" &&
+            (foreignKey as { table: string; from: string }).from === "user_id",
+        ),
+  );
+
+  const consumerColumns = db
+    .prepare("PRAGMA table_info(consumer_users)")
+    .all()
+    .map((column) => String((column as { name: string }).name));
+  const consumerUserForeignKey = db
+    .prepare("PRAGMA foreign_key_list(consumer_users)")
+    .all()
+    .find(
+      (foreignKey) =>
+        (foreignKey as { table: string; from: string }).table === "users" &&
+        (foreignKey as { table: string; from: string }).from === "user_id",
+    ) as { on_delete?: string } | undefined;
+  check(
+    "la identidad de opiniones se vincula sin depender del ciclo profesional",
+    consumerColumns.includes("user_id") &&
+      consumerUserForeignKey?.on_delete === "SET NULL",
+  );
+
+  db.exec(`
+    SAVEPOINT check_consumer_retention;
+    INSERT INTO users
+      (id, email, email_verified, role, password_hash, is_active,
+       created_at, updated_at)
+    VALUES
+      ('check-linked-user', 'linked@example.test', 1, 'provider', '', 1,
+       '2026-09-11T00:00:00.000Z', '2026-09-11T00:00:00.000Z');
+    INSERT INTO consumer_users
+      (id, auth_provider, auth_provider_user_id, user_id, email, display_name,
+       avatar_url, status, created_at, updated_at)
+    VALUES
+      ('check-linked-consumer', 'google', 'google-check-sub',
+       'check-linked-user', 'linked@example.test', 'Cliente', '', 'active',
+       '2026-09-11T00:00:00.000Z', '2026-09-11T00:00:00.000Z');
+    DELETE FROM users WHERE id = 'check-linked-user';
+  `);
+  const retainedConsumer = db
+    .prepare(
+      "SELECT user_id FROM consumer_users WHERE id = 'check-linked-consumer'",
+    )
+    .get() as { user_id: string | null } | undefined;
+  check(
+    "borrar la cuenta profesional conserva al cliente y anula sólo el vínculo",
+    Boolean(retainedConsumer) && retainedConsumer?.user_id === null,
+  );
+  db.exec("ROLLBACK TO check_consumer_retention; RELEASE check_consumer_retention;");
+
   const consumerRepository = readFileSync(
     "src/infrastructure/d1-consumer-repository.ts",
     "utf8",
@@ -193,6 +263,18 @@ if (schemaOk) {
         "SELECT consumer_user_id FROM consumer_sessions",
       ) &&
       !consumerRepository.includes("SELECT user_id FROM consumer_sessions"),
+  );
+
+  const userRepository = readFileSync(
+    "src/infrastructure/d1-repositories.ts",
+    "utf8",
+  );
+  check(
+    "el repositorio profesional usa la identidad estable de Google",
+    userRepository.includes("oauth_identity.provider_user_id = ?") &&
+      userRepository.includes("INSERT INTO user_oauth_identities") &&
+      userRepository.includes("UPDATE consumer_users") &&
+      userRepository.includes("password_hash, is_active"),
   );
 }
 

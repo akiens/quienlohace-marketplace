@@ -7,6 +7,7 @@ import {
   destroyConsumerSession,
   getCurrentConsumer,
 } from "@/lib/consumer-session";
+import { destroySession } from "@/lib/session";
 import { fieldErrors, reviewReportSchema, reviewSchema } from "@/lib/validation";
 import type { FormState } from "@/app/actions/auth";
 
@@ -166,7 +167,8 @@ export async function reportReview(
   return { message: "Gracias. Vamos a revisar esta opinión." };
 }
 
-/** Cierra la sesión de cliente sin tocar la de proveedor. */
+/** Cierra ambas facetas cuando pertenecen a la misma experiencia de cuenta. */
 export async function consumerLogout(): Promise<void> {
   await destroyConsumerSession();
+  await destroySession();
 }

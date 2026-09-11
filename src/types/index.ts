@@ -134,8 +134,21 @@ export type User = {
   email: string;
   role: UserRole;
   emailVerified: boolean;
+  /** Puede entrar con correo y contraseña además de otros métodos. */
+  hasPassword: boolean;
+  /** Tiene una identidad de Google vinculada a esta misma cuenta. */
+  googleConnected: boolean;
   isActive: boolean;
   createdAt: string;
+};
+
+/** Identidad autenticada por Google OpenID Connect. */
+export type GoogleIdentity = {
+  /** `sub`: identificador estable; el correo puede cambiar. */
+  providerUserId: string;
+  email: string;
+  displayName: string;
+  avatarUrl: string;
 };
 
 export type ProfileType = "individual" | "business";

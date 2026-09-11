@@ -184,11 +184,23 @@ npm run db:reset:remote   # ejecuta seeds/truncate.sql
 Para desarrollo normal no hace falta nada de esto: `npm run preview` levanta
 el sitio con la base local y los mismos datos.
 
-### Login con Google (opiniones)
+### Login con Google
 
-Para publicar una opinión hace falta identidad (RF-148). El flujo está
-implementado; sólo faltan las credenciales, que son secretos y no viven en el
-repositorio.
+El mismo cliente OAuth permite identificarse para publicar opiniones y acceder
+a una cuenta profesional. En `/entrar` y `/registro` se puede continuar con
+Google o con correo y contraseña.
+
+Una cuenta profesional creada con Google no está obligada a definir una
+contraseña. Puede crearla después desde **Mi perfil → Acceso y seguridad** y
+desde entonces usar cualquiera de los dos métodos. Una cuenta creada con correo
+puede vincular Google desde el mismo bloque; al entrar con un correo verificado
+coincidente también se vincula automáticamente sin crear un perfil duplicado.
+
+Si alguien usó Google primero para opinar y luego crea o vincula una cuenta
+profesional con esa misma identidad, ambas facetas se conectan mediante el
+`sub` estable de Google. Sus opiniones anteriores siguen siendo editables. La
+relación es opcional y `ON DELETE SET NULL`: eliminar el perfil profesional no
+elimina la identidad de cliente ni sus opiniones.
 
 1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
    creá un **OAuth 2.0 Client ID** de tipo *Web application*.
@@ -205,6 +217,9 @@ repositorio.
    npx wrangler secret put GOOGLE_CLIENT_ID
    npx wrangler secret put GOOGLE_CLIENT_SECRET
    ```
+
+   Para desarrollo, copiá `.dev.vars.example` a `.dev.vars` y completá esas
+   mismas dos variables con las credenciales del cliente OAuth local.
 
 Sin estas variables el sitio funciona igual: el botón de Google no se muestra
 y las opiniones quedan en modo lectura. Nada más se degrada.

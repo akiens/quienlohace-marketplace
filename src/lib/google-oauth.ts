@@ -1,10 +1,13 @@
 import "server-only";
 
-import { getAppUrl } from "@/infrastructure/cloudflare";
-import type { GoogleIdentity } from "@/infrastructure/d1-consumer-repository";
+import {
+  getAppUrl,
+  getGoogleOAuthCredentials,
+} from "@/infrastructure/cloudflare";
+import type { GoogleIdentity } from "@/types";
 
 /**
- * Autenticación con Google para clientes (RF-123).
+ * Autenticación con Google para clientes y cuentas profesionales (RF-123).
  *
  * Se implementa a mano en vez de con una librería porque el flujo que hace
  * falta es mínimo —un solo proveedor, sin refresh tokens— y las librerías
@@ -23,8 +26,7 @@ type GoogleConfig = { clientId: string; clientSecret: string };
 
 /** Config de Google, o null si no está configurada. */
 export function googleConfig(): GoogleConfig | null {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const { clientId, clientSecret } = getGoogleOAuthCredentials();
   if (!clientId || !clientSecret) return null;
   return { clientId, clientSecret };
 }
@@ -43,7 +45,7 @@ export function redirectUri(): string {
  * `state` lleva el destino de vuelta además del valor anti-CSRF: RF-129 pide
  * volver exactamente a donde se estaba, y así no hace falta otra cookie.
  */
-export function authorizationUrl(state: string): string | null {
+export function authorizationUrl(state: string, nonce: string): string | null {
   const config = googleConfig();
   if (!config) return null;
 
@@ -53,6 +55,7 @@ export function authorizationUrl(state: string): string | null {
     response_type: "code",
     scope: "openid email profile",
     state,
+    nonce,
     // Sólo se necesita identificar a la persona: sin acceso offline no hay
     // refresh token que guardar ni que proteger.
     prompt: "select_account",
@@ -61,20 +64,50 @@ export function authorizationUrl(state: string): string | null {
   return `${AUTH_ENDPOINT}?${params.toString()}`;
 }
 
-/** Empaqueta el valor anti-CSRF y el destino en un único `state`. */
-export function encodeState(nonce: string, returnTo: string): string {
-  return `${nonce}:${encodeURIComponent(returnTo)}`;
+export type GoogleAuthPurpose =
+  | "consumer"
+  | "provider-login"
+  | "provider-link";
+
+/** Empaqueta el valor anti-CSRF, la intención y el destino en `state`. */
+export function encodeState(
+  nonce: string,
+  returnTo: string,
+  purpose: GoogleAuthPurpose = "consumer",
+): string {
+  return `${nonce}:${purpose}:${encodeURIComponent(returnTo)}`;
 }
 
 export function decodeState(state: string): {
   nonce: string;
+  purpose: GoogleAuthPurpose;
   returnTo: string;
 } {
-  const separator = state.indexOf(":");
-  if (separator === -1) return { nonce: state, returnTo: "/" };
+  const firstSeparator = state.indexOf(":");
+  const secondSeparator = state.indexOf(":", firstSeparator + 1);
+  if (firstSeparator === -1 || secondSeparator === -1) {
+    return { nonce: "", purpose: "consumer", returnTo: "/" };
+  }
+
+  const rawPurpose = state.slice(firstSeparator + 1, secondSeparator);
+  const purpose: GoogleAuthPurpose =
+    rawPurpose === "provider-login" || rawPurpose === "provider-link"
+      ? rawPurpose
+      : "consumer";
+
+  let returnTo = "/";
+  try {
+    returnTo = safeReturnTo(
+      decodeURIComponent(state.slice(secondSeparator + 1)),
+    );
+  } catch {
+    // Un state malformado nunca decide un destino de navegación.
+  }
+
   return {
-    nonce: state.slice(0, separator),
-    returnTo: safeReturnTo(decodeURIComponent(state.slice(separator + 1))),
+    nonce: state.slice(0, firstSeparator),
+    purpose,
+    returnTo,
   };
 }
 
@@ -83,7 +116,14 @@ export function decodeState(state: string): {
  * usarse para redirigir a otro sitio después de iniciar sesión.
  */
 export function safeReturnTo(value: string): string {
-  if (!value.startsWith("/") || value.startsWith("//")) return "/";
+  if (
+    !value.startsWith("/") ||
+    value.startsWith("//") ||
+    value.includes("\\") ||
+    /[\u0000-\u001f\u007f]/.test(value)
+  ) {
+    return "/";
+  }
   return value;
 }
 
@@ -97,6 +137,8 @@ type GoogleClaims = {
   aud?: string;
   iss?: string;
   exp?: number;
+  nonce?: string;
+  email_verified?: boolean;
 };
 
 /** Decodifica el payload de un JWT. No valida la firma. */
@@ -129,6 +171,7 @@ function decodeJwtPayload(token: string): GoogleClaims | null {
  */
 export async function exchangeCodeForIdentity(
   code: string,
+  expectedNonce: string,
 ): Promise<GoogleIdentity | null> {
   const config = googleConfig();
   if (!config) return null;
@@ -156,13 +199,16 @@ export async function exchangeCodeForIdentity(
   if (!token.id_token) return null;
 
   const claims = decodeJwtPayload(token.id_token);
-  if (!claims?.sub || !claims.email) return null;
+  if (!claims?.sub || !claims.email || claims.email_verified !== true) {
+    return null;
+  }
 
   const issuerOk =
     claims.iss === "https://accounts.google.com" ||
     claims.iss === "accounts.google.com";
   if (!issuerOk || claims.aud !== config.clientId) return null;
-  if (claims.exp && claims.exp * 1000 < Date.now()) return null;
+  if (!claims.exp || claims.exp * 1000 < Date.now()) return null;
+  if (!expectedNonce || claims.nonce !== expectedNonce) return null;
 
   return {
     providerUserId: claims.sub,

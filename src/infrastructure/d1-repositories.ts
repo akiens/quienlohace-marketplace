@@ -6,7 +6,13 @@ import type {
   SessionRepository,
   UserRepository,
 } from "@/domain/ports";
-import type { Review, ReviewReportReason, User, UserRole } from "@/types";
+import type {
+  GoogleIdentity,
+  Review,
+  ReviewReportReason,
+  User,
+  UserRole,
+} from "@/types";
 import { getDb } from "@/infrastructure/cloudflare";
 import { newId } from "@/lib/id";
 
@@ -20,6 +26,7 @@ type UserRow = {
   is_active: number;
   created_at: string;
   password_hash: string;
+  google_connected: number;
 };
 
 function toUser(row: UserRow): User {
@@ -28,6 +35,8 @@ function toUser(row: UserRow): User {
     email: row.email,
     role: row.role as UserRole,
     emailVerified: row.email_verified === 1,
+    hasPassword: row.password_hash.length > 0,
+    googleConnected: row.google_connected === 1,
     isActive: row.is_active === 1,
     createdAt: row.created_at,
   };
@@ -35,9 +44,72 @@ function toUser(row: UserRow): User {
 
 /** Las columnas que arman un `User`, para no repetirlas en cada consulta. */
 const USER_COLUMNS =
-  "id, email, role, email_verified, is_active, created_at, password_hash";
+  `users.id AS id, users.email AS email, users.role AS role,
+   users.email_verified AS email_verified, users.is_active AS is_active,
+   users.created_at AS created_at, users.password_hash AS password_hash,
+   EXISTS (
+     SELECT 1 FROM user_oauth_identities oauth
+      WHERE oauth.user_id = users.id AND oauth.auth_provider = 'google'
+   ) AS google_connected`;
+
+/** La identidad elegida ya pertenece a otra cuenta profesional. */
+export class GoogleIdentityConflictError extends Error {
+  constructor() {
+    super("GOOGLE_IDENTITY_CONFLICT");
+    this.name = "GoogleIdentityConflictError";
+  }
+}
 
 export class D1UserRepository implements UserRepository {
+  /**
+   * Impide que una cuenta profesional o una identidad de cliente terminen
+   * vinculadas a dos personas diferentes.
+   */
+  private async assertConsumerIdentityCanLink(
+    userId: string,
+    providerUserId: string,
+  ): Promise<void> {
+    const db = getDb();
+    const [consumerForGoogle, consumerForUser] = await Promise.all([
+      db
+        .prepare(
+          `SELECT id, user_id FROM consumer_users
+            WHERE auth_provider = 'google' AND auth_provider_user_id = ?`,
+        )
+        .bind(providerUserId)
+        .first<{ id: string; user_id: string | null }>(),
+      db
+        .prepare(`SELECT id FROM consumer_users WHERE user_id = ?`)
+        .bind(userId)
+        .first<{ id: string }>(),
+    ]);
+
+    if (consumerForGoogle?.user_id && consumerForGoogle.user_id !== userId) {
+      throw new GoogleIdentityConflictError();
+    }
+    if (consumerForUser && consumerForUser.id !== consumerForGoogle?.id) {
+      throw new GoogleIdentityConflictError();
+    }
+  }
+
+  /** Une la faceta profesional con las opiniones de la misma identidad. */
+  private async linkConsumerIdentity(
+    userId: string,
+    providerUserId: string,
+  ): Promise<void> {
+    await this.assertConsumerIdentityCanLink(userId, providerUserId);
+    await getDb()
+      .prepare(
+        `UPDATE consumer_users
+            SET user_id = ?, updated_at = ?
+          WHERE auth_provider = 'google'
+            AND auth_provider_user_id = ?
+            AND (user_id IS NULL OR user_id = ?)`,
+      )
+      .bind(userId, new Date().toISOString(), providerUserId, userId)
+      .run();
+  }
+
   async findByEmail(
     email: string,
   ): Promise<(User & { passwordHash: string }) | null> {
@@ -87,9 +159,190 @@ export class D1UserRepository implements UserRepository {
       email,
       role,
       emailVerified: false,
+      hasPassword: true,
+      googleConnected: false,
       isActive: true,
       createdAt: now,
     };
+  }
+
+  /** Busca por el `sub` estable de Google, nunca por el correo mutable. */
+  async findByGoogleSubject(providerUserId: string): Promise<User | null> {
+    const row = await getDb()
+      .prepare(
+        `SELECT ${USER_COLUMNS}
+           FROM users
+           JOIN user_oauth_identities oauth_identity
+             ON oauth_identity.user_id = users.id
+          WHERE oauth_identity.auth_provider = 'google'
+            AND oauth_identity.provider_user_id = ?`,
+      )
+      .bind(providerUserId)
+      .first<UserRow>();
+
+    return row ? toUser(row) : null;
+  }
+
+  /**
+   * Inicia con Google y, en el primer acceso, vincula por correo verificado o
+   * crea una cuenta profesional sin contraseña.
+   */
+  async signInWithGoogle(identity: GoogleIdentity): Promise<User> {
+    const linked = await this.findByGoogleSubject(identity.providerUserId);
+    if (linked) {
+      await this.linkConsumerIdentity(linked.id, identity.providerUserId);
+      return linked;
+    }
+
+    const byEmail = await this.findByEmail(identity.email);
+    if (byEmail) {
+      if (byEmail.role !== "provider") throw new GoogleIdentityConflictError();
+      if (!byEmail.isActive) return byEmail;
+      return this.linkGoogle(byEmail.id, identity);
+    }
+
+    const db = getDb();
+    const id = newId();
+    const now = new Date().toISOString();
+    const email = identity.email.trim().toLowerCase();
+
+    try {
+      await this.assertConsumerIdentityCanLink(id, identity.providerUserId);
+      // `batch` es atómico en D1: no puede quedar un usuario sin su identidad.
+      await db.batch([
+        db
+          .prepare(
+            `INSERT INTO users
+               (id, email, email_verified, role, password_hash, is_active,
+                created_at, updated_at)
+             VALUES (?, ?, 1, 'provider', '', 1, ?, ?)`,
+          )
+          .bind(id, email, now, now),
+        db
+          .prepare(
+            `INSERT INTO user_oauth_identities
+               (user_id, auth_provider, provider_user_id, provider_email,
+                created_at, updated_at)
+             VALUES (?, 'google', ?, ?, ?, ?)`,
+          )
+          .bind(id, identity.providerUserId, email, now, now),
+        db
+          .prepare(
+            `UPDATE consumer_users
+                SET user_id = ?, updated_at = ?
+              WHERE auth_provider = 'google'
+                AND auth_provider_user_id = ?
+                AND user_id IS NULL`,
+          )
+          .bind(id, now, identity.providerUserId),
+      ]);
+    } catch (error) {
+      // Dos callbacks simultáneos pueden competir por el mismo correo/sub.
+      const winner = await this.findByGoogleSubject(identity.providerUserId);
+      if (winner) {
+        await this.linkConsumerIdentity(winner.id, identity.providerUserId);
+        return winner;
+      }
+      const emailWinner = await this.findByEmail(email);
+      if (emailWinner?.role === "provider") {
+        return this.linkGoogle(emailWinner.id, identity);
+      }
+      throw error;
+    }
+
+    const created = await this.findById(id);
+    if (!created) throw new Error("GOOGLE_USER_NOT_CREATED");
+    return created;
+  }
+
+  /** Vincula Google a la cuenta que ya demostró controlar una sesión. */
+  async linkGoogle(userId: string, identity: GoogleIdentity): Promise<User> {
+    const subjectOwner = await this.findByGoogleSubject(identity.providerUserId);
+    if (subjectOwner) {
+      if (subjectOwner.id !== userId) throw new GoogleIdentityConflictError();
+      await this.linkConsumerIdentity(userId, identity.providerUserId);
+      return subjectOwner;
+    }
+
+    const db = getDb();
+    const currentIdentity = await db
+      .prepare(
+        `SELECT provider_user_id
+           FROM user_oauth_identities
+          WHERE user_id = ? AND auth_provider = 'google'`,
+      )
+      .bind(userId)
+      .first<{ provider_user_id: string }>();
+    if (currentIdentity) throw new GoogleIdentityConflictError();
+
+    const user = await this.findById(userId);
+    if (!user || user.role !== "provider") {
+      throw new GoogleIdentityConflictError();
+    }
+
+    const now = new Date().toISOString();
+    const providerEmail = identity.email.trim().toLowerCase();
+    try {
+      await this.assertConsumerIdentityCanLink(
+        userId,
+        identity.providerUserId,
+      );
+      await db.batch([
+        db
+          .prepare(
+            `INSERT INTO user_oauth_identities
+               (user_id, auth_provider, provider_user_id, provider_email,
+                created_at, updated_at)
+             VALUES (?, 'google', ?, ?, ?, ?)`,
+          )
+          .bind(
+            userId,
+            identity.providerUserId,
+            providerEmail,
+            now,
+            now,
+          ),
+        db
+          .prepare(
+            `UPDATE users
+                SET email_verified = CASE
+                      WHEN email = ? COLLATE NOCASE THEN 1
+                      ELSE email_verified
+                    END,
+                    updated_at = ?
+              WHERE id = ?`,
+          )
+          .bind(providerEmail, now, userId),
+        db
+          .prepare(
+            `UPDATE consumer_users
+                SET user_id = ?, updated_at = ?
+              WHERE auth_provider = 'google'
+                AND auth_provider_user_id = ?
+                AND user_id IS NULL`,
+          )
+          .bind(userId, now, identity.providerUserId),
+      ]);
+    } catch {
+      const winner = await this.findByGoogleSubject(identity.providerUserId);
+      if (!winner || winner.id !== userId) {
+        throw new GoogleIdentityConflictError();
+      }
+      await this.linkConsumerIdentity(userId, identity.providerUserId);
+    }
+
+    const updated = await this.findById(userId);
+    if (!updated) throw new Error("GOOGLE_USER_NOT_FOUND");
+    return updated;
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await getDb()
+      .prepare(
+        `UPDATE users SET password_hash = ?, updated_at = ? WHERE id = ?`,
+      )
+      .bind(passwordHash, new Date().toISOString(), userId)
+      .run();
   }
 }
 

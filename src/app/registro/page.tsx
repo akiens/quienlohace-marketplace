@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { AuthLayout } from "@/components/auth-layout";
+import { isGoogleEnabled } from "@/lib/google-oauth";
 import { getCurrentUser } from "@/lib/session";
 import { LoginPanel } from "@/components/login-panel";
 
@@ -22,12 +23,21 @@ export const metadata: Metadata = {
  */
 export const dynamic = "force-dynamic";
 
-export default async function SignupPage() {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ auth?: string }>;
+}) {
   if (await getCurrentUser()) redirect("/dashboard");
+  const { auth } = await searchParams;
 
   return (
     <AuthLayout selectable>
-      <LoginPanel mode="signup" />
+      <LoginPanel
+        mode="signup"
+        googleEnabled={isGoogleEnabled()}
+        authStatus={auth}
+      />
     </AuthLayout>
   );
 }

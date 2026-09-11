@@ -1,6 +1,9 @@
 # Copiar a .dev.vars y reemplazar por un valor aleatorio de al menos 32 bytes.
 ANALYTICS_SESSION_SECRET="replace-me"
 
+# Sobrescribe la URL pública de wrangler.jsonc durante `npm run dev`.
+APP_URL="http://localhost:3000"
+
 # OAuth de Google para publicar opiniones. Usar un cliente Web separado para
 # desarrollo y autorizar exactamente este callback en Google Cloud Console:
 # http://localhost:3000/auth/google/callback

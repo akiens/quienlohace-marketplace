@@ -73,7 +73,8 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   );
   if (!session) return null;
 
-  return new D1UserRepository().findById(session.userId);
+  const user = await new D1UserRepository().findById(session.userId);
+  return user?.isActive ? user : null;
 });
 
 /**

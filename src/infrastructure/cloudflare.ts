@@ -91,6 +91,29 @@ export function getAppUrl(): string {
   return env().APP_URL ?? "http://localhost:3000";
 }
 
+/** Secretos OAuth: bindings en Workers y `process.env` fuera de ese runtime. */
+export function getGoogleOAuthCredentials(): {
+  clientId?: string;
+  clientSecret?: string;
+} {
+  let runtime:
+    | (CloudflareEnv & {
+        GOOGLE_CLIENT_ID?: string;
+        GOOGLE_CLIENT_SECRET?: string;
+      })
+    | undefined;
+  try {
+    runtime = env() as typeof runtime;
+  } catch {
+    // Los scripts puros de Node no tienen contexto de Workers.
+  }
+  return {
+    clientId: runtime?.GOOGLE_CLIENT_ID ?? process.env.GOOGLE_CLIENT_ID,
+    clientSecret:
+      runtime?.GOOGLE_CLIENT_SECRET ?? process.env.GOOGLE_CLIENT_SECRET,
+  };
+}
+
 /**
  * Indica si hay runtime de Cloudflare disponible. Permite que el sitio siga
  * funcionando con los datos de ejemplo mientras la base no esté configurada.

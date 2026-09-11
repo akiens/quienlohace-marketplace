@@ -35,6 +35,7 @@ Las decisiones sobre almacenamiento, índices, transacciones, seguridad, normali
 
 - Las cuentas de proveedores y administradores pertenecen al dominio de gestión del marketplace.
 - Las cuentas de clientes pertenecen al dominio de opiniones y, por ahora, se autentican únicamente con Google.
+- Una misma persona puede vincular su cuenta de cliente y su cuenta de proveedor mediante el identificador estable de Google, sin mezclar sus permisos ni ciclos de vida.
 - Una cuenta de proveedor puede administrar como máximo un perfil.
 - Un perfil representa a un profesional independiente o a una empresa.
 - Una cuenta inactiva o suspendida no puede iniciar nuevas sesiones ni realizar operaciones protegidas.
@@ -338,6 +339,8 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 - Para opinar, el cliente se autentica con Google.
 - La identidad externa usa el identificador estable de Google, no el correo.
 - Nombre y avatar visibles pueden actualizarse desde Google en cada acceso.
+- Si la misma identidad de Google tiene una cuenta profesional, ambas facetas se vinculan y cualquiera de sus ingresos recupera el acceso a las opiniones anteriores.
+- Eliminar una cuenta profesional sólo elimina el vínculo; no elimina la identidad de cliente ni sus opiniones.
 - Un cliente suspendido no puede crear ni modificar opiniones o reportes.
 
 ### BR-026 — Opiniones y calificación

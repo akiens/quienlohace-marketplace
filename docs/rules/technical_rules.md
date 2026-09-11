@@ -598,6 +598,7 @@ Agregar una localidad es compatible. Renombrar o eliminar exige migración de re
 - Correos de acceso, IDs externos, estados internos, evidencias y sesiones nunca forman parte del perfil público.
 - Logs no contienen tokens, contraseñas, hashes ni datos personales completos innecesarios.
 - Eliminación y anonimización respetan el historial de opiniones y moderación.
+- La relación opcional entre cliente y cuenta profesional usa `ON DELETE SET NULL`; nunca propaga el borrado hacia opiniones.
 
 ### TR-038 — Auditoría
 

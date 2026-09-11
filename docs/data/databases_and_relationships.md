@@ -451,6 +451,7 @@ Identidad de los clientes que buscan servicios y dejan opiniones. Está separada
 | `id`                    | text | no    | —        | PK. UUID v4 |
 | `auth_provider`         | text | no    | 'google' | CHECK IN ('google') |
 | `auth_provider_user_id` | text | no    | —        | Identificador `sub` de Google. Es estable aunque cambie el correo |
+| `user_id`               | text | sí    | —        | FK → users.id ON DELETE SET NULL. Cuenta profesional de la misma persona, comprobada mediante el mismo `sub` de Google |
 | `email`                 | text | no    | —        | Puede cambiar; no se utiliza como identidad externa |
 | `display_name`          | text | no    | ''       | Se actualiza en cada ingreso con el nombre recibido desde Google |
 | `avatar_url`            | text | no    | ''       | Se actualiza en cada ingreso con el avatar recibido desde Google |
@@ -460,6 +461,7 @@ Identidad de los clientes que buscan servicios y dejan opiniones. Está separada
 
 ## Índices:
 idx_consumer_users_provider_identity UNIQUE (auth_provider, auth_provider_user_id).  
+idx_consumer_users_user_id UNIQUE (user_id) WHERE user_id IS NOT NULL.
 idx_consumer_users_email (email COLLATE NOCASE).
 
 <hr style="height: 5px; background-color: gray; border: none;">
@@ -554,5 +556,6 @@ idx_review_reports_review_user UNIQUE (review_id, user_id) WHERE user_id IS NOT 
 - Un perfil puede almacenar varias líneas de horario mediante `profile_schedule_entries`.
 - No se necesita una tabla `profile_service_sectors`, porque los rubros del perfil se obtienen a través de sus especialidades.
 - Un `consumer_user` puede mantener varias `consumer_sessions` y escribir opiniones.
+- Un `consumer_user` puede vincularse con un `user` mediante el mismo `sub` de Google. El vínculo es opcional y se vuelve NULL al borrar la cuenta profesional; el cliente y sus opiniones se conservan.
 - Un `profile` puede recibir muchas `reviews`.
 - Una `review` puede recibir muchos `review_reports`; cada reporte puede pertenecer a un cliente o a un usuario proveedor/administrador.

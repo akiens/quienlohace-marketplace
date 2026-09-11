@@ -19,9 +19,16 @@ export const dynamic = "force-dynamic";
 export async function GET(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const returnTo = safeReturnTo(url.searchParams.get("returnTo") ?? "/");
+  const provider = url.searchParams.get("account") === "provider";
+  const purpose = provider
+    ? url.searchParams.get("mode") === "link"
+      ? "provider-link"
+      : "provider-login"
+    : "consumer";
 
   const nonce = crypto.randomUUID();
-  const target = authorizationUrl(encodeState(nonce, returnTo));
+  const state = encodeState(nonce, returnTo, purpose);
+  const target = authorizationUrl(state, nonce);
 
   if (!target) {
     // Sin credenciales configuradas no se puede iniciar sesión; se vuelve al
@@ -30,7 +37,9 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const store = await cookies();
-  store.set(OAUTH_STATE_COOKIE, nonce, {
+  // Se guarda el state entero: así también quedan vinculados al nonce la
+  // intención (cliente/proveedor) y el destino de vuelta.
+  store.set(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",

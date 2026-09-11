@@ -7,14 +7,16 @@ import {
   D1ConsumerRepository,
   D1ConsumerSessionRepository,
 } from "@/infrastructure/d1-consumer-repository";
+import { getCurrentUser } from "@/lib/session";
 import type { ConsumerUser } from "@/types";
 
 /**
  * Sesión del cliente que deja opiniones.
  *
- * Es independiente de la sesión de proveedor: son dos identidades distintas
- * (RF-037) y una persona podría tener ambas. Misma mecánica que la de
- * proveedor: cookie opaca y en la base sólo el SHA-256 del token.
+ * Conserva su propia cookie porque las opiniones y el perfil profesional
+ * tienen ciclos de vida distintos. Cuando ambos registros están vinculados,
+ * cualquiera de las sesiones puede recuperar la misma identidad de autor.
+ * En la base sólo se guarda el SHA-256 del token.
  */
 
 const COOKIE_NAME = "qlh_consumer";
@@ -66,6 +68,17 @@ export async function destroyConsumerSession(): Promise<void> {
  */
 export const getCurrentConsumer = cache(
   async (): Promise<ConsumerUser | null> => {
+    // Una sesión profesional vinculada también demuestra quién es el autor
+    // de sus opiniones. Esto mantiene acceso a opiniones anteriores incluso
+    // si la cookie histórica de cliente expiró o fue creada en otro equipo.
+    const currentUser = await getCurrentUser();
+    if (currentUser?.role === "provider") {
+      const linkedConsumer = await new D1ConsumerRepository().findByUserId(
+        currentUser.id,
+      );
+      if (linkedConsumer?.status === "active") return linkedConsumer;
+    }
+
     const store = await cookies();
     const token = store.get(COOKIE_NAME)?.value;
     if (!token) return null;

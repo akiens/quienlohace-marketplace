@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { login, signup, type FormState } from "@/app/actions/auth";
+import { GoogleMark } from "@/components/google-mark";
 import { Button, Icon } from "@/components/ui";
 import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
 import { clearProfileDraft } from "@/lib/profile-draft";
@@ -32,7 +33,15 @@ import {
  * formulario. Con una ruta por intención, cada página monta su propio panel y
  * el problema no puede volver.
  */
-export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
+export function LoginPanel({
+  mode,
+  googleEnabled,
+  authStatus,
+}: {
+  mode: "login" | "signup";
+  googleEnabled: boolean;
+  authStatus?: string;
+}) {
   const isSignup = mode === "signup";
   const [state, action, pending] = useActionState<FormState, FormData>(
     isSignup ? signup : login,
@@ -50,6 +59,14 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
     selectedPlanServerSnapshot,
   );
   const planId = isSignup ? storedPlan : null;
+  const oauthError =
+    authStatus === "suspended"
+      ? "Esta cuenta no está habilitada para ingresar."
+      : authStatus === "conflict"
+        ? "Esta cuenta de Google ya está vinculada a otra cuenta profesional."
+        : authStatus === "error"
+          ? "No pudimos completar el ingreso con Google. Intentá nuevamente."
+          : "";
 
   /**
    * Errores detectados en el cliente, con los mismos schemas que usa la
@@ -246,6 +263,41 @@ export function LoginPanel({ mode }: { mode: "login" | "signup" }) {
             height={112}
             className="pointer-events-none absolute -right-4 -top-7 z-10 h-16 w-16 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] sm:-right-5 sm:-top-8 sm:h-20 sm:w-20"
           />
+        ) : null}
+
+        {oauthError ? (
+          <p
+            role="alert"
+            className="flex items-center gap-2 rounded-input border border-[#FDA29B] bg-[#FFFBFA] p-3 text-[13.5px] font-medium text-[#B42318]"
+          >
+            <Icon name="error" className="text-[17px]" />
+            {oauthError}
+          </p>
+        ) : null}
+
+        {googleEnabled ? (
+          <>
+            <a
+              href={`/auth/google?account=provider&returnTo=${encodeURIComponent(
+                isSignup ? "/dashboard/crear" : "/dashboard",
+              )}`}
+              onClick={() => {
+                if (isSignup) clearProfileDraft();
+              }}
+              className="flex h-11 w-full items-center justify-center gap-2.5 rounded-input border border-line-strong bg-white px-4 text-[14.5px] font-semibold text-ink transition-colors hover:bg-surface-muted"
+            >
+              <GoogleMark className="h-[18px] w-[18px]" />
+              Continuar con Google
+            </a>
+
+            <div className="flex items-center gap-3" aria-hidden="true">
+              <span className="h-px flex-1 bg-line" />
+              <span className="text-[12px] font-medium uppercase tracking-[.08em] text-ink-faint">
+                o con correo
+              </span>
+              <span className="h-px flex-1 bg-line" />
+            </div>
+          </>
         ) : null}
 
         {/*

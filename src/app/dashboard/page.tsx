@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
+import { AccountSecurity } from "@/components/dashboard/account-security";
 import { DowngradeNotice } from "@/components/dashboard/downgrade-notice";
 import { PlanSwitcher } from "@/components/dashboard/plan-switcher";
 import { ProfileView } from "@/components/dashboard/profile-view";
@@ -38,9 +39,11 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ editar?: string }>;
+  searchParams: Promise<{ editar?: string; auth?: string }>;
 }) {
   if (!hasCloudflareRuntime()) return <SetupNotice />;
+
+  const params = await searchParams;
 
   /*
    * El modo edición se lee acá además de en `ProfileView` porque de él
@@ -49,7 +52,7 @@ export default async function DashboardPage({
    * pantalla, y editando ya se leyó al entrar. La página no se vuelve dinámica
    * por esto — ya lo era (`force-dynamic`).
    */
-  const editing = (await searchParams).editar === "1";
+  const editing = params.editar === "1";
 
   const user = await getCurrentUser();
   if (!user) redirect("/entrar");
@@ -167,6 +170,15 @@ export default async function DashboardPage({
           images={images}
           serviceCards={serviceCards}
         />
+
+        {!editing ? (
+          <AccountSecurity
+            email={user.email}
+            hasPassword={user.hasPassword}
+            googleConnected={user.googleConnected}
+            authStatus={params.auth}
+          />
+        ) : null}
       </div>
     </>
   );

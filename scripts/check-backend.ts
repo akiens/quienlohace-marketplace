@@ -10,6 +10,7 @@
 import { hashPassword, verifyPassword } from "../src/lib/password";
 import {
   credentialsSchema,
+  passwordUpdateSchema,
   profileSchema,
   serviceCardSchema,
   signupSchema,
@@ -467,6 +468,22 @@ async function main(): Promise<void> {
   check(
     "rechaza descripción demasiado corta",
     !profileSchema.safeParse({ ...VALID_PROFILE, description: "corta" }).success,
+  );
+  check(
+    "acepta crear una contraseña sin contraseña anterior",
+    passwordUpdateSchema.safeParse({
+      currentPassword: "",
+      newPassword: "nueva-clave-segura",
+      passwordConfirm: "nueva-clave-segura",
+    }).success,
+  );
+  check(
+    "rechaza repetir una contraseña diferente",
+    !passwordUpdateSchema.safeParse({
+      currentPassword: "clave-anterior",
+      newPassword: "nueva-clave-segura",
+      passwordConfirm: "otra-clave-segura",
+    }).success,
   );
 
   console.log("\nCartas de servicio (BR-034)");
