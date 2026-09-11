@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { runMarketplaceSearch } from "@/app/actions/search";
 import { FiltersPanel } from "@/components/filters-panel";
 import { TrackedResult } from "@/components/analytics/tracked-result";
-import { ProfileCard } from "@/components/profile-card";
+import { ProfileCard, ProfileCardSkeleton } from "@/components/profile-card";
 import { ServiceOfferCard } from "@/components/service-offer-card";
 import { SearchPanel } from "@/components/search-panel";
 import { SearchResultsSkeleton } from "@/components/search-results-skeleton";
@@ -34,7 +34,7 @@ export function SearchExperience({
   const [filters, setFilters] = useState(initialFilters);
   const [search, setSearch] = useState(initialSearch);
   const [draft, setDraft] = useState(initialFilters);
-  const [isSearching, setIsSearching] = useState(false);
+  const [pendingOperation, setPendingOperation] = useState<"search" | "load-more" | null>(null);
   const [repeatedSearchAttempt, setRepeatedSearchAttempt] = useState(0);
   const [searchError, setSearchError] = useState<string | null>(null);
   const inFlight = useRef(false);
@@ -42,11 +42,15 @@ export function SearchExperience({
   async function execute(
     next: SearchFilters,
     page: number,
-    options: { updateUrl: boolean; recordPending: boolean },
+    options: {
+      updateUrl: boolean;
+      recordPending: boolean;
+      operation: "search" | "load-more";
+    },
   ) {
     if (inFlight.current) return;
     inFlight.current = true;
-    setIsSearching(true);
+    setPendingOperation(options.operation);
     setSearchError(null);
     setRepeatedSearchAttempt(0);
 
@@ -72,7 +76,7 @@ export function SearchExperience({
       setSearchError("No pudimos completar la búsqueda. Intentá nuevamente.");
     } finally {
       inFlight.current = false;
-      setIsSearching(false);
+      setPendingOperation(null);
     }
   }
 
@@ -84,7 +88,7 @@ export function SearchExperience({
     void (async () => {
       if (inFlight.current) return;
       inFlight.current = true;
-      setIsSearching(true);
+      setPendingOperation("search");
       setSearchError(null);
       try {
         const result = await runMarketplaceSearch(params.toString());
@@ -95,7 +99,7 @@ export function SearchExperience({
         setSearchError("No pudimos completar la búsqueda. Intentá nuevamente.");
       } finally {
         inFlight.current = false;
-        setIsSearching(false);
+        setPendingOperation(null);
       }
     })();
   }, []);
@@ -119,7 +123,11 @@ export function SearchExperience({
       setRepeatedSearchAttempt((attempt) => attempt + 1);
       return;
     }
-    void execute(next, 1, { updateUrl: true, recordPending: true });
+    void execute(next, 1, {
+      updateUrl: true,
+      recordPending: true,
+      operation: "search",
+    });
   }
 
   function submitSearchHref(href: string) {
@@ -132,7 +140,8 @@ export function SearchExperience({
       filters={filters}
       search={search}
       draft={draft}
-      loading={isSearching}
+      loading={pendingOperation !== null}
+      loadingMore={pendingOperation === "load-more"}
       repeatedSearchAttempt={repeatedSearchAttempt}
       searchError={searchError}
       onDraftChange={(next) => {
@@ -145,6 +154,7 @@ export function SearchExperience({
       onLoadMore={() => void execute(filters, search.pagination.page + 1, {
         updateUrl: true,
         recordPending: false,
+        operation: "load-more",
       })}
     />
   );
@@ -155,6 +165,7 @@ function SearchExperienceContent({
   search,
   draft,
   loading,
+  loadingMore,
   repeatedSearchAttempt,
   searchError,
   onDraftChange,
@@ -167,6 +178,7 @@ function SearchExperienceContent({
   search: MarketplaceSearchResult;
   draft: SearchFilters;
   loading: boolean;
+  loadingMore: boolean;
   repeatedSearchAttempt: number;
   searchError: string | null;
   onDraftChange: (filters: SearchFilters) => void;
@@ -244,7 +256,7 @@ function SearchExperienceContent({
         loading={loading}
       />
 
-      {loading ? (
+      {loading && !loadingMore ? (
         <SearchResultsSkeleton />
       ) : (
         <div className="shell flex flex-col gap-5 py-8">
@@ -308,6 +320,7 @@ function SearchExperienceContent({
             <MixedResults
               key={`${search.interpretation.normalized}:${search.results.map((item) => `${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`).join("|")}`}
               search={search}
+              loadingMore={loadingMore}
               onLoadMore={onLoadMore}
             />
           )}
@@ -329,15 +342,23 @@ function SearchExperienceContent({
 
 function MixedResults({
   search,
+  loadingMore,
   onLoadMore,
 }: {
   search: MarketplaceSearchResult;
+  loadingMore: boolean;
   onLoadMore: () => void;
 }) {
   const shown = search.results;
   const remaining = search.pagination.remaining;
+  const expectedCount = Math.min(search.pagination.pageSize, remaining);
   return (
     <section className="flex flex-col gap-6" aria-label="Resultados de búsqueda">
+      {loadingMore ? (
+        <p className="sr-only" role="status" aria-live="polite">
+          Cargando {expectedCount} resultados más.
+        </p>
+      ) : null}
       <div className={PROVIDER_GRID}>
         {shown.map((item, index) => (
           <TrackedResult
@@ -370,8 +391,13 @@ function MixedResults({
             )}
           </TrackedResult>
         ))}
+        {loadingMore
+          ? Array.from({ length: expectedCount }, (_, index) => (
+              <ProfileCardSkeleton key={`load-more-${index}`} />
+            ))
+          : null}
       </div>
-      {search.pagination.hasMore ? (
+      {search.pagination.hasMore && !loadingMore ? (
         <div className="flex justify-center">
           <Button
             variant="secondary"
