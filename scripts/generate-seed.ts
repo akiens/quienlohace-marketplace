@@ -38,6 +38,10 @@ import {
 } from "../src/data/taxonomy";
 import { hashPasswordWithSalt } from "../src/lib/password";
 import { slugify } from "../src/lib/slug";
+import {
+  profileServiceModes,
+  serviceCardDetails,
+} from "./seed-service-cards";
 import type {
   PaymentMethod,
   PlanId,
@@ -55,8 +59,8 @@ const SEED = 20260831;
  * cualquiera de ellas desde el login.
  *
  * SÓLO para datos de prueba: es pública y está en el repositorio. Estos
- * usuarios no deben existir en producción — el seed empieza borrando las
- * tablas justamente porque no está pensado para correr allí.
+ * usuarios no deben convivir con datos reales: el seed empieza borrando las
+ * tablas y sólo se puede usar en entornos locales o remotos de prueba.
  */
 const SEED_PASSWORD = "admin.123";
 
@@ -110,8 +114,6 @@ const PLAN_CAPS: Record<
     serviceCards: 20,
   },
 };
-
-const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"];
 
 const PAYMENTS: PaymentMethod[] = [
   "cash",
@@ -169,6 +171,7 @@ type SeedService = {
 
 type SeedServiceCard = {
   id: string;
+  serviceId: string;
   specialtyId: string;
   slug: string;
   title: string;
@@ -355,11 +358,13 @@ function buildProfile(
     }
   }
 
-  // BR-017: una o varias. Con más de una, la ficha muestra atención híbrida.
-  const serviceModes = faker.helpers.arrayElements(SERVICE_MODES, {
-    min: 1,
-    max: 3,
-  });
+  // BR-017: las modalidades reflejan el rubro y los servicios concretos. Por
+  // ejemplo, tecnología tiende a remoto y limpieza nunca se ofrece remoto.
+  const serviceModes = profileServiceModes(
+    faker,
+    sector.id,
+    services.map((service) => service.name),
+  );
 
   /*
    * BR-015: la ubicación física sólo tiene sentido si se atiende en el
@@ -447,47 +452,57 @@ function buildProfile(
    * 20, porque el seed busca variedad y no sólo probar el máximo.
    */
   const maxMockCards = Math.min(5, caps.serviceCards, services.length);
-  const cardCount = maxMockCards >= 2 && faker.datatype.boolean({ probability: 0.45 })
+  // El primer perfil de cada especialidad siempre tiene cartas. Así la base
+  // de prueba cubre las 120 especialidades y no depende de la suerte para que
+  // una búsqueda pueda devolver ofertas concretas.
+  const cardCount = maxMockCards >= 2 &&
+    (index === 0 || faker.datatype.boolean({ probability: 0.68 }))
     ? faker.number.int({ min: 2, max: maxMockCards })
     : 0;
-  const serviceCards: SeedServiceCard[] = faker.helpers
-    .arrayElements(services, cardCount)
+  const primaryServices = services.filter(
+    (service) => service.specialtyId === specialty.id,
+  );
+  const requiredService = cardCount > 0 && index === 0
+    ? faker.helpers.arrayElement(primaryServices)
+    : null;
+  const cardServices = requiredService
+    ? [
+        requiredService,
+        ...faker.helpers.arrayElements(
+          services.filter((service) => service.id !== requiredService.id),
+          cardCount - 1,
+        ),
+      ]
+    : faker.helpers.arrayElements(services, cardCount);
+  const serviceCards: SeedServiceCard[] = cardServices
     .map((service, order) => {
-      const priceKind = faker.helpers.weightedArrayElement<ServiceCardPriceKind>([
-        { weight: 20, value: "quote" },
-        { weight: 35, value: "fixed" },
-        { weight: 25, value: "from" },
-        { weight: 20, value: "range" },
-      ]);
-      const basePrice = faker.number.int({ min: 8, max: 120 }) * 500 * 100;
-      const priceMinCents = priceKind === "quote" ? null : basePrice;
-      const priceMaxCents = priceKind === "range"
-        ? basePrice + faker.number.int({ min: 2, max: 30 }) * 500 * 100
-        : null;
-      const durationMinMinutes = faker.helpers.arrayElement([30, 60, 90, 120, 240, 480]);
+      const details = serviceCardDetails({
+        faker,
+        sectorId: sector.id,
+        serviceName: service.name,
+        availableModes: serviceModes,
+      });
 
       return {
         id: `seed-card-${slug}-${order}`,
+        serviceId: service.id,
         specialtyId: service.specialtyId,
         slug: uniqueServiceCardSlug(`${service.name}-${slug}`),
         title: service.name,
-        description: `${service.name} con alcance claro, materiales y tiempos a coordinar. Incluye asesoramiento previo y presupuesto detallado sin compromiso.`,
-        priceKind,
-        priceMinCents,
-        priceMaxCents,
-        tier: faker.helpers.weightedArrayElement<ServiceCardTier>([
-          { weight: 25, value: "economy" },
-          { weight: 55, value: "standard" },
-          { weight: 20, value: "premium" },
-        ]),
-        durationMinMinutes,
-        durationMaxMinutes: faker.datatype.boolean({ probability: 0.5 })
-          ? durationMinMinutes + faker.helpers.arrayElement([30, 60, 120, 240])
-          : null,
-        serviceMode: faker.helpers.arrayElement(serviceModes),
+        description: details.description,
+        priceKind: details.priceKind,
+        priceMinCents: details.priceMinCents,
+        priceMaxCents: details.priceMaxCents,
+        tier: details.tier,
+        durationMinMinutes: details.durationMinMinutes,
+        durationMaxMinutes: details.durationMaxMinutes,
+        serviceMode: details.serviceMode,
         paymentMethod: faker.helpers.arrayElement(paymentMethods),
         schedule: faker.helpers.arrayElement(scheduleEntries),
-        isPublished: faker.datatype.boolean({ probability: 0.9 }),
+        // La carta representativa de cada especialidad siempre es pública.
+        isPublished: index === 0 && order === 0
+          ? true
+          : faker.datatype.boolean({ probability: 0.9 }),
         sortOrder: order,
       };
     });
@@ -568,7 +583,7 @@ function buildSql(passwordHash: string): string {
     "--",
     `-- Todas las cuentas usan la contraseña ${SEED_PASSWORD} (sólo para pruebas).`,
     "--",
-    "-- NO debe ejecutarse en producción: borra el contenido de las tablas.",
+    "-- SÓLO PARA ENTORNOS DE PRUEBA: borra el contenido de las tablas.",
     "",
     // El orden importa: primero lo que depende, después lo dependido.
     "DELETE FROM review_reports;",
@@ -590,7 +605,12 @@ function buildSql(passwordHash: string): string {
     "DELETE FROM users;",
     "DELETE FROM specialties;",
     "DELETE FROM service_sectors;",
-    "DELETE FROM locations;",
+    // `locations.parent_id` usa ON DELETE RESTRICT. Vaciar toda la tabla en
+    // una sentencia funciona si está vacía, pero falla al repoblar una D1:
+    // primero deben salir los hijos y al final la raíz.
+    "DELETE FROM locations WHERE type = 'locality';",
+    "DELETE FROM locations WHERE type = 'department';",
+    "DELETE FROM locations WHERE type = 'country';",
     "",
     "-- Catálogo geográfico (BR-014). Los padres van antes que los hijos.",
   ];
@@ -655,7 +675,7 @@ function buildSql(passwordHash: string): string {
 
     for (const card of profile.serviceCards) {
       lines.push(
-        `INSERT INTO service_cards (id, profile_id, specialty_id, slug, title, description, price_kind, price_min_cents, price_max_cents, currency, tier, duration_min_minutes, duration_max_minutes, service_mode, payment_method, schedule, image_id, is_published, is_active, sort_order, created_at, updated_at) VALUES (${sql(card.id)}, ${sql(profile.profileId)}, ${sql(card.specialtyId)}, ${sql(card.slug)}, ${sql(card.title)}, ${sql(card.description)}, ${sql(card.priceKind)}, ${card.priceMinCents ?? "NULL"}, ${card.priceMaxCents ?? "NULL"}, 'UYU', ${sql(card.tier)}, ${card.durationMinMinutes ?? "NULL"}, ${card.durationMaxMinutes ?? "NULL"}, ${sql(card.serviceMode)}, ${nullable(card.paymentMethod)}, ${sql(card.schedule)}, NULL, ${card.isPublished ? 1 : 0}, 1, ${card.sortOrder}, ${sql(NOW)}, ${sql(NOW)});`,
+        `INSERT INTO service_cards (id, profile_id, service_id, specialty_id, slug, title, description, price_kind, price_min_cents, price_max_cents, currency, tier, duration_min_minutes, duration_max_minutes, service_mode, payment_method, schedule, image_id, is_published, is_active, sort_order, created_at, updated_at) VALUES (${sql(card.id)}, ${sql(profile.profileId)}, ${sql(card.serviceId)}, ${sql(card.specialtyId)}, ${sql(card.slug)}, ${sql(card.title)}, ${sql(card.description)}, ${sql(card.priceKind)}, ${card.priceMinCents ?? "NULL"}, ${card.priceMaxCents ?? "NULL"}, 'UYU', ${sql(card.tier)}, ${card.durationMinMinutes ?? "NULL"}, ${card.durationMaxMinutes ?? "NULL"}, ${sql(card.serviceMode)}, ${nullable(card.paymentMethod)}, ${sql(card.schedule)}, NULL, ${card.isPublished ? 1 : 0}, 1, ${card.sortOrder}, ${sql(NOW)}, ${sql(NOW)});`,
       );
     }
 

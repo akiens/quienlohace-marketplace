@@ -91,6 +91,12 @@ Faker con locale español; las especialidades, las ubicaciones y los horarios,
 de los catálogos generados desde `docs/data`, así toda referencia existe por
 construcción.
 
+También genera unas 1.000 cartas de servicio y garantiza al menos una oferta
+pública por especialidad. Cada carta queda vinculada al servicio exacto que
+representa y usa modalidad, duración, tipo de precio y banda en pesos
+uruguayos coherentes con el rubro. Son valores ficticios para probar la UI y
+la búsqueda, no un tarifario de mercado.
+
 El seed carga también esos catálogos (ubicaciones, rubros y especialidades):
 los perfiles los referencian por clave foránea y sin ellos no entrarían.
 
@@ -150,7 +156,7 @@ Verificar que entró:
 
 ```bash
 npx wrangler d1 execute quienlohace --remote \
-  --command "SELECT COUNT(*) AS total, SUM(status='active') AS publicados FROM providers"
+  --command "SELECT COUNT(*) AS total, SUM(profile_status='active') AS publicados FROM profiles; SELECT COUNT(*) AS cartas FROM service_cards"
 ```
 
 Para volver a dejarla vacía:
@@ -164,11 +170,11 @@ npm run db:reset:remote   # ejecuta seeds/truncate.sql
 1. **Borra lo que haya.** El seed empieza con `DELETE FROM`, así que se lleva
    puestos usuarios, perfiles y opiniones reales. Si ya creaste tu cuenta en
    el sitio, la vas a perder.
-2. **Son datos inventados.** ~910 perfiles con nombres de Faker y teléfonos
-   que no existen. Aceptable mientras `robots.txt` bloquee la indexación en
-   `*.workers.dev`; **hay que vaciar la base antes de apuntar al dominio
+2. **Son datos inventados.** ~540 perfiles, ~1.000 cartas, nombres de Faker y
+   teléfonos que no existen. Aceptable mientras `robots.txt` bloquee la indexación
+   en `*.workers.dev`; **hay que vaciar la base antes de apuntar al dominio
    definitivo**, o quedan perfiles falsos publicados y indexables.
-3. **Consume cupo.** Son ~12.000 sentencias. El plan gratuito de D1 permite
+3. **Consume cupo.** Son ~17.000 sentencias. El plan gratuito de D1 permite
    100.000 filas escritas por día: entra, pero no conviene repetirlo muchas
    veces en el mismo día.
 4. **Se puede recuperar.** D1 guarda Time Travel (7 días en plan gratuito,
@@ -239,9 +245,10 @@ D1   quienlohace          be93c0ea-e93a-45a8-95cb-08ff9933ed28
 R2   quienlohace-media
 ```
 
-El esquema ya está aplicado en la base de producción
-(`npm run db:migrate:remote`). El seed de prueba **nunca** va a producción:
-`db:seed:local` empieza con `DELETE FROM` y apunta sólo a la base local.
+El esquema ya está aplicado en la base remota
+(`npm run db:migrate:remote`). El seed es exclusivo para entornos de prueba:
+se puede cargar localmente o en el Worker de staging, pero siempre empieza con
+`DELETE FROM` y debe retirarse antes de publicar el dominio definitivo.
 
 ## Arquitectura
 
@@ -281,7 +288,7 @@ src/
 ├── lib/                  Sesión, contraseñas, validación, búsqueda, OAuth
 └── types/                Contratos de dominio
 migrations/               Esquema (se aplica con wrangler)
-seeds/                    Datos de prueba — nunca en producción
+seeds/                    Datos de prueba — sólo local o staging
 ```
 
 ## Decisiones

@@ -182,11 +182,20 @@ if (schemaOk) check("las migraciones aplican en orden", true);
 let seedOk = false;
 if (schemaOk) {
   try {
-    db.exec(readFileSync("seeds/dev-seed.sql", "utf8"));
+    const seed = readFileSync("seeds/dev-seed.sql", "utf8");
+    db.exec(seed);
+    // Repoblar una base existente es el caso de `db:seed:local` y
+    // `db:seed:remote`. Ejecutarlo dos veces descubre DELETE en un orden
+    // incompatible con FKs que una primera carga sobre tablas vacías oculta.
+    db.exec(seed);
     seedOk = true;
-    check("el seed carga con las claves foráneas activas", true);
+    check("el seed carga y se puede recargar con las claves foráneas activas", true);
   } catch (error) {
-    check("el seed carga con las claves foráneas activas", false, (error as Error).message);
+    check(
+      "el seed carga y se puede recargar con las claves foráneas activas",
+      false,
+      (error as Error).message,
+    );
   }
 }
 
@@ -331,6 +340,42 @@ if (seedOk) {
          LEFT JOIN services s ON s.id = sc.service_id
         WHERE s.id IS NULL OR s.profile_id <> sc.profile_id
            OR s.specialty_id <> sc.specialty_id`,
+    ],
+    [
+      "BR-034: la carta mock representa exactamente el servicio vinculado",
+      `SELECT count(*) n FROM service_cards sc
+         JOIN services s ON s.id = sc.service_id
+        WHERE lower(sc.title) <> lower(s.name)`,
+    ],
+    [
+      "BR-034: toda especialidad tiene una carta pública representativa",
+      `SELECT count(*) n FROM specialties sp
+        WHERE NOT EXISTS (
+          SELECT 1 FROM service_cards sc
+          JOIN profiles p ON p.id = sc.profile_id
+          JOIN services s ON s.id = sc.service_id
+          WHERE s.specialty_id = sp.id AND p.profile_status = 'active'
+            AND sc.is_active = 1 AND sc.is_published = 1
+        )`,
+    ],
+    [
+      "BR-034: la modalidad de cada carta está declarada por el perfil",
+      `SELECT count(*) n FROM service_cards sc
+        WHERE NOT EXISTS (
+          SELECT 1 FROM profile_service_modes psm
+          WHERE psm.profile_id = sc.profile_id
+            AND psm.service_mode_id = sc.service_mode
+        )`,
+    ],
+    [
+      "BR-034: importes mock plausibles y expresados en centésimos",
+      `SELECT count(*) n FROM service_cards
+        WHERE (price_min_cents IS NOT NULL AND
+               (price_min_cents < 50000 OR price_min_cents > 30000000
+                OR price_min_cents % 5000 <> 0))
+           OR (price_max_cents IS NOT NULL AND
+               (price_max_cents < price_min_cents OR price_max_cents > 50000000
+                OR price_max_cents % 5000 <> 0))`,
     ],
     [
       "BR-006 — ubicaciones activas dentro del tope del plan",
