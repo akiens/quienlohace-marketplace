@@ -7,9 +7,13 @@ import {
 } from "@/infrastructure/d1-repositories";
 import { createConsumerSession } from "@/lib/consumer-session";
 import {
+  OAUTH_PENDING_COOKIE,
   OAUTH_STATE_COOKIE,
+  decodePendingOAuthStates,
   decodeState,
+  encodePendingOAuthStates,
   exchangeCodeForIdentity,
+  normalizeOAuthState,
   oauthStateCookieName,
 } from "@/lib/google-oauth";
 import { createSession, getCurrentUser } from "@/lib/session";
@@ -29,16 +33,43 @@ export async function GET(request: Request): Promise<Response> {
   const rawState = url.searchParams.get("state") ?? "";
   const rawNonce = decodeState(rawState).nonce;
   const attemptCookie = oauthStateCookieName(rawNonce);
-  const expectedState =
-    store.get(attemptCookie)?.value ?? store.get(OAUTH_STATE_COOKIE)?.value;
+  const attemptState = store.get(attemptCookie)?.value;
+  const pendingStates = [
+    ...decodePendingOAuthStates(store.get(OAUTH_PENDING_COOKIE)?.value),
+    ...decodePendingOAuthStates(store.get(OAUTH_STATE_COOKIE)?.value),
+  ];
+  const normalizedRawState = normalizeOAuthState(rawState);
+  const normalizedAttemptState = normalizeOAuthState(attemptState ?? "");
+  const normalizedPendingStates = pendingStates.map(normalizeOAuthState);
+  const stateIsValid = Boolean(
+    normalizedRawState &&
+      (normalizedRawState === normalizedAttemptState ||
+        normalizedPendingStates.includes(normalizedRawState)),
+  );
+
+  // Consume solamente este intento. Los que pertenezcan a otras pestañas
+  // siguen disponibles hasta vencer.
   store.delete(attemptCookie);
-  if (attemptCookie !== OAUTH_STATE_COOKIE) {
-    store.delete(OAUTH_STATE_COOKIE);
+  store.delete(OAUTH_STATE_COOKIE);
+  const remainingStates = pendingStates.filter(
+    (state) => normalizeOAuthState(state) !== normalizedRawState,
+  );
+  if (remainingStates.length > 0) {
+    store.set(OAUTH_PENDING_COOKIE, encodePendingOAuthStates(remainingStates), {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: 600,
+    });
+  } else {
+    store.delete(OAUTH_PENDING_COOKIE);
   }
 
-  const stateIsValid = Boolean(expectedState && rawState === expectedState);
+  // Aun si el state no valida, su destino sólo puede ser una ruta interna y
+  // permite mostrar el error en el formulario que inició el intento.
   const { nonce, purpose, returnTo } = decodeState(
-    stateIsValid ? rawState : (expectedState ?? ""),
+    normalizedRawState || rawState,
   );
   const redirectBack = (
     destination: string,
@@ -74,10 +105,23 @@ export async function GET(request: Request): Promise<Response> {
 
   const code = url.searchParams.get("code");
   if (!code || !stateIsValid || !nonce) {
-    const reason = !code ? "callback" : !stateIsValid ? "state" : "identity";
+    const hasStoredState = Boolean(attemptState || pendingStates.length > 0);
+    const reason = !code
+      ? "callback"
+      : !stateIsValid
+        ? hasStoredState
+          ? "state-mismatch"
+          : "state-missing"
+        : "identity";
     console.error(
       "Google OAuth callback validation failed",
       !code ? "code" : !stateIsValid ? "state" : "nonce",
+      !stateIsValid
+        ? {
+            attemptCookiePresent: Boolean(attemptState),
+            pendingStateCount: pendingStates.length,
+          }
+        : undefined,
     );
     return fail({ auth: reason });
   }

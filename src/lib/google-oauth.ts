@@ -22,7 +22,9 @@ const TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 
 /** Nombre anterior; se conserva sólo para completar intentos ya iniciados. */
 export const OAUTH_STATE_COOKIE = "qlh_oauth_state";
+export const OAUTH_PENDING_COOKIE = "qlh_oauth_pending_v2";
 const OAUTH_STATE_COOKIE_PREFIX = `${OAUTH_STATE_COOKIE}_`;
+const MAX_PENDING_OAUTH_STATES = 5;
 
 /**
  * Cada intento usa su propia cookie. Una segunda pestaña o un reintento no
@@ -34,6 +36,42 @@ export function oauthStateCookieName(nonce: string): string {
   )
     ? `${OAUTH_STATE_COOKIE_PREFIX}${nonce}`
     : OAUTH_STATE_COOKIE;
+}
+
+/**
+ * Respaldo estable para navegadores o adaptadores que no conservan de forma
+ * fiable cookies cuyos nombres cambian en cada intento. La lista permite
+ * abrir Google en varias pestañas sin que el último intento pise al anterior.
+ */
+export function encodePendingOAuthStates(states: string[]): string {
+  const compact = states.slice(-MAX_PENDING_OAUTH_STATES);
+  const base64 = btoa(JSON.stringify(compact));
+  return `v2.${base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")}`;
+}
+
+export function decodePendingOAuthStates(value?: string): string[] {
+  if (!value) return [];
+
+  // Compatibilidad con la cookie anterior, que guardaba un único state.
+  if (!value.startsWith("v2.")) return [value];
+
+  try {
+    const base64 = value
+      .slice(3)
+      .replace(/-/g, "+")
+      .replace(/_/g, "/");
+    const padded = base64.padEnd(
+      base64.length + ((4 - (base64.length % 4)) % 4),
+      "=",
+    );
+    const parsed = JSON.parse(atob(padded)) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((state): state is string => typeof state === "string")
+      .slice(-MAX_PENDING_OAUTH_STATES);
+  } catch {
+    return [];
+  }
 }
 
 type GoogleConfig = { clientId: string; clientSecret: string };
@@ -123,6 +161,26 @@ export function decodeState(state: string): {
     purpose,
     returnTo,
   };
+}
+
+/**
+ * Next serializa el valor de una cookie con `encodeURIComponent`, mientras
+ * que Google devuelve el parámetro de URL ya decodificado. Ambos representan
+ * el mismo state y deben compararse en una única forma canónica.
+ */
+export function normalizeOAuthState(value: string): string {
+  let decoded = decodeState(value);
+
+  if (!decoded.nonce) {
+    try {
+      decoded = decodeState(decodeURIComponent(value));
+    } catch {
+      return "";
+    }
+  }
+
+  if (!decoded.nonce) return "";
+  return encodeState(decoded.nonce, decoded.returnTo, decoded.purpose);
 }
 
 /**

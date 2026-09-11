@@ -1,10 +1,12 @@
 import { cookies } from "next/headers";
 
 import {
+  OAUTH_PENDING_COOKIE,
   OAUTH_STATE_COOKIE,
   authorizationUrl,
+  decodePendingOAuthStates,
+  encodePendingOAuthStates,
   encodeState,
-  oauthStateCookieName,
   safeReturnTo,
 } from "@/lib/google-oauth";
 
@@ -38,17 +40,27 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const store = await cookies();
-  // Se guarda el state entero: así también quedan vinculados al nonce la
-  // intención (cliente/proveedor) y el destino de vuelta.
-  store.set(oauthStateCookieName(nonce), state, {
+  const cookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "lax" as const,
     path: "/",
-    maxAge: 600, // El intercambio dura segundos; 10 minutos es margen de sobra.
-  });
-  // Limpia la cookie global usada por versiones anteriores. Los intentos
-  // nuevos quedan aislados por nonce y pueden convivir durante esos 10 min.
+    maxAge: 600,
+  };
+  // Una lista breve bajo un único nombre evita tanto la colisión entre
+  // pestañas como las diferencias de serialización observadas en cookies con
+  // nombres dinámicos sobre OpenNext/Workers.
+  const pendingStates = [
+    ...decodePendingOAuthStates(store.get(OAUTH_PENDING_COOKIE)?.value),
+    ...decodePendingOAuthStates(store.get(OAUTH_STATE_COOKIE)?.value),
+  ].filter((pending) => pending !== state);
+  pendingStates.push(state);
+  store.set(
+    OAUTH_PENDING_COOKIE,
+    encodePendingOAuthStates(pendingStates),
+    cookieOptions,
+  );
+  // Limpia la cookie estable usada por las dos implementaciones anteriores.
   store.delete(OAUTH_STATE_COOKIE);
 
   return Response.redirect(target, 302);

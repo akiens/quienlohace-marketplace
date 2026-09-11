@@ -9,8 +9,12 @@
  */
 import { hashPassword, verifyPassword } from "../src/lib/password";
 import {
+  OAUTH_PENDING_COOKIE,
   decodeState,
+  decodePendingOAuthStates,
+  encodePendingOAuthStates,
   encodeState,
+  normalizeOAuthState,
   oauthStateCookieName,
 } from "../src/lib/google-oauth";
 import {
@@ -81,6 +85,28 @@ async function main(): Promise<void> {
   check(
     "un nonce manipulado nunca forma un nombre de cookie",
     oauthStateCookieName("../../cookie") === "qlh_oauth_state",
+  );
+  check(
+    "la lista pendiente no comparte prefijo con cookies OAuth anteriores",
+    !OAUTH_PENDING_COOKIE.startsWith("qlh_oauth_state"),
+  );
+  const pendingOauthStates = [
+    oauthState,
+    encodeState(secondNonce, "/dashboard", "provider-login"),
+  ];
+  check(
+    "la cookie estable conserva varios intentos OAuth",
+    JSON.stringify(
+      decodePendingOAuthStates(encodePendingOAuthStates(pendingOauthStates)),
+    ) === JSON.stringify(pendingOauthStates),
+  );
+  check(
+    "la cookie OAuth anterior sigue siendo válida durante la transición",
+    decodePendingOAuthStates(oauthState)[0] === oauthState,
+  );
+  check(
+    "el state serializado como cookie recupera su forma canónica",
+    normalizeOAuthState(encodeURIComponent(oauthState)) === oauthState,
   );
 
   console.log("\nBúsqueda y discovery");
