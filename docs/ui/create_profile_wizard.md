@@ -1,3 +1,49 @@
+# Asistente de creación de perfiles
+
+Actualizado el 2026-09-12. Implementación del [diseño mobile y desktop](../todo/plan_asistente_creacion_perfiles.md).
+
+## Recorrido actual
+
+- Bienvenida con Comenzar; si hay datos propios guardados, Retomar.
+- Cinco básicos: Especialidades → Servicios → Identidad → Ubicación → Contacto.
+- Cada Continuar confirma el paso válido y abre el siguiente. El resumen y el lateral no permiten saltar requisitos básicos pendientes. Volver conserva lo escrito.
+- Después de Contacto aparece un resumen editable. Cobre puede crear directamente; un plan con precio debe revisar Pago. Las imágenes y redes compatibles con el plan son opcionales.
+- Desde los extras se puede volver al resumen. Un campo opcional inválido o una imagen fallida se corrige o se quita; no se descarta silenciosamente al crear.
+- La creación es una acción explícita, separada de Continuar. Lleva a `/dashboard?creado=1`, con confirmación de guardado y el estado real de publicación.
+- Un fallo de conexión al guardar muestra un mensaje para reintentar y conserva los campos. El servidor sigue siendo la autoridad de validación.
+
+En mobile hay una columna, Ver pasos y un pie persistente con Volver/Continuar. En desktop el progreso ocupa una columna lateral. Se reutilizan los colores, tipografía, botones y tratamiento de planes del sitio.
+
+## Campos y componentes
+
+- `profile-wizard.tsx`: orden, preguntas, bienvenida, navegación y listas de especialidades/servicios con búsqueda y contexto.
+- `profile-form.tsx`: estado, validación contra el schema compartido, confirmación de básicos, resumen y envío. Los paneles se ocultan, no se desmontan. En edición se muestran juntos, sin bienvenida ni navegación obligatoria.
+- Especialidades: checkboxes agrupados por rubro; cupos visibles. Ningún rubro ni especialidad se oculta al llenar el cupo: intentar agregar otro abre la notificación del límite. Quitar una especialidad con servicios asociados pide confirmar ese efecto.
+- Servicios: texto + Agregar y sugerencias de las especialidades seleccionadas. Con varias especialidades la vinculación se elige inline; con una se informa la asignación. Los nombres y sus especialidades viajan en listas paralelas, como antes.
+- Identidad: radios para independiente/empresa y ejemplo de descripción editable basado sólo en servicios confirmados. Usar el ejemplo es una acción explícita que reemplaza el texto actual.
+- `wizard-location-picker.tsx`: localidad en diálogo con búsqueda, selección provisional y Confirmar; cobertura con checkboxes por departamento/localidad, conservando la normalización existente.
+- `wizard-dialog.tsx`: diálogo nativo, fondo inactivo, foco contenido/restaurado y cierre con Escape o Atrás del navegador para el selector de localidad.
+- `social-links-fields.tsx`: una fila por plataforma, nombre visible e input; los vacíos se ignoran y cada URL escrita se valida.
+- `image-field.tsx`: tocar foto o portada permite subir/reemplazar; se conservan la galería, selección, progreso, reintento y eliminación existentes.
+
+## Borrador e hidratación
+
+El borrador sigue en `qlh.profileDraft` y pertenece a una cuenta. El formulario de alta se monta cuando se leyó el almacenamiento del navegador, con una clave estable por cuenta; no se remonta al escribir el primer borrador. La edición usa el perfil del servidor.
+
+Se recuerdan el tipo de perfil controlado, paso, básicos confirmados, opcionales omitidos, resumen y textos pendientes de servicios, horarios y local. Un borrador anterior conserva sus datos y se recupera en el primer básico que requiere revisión. Nunca se borra el borrador al entrar a Crear.
+
+«Avance guardado en este navegador» se muestra sólo después de una escritura exitosa. Si el almacenamiento falla, se informa y el formulario sigue funcionando. Las imágenes conservan su ciclo de carga propio en el servidor.
+
+## Alcance de reglas y diferencias documentales previas
+
+Este rediseño no cambia precios, cupos, políticas de publicación, semántica de cobertura ni requisitos de ubicación aceptados por el servidor. El schema y las pruebas existentes hoy exigen localidad y dirección para un local; la cobertura se pregunta en todas las modalidades y por defecto es Uruguay. Esos comportamientos previos discrepan con partes de BR-015/016 y con las secciones históricas de este documento. Conciliarlos es una tarea funcional separada; no se presenta este rediseño como resolución de esa discrepancia.
+
+El pago sigue siendo provisional y el checkbox sólo registra revisión, no un cobro. Cambiar de plan invalida esa revisión para que corresponda al nuevo plan. El recorte del alta nunca se aplica a un perfil ya creado.
+
+## Referencias de reglas y comportamiento previo
+
+Las secciones siguientes conservan el detalle de planes y relaciones del formulario anterior. Para presentación, navegación, persistencia y ubicación actual, prevalece la descripción de implementación de arriba. La fuente normativa de negocio sigue siendo [business_rules.md](../rules/business_rules.md).
+
 Cuando un usuario se registra por primera vez entonces es redirigido a la pagina "Crear" esta pagina mostrara un formulario por etapas que ayudara a crear un perfil basico o avanzado segun el plan elegido.
 
 > **El alta y la edición son el mismo formulario.** `ProfileForm` es un solo
@@ -70,7 +116,7 @@ revalidarlo en el servidor.
    `is_active = 1`.
 4. Lo escondido vuelve solo si se recontrata. Al agendar la baja se anota
    además una fecha (`purge_after`, hoy a 180 días —
-   `EXCESS_RETENTION_DAYS`) a partir de la cual *se podría* borrar lo que
+   `EXCESS_RETENTION_DAYS`) a partir de la cual _se podría_ borrar lo que
    quedó fuera. Es sólo una fecha anotada: hoy no hay ninguna tarea que
    borre, así que en la práctica lo escondido se conserva.
 
@@ -84,13 +130,13 @@ deciden qué plan rige hoy; `relationStatements`
 
 ### Resumen
 
-| | Camino 1 (sin perfil) | Camino 2 (con perfil) |
-|---|---|---|
-| Popup de advertencia | Sí | No |
-| Efecto | Borra lo que sobra | Esconde lo que sobra |
-| Cuándo | Al aceptar el popup | Al vencer el plan pagado |
-| Se recupera | No | Sí, recontratando (180 días) |
-| Helper | `fitToPlan` | `effectivePlanId` + `is_active = 0` |
+|                      | Camino 1 (sin perfil) | Camino 2 (con perfil)               |
+| -------------------- | --------------------- | ----------------------------------- |
+| Popup de advertencia | Sí                    | No                                  |
+| Efecto               | Borra lo que sobra    | Esconde lo que sobra                |
+| Cuándo               | Al aceptar el popup   | Al vencer el plan pagado            |
+| Se recupera          | No                    | Sí, recontratando (180 días)        |
+| Helper               | `fitToPlan`           | `effectivePlanId` + `is_active = 0` |
 
 > Al escribir código nuevo que dependa del plan, decidí primero en cuál de los
 > dos caminos estás. `fitToPlan` **nunca** debe correr sobre un perfil que ya
@@ -112,14 +158,13 @@ dos cosas por separado.
    la vista para desempatarlas: sin el rubro, dos etiquetas idénticas no se
    distinguen y no hay forma de saber cuál quitar.
 
-2. Alcanzado el cupo de rubros del plan, el buscador deja de ofrecer
-   especialidades de otros rubros.
+2. Alcanzado el cupo de rubros del plan, el buscador sigue ofreciendo las
+   especialidades de todos los rubros. Si se intenta marcar una de un rubro
+   adicional, la selección no cambia y se abre la notificación del límite con
+   las acciones `Aceptar` y `Ver planes`.
 
-   El tope de rubros no se elige ni se ve venir: elegir una especialidad de un
-   rubro nuevo lo consume sin decirlo, y se sabría recién al guardar, con un
-   error que pide quitar algo sin decir qué. Dejando de ofrecerlas, el límite
-   se explica solo. Se avisa además con el cartel del plan, porque si no una
-   especialidad que existe parecería no existir.
+   La notificación no aparece al elegir el último elemento permitido: se abre
+   únicamente cuando se intenta superar el cupo.
 
 3. Sólo se muestran especialidades de los rubros permitidos.
 
@@ -199,7 +244,7 @@ escribiéndolo aunque no figure en el catálogo (`allowCustom` en el
 una referencia al catálogo — que puede cambiar sin arrastrar los perfiles
 (TR-022).
 
-Lo que el filtrado acota es lo que se *sugiere*, nunca lo que se puede cargar.
+Lo que el filtrado acota es lo que se _sugiere_, nunca lo que se puede cargar.
 
 ### A qué especialidad pertenece un servicio escrito a mano
 
@@ -364,9 +409,12 @@ pasar por esto, salvo el caso de una subida a medio resolver
 (`subscriptionStatus === "past_due"`), que mantiene el asistente abierto hasta
 que se marca el pago.
 
-## Ubicacion 
+## Ubicacion
+
 En el paso ubicacion tendremos 3 campos importantes:
+
 1. Modalidad: `a domicilio`, `en el local`, `a distancia`.
+
 - Si se selecciona `a domicilio` tenemos que permitirle agregar `zonas donde trabaja`.
 - Si se seleciona `en local` le damos la opcion de agregar ubicacion donde atiende.
 - Si se seleciona `a distancia` entonces esto significa que atiende en todo uruguay.

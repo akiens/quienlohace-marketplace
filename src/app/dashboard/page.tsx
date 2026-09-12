@@ -7,6 +7,7 @@ import { DowngradeNotice } from "@/components/dashboard/downgrade-notice";
 import { PlanSwitcher } from "@/components/dashboard/plan-switcher";
 import { ProfileView } from "@/components/dashboard/profile-view";
 import { Icon } from "@/components/ui";
+import { publishBlockers } from "@/domain/publishing";
 import {
   downgradeIsDue,
   downgradeNoticeStage,
@@ -39,7 +40,7 @@ export const dynamic = "force-dynamic";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ editar?: string; auth?: string }>;
+  searchParams: Promise<{ editar?: string; auth?: string; creado?: string }>;
 }) {
   if (!hasCloudflareRuntime()) return <SetupNotice />;
 
@@ -156,6 +157,39 @@ export default async function DashboardPage({
           </p>
         </header>
 
+        {params.creado === "1" && !editing && (
+          <section
+            role="status"
+            className="mx-4 rounded-card border border-brand-800/20 bg-brand-100 p-5 sm:mx-0"
+          >
+            <h2 className="text-xl font-bold text-ink">Perfil creado</h2>
+            <p className="mt-2 text-sm text-ink-soft">
+              {profile.profileStatus === "active"
+                ? "Tu perfil está publicado."
+                : "Tus datos están guardados. Tu perfil todavía no está publicado."}
+            </p>
+            {publishBlockers(profile).length > 0 ? (
+              <>
+                <ul className="mt-3 list-inside list-disc text-sm text-ink">
+                  {publishBlockers(profile).map((message) => (
+                    <li key={message}>{message}</li>
+                  ))}
+                </ul>
+                <Link
+                  href="/dashboard?editar=1"
+                  className="mt-3 inline-flex min-h-12 items-center font-semibold text-brand-800"
+                >
+                  Completar datos pendientes →
+                </Link>
+              </>
+            ) : profile.profileStatus !== "active" ? (
+              <p className="mt-3 text-sm text-ink">
+                Revisá tu información y activá «Publicar» en los controles de tu
+                perfil cuando estés listo.
+              </p>
+            ) : null}
+          </section>
+        )}
         <PlanSwitcher plan={plan} plans={allPlans} persist />
 
         {/*

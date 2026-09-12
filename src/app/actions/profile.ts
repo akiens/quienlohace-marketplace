@@ -230,7 +230,8 @@ export async function saveProfile(
    * restricción, sólo una ayuda (TR-004). Lo que excede no se rechaza — se
    * guarda inactivo y se avisa (BR-009).
    */
-  const plan = (await plans.findById(planId)) ?? (await plans.findById("cobre"));
+  const plan =
+    (await plans.findById(planId)) ?? (await plans.findById("cobre"));
 
   /*
    * En un plan pago no se crea el perfil sin resolver el pago.
@@ -330,9 +331,12 @@ export async function saveProfile(
         userId: user.id,
         profileId: saved.id,
         kinds: [field],
-        galleryRevision: formData.get(`imageRevision:${field}`)?.toString() ?? null,
-        selectedIds: formData.get(`imageConfirm:${field}`) === "yes"
-          ? formData.getAll(`imageSelected:${field}`).map(String) : undefined,
+        galleryRevision:
+          formData.get(`imageRevision:${field}`)?.toString() ?? null,
+        selectedIds:
+          formData.get(`imageConfirm:${field}`) === "yes"
+            ? formData.getAll(`imageSelected:${field}`).map(String)
+            : undefined,
         keepIds: formData.getAll(`image:${field}`).map(String).filter(Boolean),
         /*
          * Cuáles quedan visibles (BR-009). Van aparte de `keepIds` porque una
@@ -385,9 +389,12 @@ export async function saveProfile(
    * `redirect` corta por excepción, así que nada de lo que sigue se ejecuta:
    * va al final, después de revalidar.
    */
-  if (isNew || settlingUpgrade) redirect("/dashboard");
+  if (isNew) redirect("/dashboard?creado=1");
+  if (settlingUpgrade) redirect("/dashboard");
 
-  return { message: notice ? `Perfil guardado. ${notice}` : "Perfil guardado." };
+  return {
+    message: notice ? `Perfil guardado. ${notice}` : "Perfil guardado.",
+  };
 }
 
 /** Publica o despublica el perfil propio. */
@@ -417,7 +424,9 @@ export async function setProfileStatus(
   if (status === "active") {
     const missing = publishBlockers(profile);
     if (missing.length > 0) {
-      return { errors: { form: `Para publicar te falta: ${missing.join(" ")}` } };
+      return {
+        errors: { form: `Para publicar te falta: ${missing.join(" ")}` },
+      };
     }
   }
 

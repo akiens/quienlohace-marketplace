@@ -43,6 +43,13 @@ export type ProfileDraft = {
   ownerId?: string;
   /** El paso donde estaba, para volver ahí y no al principio. */
   step?: string;
+  wizardSummary?: boolean;
+  confirmedSteps?: string[];
+  omittedSteps?: string[];
+  serviceQuery?: string;
+  newLocality?: string;
+  newAddress?: string;
+  scheduleQuery?: string;
   name?: string;
   type?: string;
   description?: string;
@@ -140,22 +147,24 @@ function isEmpty(draft: Omit<ProfileDraft, "version">): boolean {
 export function writeProfileDraft(
   draft: Omit<ProfileDraft, "version" | "ownerId">,
   ownerId: string,
-): void {
+): boolean {
   try {
     /*
      * Un borrador vacío no pisa a uno con datos, pero sí tiene que poder
      * pisar el de otra cuenta: si no, el de la persona anterior se quedaría
      * en el navegador hasta que ésta escriba algo.
      */
-    if (isEmpty(draft) && readProfileDraft(ownerId)) return;
+    if (isEmpty(draft) && readProfileDraft(ownerId)) return false;
 
     window.localStorage.setItem(
       KEY,
       JSON.stringify({ ...draft, ownerId, version: VERSION }),
     );
+    return true;
   } catch {
     // Ventana privada, almacenamiento lleno o bloqueado: se sigue sin
     // recordar. El formulario funciona igual, sólo no sobrevive una recarga.
+    return false;
   }
 }
 

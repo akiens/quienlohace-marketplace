@@ -38,6 +38,7 @@ export function ImageField({
   planName,
   endpoint,
   onChange,
+  onLimitReached,
 }: {
   field: ImageFieldName;
   label: string;
@@ -51,6 +52,8 @@ export function ImageField({
   planName?: string;
   /** Ruta de subida. Las cartas usan su almacenamiento propio. */
   endpoint?: string;
+  /** Sustituye el texto inline del cupo por un aviso administrado afuera. */
+  onLimitReached?: () => void;
   /**
    * Avisa al formulario qué imágenes quedan y cuáles se quitaron, para que
    * las mande al guardar. También si hay algo en curso: mientras lo haya, el
@@ -64,6 +67,7 @@ export function ImageField({
     selectedIds?: string[];
     removedIds: string[];
     busy: boolean;
+    failed?: boolean;
   }) => void;
 }) {
   const policy = policyFor(field);
@@ -73,8 +77,17 @@ export function ImageField({
 
   const upload = useImageUpload({ field, initial, max, endpoint });
   const galleryRevision = initial[0]?.galleryRevision ?? null;
-  const selectionPending = field === "gallery" && initial.some(image => image.gallerySelectionPending);
-  const [selected, setSelected] = useState(() => initial.filter(image => image.galleryState === "available" && image.lifecycle === "confirmed").map(image => image.id));
+  const selectionPending =
+    field === "gallery" &&
+    initial.some((image) => image.gallerySelectionPending);
+  const [selected, setSelected] = useState(() =>
+    initial
+      .filter(
+        (image) =>
+          image.galleryState === "available" && image.lifecycle === "confirmed",
+      )
+      .map((image) => image.id),
+  );
   const [confirmSelection, setConfirmSelection] = useState(false);
   const selectedKey = selected.join(",");
 
@@ -94,6 +107,7 @@ export function ImageField({
   const activeKey = upload.activeIds.join(",");
   const removedKey = upload.removedIds.join(",");
   const { busy } = upload;
+  const failed = upload.items.some((item) => item.status === "error");
 
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -105,11 +119,25 @@ export function ImageField({
       keepIds: keepKey ? keepKey.split(",") : [],
       activeIds: activeKey ? activeKey.split(",") : [],
       galleryRevision,
-      selectedIds: confirmSelection ? (selectedKey ? selectedKey.split(",") : []) : undefined,
+      selectedIds: confirmSelection
+        ? selectedKey
+          ? selectedKey.split(",")
+          : []
+        : undefined,
       removedIds: removedKey ? removedKey.split(",") : [],
       busy,
+      failed,
     });
-  }, [keepKey, activeKey, removedKey, busy, galleryRevision, selectedKey, confirmSelection]);
+  }, [
+    keepKey,
+    activeKey,
+    removedKey,
+    busy,
+    failed,
+    galleryRevision,
+    selectedKey,
+    confirmSelection,
+  ]);
 
   const single = shape !== "grid";
   const full = selectionPending || (upload.room !== null && upload.room <= 0);
@@ -122,8 +150,7 @@ export function ImageField({
   }
 
   const help =
-    hint ??
-    `${formatAccepted(field)}, hasta ${formatBytes(policy.maxBytes)}.`;
+    hint ?? `${formatAccepted(field)}, hasta ${formatBytes(policy.maxBytes)}.`;
 
   return (
     <fieldset className="flex min-w-0 w-full flex-col gap-2">
@@ -148,21 +175,56 @@ export function ImageField({
 
       {selectionPending ? (
         <div className="rounded-card border border-warning-line bg-warning-soft p-3">
-          <p className="text-sm text-warning-ink">Elegí una sola vez las imágenes que querés conservar en tu galería (hasta {max}). Al confirmar y guardar el formulario, las demás quedarán congeladas y no podrás intercambiarlas.</p>
+          <p className="text-sm text-warning-ink">
+            Elegí una sola vez las imágenes que querés conservar en tu galería
+            (hasta {max}). Al confirmar y guardar el formulario, las demás
+            quedarán congeladas y no podrás intercambiarlas.
+          </p>
           <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {initial.filter(image => image.lifecycle === "confirmed").map(image => (
-              <label key={image.id} className="flex cursor-pointer flex-col gap-1 text-xs">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image.url} alt={image.alt || "Imagen para conservar"} className="aspect-[4/3] w-full rounded-card object-cover" />
-                <span><input type="checkbox" checked={selected.includes(image.id)}
-                  disabled={confirmSelection || (!selected.includes(image.id) && max != null && selected.length >= max)}
-                  onChange={event => setSelected(current => event.target.checked ? [...current, image.id] : current.filter(id => id !== image.id))} /> Conservar</span>
-              </label>
-            ))}
+            {initial
+              .filter((image) => image.lifecycle === "confirmed")
+              .map((image) => (
+                <label
+                  key={image.id}
+                  className="flex cursor-pointer flex-col gap-1 text-xs"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={image.url}
+                    alt={image.alt || "Imagen para conservar"}
+                    className="aspect-[4/3] w-full rounded-card object-cover"
+                  />
+                  <span>
+                    <input
+                      type="checkbox"
+                      checked={selected.includes(image.id)}
+                      disabled={
+                        confirmSelection ||
+                        (!selected.includes(image.id) &&
+                          max != null &&
+                          selected.length >= max)
+                      }
+                      onChange={(event) =>
+                        setSelected((current) =>
+                          event.target.checked
+                            ? [...current, image.id]
+                            : current.filter((id) => id !== image.id),
+                        )
+                      }
+                    />{" "}
+                    Conservar
+                  </span>
+                </label>
+              ))}
           </div>
           <label className="mt-3 flex items-start gap-2 text-sm">
-            <input type="checkbox" checked={confirmSelection} onChange={event => setConfirmSelection(event.target.checked)} />
-            Confirmo mi selección de {selected.length} imágenes. Se aplicará al guardar el formulario y no podré repetirla.
+            <input
+              type="checkbox"
+              checked={confirmSelection}
+              onChange={(event) => setConfirmSelection(event.target.checked)}
+            />
+            Confirmo mi selección de {selected.length} imágenes. Se aplicará al
+            guardar el formulario y no podré repetirla.
           </label>
         </div>
       ) : null}
@@ -183,6 +245,7 @@ export function ImageField({
           full={full}
           planName={planName}
           max={max ?? policy.maxCount}
+          onLimitReached={onLimitReached}
           sortable={policy.sortable}
           overPlanCount={upload.overPlanCount}
           onPick={() => inputRef.current?.click()}
@@ -244,12 +307,20 @@ function SingleLayout({
       */}
       <div
         className={`flex w-full gap-4 ${
-          shape === "circle" ? "items-center" : "flex-col sm:flex-row sm:items-center"
+          shape === "circle"
+            ? "items-center"
+            : "flex-col sm:flex-row sm:items-center"
         }`}
       >
-        <div
-          className={`relative flex items-center justify-center overflow-hidden border border-dashed border-line-strong bg-surface-muted ${
-            shape === "circle" ? "flex-none" : "w-full sm:min-w-[200px] sm:flex-1"
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onPick}
+          aria-label={`${item ? "Cambiar" : "Agregar"} ${shape === "circle" ? "foto de perfil" : "portada"}`}
+          className={`relative focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-800 disabled:opacity-50 flex items-center justify-center overflow-hidden border border-dashed border-line-strong bg-surface-muted ${
+            shape === "circle"
+              ? "flex-none"
+              : "w-full sm:min-w-[200px] sm:flex-1"
           } ${box}`}
         >
           {item ? (
@@ -260,20 +331,13 @@ function SingleLayout({
               className="text-[30px] text-ink-faint"
             />
           )}
-        </div>
+          <span className="absolute inset-x-0 bottom-0 bg-ink/75 py-1 text-center text-xs font-semibold text-white">
+            {item ? "Cambiar" : "Agregar"}
+          </span>
+        </button>
 
         <div className="flex min-w-0 flex-col items-start gap-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onPick}
-              className={`flex h-11 items-center gap-1 rounded-input px-3 text-[14px] font-semibold disabled:opacity-50 sm:h-8 sm:pl-1.5 sm:pr-2.5 sm:text-[13px] ${SECONDARY_SURFACE}`}
-            >
-              <Icon name={item ? "sync" : "upload"} className="text-[16px]" />
-              {item ? "Cambiar" : "Subir"}
-            </button>
-
             {item?.status === "error" ? (
               <button
                 type="button"
@@ -316,6 +380,7 @@ function GridLayout({
   full,
   planName,
   max,
+  onLimitReached,
   sortable,
   overPlanCount,
   onPick,
@@ -329,6 +394,7 @@ function GridLayout({
   full: boolean;
   planName?: string;
   max: number | null;
+  onLimitReached?: () => void;
   sortable: boolean;
   overPlanCount: number;
   onToggleActive: (key: string) => void;
@@ -337,9 +403,9 @@ function GridLayout({
   onRetry: (key: string) => void;
   onMove: (key: string, direction: -1 | 1) => void;
 }) {
-  const available = items.filter(item => item.hiddenReason !== "plan");
-  const active = available.filter(item => item.active);
-  const overPlan = items.filter(item => item.hiddenReason === "plan");
+  const available = items.filter((item) => item.hiddenReason !== "plan");
+  const active = available.filter((item) => item.active);
+  const overPlan = items.filter((item) => item.hiddenReason === "plan");
 
   const card = (item: UploadItem, index: number, list: UploadItem[]) => (
     <ImageCard
@@ -359,12 +425,23 @@ function GridLayout({
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {available.map((item, index) => card(item, index, item.active ? active : available))}
+        {available.map((item, index) =>
+          card(item, index, item.active ? active : available),
+        )}
 
         {!full ? (
           <button
             type="button"
             onClick={onPick}
+            className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-line-strong bg-surface-muted text-ink-soft transition-colors hover:border-brand-600 hover:text-brand-800"
+          >
+            <Icon name="add_photo_alternate" className="text-[26px]" />
+            <span className="text-[12.5px] font-semibold">Agregar</span>
+          </button>
+        ) : onLimitReached ? (
+          <button
+            type="button"
+            onClick={onLimitReached}
             className="flex aspect-[4/3] flex-col items-center justify-center gap-1.5 rounded-card border border-dashed border-line-strong bg-surface-muted text-ink-soft transition-colors hover:border-brand-600 hover:text-brand-800"
           >
             <Icon name="add_photo_alternate" className="text-[26px]" />
@@ -388,7 +465,8 @@ function GridLayout({
                   : `${overPlanCount} imágenes no entran en tu plan`}
               </strong>{" "}
               {planName ? `${planName}, que incluye ${max}.` : "actual."} Se
-              conservan hasta vencer su plazo de 180 días. Mejorá el plan para recuperarlas.
+              conservan hasta vencer su plazo de 180 días. Mejorá el plan para
+              recuperarlas.
             </span>
           </p>
 
@@ -404,7 +482,7 @@ function GridLayout({
         incluidas las ocultas voluntariamente.
       */}
       <span className="text-[12.5px] leading-relaxed text-ink-faint">
-        {full && max !== null
+        {full && max !== null && !onLimitReached
           ? planName
             ? `Llegaste al máximo de tu plan ${planName}: ${max} ${max === 1 ? "imagen" : "imágenes"} en la galería.`
             : `Llegaste al máximo: ${max} ${max === 1 ? "imagen" : "imágenes"}.`
@@ -513,7 +591,9 @@ function ImageCard({
         ) : null}
 
         {/* Mostrar u ocultar sólo cambia la visibilidad de una disponible. */}
-        {saved && item.image?.kind !== "service" && item.hiddenReason !== "plan" ? (
+        {saved &&
+        item.image?.kind !== "service" &&
+        item.hiddenReason !== "plan" ? (
           <button
             type="button"
             disabled={busy || (!item.active && !canActivate)}
@@ -540,7 +620,8 @@ function ImageCard({
 
       {item.hiddenReason === "plan" ? (
         <span className="text-xs text-warning-ink">
-          {item.image?.galleryState === "semi" ? "Semicongelada" : "Congelada"}. {item.image?.hiddenAt
+          {item.image?.galleryState === "semi" ? "Semicongelada" : "Congelada"}.{" "}
+          {item.image?.hiddenAt
             ? `Eliminación en ${Math.max(0, Math.ceil((new Date(item.image.hiddenAt).getTime() + 180 * 86400000 - now) / 86400000))} días.`
             : "Conservada; aún no hay fecha de eliminación."}
         </span>

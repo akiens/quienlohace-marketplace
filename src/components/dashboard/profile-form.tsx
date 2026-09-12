@@ -10,6 +10,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
+import { unstable_rethrow } from "next/navigation";
 
 import { saveProfile } from "@/app/actions/profile";
 import {
@@ -31,23 +32,25 @@ import {
   sectorOfSpecialty,
 } from "@/data/taxonomy";
 import { MAX_SCHEDULE_ENTRIES, searchSchedules } from "@/data/schedules";
-import {
-  COUNTRY_ID,
-  locationLabelById,
-  locationTypeLabel,
-  normalizeServiceAreas,
-} from "@/data/locations";
-import { profileFieldSchemas } from "@/lib/validation";
+import { COUNTRY_ID, locationLabelById } from "@/data/locations";
+import { profileSchema, profileFieldSchemas } from "@/lib/validation";
 import { fitToPlan } from "@/domain/plan-fit";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
 import { FormAlert } from "@/components/form-alert";
+import { Notification } from "@/components/notification";
 import { useFieldErrors } from "@/lib/use-field-errors";
 import {
   SearchSelect,
   type SearchOption,
 } from "@/components/dashboard/search-select";
-import { ServiceSpecialtyDialog } from "@/components/dashboard/service-specialty-dialog";
+import {
+  BASIC_STEPS,
+  PROFILE_STEPS,
+  ChoiceList,
+  WizardNavigation,
+  WizardWelcome,
+} from "@/components/dashboard/profile-wizard";
 import { SERVICE_SUGGESTIONS } from "@/data/taxonomy";
 import { searchServices } from "@/data/services";
 
@@ -58,12 +61,13 @@ import { searchServices } from "@/data/services";
 const SERVICE_SUGGESTION_SPECIALTY = new Map(
   SERVICE_SUGGESTIONS.map((item) => [item.id, item.specialtyId]),
 );
+import { type SocialLinkDraft } from "@/components/dashboard/social-links-editor";
+import { SocialLinksFields as SocialLinksEditor } from "@/components/dashboard/social-links-fields";
 import {
-  SocialLinksEditor,
-  type SocialLinkDraft,
-} from "@/components/dashboard/social-links-editor";
+  WizardLocationPicker,
+  CoverageChoices,
+} from "@/components/dashboard/wizard-location-picker";
 import { ImageField } from "@/components/image-field";
-import { LocalityPicker } from "@/components/dashboard/locality-picker";
 import {
   PAYMENT_METHOD_LABELS,
   SERVICE_MODE_LABELS,
@@ -97,7 +101,11 @@ const PAYMENT_OPTIONS: PaymentMethod[] = [
  * no una lista de radios. Nombrar la combinación agregaba un cuarto concepto
  * para decir lo que las tres casillas ya dicen.
  */
-const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"];
+const SERVICE_MODES: ServiceModeCode[] = [
+  "at_customer",
+  "at_business",
+  "remote",
+];
 
 /**
  * Etapas del onboarding (RF-166 a RF-171).
@@ -107,26 +115,7 @@ const SERVICE_MODES: ServiceModeCode[] = ["at_customer", "at_business", "remote"
  * proveedor nuevo con veinte campos de golpe. Los campos ocultos siguen en
  * el DOM, así que cambiar de paso nunca pierde lo escrito.
  */
-const ALL_STEPS = [
-  { id: "identidad", label: "Identidad", icon: "badge", feature: null },
-  { id: "rubro", label: "Especialidades", icon: "category", feature: null },
-  { id: "servicios", label: "Servicios", icon: "build", feature: null },
-  { id: "zonas", label: "Ubicación", icon: "location_on", feature: null },
-  { id: "contacto", label: "Contacto", icon: "call", feature: null },
-  /*
-   * Después de los datos con los que el perfil ya puede publicarse, y
-   * opcional: se puede crear el perfil sin ninguna imagen y agregarlas
-   * después. Va acá y no antes para que lo obligatorio se complete de corrido
-   * y subir fotos no se interponga entre el nombre y el rubro.
-   *
-   * La foto de perfil y la portada las incluyen todos los planes (RF-167):
-   * son la cara del perfil, no una ventaja del plan pago. La galería, que sí
-   * depende del plan, se muestra dentro de este mismo paso.
-   */
-  { id: "imagenes", label: "Imágenes", icon: "photo_camera", feature: null },
-  { id: "redes", label: "Redes", icon: "share", feature: "social" },
-  { id: "pago", label: "Pago", icon: "credit_card", feature: "paid" },
-] as const;
+const ALL_STEPS = PROFILE_STEPS;
 
 type StepId = (typeof ALL_STEPS)[number]["id"];
 
@@ -145,20 +134,7 @@ const SOCIAL_FIELDS: Array<{
   { platform: "x", label: "X", icon: "alternate_email" },
 ];
 
-/**
- * Lee el borrador y monta el formulario con él.
- *
- * El borrador vive en `localStorage`, que en el servidor no existe: si los
- * campos arrancaran con lo guardado, el HTML del servidor —siempre vacío— y
- * el primer render del cliente dirían cosas distintas y React abortaría la
- * hidratación.
- *
- * `useSyncExternalStore` da primero el snapshot del servidor (vacío, igual
- * que el HTML) y después el del cliente. La `key` hace que al aparecer el
- * borrador el formulario se monte de nuevo, ya con los valores en su estado
- * inicial: hidratación limpia y campos completos, sin un efecto que los vaya
- * llenando de a uno.
- */
+/** El alta lee el borrador propio antes de montar los campos editables. */
 /**
  * Cómo se presenta el formulario.
  *
@@ -236,33 +212,27 @@ export function ProfileForm({
   // Con perfil manda la base y el borrador no interviene.
   const draft = profile ? null : stored;
 
-  /*
-   * Si el borrador ya se leyó del navegador.
-   *
-   * `useSyncExternalStore` da primero el snapshot del servidor —vacío, para
-   * que la hidratación calce— y recién en el render siguiente el del cliente.
-   * En ese primer render los campos están en blanco, y el efecto que guarda
-   * corría igual: escribía un borrador vacío encima del que venía a rescatar.
-   *
-   * No alcanzaba con que `writeProfileDraft` ignore lo vacío, porque no todo
-   * lo que arranca en blanco lo parece: la modalidad viene con "a domicilio"
-   * puesta de fábrica, así que el borrador del primer render se veía "con
-   * datos" y pisaba el guardado. Al recargar se perdían el paso y lo cargado.
-   *
-   * Se sigue rindiendo el formulario igual: el servidor ya mandó los campos y
-   * devolver nada acá sería justamente el desajuste de hidratación que
-   * `useSyncExternalStore` viene a evitar. Lo que se pospone es sólo guardar,
-   * que es lo único que hace daño.
-   */
+  // El servidor y el primer render muestran el mismo estado de preparación.
   const hydrated = useSyncExternalStore(
     subscribeProfileDraft,
     clientHydrated,
     serverHydrated,
   );
 
+  // Mount once after browser storage is readable. Switching the key from
+  // "sin-borrador" to "con-borrador" after the first write could reset an
+  // interaction (including Comenzar) while the surrounding page hydrated.
+  if (!profile && !hydrated) {
+    return (
+      <p role="status" className="p-6 text-sm text-ink-soft">
+        Preparando tu asistente…
+      </p>
+    );
+  }
+
   return (
     <ProfileFormFields
-      key={draft ? "con-borrador" : "sin-borrador"}
+      key={userId ?? profile?.id ?? "profile"}
       userId={userId}
       accountEmail={accountEmail}
       profile={profile}
@@ -302,7 +272,18 @@ function ProfileFormFields(props: {
   const editing = mode === "edicion";
 
   const [state, action, pending] = useActionState<FormState, FormData>(
-    saveProfile,
+    async (previous, data) => {
+      try {
+        return await saveProfile(previous, data);
+      } catch (error) {
+        unstable_rethrow(error);
+        return {
+          errors: {
+            form: "No pudimos completar el guardado. Tus datos siguen acá; revisá la conexión y volvé a intentarlo.",
+          },
+        };
+      }
+    },
     {},
   );
 
@@ -328,7 +309,7 @@ function ProfileFormFields(props: {
     const resumed =
       draft?.step && ALL_STEPS.some((s) => s.id === draft.step)
         ? (draft.step as StepId)
-        : "identidad";
+        : "rubro";
     const upTo = ALL_STEPS.findIndex((s) => s.id === resumed);
     return new Set(ALL_STEPS.slice(0, upTo + 1).map((s) => s.id));
   });
@@ -338,8 +319,28 @@ function ProfileFormFields(props: {
     // recorrer de nuevo todo lo ya completado.
     draft?.step && ALL_STEPS.some((s) => s.id === draft.step)
       ? (draft.step as StepId)
-      : "identidad",
+      : "rubro",
   );
+
+  const [started, setStarted] = useState(Boolean(profile));
+  const [summary, setSummary] = useState(draft?.wizardSummary ?? false);
+  const [confirmed, setConfirmed] = useState<Set<StepId>>(
+    () =>
+      new Set(
+        (draft?.confirmedSteps ?? (profile ? BASIC_STEPS : [])).filter((id) =>
+          BASIC_STEPS.includes(id as StepId),
+        ) as StepId[],
+      ),
+  );
+  const [omitted, setOmitted] = useState<Set<StepId>>(
+    () => new Set((draft?.omittedSteps ?? []) as StepId[]),
+  );
+  const [profileType, setProfileType] = useState(
+    draft?.type ?? profile?.type ?? "individual",
+  );
+  const [showExample, setShowExample] = useState(false);
+  const [storageStatus, setStorageStatus] = useState<boolean | null>(null);
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
 
   // Sólo servicios confirmados: la fila en blanco dejó de existir cuando
   // pasaron a agregarse de a uno, como las zonas.
@@ -356,7 +357,7 @@ function ProfileFormFields(props: {
    * selector porque el catálogo se filtra afuera: son 633 servicios y el
    * orden depende del rubro ya elegido.
    */
-  const [serviceQuery, setServiceQuery] = useState("");
+  const [serviceQuery, setServiceQuery] = useState(draft?.serviceQuery ?? "");
   /*
    * Las especialidades elegidas, en orden de prioridad: la primera es la
    * principal y ese orden es el que después usan los cupos del plan (TR-016).
@@ -389,8 +390,8 @@ function ProfileFormFields(props: {
    * dentro de una tarjeta ya existente, así que la lista mostraba locales a
    * medio hacer —y uno sin dirección es un local que no se puede publicar—.
    */
-  const [newLocality, setNewLocality] = useState("");
-  const [newAddress, setNewAddress] = useState("");
+  const [newLocality, setNewLocality] = useState(draft?.newLocality ?? "");
+  const [newAddress, setNewAddress] = useState(draft?.newAddress ?? "");
   const [newIsPrimary, setNewIsPrimary] = useState(false);
 
   const [serviceAreaIds, setServiceAreaIds] = useState<string[]>(
@@ -406,7 +407,9 @@ function ProfileFormFields(props: {
       profile?.scheduleEntries.map((entry) => entry.text) ??
       [],
   );
-  const [scheduleQuery, setScheduleQuery] = useState("");
+  const [scheduleQuery, setScheduleQuery] = useState(
+    draft?.scheduleQuery ?? "",
+  );
   /*
    * El correo de contacto arranca con el de la cuenta.
    *
@@ -424,7 +427,6 @@ function ProfileFormFields(props: {
     draft?.phonePublic ?? profile?.phonePublic ?? true,
   );
   /** La última zona repetida que se intentó agregar, para avisarlo. */
-  const [duplicateArea, setDuplicateArea] = useState<string | null>(null);
   const [name, setName] = useState(draft?.name ?? profile?.name ?? "");
   const [description, setDescription] = useState(
     draft?.description ?? profile?.description ?? "",
@@ -469,6 +471,7 @@ function ProfileFormFields(props: {
         selectedIds?: string[];
         removedIds: string[];
         busy: boolean;
+        failed?: boolean;
       }
     >
   >({});
@@ -483,6 +486,7 @@ function ProfileFormFields(props: {
         selectedIds?: string[];
         removedIds: string[];
         busy: boolean;
+        failed?: boolean;
       }) => {
         setImageSelection((current) => ({ ...current, [field]: state }));
       },
@@ -568,7 +572,8 @@ function ProfileFormFields(props: {
         incoming,
       );
 
-      if (losses.length === 0) {
+      if (profile || losses.length === 0) {
+        setPaymentDone(false);
         setApplied(incoming);
         setHeld(null);
       } else {
@@ -585,7 +590,7 @@ function ProfileFormFields(props: {
 
   /** Aceptar la baja: se recorta lo que no entra y el plan nuevo pasa a regir. */
   function applyDowngrade() {
-    if (!held) return;
+    if (!held || profile) return;
     const { fitted } = fitToPlan(
       { specialtyIds, services, locations, socialLinks },
       held.to,
@@ -594,6 +599,7 @@ function ProfileFormFields(props: {
     setServices(fitted.services);
     setLocations(fitted.locations);
     setSocialLinks(fitted.socialLinks);
+    setPaymentDone(false);
     setApplied(held.to);
     setHeld(null);
   }
@@ -695,7 +701,11 @@ function ProfileFormFields(props: {
    */
   const errors: Record<string, string | undefined> = { ...serverErrors };
   for (const field of Object.keys(stale)) {
-    if (stale[field] && field !== "form") delete errors[field];
+    if (stale[field] && field !== "form") {
+      for (const key of Object.keys(errors)) {
+        if (key === field || key.startsWith(`${field}.`)) delete errors[key];
+      }
+    }
   }
   for (const [field, message] of Object.entries(shownFieldErrors)) {
     errors[field] = message;
@@ -708,6 +718,30 @@ function ProfileFormFields(props: {
   const maxSpecialties = limitFor(plan, "specialties");
   const maxLocations = limitFor(plan, "locations");
   const maxSectors = limitFor(plan, "serviceSectors");
+  const [planLimitNotice, setPlanLimitNotice] = useState<string | null>(null);
+
+  /** El asistente interrumpe con el cupo; edición conserva la ayuda inline. */
+  const showPlanLimits = useCallback(
+    (
+      limits: Array<{ limit: number; singular: string; plural: string }>,
+    ) => {
+      if (editing || limits.length === 0) return;
+      const descriptions = limits.map(({ limit, singular, plural }) =>
+        limit === 0
+          ? `no incluye ${plural}`
+          : `permite hasta ${limit} ${limit === 1 ? singular : plural}`,
+      );
+      const joined =
+        descriptions.length === 1
+          ? descriptions[0]
+          : `${descriptions.slice(0, -1).join(", ")} y ${descriptions.at(-1)}`;
+      const nextAction = limits.every(({ limit }) => limit === 0)
+        ? "Podés cambiar de plan para habilitar esta capacidad."
+        : "Podés quitar un elemento o cambiar de plan.";
+      setPlanLimitNotice(`Tu plan ${plan.name} ${joined}. ${nextAction}`);
+    },
+    [editing, plan.name],
+  );
 
   /**
    * Qué falta para poder publicar (RF-172). Se calcula acá para que el
@@ -722,24 +756,6 @@ function ProfileFormFields(props: {
    * Los controlados no pasan por acá: arrancan del borrador en su propio
    * `useState`, sin un render extra.
    */
-  useEffect(() => {
-    const form = formRef.current;
-    if (!draft || !form) return;
-
-    const setField = (name: string, value: string) => {
-      const field = form.elements.namedItem(name);
-      if (
-        field instanceof HTMLInputElement ||
-        field instanceof HTMLSelectElement ||
-        field instanceof HTMLTextAreaElement
-      ) {
-        field.value = value;
-      }
-    };
-
-    if (draft.type) setField("type", draft.type);
-  }, [draft]);
-
   const selectedSpecialties: SearchOption[] = useMemo(
     () =>
       specialtyIds.map((id) => ({
@@ -770,11 +786,9 @@ function ProfileFormFields(props: {
    * Todas las especialidades, con su rubro debajo para distinguir homónimas
    * ("Veterinaria" existe en Mascotas y en Servicios rurales).
    *
-   * Con el cupo de rubros del plan lleno sólo se ofrecen las de esos rubros.
-   * El tope de rubros no se elige ni se ve venir: elegir una especialidad de
-   * un rubro nuevo lo consume sin decirlo, y la persona se enteraría recién
-   * al guardar, con un error que le pide quitar algo sin decirle qué. Dejando
-   * de ofrecerlas, el límite se explica solo (BR-006).
+   * Aunque el cupo de rubros esté lleno, todos siguen a la vista. Al intentar
+   * elegir una especialidad de un rubro adicional se explica el límite en la
+   * notificación, sin hacer desaparecer opciones conocidas (BR-006).
    *
    * El orden no es el del catálogo: primero van los rubros que ya se están
    * trabajando, en el orden en que se eligieron, y después todo lo demás.
@@ -787,10 +801,6 @@ function ProfileFormFields(props: {
    * sumar uno nuevo no reordena lo que ya se venía viendo.
    */
   const specialtyOptions: SearchOption[] = useMemo(() => {
-    const sectorsFull =
-      maxSectors !== null && derivedSectors.length >= maxSectors;
-    const allowed = new Set(derivedSectors.map((sector) => sector.id));
-
     /*
      * Los rubros ya elegidos primero y en su orden; detrás, el resto del
      * catálogo en el suyo. `derivedSectors` ya viene ordenado por elección
@@ -806,16 +816,14 @@ function ProfileFormFields(props: {
       (sector) => !chosenIds.includes(sector.id),
     );
 
-    return [...chosen, ...rest]
-      .filter((sector) => !sectorsFull || allowed.has(sector.id))
-      .flatMap((sector) =>
-        listSpecialties(sector.id).map((specialty) => ({
-          value: specialty.id,
-          label: specialty.name,
-          context: sector.short,
-        })),
-      );
-  }, [derivedSectors, maxSectors]);
+    return [...chosen, ...rest].flatMap((sector) =>
+      listSpecialties(sector.id).map((specialty) => ({
+        value: specialty.id,
+        label: specialty.name,
+        context: sector.short,
+      })),
+    );
+  }, [derivedSectors]);
 
   /**
    * El servicio escrito a mano que espera especialidad, o null.
@@ -824,6 +832,7 @@ function ProfileFormFields(props: {
    * saber: la especialidad la contesta el diálogo (BR-011).
    */
   const [pendingService, setPendingService] = useState<string | null>(null);
+  const [serviceFeedback, setServiceFeedback] = useState("");
 
   /**
    * Agrega un servicio bajo una especialidad, si no está repetido.
@@ -832,18 +841,41 @@ function ProfileFormFields(props: {
    * para que la regla de no repetir viva en un solo lugar.
    */
   const addService = useCallback(
-    (specialtyId: string, name: string) => {
-      setServices((current) => {
-        // BR-011: no se repite el mismo servicio dentro de una especialidad.
-        const repeated = current.some(
+    (specialtyId: string, name: string): boolean => {
+      const trimmed = name.trim();
+      if (
+        !specialtyIds.includes(specialtyId) ||
+        trimmed.length < 3 ||
+        trimmed.length > 80
+      ) {
+        setServiceFeedback(
+          "Elegí una especialidad válida y escribí entre 3 y 80 caracteres.",
+        );
+        return false;
+      }
+      if (maxServices !== null && services.length >= maxServices) {
+        showPlanLimits([
+          { limit: maxServices, singular: "servicio", plural: "servicios" },
+        ]);
+        return false;
+      }
+      if (
+        services.some(
           (service) =>
             service.specialtyId === specialtyId &&
-            service.name.toLowerCase() === name.toLowerCase(),
+            service.name.toLowerCase() === trimmed.toLowerCase(),
+        )
+      ) {
+        setServiceFeedback(
+          "Ese servicio ya está agregado a esta especialidad.",
         );
-        return repeated ? current : [...current, { specialtyId, name }];
-      });
+        return false;
+      }
+      setServiceFeedback("");
+      setServices([...services, { specialtyId, name: trimmed }]);
+      return true;
     },
-    [setServices],
+    [services, specialtyIds, maxServices, showPlanLimits],
   );
 
   /** Las especialidades del perfil, como opciones para el diálogo. */
@@ -886,7 +918,7 @@ function ProfileFormFields(props: {
     const matches = searchServices(serviceQuery, {
       limit: 60,
       // Se excluye lo ya agregado, comparando por nombre dentro del perfil.
-      exclude: services.map((service) => service.name),
+      exclude: [],
       preferSpecialties: specialtyIds,
     });
 
@@ -898,11 +930,20 @@ function ProfileFormFields(props: {
      * Lo que se guarda igual es el nombre —`services` es texto libre—, y de
      * eso se encarga `onSelect`.
      */
-    return matches.map((service) => ({
-      value: service.id,
-      label: service.name,
-      context: service.context,
-    }));
+    return matches
+      .filter(
+        (item) =>
+          !services.some(
+            (service) =>
+              service.specialtyId === item.specialtyId &&
+              service.name.toLowerCase() === item.name.toLowerCase(),
+          ),
+      )
+      .map((service) => ({
+        value: service.id,
+        label: service.name,
+        context: service.context,
+      }));
   }, [serviceQuery, services, specialtyIds]);
 
   /**
@@ -939,101 +980,136 @@ function ProfileFormFields(props: {
     [serviceAreaIds],
   );
 
-  const completion = useMemo(() => {
-    return {
-      identidad: name.trim().length >= 2 && description.trim().length >= 20,
-      rubro: specialtyIds.length > 0,
-      servicios: services.length > 0,
-      /*
-       * BR-016: todo perfil activo declara al menos un área. Ya nunca falta
-       * —`effectiveServiceAreas` cae en el país entero cuando no se eligió
-       * nada—, así que el paso no se traba por las zonas. Lo único que puede
-       * faltar acá es el local de quien atiende en el negocio (BR-015).
-       *
-       * En el asistente hace falta además haber pasado por el paso: como el
-       * valor por omisión ya alcanza, sin eso el tilde aparecía puesto desde el
-       * arranque y decía "esto ya está" sobre una pregunta que todavía no se
-       * leyó. Se marca al salir del paso, sea eligiendo zonas o dejándolo como
-       * venía —mirarlo y aceptar el país entero es una respuesta válida—.
-       *
-       * Editando no se pide: ahí no hay recorrido sino un formulario largo con
-       * todos los paneles a la vista, así que `visited` nunca suma "zonas" y el
-       * paso quedaba incompleto para siempre. El perfil no se podía guardar y
-       * el pie decía "Falta completar: Ubicación" sobre un campo que estaba
-       * lleno y a la vista.
-       */
-      zonas:
-        (editing || visited.has("zonas")) &&
-        effectiveServiceAreas.length > 0 &&
-        (!serviceModes.includes("at_business") || locations.length > 0),
-      contacto: phone.trim().length > 0,
-      /*
-       * Estos pasos son opcionales, pero el tilde verde tiene que querer
-       * decir "hay algo cargado". Marcarlos siempre como hechos haría que el
-       * recorrido apareciera casi completo sin haber escrito nada.
-       *
-       * Las imágenes cuentan como hechas con la foto de perfil, que es la que
-       * se ve en los listados; la portada y la galería son un extra.
-       */
-      imagenes: (imageSelection.avatar?.keepIds.length ?? 0) > 0,
-      redes: socialLinks.length > 0,
-      /*
-       * Mientras no haya cobro, lo marca la persona: es un marcador de que
-       * el paso se revisó, no una confirmación de que se pagó.
-       */
-      pago: paymentDone,
-    } satisfies Record<StepId, boolean>;
-  }, [
+  const validation = profileSchema.safeParse({
     name,
+    type: profileType,
     description,
+    phone,
+    phonePublic,
+    contactEmail,
+    whatsappEnabled,
     specialtyIds,
     services,
     serviceModes,
-    effectiveServiceAreas,
+    serviceAreaIds: effectiveServiceAreas,
     locations,
-    visited,
-    editing,
-    phone,
-    socialLinks,
-    imageSelection.avatar,
-    paymentDone,
-  ]);
-
-  /*
-   * Al bajar de plan el paso donde se estaba puede dejar de existir (por
-   * ejemplo Redes al pasar de Oro a Cobre). En ese caso se retrocede al
-   * anterior que siga disponible y que todavía no esté completo; si están
-   * todos completos, al último disponible.
-   *
-   * Se deriva en vez de corregirse desde un efecto: así nunca hay un render
-   * intermedio apuntando a un paso que ya no se muestra, que es lo que
-   * dejaba el formulario en blanco y sin ningún paso marcado.
-   */
-  const step: StepId = useMemo(() => {
-    if (STEPS.some((s) => s.id === requestedStep)) return requestedStep;
-
-    const position = ALL_STEPS.findIndex((s) => s.id === requestedStep);
-    const earlier = STEPS.filter(
-      (s) => ALL_STEPS.findIndex((a) => a.id === s.id) < position,
-    );
-
-    const pending = earlier.find((s) => !completion[s.id]);
-    return pending?.id ?? earlier[earlier.length - 1]?.id ?? "identidad";
-  }, [requestedStep, STEPS, completion]);
-
-  const setStep = setRequestedStep;
-
-  /*
-   * Anota el paso que se está mirando, comparando durante el render en vez de
-   * desde un efecto: así el tilde aparece en el mismo render que muestra el
-   * paso, sin un render intermedio donde ya se ve pero todavía no cuenta.
-   */
-  if (!visited.has(step)) {
-    setVisited((current) => {
-      if (current.has(step)) return current;
-      return new Set(current).add(step);
-    });
-  }
+    scheduleEntries,
+    paymentMethods,
+    socialLinks: allowsFeature(plan, "social") ? socialLinks : [],
+  });
+  const fieldsByStep: Record<StepId, string[]> = {
+    rubro: ["specialtyIds"],
+    servicios: ["services"],
+    identidad: ["name", "description", "type"],
+    zonas: ["serviceModes", "serviceAreaIds", "locations"],
+    contacto: [
+      "phone",
+      "phonePublic",
+      "contactEmail",
+      "scheduleEntries",
+      "paymentMethods",
+    ],
+    imagenes: [],
+    redes: ["socialLinks"],
+    pago: [],
+  };
+  const issues = validation.success ? [] : validation.error.issues;
+  const stepProblem = Object.fromEntries(
+    ALL_STEPS.map((item) => [
+      item.id,
+      issues.find((issue) =>
+        fieldsByStep[item.id].includes(String(issue.path[0])),
+      )?.message ?? "",
+    ]),
+  ) as Record<StepId, string>;
+  if (!services.length)
+    stepProblem.servicios ||= "Agregá al menos un servicio para continuar.";
+  if (serviceQuery.trim() || pendingService)
+    stepProblem.servicios ||=
+      "Agregá el servicio escrito o descartá el texto para continuar.";
+  if (
+    serviceModes.includes("at_business") &&
+    (newLocality || newAddress.trim())
+  )
+    stepProblem.zonas ||=
+      "Agregá el local que estás completando o descartalo para continuar.";
+  if (scheduleQuery.trim())
+    stepProblem.contacto ||=
+      "Agregá el horario escrito o borrá el texto para continuar.";
+  if (maxSpecialties !== null && specialtyIds.length > maxSpecialties)
+    stepProblem.rubro ||= "Quitá las especialidades que exceden tu plan.";
+  if (maxSectors !== null && derivedSectors.length > maxSectors)
+    stepProblem.rubro ||=
+      "Quitá las especialidades de los rubros que exceden tu plan.";
+  if (maxServices !== null && services.length > maxServices)
+    stepProblem.servicios ||= "Quitá los servicios que exceden tu plan.";
+  if (maxLocations !== null && locations.length > maxLocations)
+    stepProblem.zonas ||= "Quitá los locales que exceden tu plan.";
+  if (imagesBusy)
+    stepProblem.imagenes = "Esperá a que terminen de procesarse las imágenes.";
+  if (Object.values(imageSelection).some((item) => item.failed))
+    stepProblem.imagenes ||=
+      "Una imagen no se pudo subir. Reintentá o quitala para continuar.";
+  if (!paymentDone)
+    stepProblem.pago = "Marcá que revisaste el paso de pago para terminar.";
+  const completion = Object.fromEntries(
+    ALL_STEPS.map((item) => [
+      item.id,
+      !stepProblem[item.id] &&
+        (BASIC_STEPS.includes(item.id)
+          ? editing || confirmed.has(item.id)
+          : item.id === "imagenes"
+            ? Object.values(imageSelection).some(
+                (value) => value.keepIds.length > 0,
+              )
+            : item.id === "redes"
+              ? socialLinks.some((link) => link.url.trim())
+              : paymentDone),
+    ]),
+  ) as Record<StepId, boolean>;
+  const firstPending = BASIC_STEPS.find((id) => !completion[id]);
+  const accessible = (id: StepId) =>
+    editing ||
+    !firstPending ||
+    (BASIC_STEPS.indexOf(id) >= 0 &&
+      BASIC_STEPS.indexOf(id) <= BASIC_STEPS.indexOf(firstPending));
+  const step: StepId =
+    !editing && !accessible(requestedStep)
+      ? firstPending!
+      : STEPS.some((item) => item.id === requestedStep)
+        ? requestedStep
+        : (firstPending ?? "contacto");
+  const showSummary = summary && !firstPending;
+  const unresolved = STEPS.find((item) => stepProblem[item.id]);
+  const setStep = (id: StepId) => {
+    if (!accessible(id) || pending) return;
+    setSummary(false);
+    setRequestedStep(id);
+    setVisited((current) => new Set(current).add(id));
+  };
+  const nextStep = () => {
+    if (stepProblem[step]) return;
+    setConfirmed((current) => new Set(current).add(step));
+    if (
+      step === "contacto" ||
+      step === "redes" ||
+      (step === "imagenes" && !allowsFeature(plan, "social"))
+    ) {
+      setSummary(true);
+    } else {
+      const next = STEPS[STEPS.findIndex((item) => item.id === step) + 1];
+      if (next) {
+        setRequestedStep(next.id);
+        setVisited((current) => new Set(current).add(next.id));
+      }
+    }
+  };
+  useEffect(() => {
+    if (!editing && started) {
+      stepHeadingRef.current?.focus({ preventScroll: true });
+      stepHeadingRef.current?.scrollIntoView({ block: "start" });
+    }
+  }, [step, showSummary, started, editing, state]);
 
   /*
    * Guarda el borrador cada vez que cambia algo. Los campos no controlados se
@@ -1054,21 +1130,18 @@ function ProfileFormFields(props: {
      */
     if (!props.canPersistDraft) return;
 
-    const form = formRef.current;
-    const read = (name: string): string => {
-      const field = form?.elements.namedItem(name);
-      return field instanceof HTMLInputElement ||
-        field instanceof HTMLSelectElement ||
-        field instanceof HTMLTextAreaElement
-        ? field.value
-        : "";
-    };
-
-    writeProfileDraft(
+    const saved = writeProfileDraft(
       {
         step,
         name,
-        type: read("type"),
+        type: profileType,
+        wizardSummary: showSummary,
+        confirmedSteps: [...confirmed],
+        omittedSteps: [...omitted],
+        serviceQuery,
+        newLocality,
+        newAddress,
+        scheduleQuery,
         description,
         contactEmail,
         specialtyIds,
@@ -1088,7 +1161,18 @@ function ProfileFormFields(props: {
       },
       userId,
     );
+    // Reflect the actual result of writing to external browser storage.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setStorageStatus(saved);
   }, [
+    profileType,
+    showSummary,
+    confirmed,
+    omitted,
+    serviceQuery,
+    newLocality,
+    newAddress,
+    scheduleQuery,
     userId,
     profile,
     props.canPersistDraft,
@@ -1154,22 +1238,19 @@ function ProfileFormFields(props: {
      * Qué campos mira cada paso: la misma correspondencia que pinta el error
      * en la barra de pasos.
      */
-    const FIELDS_BY_STEP: Record<StepId, string[]> = {
-      identidad: ["name", "description", "type"],
-      rubro: ["specialtyIds"],
-      servicios: ["services"],
-      zonas: ["serviceModes", "locations", "serviceAreaIds"],
-      contacto: ["phone", "contactEmail", "scheduleEntries", "paymentMethods"],
-      imagenes: [],
-      redes: ["socialLinks"],
-      pago: [],
-    };
-
     const errored = state.errors;
     const failed = STEPS.find((s) =>
-      FIELDS_BY_STEP[s.id].some((field) => errored[field]),
+      fieldsByStep[s.id].some((field) =>
+        Object.keys(errored).some(
+          (key) => key === field || key.startsWith(`${field}.`),
+        ),
+      ),
     );
-    if (failed) setRequestedStep(failed.id);
+    if (failed) {
+      setRequestedStep(failed.id);
+      setSummary(false);
+      setStarted(true);
+    }
   }
 
   /*
@@ -1305,12 +1386,14 @@ function ProfileFormFields(props: {
    * son sólo los que ya se revelaron: un campo que nunca se tocó puede estar mal
    * —viene así de la base, o se pegó algo— y el botón no puede ignorarlo.
    */
-  const invalidFields = ([
-    ["name", name],
-    ["description", description],
-    ["phone", phone],
-    ["contactEmail", contactEmail],
-  ] as const).filter(([field, value]) => validateField(field, value) !== "");
+  const invalidFields = (
+    [
+      ["name", name],
+      ["description", description],
+      ["phone", phone],
+      ["contactEmail", contactEmail],
+    ] as const
+  ).filter(([field, value]) => validateField(field, value) !== "");
 
   /*
    * En edición el botón pide además que haya algo para guardar: apretarlo sin
@@ -1323,31 +1406,13 @@ function ProfileFormFields(props: {
    */
   const canSave =
     canSubmit &&
+    (editing || STEPS.every((item) => !stepProblem[item.id])) &&
     invalidFields.length === 0 &&
+    validation.success &&
     // Ninguna imagen a mitad de camino: la selección todavía no está firme.
     !imagesBusy &&
+    !Object.values(imageSelection).some((item) => item.failed) &&
     (!editing || dirty);
-
-  // Un error del servidor puede referirse a un paso que no está a la vista;
-  // este mapa permite señalarlo en la barra de pasos.
-  const stepHasError: Record<StepId, boolean> = {
-    identidad: Boolean(errors.name || errors.description || errors.type),
-    rubro: Boolean(errors.specialtyIds),
-    servicios: Boolean(errors.services),
-    zonas: Boolean(
-      errors.serviceModes || errors.locations || errors.serviceAreaIds,
-    ),
-    contacto: Boolean(
-      errors.phone ||
-        errors.contactEmail ||
-        errors.scheduleEntries ||
-        errors.paymentMethods,
-    ),
-    imagenes: false,
-    redes: Boolean(errors.socialLinks),
-    pago: false,
-  };
-
 
   return (
     <>
@@ -1360,320 +1425,584 @@ function ProfileFormFields(props: {
         />
       ) : null}
 
-    <form
-      ref={formRef}
-      action={action}
-      /*
-       * Sin validación nativa: en el asistente los pasos que no están a la
-       * vista se ocultan con `display:none`, y un `required` vacío dentro de
-       * uno de ellos aborta el envío sin decir nada —el navegador no puede
-       * enfocar ni mostrar el mensaje de un campo oculto—. Así "Crear perfil"
-       * no hacía nada y la página se quedaba donde estaba.
-       *
-       * Lo obligatorio se sigue exigiendo: `missing` deshabilita el envío
-       * hasta que esté completo, y el servidor revalida todo con Zod (TR-004),
-       * que es lo que pinta los errores por campo.
-       */
-      noValidate
-      className={`flex min-w-0 flex-col ${editing && props.embedded ? "gap-0" : "gap-4 sm:gap-5"}`}
-      /*
-       * Se escucha en el formulario y no en cada campo: `input` y `change`
-       * burbujean, así que un solo par de manejadores alcanza para los
-       * cincuenta y pico de campos, incluidos los que se agregan después.
-       */
-      onInput={checkDirty}
-      onChange={checkDirty}
-      /*
-       * Última red antes de salir: se revalidan los campos de texto y, si algo
-       * está mal, no se envía.
-       *
-       * Ahorra el viaje para lo que ya se sabe mal —el servidor contestaría lo
-       * mismo, más tarde— y deja los errores marcados de una vez en lugar de
-       * de a uno. El servidor revalida igual (RF-163): esto es comodidad, no
-       * seguridad, porque el `FormData` se puede armar sin pasar por acá.
-       */
-      onSubmit={(event) => {
-        /*
-         * Apretar "Guardar" es pedir que se revise todo: los errores se
-         * muestran aunque el campo no se haya tocado, porque si no quedaría
-         * en silencio justo lo que frena el envío.
-         */
-        const found = fieldErrorState.submitAll({
-          name,
-          description,
-          phone,
-          contactEmail,
-          socialLinks,
-        });
+      {planLimitNotice ? (
+        <Notification
+          title="Alcanzaste el límite de tu plan"
+          actionLabel="Ver planes"
+          actionHref="/planes"
+          onAccept={() => setPlanLimitNotice(null)}
+        >
+          <p>{planLimitNotice}</p>
+        </Notification>
+      ) : null}
 
-        if (Object.keys(found).length > 0) event.preventDefault();
-      }}
-    >
-      {/*
+      <form
+        ref={formRef}
+        action={action}
+        /*
+         * Sin validación nativa: en el asistente los pasos que no están a la
+         * vista se ocultan con `display:none`, y un `required` vacío dentro de
+         * uno de ellos aborta el envío sin decir nada —el navegador no puede
+         * enfocar ni mostrar el mensaje de un campo oculto—. Así "Crear perfil"
+         * no hacía nada y la página se quedaba donde estaba.
+         *
+         * Lo obligatorio se sigue exigiendo: `missing` deshabilita el envío
+         * hasta que esté completo, y el servidor revalida todo con Zod (TR-004),
+         * que es lo que pinta los errores por campo.
+         */
+        noValidate
+        // React resets native form controls when an action resolves, including
+        // an error result. This wizard owns their state and must keep the DOM
+        // consistent for retries (especially checked radios and checkboxes).
+        onReset={(event) => event.preventDefault()}
+        className={`flex min-w-0 flex-col ${editing && props.embedded ? "gap-0" : "gap-4 sm:gap-5"}`}
+        /*
+         * Se escucha en el formulario y no en cada campo: `input` y `change`
+         * burbujean, así que un solo par de manejadores alcanza para los
+         * cincuenta y pico de campos, incluidos los que se agregan después.
+         */
+        onInput={checkDirty}
+        onChange={checkDirty}
+        /*
+         * Última red antes de salir: se revalidan los campos de texto y, si algo
+         * está mal, no se envía.
+         *
+         * Ahorra el viaje para lo que ya se sabe mal —el servidor contestaría lo
+         * mismo, más tarde— y deja los errores marcados de una vez en lugar de
+         * de a uno. El servidor revalida igual (RF-163): esto es comodidad, no
+         * seguridad, porque el `FormData` se puede armar sin pasar por acá.
+         */
+        onSubmit={(event) => {
+          /*
+           * Apretar "Guardar" es pedir que se revise todo: los errores se
+           * muestran aunque el campo no se haya tocado, porque si no quedaría
+           * en silencio justo lo que frena el envío.
+           */
+          const found = fieldErrorState.submitAll({
+            name,
+            description,
+            phone,
+            contactEmail,
+            socialLinks,
+          });
+
+          if (
+            Object.keys(found).length > 0 ||
+            !canSave ||
+            pending ||
+            (!editing && (!started || (!showSummary && step !== "pago")))
+          )
+            event.preventDefault();
+        }}
+      >
+        {/*
         El plan con el que se crea el perfil. Sólo cuenta la primera vez: si
         el perfil ya existe, el servidor usa el suyo y descarta este valor.
       */}
-      <input type="hidden" name="planId" value={plan.id} />
+        <input type="hidden" name="planId" value={plan.id} />
 
-      {/*
+        {/*
         La selección de imágenes, que es lo único que de ellas viaja en el
         envío: los archivos ya están subidos y pendientes (TR-043). Van como
         campos ocultos y no en un estado aparte para que el `FormData` los
         lleve igual que al resto, sin una segunda petición.
       */}
-      {Object.entries(imageSelection).map(([field, state]) => (
-        <Fragment key={field}>
-          {state.keepIds.map((id) => (
-            <input key={id} type="hidden" name={`image:${field}`} value={id} />
-          ))}
-          {/*
+        {Object.entries(imageSelection).map(([field, state]) => (
+          <Fragment key={field}>
+            {state.keepIds.map((id) => (
+              <input
+                key={id}
+                type="hidden"
+                name={`image:${field}`}
+                value={id}
+              />
+            ))}
+            {/*
             Cuáles quedan visibles (BR-033). Van aparte de
             `keepIds` porque una imagen puede quedar guardada y no mostrarse:
             es lo que pasa con lo que excede el plan tras una baja.
           */}
-          {state.activeIds.map((id) => (
+            {state.activeIds.map((id) => (
+              <input
+                key={id}
+                type="hidden"
+                name={`imageActive:${field}`}
+                value={id}
+              />
+            ))}
             <input
-              key={id}
               type="hidden"
-              name={`imageActive:${field}`}
-              value={id}
+              name={`imageRevision:${field}`}
+              value={state.galleryRevision ?? ""}
             />
-          ))}
-          <input type="hidden" name={`imageRevision:${field}`} value={state.galleryRevision ?? ""} />
-          {state.selectedIds !== undefined ? <>
-            <input type="hidden" name={`imageConfirm:${field}`} value="yes" />
-            {state.selectedIds.map(id => <input key={id} type="hidden" name={`imageSelected:${field}`} value={id} />)}
-          </> : null}
-          <input type="hidden" name="imageFields" value={field} />
-        </Fragment>
-      ))}
+            {state.selectedIds !== undefined ? (
+              <>
+                <input
+                  type="hidden"
+                  name={`imageConfirm:${field}`}
+                  value="yes"
+                />
+                {state.selectedIds.map((id) => (
+                  <input
+                    key={id}
+                    type="hidden"
+                    name={`imageSelected:${field}`}
+                    value={id}
+                  />
+                ))}
+              </>
+            ) : null}
+            <input type="hidden" name="imageFields" value={field} />
+          </Fragment>
+        ))}
 
-      {/*
+        {/*
         Cómo salió el envío. Va pegado al encabezado del sitio y se va solo a
         los quince segundos; el `-mx` lo saca del padding lateral que le pone
         quien monta el formulario, porque es una banda del sitio y no una
         tarjeta del contenido.
       */}
-      <FormAlert
-        /*
-         * Un rechazo por validación vuelve con los errores repartidos por
-         * campo y sin `form`: sin este respaldo el aviso no diría nada
-         * justo cuando hay algo que decir. Los mensajes por campo se siguen
-         * viendo en su campo; acá va la señal de que el envío no pasó.
-         */
-        message={
-          state.message ??
-          state.errors?.form ??
-          (state.errors
-            ? "Revisá los campos marcados: hay datos que faltan o no son válidos."
-            : undefined)
-        }
-        tone={state.tone ?? (state.errors ? "error" : "success")}
-        /*
-         * La respuesta del servidor, sea cual sea: dos guardados seguidos
-         * traen el mismo texto, y sin algo que cambie el segundo no se vería.
-         */
-        resetKey={state}
-        /*
-         * En edición el formulario va dentro de un bloque con `px-1` y la
-         * banda tiene que salirse de él para tocar los dos bordes. En el alta
-         * no hay tal padding —la página lo pone en `px-0` en el teléfono— y
-         * restarlo la mandaría fuera de la pantalla.
-         */
-        className={editing ? "-mx-1 sm:mx-0" : ""}
-      />
-
-      {/* La barra de pasos es del recorrido guiado: en edición no hay
-          recorrido, están todos los campos a la vez. */}
-      {editing ? null : (
-        <StepBar
-          steps={STEPS}
-          current={step}
-          completion={completion}
-          hasError={stepHasError}
-          onSelect={setStep}
+        <FormAlert
+          /*
+           * Un rechazo por validación vuelve con los errores repartidos por
+           * campo y sin `form`: sin este respaldo el aviso no diría nada
+           * justo cuando hay algo que decir. Los mensajes por campo se siguen
+           * viendo en su campo; acá va la señal de que el envío no pasó.
+           */
+          message={
+            state.message ??
+            state.errors?.form ??
+            (state.errors
+              ? "Revisá los campos marcados: hay datos que faltan o no son válidos."
+              : undefined)
+          }
+          tone={state.tone ?? (state.errors ? "error" : "success")}
+          /*
+           * La respuesta del servidor, sea cual sea: dos guardados seguidos
+           * traen el mismo texto, y sin algo que cambie el segundo no se vería.
+           */
+          resetKey={state}
+          /*
+           * En edición el formulario va dentro de un bloque con `px-1` y la
+           * banda tiene que salirse de él para tocar los dos bordes. En el alta
+           * no hay tal padding —la página lo pone en `px-0` en el teléfono— y
+           * restarlo la mandaría fuera de la pantalla.
+           */
+          className={editing ? "-mx-1 sm:mx-0" : ""}
         />
-      )}
 
-      {/*
+        {!editing && !started && (
+          <WizardWelcome
+            resume={Boolean(
+              draft?.specialtyIds?.length || draft?.name || draft?.phone,
+            )}
+            onStart={() => {
+              setStarted(true);
+              setVisited((current) => new Set(current).add(step));
+            }}
+          />
+        )}
+        <div
+          className={
+            !editing
+              ? `${started ? "grid" : "hidden"} min-w-0 gap-4 lg:grid-cols-[240px_minmax(0,1fr)]`
+              : "contents"
+          }
+        >
+          {!editing && (
+            <WizardNavigation
+              steps={STEPS}
+              current={step}
+              completion={completion}
+              visited={visited}
+              omitted={omitted}
+              accessible={accessible}
+              onSelect={setStep}
+              summary={showSummary}
+              onSummary={() => setSummary(true)}
+            />
+          )}
+          {/*
         Con sombra, para que la caja se apoye sobre el fondo en vez de
         confundirse con él. `shadow-card` no alcanzaba: está pensada para
         tarjetas chicas y a esta escala, con borde propio y sobre el gris del
         fondo, no se distinguía de no tener nada.
       */}
-      {/*
+          {/*
         En el asistente la caja va a todo el ancho del teléfono: con el borde
         redondeado y su margen se perdían casi 50px de los 360 que hay, justo
         donde se escribe. En edición no, porque ahí el formulario vive dentro
         del `shell`, que ya pone su propio margen: sin borde redondeado quedaba
         una caja cuadrada flotando en el medio de una página con aire.
       */}
-      <div
-        className={`min-w-0 border-line bg-white ${
-          editing
-            ? props.embedded
-              ? ""
-              : "rounded-card border shadow-panel"
-            : "border-y shadow-panel sm:rounded-card sm:border"
-        }`}
-      >
-        {/* Cada panel se oculta con `hidden`, no se desmonta: los valores
+          <div
+            className={`min-w-0 border-line bg-white ${
+              editing
+                ? props.embedded
+                  ? ""
+                  : "rounded-card border shadow-panel"
+                : "border-y shadow-panel sm:rounded-card sm:border"
+            }`}
+          >
+            {!editing && (
+              <header className="border-b border-line-soft px-4 py-5 sm:px-6">
+                <h2
+                  ref={stepHeadingRef}
+                  tabIndex={-1}
+                  className="scroll-mt-[180px] lg:scroll-mt-24 text-xl font-bold tracking-tight text-ink outline-none sm:text-2xl"
+                >
+                  {showSummary
+                    ? "Tu perfil está casi listo"
+                    : ALL_STEPS.find((item) => item.id === step)?.question}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-ink-soft">
+                  {showSummary
+                    ? "Revisá tus datos. Podés terminar con lo básico o agregar fotos y redes."
+                    : ALL_STEPS.find((item) => item.id === step)?.help}
+                </p>
+              </header>
+            )}
+            {!editing && showSummary && (
+              <section className="space-y-4 p-4 sm:p-6">
+                <dl className="divide-y divide-line-soft">
+                  {(
+                    [
+                      [
+                        "rubro",
+                        selectedSpecialties
+                          .map((item) => item.label)
+                          .join(", "),
+                      ],
+                      [
+                        "servicios",
+                        services.map((item) => item.name).join(", "),
+                      ],
+                      [
+                        "identidad",
+                        `${name} · ${profileType === "business" ? "Empresa / equipo" : "Profesional independiente"}`,
+                      ],
+                      [
+                        "zonas",
+                        effectiveServiceAreas.map(locationLabelById).join(", "),
+                      ],
+                      [
+                        "contacto",
+                        [phonePublic ? phone : "Teléfono oculto", contactEmail]
+                          .filter(Boolean)
+                          .join(" · "),
+                      ],
+                    ] as [StepId, string][]
+                  ).map(([id, value]) => (
+                    <div key={id} className="flex items-start gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <dt className="text-xs font-semibold text-ink-soft">
+                          {ALL_STEPS.find((item) => item.id === id)?.label}
+                        </dt>
+                        <dd className="mt-1 break-words text-sm text-ink">
+                          {value}
+                        </dd>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStep(id)}
+                        className="min-h-12 text-sm font-semibold text-brand-800"
+                      >
+                        Editar
+                      </button>
+                    </div>
+                  ))}
+                </dl>
+                <p className="text-sm text-ink-soft">{description}</p>
+                <p className="rounded-input bg-surface-muted p-3 text-sm text-ink-soft">
+                  Al crear el perfil podrás revisar su estado y completar los
+                  requisitos de publicación pendientes.
+                </p>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setStep("imagenes")}
+                >
+                  Agregar fotos{allowsFeature(plan, "social") ? " y redes" : ""}
+                </Button>
+              </section>
+            )}
+            {/* Cada panel se oculta con `hidden`, no se desmonta: los valores
             siguen en el formulario aunque el paso no esté a la vista. */}
-        <Panel active={step === "identidad"} editing={editing} title="Identidad">
-          <Row>
-            <Field label="Nombre del perfil" error={errors.name}
-              errorId="error-name" required half>
-              <input
-                name="name"
-                value={name}
-                onChange={(event) => {
-                  setName(event.target.value);
-                  editField("name", event.target.value);
-                }}
-                onBlur={(event) => blurField("name", event.target.value)}
-                aria-invalid={errors.name ? true : undefined}
-                aria-describedby={errors.name ? "error-name" : undefined}
+            <Panel
+              active={!showSummary && step === "identidad"}
+              editing={editing}
+              title="Identidad"
+            >
+              <Row>
+                <Field
+                  label="Nombre del perfil"
+                  error={errors.name}
+                  errorId="error-name"
+                  required
+                  half
+                >
+                  <input
+                    name="name"
+                    value={name}
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      editField("name", event.target.value);
+                    }}
+                    onBlur={(event) => blurField("name", event.target.value)}
+                    aria-invalid={errors.name ? true : undefined}
+                    aria-describedby={errors.name ? "error-name" : undefined}
+                    required
+                    maxLength={80}
+                    placeholder="Ej.: Electricidad Pérez"
+                    className={inputClass(errors.name)}
+                  />
+                </Field>
+
+                <Field label="Tipo" error={errors.type} half group>
+                  <div className="flex flex-col gap-2">
+                    {[
+                      ["individual", "Profesional independiente"],
+                      ["business", "Empresa / equipo"],
+                    ].map(([value, label]) => (
+                      <label
+                        key={value}
+                        className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-input border px-3 py-3 text-sm ${profileType === value ? "border-brand-800 bg-brand-100" : "border-line"}`}
+                      >
+                        <input
+                          type="radio"
+                          name="type"
+                          value={value}
+                          checked={profileType === value}
+                          onChange={() => {
+                            setProfileType(value!);
+                            editField("type", value);
+                          }}
+                          className="h-5 w-5 accent-brand-800"
+                        />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </Field>
+              </Row>
+
+              <Field
+                label="Descripción"
+                error={errors.description}
+                errorId="error-description"
+                counter={`${description.trim().length}/600 · mínimo 20 caracteres`}
+                hint="Contá qué hacés y cómo trabajás. Es lo primero que lee quien te busca."
+                showHint={editing}
                 required
-                maxLength={80}
-                placeholder="Ej.: Electricidad Pérez"
-                className={inputClass(errors.name)}
-              />
-            </Field>
-
-            <Field label="Tipo" error={errors.type} half>
-              <select
-                name="type"
-                defaultValue={profile?.type ?? "individual"}
-                className={inputClass(errors.type)}
               >
-                <option value="individual">Profesional independiente</option>
-                <option value="business">Empresa / equipo</option>
-              </select>
-            </Field>
-          </Row>
+                <textarea
+                  name="description"
+                  value={description}
+                  onChange={(event) => {
+                    setDescription(event.target.value);
+                    editField("description", event.target.value);
+                  }}
+                  onBlur={(event) =>
+                    blurField("description", event.target.value)
+                  }
+                  aria-invalid={errors.description ? true : undefined}
+                  aria-describedby={
+                    errors.description ? "error-description" : undefined
+                  }
+                  required
+                  rows={4}
+                  maxLength={600}
+                  placeholder="Contá en pocas líneas qué hacés, tu experiencia y qué te diferencia."
+                  className={`${inputClass(errors.description)} h-auto resize-y py-2.5 leading-relaxed`}
+                />
+              </Field>
+              {!editing && (
+                <div className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowExample(!showExample)}
+                    aria-expanded={showExample}
+                    className="min-h-12 text-sm font-semibold text-brand-800"
+                  >
+                    {showExample
+                      ? "Ocultar ejemplo"
+                      : "Ver un ejemplo de descripción"}
+                  </button>
+                  {showExample && (
+                    <div className="space-y-3 rounded-input bg-surface-muted p-4">
+                      <p className="text-sm text-ink">{`${profileType === "business" ? "Ofrecemos" : "Ofrezco"} servicios de ${services
+                        .slice(0, 3)
+                        .map((item) => item.name)
+                        .join(", ")}.`}</p>
+                      <p className="text-xs text-ink-soft">
+                        Podés editarlo. Al usarlo reemplazás la descripción
+                        actual.
+                      </p>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        onClick={() => {
+                          const text = `${profileType === "business" ? "Ofrecemos" : "Ofrezco"} servicios de ${services
+                            .slice(0, 3)
+                            .map((item) => item.name)
+                            .join(", ")}.`;
+                          setDescription(text);
+                          editField("description", text);
+                          setShowExample(false);
+                        }}
+                      >
+                        Usar este texto
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </Panel>
 
-          <Field
-            label="Descripción"
-            error={errors.description}
-            errorId="error-description"
-            counter={`${description.trim().length}/600 · mínimo 20 caracteres`}
-            hint="Contá qué hacés y cómo trabajás. Es lo primero que lee quien te busca."
-            required
-          >
-            <textarea
-              name="description"
-              value={description}
-              onChange={(event) => {
-                setDescription(event.target.value);
-                editField("description", event.target.value);
-              }}
-              onBlur={(event) => blurField("description", event.target.value)}
-              aria-invalid={errors.description ? true : undefined}
-              aria-describedby={
-                errors.description ? "error-description" : undefined
-              }
-              required
-              rows={4}
-              maxLength={600}
-              placeholder="Contá en pocas líneas qué hacés, tu experiencia y qué te diferencia."
-              className={`${inputClass(errors.description)} h-auto resize-y py-2.5 leading-relaxed`}
-            />
-          </Field>
-        </Panel>
-
-        <Panel
-          active={step === "rubro"}
-          editing={editing}
-          title="Especialidades"
-        >
-          <Field
-            label="Especialidades"
-            error={errors.specialtyIds}
-            hint="En qué trabajás. La primera es la principal."
-            required
-            counter={`${specialtyIds.length}/${maxSpecialties ?? "∞"}`}
-            group
-          >
-            {/*
+            <Panel
+              active={!showSummary && step === "rubro"}
+              editing={editing}
+              title="Especialidades"
+            >
+              <Field
+                label="Especialidades por rubro"
+                error={errors.specialtyIds}
+                hint="En qué trabajás. La primera es la principal."
+                showHint={editing}
+                required
+                counter={`${specialtyIds.length}/${maxSpecialties ?? "∞"}`}
+                group
+              >
+                {/*
               No hay campo de rubro: el rubro se deriva de la especialidad
               (BR-010). Elegir las dos cosas permitiría decir que se trabaja
               en un rubro sin ninguna especialidad suya.
             */}
-            <SearchSelect
-              label="Especialidades"
-              name="specialtyIds"
-              options={specialtyOptions}
-              selected={selectedSpecialties}
-              max={maxSpecialties ?? undefined}
-              error={errors.specialtyIds}
-              /*
+                <ChoiceList
+                  label="Especialidades"
+                  name="specialtyIds"
+                  options={specialtyOptions}
+                  selected={selectedSpecialties}
+                  max={maxSpecialties ?? undefined}
+                  onLimitReached={
+                    editing
+                      ? undefined
+                      : () =>
+                          showPlanLimits([
+                            {
+                              limit: maxSpecialties ?? 0,
+                              singular: "especialidad",
+                              plural: "especialidades",
+                            },
+                          ])
+                  }
+                  /*
                 La etiqueta lleva el rubro debajo: hay especialidades
                 homónimas en rubros distintos y, una vez elegidas, la lista ya
                 no está para desempatarlas.
               */
-              showContext
-              placeholder="Buscá tu especialidad…"
-              emptyLabel="No encontramos esa especialidad."
-              onSelect={(option) => {
-                if (specialtyIds.includes(option.value)) return;
-                setSpecialtyIds([...specialtyIds, option.value]);
-              }}
-              onRemove={(value) => {
-                setSpecialtyIds(specialtyIds.filter((id) => id !== value));
-                /*
-                 * BR-010: al quitar una especialidad se van sus servicios.
-                 * Dejarlos huérfanos los haría rechazar por la FK compuesta
-                 * al guardar, con un error que no explicaría nada.
-                 */
-                setServices(
-                  services.filter((service) => service.specialtyId !== value),
-                );
-              }}
-            />
+                  onSelect={(option) => {
+                    if (specialtyIds.includes(option.value)) return;
+                    const newSector = sectorOfSpecialty(option.value);
+                    const addsSector =
+                      newSector &&
+                      !derivedSectors.some(
+                        (sector) => sector.id === newSector.id,
+                      );
+                    if (
+                      addsSector &&
+                      maxSectors !== null &&
+                      derivedSectors.length >= maxSectors
+                    ) {
+                      showPlanLimits([
+                        {
+                          limit: maxSectors,
+                          singular: "rubro",
+                          plural: "rubros",
+                        },
+                      ]);
+                      return;
+                    }
+                    setSpecialtyIds([...specialtyIds, option.value]);
+                  }}
+                  onRemove={(value) => {
+                    const count = services.filter(
+                      (item) => item.specialtyId === value,
+                    ).length;
+                    if (
+                      count &&
+                      !window.confirm(
+                        `Al quitar esta especialidad también se quitarán ${count} servicios asociados. ¿Querés continuar?`,
+                      )
+                    )
+                      return;
+                    setSpecialtyIds(specialtyIds.filter((id) => id !== value));
+                    /*
+                     * BR-010: al quitar una especialidad se van sus servicios.
+                     * Dejarlos huérfanos los haría rechazar por la FK compuesta
+                     * al guardar, con un error que no explicaría nada.
+                     */
+                    setServices(
+                      services.filter(
+                        (service) => service.specialtyId !== value,
+                      ),
+                    );
+                  }}
+                />
 
-            {maxSpecialties !== null && specialtyIds.length >= maxSpecialties ? (
-              <PlanHint
-                planName={plan.name}
-                what="especialidades"
-                limit={maxSpecialties}
-              />
-            ) : null}
+                {editing &&
+                maxSpecialties !== null &&
+                specialtyIds.length >= maxSpecialties ? (
+                  <PlanHint
+                    planName={plan.name}
+                    what="especialidades"
+                    limit={maxSpecialties}
+                  />
+                ) : null}
 
-            {/*
+                {/*
               Los rubros que salen de lo elegido. Se muestran porque el plan
               los limita (BR-006) y sin verlos el tope sería inexplicable.
             */}
-            {derivedSectors.length > 0 ? (
-              <p className="text-[12.5px] text-ink-soft">
-                Rubros:{" "}
-                {derivedSectors.map((sector) => sector.short).join(" · ")}
-                {maxSectors !== null
-                  ? ` (${derivedSectors.length}/${maxSectors})`
-                  : ""}
-              </p>
-            ) : null}
+                {
+                  <p className="text-[12.5px] text-ink-soft">
+                    Rubros {derivedSectors.length}/{maxSectors ?? "∞"}
+                    {derivedSectors.length > 0 ? ": " : ""}
+                    {derivedSectors.map((sector) => sector.short).join(" · ")}
+                  </p>
+                }
 
-            {/*
+                {/*
               Con el cupo de rubros lleno el catálogo deja de ofrecer los
               demás. Se dice, porque si no una especialidad que existe
               parecería no existir.
             */}
-            {maxSectors !== null && derivedSectors.length >= maxSectors ? (
-              <PlanHint planName={plan.name} what="rubros" limit={maxSectors} />
-            ) : null}
-          </Field>
-        </Panel>
+                {editing &&
+                maxSectors !== null &&
+                derivedSectors.length >= maxSectors ? (
+                  <PlanHint
+                    planName={plan.name}
+                    what="rubros"
+                    limit={maxSectors}
+                  />
+                ) : null}
+              </Field>
+            </Panel>
 
-        <Panel active={step === "servicios"} editing={editing} title="Servicios">
-          <Field
-            label="Servicios"
-            error={errors.services}
-            /*
+            <Panel
+              active={!showSummary && step === "servicios"}
+              editing={editing}
+              title="Servicios"
+            >
+              <Field
+                label="Agrega los Servicios que ofrecés"
+                error={errors.services}
+                /*
               El texto dice de dónde salen las sugerencias, porque la lista
               cambia de tamaño según el paso anterior y si no parecería que
               faltan opciones (o que sobran).
             */
-            /*
+                /*
               Sin especialidades el campo está bloqueado y el texto lo dice: no
               es una sugerencia, es lo que falta para poder cargar servicios.
 
@@ -1681,773 +2010,950 @@ function ProfileFormFields(props: {
               descartaba en silencio porque no había especialidad de la cual
               colgarlo (BR-010).
             */
-            hint={
-              specialtyIds.length === 0
-                ? "Primero elegí al menos una especialidad: cada servicio tiene que pertenecer a una."
-                : "Lo que ofrecés concretamente. Te sugerimos las de tus especialidades."
-            }
-            required
-            counter={`${services.length}/${maxServices ?? "∞"}`}
-            group
-          >
-            {/*
+                hint={
+                  specialtyIds.length === 0
+                    ? "Primero elegí al menos una especialidad: cada servicio tiene que pertenecer a una."
+                    : "Lo que ofrecés concretamente. Te sugerimos las de tus especialidades."
+                }
+                showHint={editing}
+                required
+                counter={`${services.length}/${maxServices ?? "∞"}`}
+                group
+              >
+                {/*
               Cada servicio viaja con su especialidad en listas paralelas: la
               base exige que pertenezca a una que el perfil ya eligió (BR-010),
               así que el nombre solo no alcanza.
             */}
-            {services.map((service, index) => (
-              <input
-                key={`${service.specialtyId}-${service.name}-${index}`}
-                type="hidden"
-                name="serviceSpecialty"
-                value={service.specialtyId}
-              />
-            ))}
+                {services.map((service, index) => (
+                  <input
+                    key={`${service.specialtyId}-${service.name}-${index}`}
+                    type="hidden"
+                    name="serviceSpecialty"
+                    value={service.specialtyId}
+                  />
+                ))}
 
-            <SearchSelect
-              label="Servicios"
-              name="serviceName"
-              // Cada servicio cuelga de una especialidad: sin ninguna elegida
-              // no hay dónde ponerlo (BR-010).
-              disabled={specialtyIds.length === 0}
-              /*
-               * Viaja el nombre, no el valor: el valor de un servicio elegido
-               * es `especialidad|nombre`, una clave interna para distinguir
-               * homónimos. Mandándola, el perfil guardaba esa clave como
-               * nombre del servicio y después la mostraba tal cual.
-               *
-               * La especialidad no se pierde: va en paralelo por
-               * `serviceSpecialty`, en el mismo orden.
-               */
-              submitLabel
-              options={serviceOptions}
-              selected={selectedServices}
-              max={maxServices ?? undefined}
-              error={errors.services}
-              placeholder="Buscá un servicio…"
-              onQueryChange={setServiceQuery}
-              externallyFiltered
-              emptyLabel="No encontramos ese servicio. Escribilo y agregalo igual."
-              allowCustom
-              customHint="Si no está en la lista, escribilo y agregalo igual."
-              onSelect={(option) => {
-                /*
-                 * Del catálogo se sabe la especialidad: es la suya. Se consulta
-                 * el catálogo en vez de adivinar por la forma del valor —antes
-                 * se miraba si tenía un guión, y un servicio escrito a mano que
-                 * lo llevara ("Aire acondicionado - instalación") se tomaba por
-                 * id de catálogo y se quedaba sin especialidad.
-                 */
-                const fromCatalog = SERVICE_SUGGESTION_SPECIALTY.get(
-                  option.value,
-                );
-                if (fromCatalog) {
-                  addService(fromCatalog, option.label);
-                  return;
-                }
+                {services.map((service, index) => (
+                  <input
+                    key={index}
+                    type="hidden"
+                    name="serviceName"
+                    value={service.name}
+                  />
+                ))}
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    aria-label="Escribí un servicio"
+                    placeholder="Ej.: Instalación de luminarias"
+                    value={serviceQuery}
+                    maxLength={80}
+                    disabled={!specialtyIds.length}
+                    onChange={(event) => {
+                      setServiceQuery(event.target.value);
+                      setPendingService(null);
+                    }}
+                    className={`${inputClass()} min-w-0 flex-1`}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={
+                      serviceQuery.trim().length < 3 ||
+                      !specialtyIds.length
+                    }
+                    onClick={() => {
+                      if (
+                        maxServices !== null &&
+                        services.length >= maxServices
+                      ) {
+                        showPlanLimits([
+                          {
+                            limit: maxServices,
+                            singular: "servicio",
+                            plural: "servicios",
+                          },
+                        ]);
+                        return;
+                      }
+                      if (specialtyIds.length === 1) {
+                        if (
+                          addService(specialtyIds[0]!, serviceQuery.trim())
+                        ) {
+                          setServiceQuery("");
+                        }
+                      } else setPendingService(serviceQuery.trim());
+                    }}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                {serviceQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setServiceQuery("");
+                      setPendingService(null);
+                    }}
+                    className="min-h-12 self-start text-sm font-semibold text-brand-800"
+                  >
+                    Descartar texto
+                  </button>
+                )}
+                {specialtyIds.length === 1 && (
+                  <p className="text-xs text-ink-soft">
+                    Se agregará a {specialtyChoices[0]?.name}.
+                  </p>
+                )}
+                {pendingService && (
+                  <fieldset className="space-y-2 rounded-input border border-brand-800/20 bg-brand-100 p-3">
+                    <legend className="text-sm font-semibold">
+                      ¿A qué especialidad pertenece {pendingService}?
+                    </legend>
+                    {specialtyChoices.map((choice) => (
+                      <button
+                        key={choice.id}
+                        type="button"
+                        onClick={() => {
+                          if (addService(choice.id, pendingService)) {
+                            setPendingService(null);
+                            setServiceQuery("");
+                          }
+                        }}
+                        className="flex min-h-12 w-full flex-col justify-center rounded-input bg-white px-3 py-2 text-left text-sm"
+                      >
+                        <span className="font-semibold">{choice.name}</span>
+                        <span className="text-xs text-ink-soft">
+                          {choice.sector}
+                        </span>
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className="min-h-12 text-sm font-semibold text-brand-800"
+                      onClick={() => setPendingService(null)}
+                    >
+                      Cancelar
+                    </button>
+                  </fieldset>
+                )}
+                <p className="text-sm font-semibold text-ink">
+                  Tus servicios y sugerencias
+                </p>
+                {serviceFeedback && (
+                  <p role="status" className="text-sm text-ink-soft">
+                    {serviceFeedback}
+                  </p>
+                )}
+                <ChoiceList
+                  label="Servicios sugeridos"
+                  searchable={false}
+                  options={serviceOptions.map((option) => ({
+                    ...option,
+                    value: `${SERVICE_SUGGESTION_SPECIALTY.get(option.value)}|${option.label}`,
+                  }))}
+                  selected={selectedServices}
+                  max={maxServices ?? undefined}
+                  onLimitReached={
+                    editing
+                      ? undefined
+                      : () =>
+                          showPlanLimits([
+                            {
+                              limit: maxServices ?? 0,
+                              singular: "servicio",
+                              plural: "servicios",
+                            },
+                          ])
+                  }
+                  onSelect={(option) => {
+                    const specialtyId = option.value.split("|")[0]!;
+                    addService(specialtyId, option.label);
+                  }}
+                  onRemove={(value) =>
+                    setServices(
+                      services.filter(
+                        (service) =>
+                          `${service.specialtyId}|${service.name}` !== value,
+                      ),
+                    )
+                  }
+                />
 
-                /*
-                 * Escrito a mano: la especialidad la elige la persona (BR-011).
-                 * Con una sola no hay nada que preguntar, y con ninguna el
-                 * campo está bloqueado, así que acá siempre hay más de una.
-                 */
-                if (specialtyIds.length === 1) {
-                  addService(specialtyIds[0]!, option.label);
-                  return;
-                }
-                setPendingService(option.label);
-              }}
-              onRemove={(value) =>
-                setServices(
-                  services.filter(
-                    (service) =>
-                      `${service.specialtyId}|${service.name}` !== value,
-                  ),
-                )
-              }
-            />
+                {editing &&
+                maxServices !== null &&
+                services.length >= maxServices ? (
+                  <PlanHint
+                    planName={plan.name}
+                    what="servicios"
+                    limit={maxServices}
+                  />
+                ) : null}
+              </Field>
+            </Panel>
 
-            {/*
-              Un servicio escrito a mano con varias especialidades elegidas:
-              se pregunta a cuál pertenece (BR-011). Cancelar no lo agrega —
-              queda como si no se hubiera escrito.
-            */}
-            {pendingService ? (
-              <ServiceSpecialtyDialog
-                serviceName={pendingService}
-                specialties={specialtyChoices}
-                onChoose={(specialtyId) => {
-                  addService(specialtyId, pendingService);
-                  setPendingService(null);
-                }}
-                onCancel={() => setPendingService(null)}
-              />
-            ) : null}
-
-            {maxServices !== null && services.length >= maxServices ? (
-              <PlanHint
-                planName={plan.name}
-                what="servicios"
-                limit={maxServices}
-              />
-            ) : null}
-          </Field>
-        </Panel>
-
-        <Panel active={step === "zonas"} editing={editing} title="Ubicación">
-          <Field
-            label="Cómo prestás el servicio"
-            error={errors.serviceModes}
-            hint="Podés marcar más de una."
-            required
-            group
-          >
-            {/*
+            <Panel
+              active={!showSummary && step === "zonas"}
+              editing={editing}
+              title="Ubicación"
+            >
+              <Field
+                label="Cómo prestás el servicio"
+                error={errors.serviceModes}
+                hint="Podés marcar más de una."
+                showHint={editing}
+                required
+                group
+              >
+                {/*
               Cada modalidad es una fila entera y no una casilla suelta: en el
               teléfono se toca el renglón completo, que es un blanco de 48px
               en vez de los 16 de la casilla.
             */}
-            <div className="flex flex-col gap-2">
-              {SERVICE_MODES.map((mode) => (
-                <CheckRow
-                  key={mode}
-                  name="serviceModes"
-                  value={mode}
-                  checked={serviceModes.includes(mode)}
-                  onChange={(checked) => {
-                    setServiceModes(
-                      checked
-                        ? [...serviceModes, mode]
-                        : serviceModes.filter((item) => item !== mode),
-                    );
-                  }}
-                  label={SERVICE_MODE_LABELS[mode]}
-                />
-              ))}
-            </div>
-          </Field>
+                <div className="flex flex-col gap-2">
+                  {SERVICE_MODES.map((mode) => (
+                    <CheckRow
+                      key={mode}
+                      name="serviceModes"
+                      value={mode}
+                      checked={serviceModes.includes(mode)}
+                      onChange={(checked) => {
+                        setServiceModes(
+                          checked
+                            ? [...serviceModes, mode]
+                            : serviceModes.filter((item) => item !== mode),
+                        );
+                      }}
+                      label={SERVICE_MODE_LABELS[mode]}
+                    />
+                  ))}
+                </div>
+              </Field>
 
-          {/*
+              {/*
             BR-015: el local sólo hace falta si se atiende ahí. Quien trabaja a
             domicilio o a distancia publica sin ninguno, así que el bloque
             aparece únicamente cuando corresponde pedirlo.
           */}
-          {serviceModes.includes("at_business") ? (
-            <Field
-              label="Dónde atendés"
-              error={errors.locations}
-              hint="La localidad y la dirección de tu local o consultorio. Tiene que decir dónde estás: ni el país ni un departamento entero alcanzan."
-              required
-              counter={`${locations.length}/${maxLocations ?? "∞"}`}
-              group
-            >
-              <div className="flex flex-col gap-2.5">
-                {/*
+              {serviceModes.includes("at_business") ? (
+                <Field
+                  label="Dónde atendés"
+                  error={errors.locations}
+                  hint="La localidad y la dirección de tu local o consultorio. Tiene que decir dónde estás: ni el país ni un departamento entero alcanzan."
+                  showHint={editing}
+                  required
+                  counter={`${locations.length}/${maxLocations ?? "∞"}`}
+                  group
+                >
+                  <div className="flex flex-col gap-2.5">
+                    {/*
                   Lo ya agregado. Cada local es una fila: arriba dónde queda
                   —localidad y departamento— y debajo la dirección, que es el
                   dato con el que se llega. La cruz para quitarlo va a la
                   derecha, como en el resto de las listas del formulario.
                 */}
-                {locations.map((item, index) => (
-                  <div
-                    key={`${item.locationId}-${index}`}
-                    className="flex items-start gap-2 rounded-input border border-line bg-surface-muted p-3"
-                  >
-                    <input type="hidden" name="locationId" value={item.locationId} />
-                    <input
-                      type="hidden"
-                      name="locationName"
-                      value={item.name ?? ""}
-                    />
-                    <input
-                      type="hidden"
-                      name="locationAddress"
-                      value={item.address ?? ""}
-                    />
+                    {locations.map((item, index) => (
+                      <div
+                        key={`${item.locationId}-${index}`}
+                        className="flex items-start gap-2 rounded-input border border-line bg-surface-muted p-3"
+                      >
+                        <input
+                          type="hidden"
+                          name="locationId"
+                          value={item.locationId}
+                        />
+                        <input
+                          type="hidden"
+                          name="locationName"
+                          value={item.name ?? ""}
+                        />
+                        <input
+                          type="hidden"
+                          name="locationAddress"
+                          value={item.address ?? ""}
+                        />
 
-                    <Icon
-                      name="storefront"
-                      className="mt-0.5 flex-none text-[19px] text-brand-800"
-                    />
+                        <Icon
+                          name="storefront"
+                          className="mt-0.5 flex-none text-[19px] text-brand-800"
+                        />
 
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <span className="text-[14px] font-semibold text-ink">
-                        {locationLabelById(item.locationId)}
-                      </span>
-                      <span className="text-[13px] text-ink-soft">
-                        {item.address}
-                      </span>
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                          <span className="text-[14px] font-semibold text-ink">
+                            {locationLabelById(item.locationId)}
+                          </span>
+                          <span className="text-[13px] text-ink-soft">
+                            {item.address}
+                          </span>
 
-                      {/*
+                          {/*
                         BR-015: una sola principal. Con un solo local no se
                         pregunta —es la principal por descarte— y el radio
                         suelto sólo invitaba a un clic que no cambia nada.
                       */}
-                      {locations.length > 1 ? (
-                        <label className="mt-1 flex min-h-[36px] cursor-pointer items-center gap-2 text-[13px] text-ink-muted sm:min-h-0">
-                          <input
-                            type="radio"
-                            name="primaryLocation"
-                            value={index}
-                            checked={item.isPrimary}
-                            onChange={() =>
-                              setLocations(
-                                locations.map((row, i) => ({
-                                  ...row,
-                                  isPrimary: i === index,
-                                })),
-                              )
-                            }
-                            className="h-4 w-4 flex-none accent-brand-800"
+                          {locations.length > 1 ? (
+                            <label className="mt-1 flex min-h-[36px] cursor-pointer items-center gap-2 text-[13px] text-ink-muted sm:min-h-0">
+                              <input
+                                type="radio"
+                                name="primaryLocation"
+                                value={index}
+                                checked={item.isPrimary}
+                                onChange={() =>
+                                  setLocations(
+                                    locations.map((row, i) => ({
+                                      ...row,
+                                      isPrimary: i === index,
+                                    })),
+                                  )
+                                }
+                                className="h-4 w-4 flex-none accent-brand-800"
+                              />
+                              Es mi ubicación principal
+                            </label>
+                          ) : (
+                            <input
+                              type="hidden"
+                              name="primaryLocation"
+                              value={index}
+                            />
+                          )}
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const rest = locations.filter(
+                              (_, i) => i !== index,
+                            );
+                            /*
+                             * Si se quitó la principal, la primera que queda toma
+                             * el lugar: sin esto el perfil se quedaba sin ninguna
+                             * y no se podía guardar sin volver a elegirla.
+                             */
+                            setLocations(
+                              rest.some((row) => row.isPrimary)
+                                ? rest
+                                : rest.map((row, i) => ({
+                                    ...row,
+                                    isPrimary: i === 0,
+                                  })),
+                            );
+                          }}
+                          aria-label={`Quitar ${locationLabelById(item.locationId)}`}
+                          className="-mr-1 flex h-10 w-10 flex-none items-center justify-center rounded hover:bg-white sm:mr-0 sm:h-8 sm:w-8"
+                        >
+                          <Icon
+                            name="close"
+                            className="text-[19px] sm:text-[17px]"
                           />
-                          Es mi ubicación principal
-                        </label>
-                      ) : (
-                        <input
-                          type="hidden"
-                          name="primaryLocation"
-                          value={index}
-                        />
-                      )}
-                    </div>
+                        </button>
+                      </div>
+                    ))}
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const rest = locations.filter((_, i) => i !== index);
-                        /*
-                         * Si se quitó la principal, la primera que queda toma
-                         * el lugar: sin esto el perfil se quedaba sin ninguna
-                         * y no se podía guardar sin volver a elegirla.
-                         */
-                        setLocations(
-                          rest.some((row) => row.isPrimary)
-                            ? rest
-                            : rest.map((row, i) => ({
-                                ...row,
-                                isPrimary: i === 0,
-                              })),
-                        );
-                      }}
-                      aria-label={`Quitar ${locationLabelById(item.locationId)}`}
-                      className="-mr-1 flex h-10 w-10 flex-none items-center justify-center rounded hover:bg-white sm:mr-0 sm:h-8 sm:w-8"
-                    >
-                      <Icon name="close" className="text-[19px] sm:text-[17px]" />
-                    </button>
-                  </div>
-                ))}
-
-                {/*
+                    {/*
                   El local que se está armando: localidad, dirección y —cuando
                   ya hay otro— si es la principal. Los tres campos están a la
                   vista desde el principio y nada se agrega hasta confirmar,
                   así la lista de arriba sólo tiene locales completos.
                 */}
-                {maxLocations === null || locations.length < maxLocations ? (
-                  <div className="flex flex-col gap-2 rounded-input border border-dashed border-line-strong p-3">
-                    <LocalityPicker
-                      value={newLocality}
-                      onChange={setNewLocality}
-                    />
+                    {maxLocations === null ||
+                    locations.length < maxLocations ? (
+                      <div className="flex flex-col gap-2 rounded-input border border-dashed border-line-strong p-3">
+                        <WizardLocationPicker
+                          value={newLocality}
+                          onChange={setNewLocality}
+                        />
 
-                    <input
-                      value={newAddress}
-                      onChange={(event) => setNewAddress(event.target.value)}
-                      maxLength={160}
-                      placeholder="Calle y número"
-                      aria-label="Dirección exacta"
-                      className={inputClass()}
-                    />
+                        <input
+                          value={newAddress}
+                          onChange={(event) =>
+                            setNewAddress(event.target.value)
+                          }
+                          maxLength={160}
+                          placeholder="Calle y número"
+                          aria-label="Dirección exacta"
+                          className={inputClass()}
+                        />
 
-                    {/*
+                        {/*
                       Marcarlo como principal sólo tiene sentido si ya hay otro
                       con el que competir: el primero lo es siempre.
                     */}
-                    {locations.length > 0 ? (
-                      <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-[13px] text-ink-muted sm:min-h-0">
-                        <input
-                          type="checkbox"
-                          checked={newIsPrimary}
-                          onChange={(event) =>
-                            setNewIsPrimary(event.target.checked)
-                          }
-                          className="h-4 w-4 flex-none accent-brand-800"
-                        />
-                        Es mi ubicación principal
-                      </label>
-                    ) : null}
+                        {locations.length > 0 ? (
+                          <label className="flex min-h-[40px] cursor-pointer items-center gap-2 text-[13px] text-ink-muted sm:min-h-0">
+                            <input
+                              type="checkbox"
+                              checked={newIsPrimary}
+                              onChange={(event) =>
+                                setNewIsPrimary(event.target.checked)
+                              }
+                              className="h-4 w-4 flex-none accent-brand-800"
+                            />
+                            Es mi ubicación principal
+                          </label>
+                        ) : null}
 
-                    <button
-                      type="button"
-                      /*
-                       * Sin localidad o sin dirección no hay local que agregar:
-                       * el botón lo dice apagándose, en vez de aceptar y
-                       * fallar después contra el esquema (BR-015).
-                       */
-                      disabled={!newLocality || !newAddress.trim()}
-                      onClick={() => {
-                        if (!newLocality || !newAddress.trim()) return;
-                        if (
-                          locations.some(
-                            (item) => item.locationId === newLocality,
-                          )
-                        ) {
-                          return;
-                        }
-
-                        // El primero es principal sí o sí; después, lo que se pida.
-                        const primary = locations.length === 0 || newIsPrimary;
-                        setLocations([
-                          ...locations.map((row) => ({
-                            ...row,
-                            isPrimary: primary ? false : row.isPrimary,
-                          })),
-                          {
-                            locationId: newLocality,
-                            name: null,
-                            address: newAddress.trim(),
-                            isPrimary: primary,
-                          },
-                        ]);
-
-                        setNewLocality("");
-                        setNewAddress("");
-                        setNewIsPrimary(false);
-                      }}
-                      className={`flex h-11 items-center justify-center gap-1.5 rounded-input px-3.5 text-[14px] font-semibold disabled:opacity-45 sm:h-9 sm:self-start sm:text-[13.5px] ${SECONDARY_SURFACE}`}
-                    >
-                      <Icon name="add" className="text-[18px]" />
-                      Agregar dirección de local
-                    </button>
-                  </div>
-                ) : (
-                  <PlanHint
-                    planName={plan.name}
-                    what="ubicaciones"
-                    limit={maxLocations}
-                  />
-                )}
-              </div>
-            </Field>
-          ) : null}
-
-          {/*
-            Las zonas son "hasta dónde vas", así que sólo se preguntan a quien
-            va a algún lado. Quien atiende únicamente en su local o a distancia
-            no recorre ninguna zona, y pedírselas lo obligaba a contestar una
-            pregunta que no era sobre su trabajo.
-          */}
-          <Field
-              label="Zonas donde trabajás"
-              error={errors.serviceAreaIds}
-              hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Si no elegís ninguna, vale todo el país."
-              counter={`${serviceAreaIds.length}`}
-              group
-            >
-              <div className="flex flex-col gap-2.5">
-                {/*
-                  Las zonas que se van a guardar, incluida la cobertura
-                  nacional cuando no se eligió ninguna.
-
-                  El país se muestra como un chip más y no como un input
-                  oculto: era invisible, así que la lista se veía vacía cuando
-                  en realidad el perfil cubría todo el país. Y como no se veía,
-                  tampoco se entendía por qué agregar una zona no parecía
-                  cambiar nada.
-
-                  Su cruz va apagada a propósito. Quitarlo no puede hacer nada
-                  —el vacío vuelve a significar "todo el país" (BR-016)—, así
-                  que ofrecer la acción era prometer un cambio que no ocurría y
-                  dejaba el botón de guardar apagado sin explicación. Para
-                  acotar se agrega una zona concreta, que es lo que lo
-                  reemplaza.
-                */}
-                <div className="flex flex-wrap gap-1.5">
-                  {effectiveServiceAreas.map((id) => (
-                    <ItemChip
-                      key={id}
-                      name="serviceAreaIds"
-                      value={id}
-                      label={locationLabelById(id)}
-                      detail={locationTypeLabel(id)}
-                      /*
-                       * El país no se puede quitar, esté guardado o puesto por
-                       * omisión: sacarlo deja la lista vacía, y vacía vuelve a
-                       * significar todo el país (BR-016). La cruz no cambiaba
-                       * nada y el botón de guardar se quedaba apagado sin que
-                       * se entendiera por qué. Para acotar la cobertura se
-                       * agrega una zona concreta, que es lo que lo reemplaza.
-                       */
-                      onRemove={
-                        id === COUNTRY_ID
-                          ? undefined
-                          : () => {
-                              setServiceAreaIds(
-                                serviceAreaIds.filter((x) => x !== id),
-                              );
-                              if (duplicateArea === id) setDuplicateArea(null);
+                        <button
+                          type="button"
+                          /*
+                           * Sin localidad o sin dirección no hay local que agregar:
+                           * el botón lo dice apagándose, en vez de aceptar y
+                           * fallar después contra el esquema (BR-015).
+                           */
+                          disabled={!newLocality || !newAddress.trim()}
+                          onClick={() => {
+                            if (!newLocality || !newAddress.trim()) return;
+                            if (
+                              locations.some(
+                                (item) => item.locationId === newLocality,
+                              )
+                            ) {
+                              return;
                             }
-                      }
-                    />
-                  ))}
+
+                            // El primero es principal sí o sí; después, lo que se pida.
+                            const primary =
+                              locations.length === 0 || newIsPrimary;
+                            const nextLocations = [
+                              ...locations.map((row) => ({
+                                ...row,
+                                isPrimary: primary ? false : row.isPrimary,
+                              })),
+                              {
+                                locationId: newLocality,
+                                name: null,
+                                address: newAddress.trim(),
+                                isPrimary: primary,
+                              },
+                            ];
+                            setLocations(nextLocations);
+
+                            setNewLocality("");
+                            setNewAddress("");
+                            setNewIsPrimary(false);
+                          }}
+                          className={`flex h-11 items-center justify-center gap-1.5 rounded-input px-3.5 text-[14px] font-semibold disabled:opacity-45 sm:h-9 sm:self-start sm:text-[13.5px] ${SECONDARY_SURFACE}`}
+                        >
+                          <Icon name="add" className="text-[18px]" />
+                          Agregar dirección de local
+                        </button>
+                        {(newLocality || newAddress) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setNewLocality("");
+                              setNewAddress("");
+                              setNewIsPrimary(false);
+                            }}
+                            className="min-h-12 text-sm font-semibold text-brand-800"
+                          >
+                            Descartar local sin agregar
+                          </button>
+                        )}
+                      </div>
+                    ) : editing ? (
+                      <PlanHint
+                        planName={plan.name}
+                        what="ubicaciones"
+                        limit={maxLocations}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          showPlanLimits([
+                            {
+                              limit: maxLocations,
+                              singular: "ubicación",
+                              plural: "ubicaciones",
+                            },
+                          ])
+                        }
+                        className={`flex min-h-12 items-center justify-center gap-2 rounded-input px-3 text-sm font-semibold ${SECONDARY_SURFACE}`}
+                      >
+                        <Icon name="add_location_alt" className="text-lg" />
+                        {locations.length > 0
+                          ? "Agregar otra ubicación"
+                          : "Agregar ubicación"}
+                      </button>
+                    )}
+                  </div>
+                </Field>
+              ) : null}
+
+              <Field
+                label="Zonas donde trabajás"
+                error={errors.serviceAreaIds}
+                hint="Dónde llegás con tu servicio, que puede ser distinto de dónde estás. Si no elegís ninguna, vale todo el país."
+                showHint={editing}
+                counter={`${serviceAreaIds.length}`}
+                group
+              >
+                <div className="flex flex-col gap-2.5">
+                  <CoverageChoices
+                    value={serviceAreaIds}
+                    onChange={setServiceAreaIds}
+                  />
                 </div>
+              </Field>
+            </Panel>
 
-                {/*
-                  El mismo desplegable del local, pero acá cualquier nivel es
-                  una respuesta (`granularity="any"`): una zona de trabajo
-                  puede ser todo el país o un departamento entero, y no hay por
-                  qué bajar hasta una localidad para decirlo (BR-016).
-                */}
-                <LocalityPicker
-                  value=""
-                  granularity="any"
-                  placeholder="Agregá una zona"
-                  onChange={(id) => {
-                    if (!id) return;
-                    /*
-                     * Repetir una zona no agrega nada y antes se descartaba en
-                     * silencio: se veía como si el botón no funcionara.
-                     */
-                    if (serviceAreaIds.includes(id)) {
-                      setDuplicateArea(id);
-                      return;
-                    }
-                    setDuplicateArea(null);
-                    /*
-                     * TR-018: se normaliza al agregar. Elegir Uruguay reemplaza
-                     * lo demás y un departamento absorbe sus localidades, así
-                     * que lo que se ve es lo que se va a guardar.
-                     *
-                     * Con cobertura nacional puesta, elegir una zona concreta
-                     * la reemplaza en vez de sumarse: normalizar las dos juntas
-                     * devolvería Uruguay —que se come todo— y el clic no haría
-                     * nada. Es el caso de quien abre a editar un perfil que
-                     * quedó en "todo el país" por omisión y quiere acotarlo:
-                     * sin esto, agregar zonas no cambiaba nada y el botón de
-                     * guardar seguía apagado.
-                     */
-                    const base = serviceAreaIds.filter(
-                      (area) => area !== COUNTRY_ID,
-                    );
-                    setServiceAreaIds(
-                      id === COUNTRY_ID
-                        ? [COUNTRY_ID]
-                        : normalizeServiceAreas([...base, id]),
-                    );
-                  }}
-                />
-
-                {duplicateArea ? (
-                  <p role="alert" className="text-[13px] font-medium text-[#B42318]">
-                    Ya agregaste {locationLabelById(duplicateArea)}.
-                  </p>
-                ) : null}
-              </div>
-            </Field>
-        </Panel>
-
-        <Panel active={step === "contacto"} editing={editing} title="Contacto">
-          {/*
+            <Panel
+              active={!showSummary && step === "contacto"}
+              editing={editing}
+              title="Contacto"
+            >
+              {/*
             Un solo número: de él salen el enlace de llamada y el de WhatsApp
             (RF-013). Antes se pedía dos veces el mismo dato y podían quedar
             distintos.
           */}
-          <Field
-            label="Teléfono"
-            error={errors.phone}
-            errorId="error-phone"
-            hint="Con característica. Ej: 099 123 456"
-          >
-            <input
-              name="phone"
-              value={phone}
-              onChange={(event) => {
-                setPhone(event.target.value);
-                editField("phone", event.target.value);
-              }}
-              onBlur={(event) => blurField("phone", event.target.value)}
-              aria-invalid={errors.phone ? true : undefined}
-              aria-describedby={errors.phone ? "error-phone" : undefined}
-              inputMode="tel"
-              autoComplete="tel"
-              maxLength={40}
-              className={inputClass(errors.phone)}
-              placeholder="099 123 456"
-            />
-          </Field>
+              <Field
+                label="Teléfono"
+                error={errors.phone}
+                errorId="error-phone"
+                hint="Con característica. Ej: 099 123 456"
+                showHint={editing}
+              >
+                <input
+                  name="phone"
+                  value={phone}
+                  onChange={(event) => {
+                    setPhone(event.target.value);
+                    editField("phone", event.target.value);
+                  }}
+                  onBlur={(event) => blurField("phone", event.target.value)}
+                  aria-invalid={errors.phone ? true : undefined}
+                  aria-describedby={errors.phone ? "error-phone" : undefined}
+                  inputMode="tel"
+                  autoComplete="tel"
+                  maxLength={40}
+                  className={inputClass(errors.phone)}
+                  placeholder="099 123 456"
+                />
+              </Field>
 
-          <CheckRow
-            name="whatsappEnabled"
-            checked={whatsappEnabled}
-            onChange={setWhatsappEnabled}
-            label="Este número recibe WhatsApp"
-          />
+              <CheckRow
+                name="whatsappEnabled"
+                checked={whatsappEnabled}
+                onChange={setWhatsappEnabled}
+                label="Este número recibe WhatsApp"
+              />
 
-          {/*
+              {/*
             BR-004: ocultar el teléfono lo saca del perfil y también de
             WhatsApp. Tiene que quedar algún canal público, y de eso avisa el
             servidor si no queda ninguno.
           */}
-          <CheckRow
-            name="phonePublic"
-            checked={phonePublic}
-            onChange={setPhonePublic}
-            label="Mostrar mi teléfono en el perfil público"
-          />
+              <CheckRow
+                name="phonePublic"
+                checked={phonePublic}
+                onChange={setPhonePublic}
+                label="Mostrar mi teléfono en el perfil público"
+              />
 
-          <Field
-            label="Correo de contacto"
-            error={errors.contactEmail}
-            errorId="error-contactEmail"
-            hint="Puede ser distinto del correo con el que entrás. Opcional si mostrás tu teléfono."
-          >
-            <input
-              name="contactEmail"
-              type="email"
-              value={contactEmail}
-              onChange={(event) => {
-                setContactEmail(event.target.value);
-                editField("contactEmail", event.target.value);
-              }}
-              onBlur={(event) => blurField("contactEmail", event.target.value)}
-              aria-invalid={errors.contactEmail ? true : undefined}
-              aria-describedby={
-                errors.contactEmail ? "error-contactEmail" : undefined
-              }
-              maxLength={254}
-              autoComplete="email"
-              className={inputClass(errors.contactEmail)}
-              placeholder="contacto@ejemplo.uy"
-            />
-          </Field>
+              <Field
+                label="Correo de contacto"
+                error={errors.contactEmail}
+                errorId="error-contactEmail"
+                hint="Puede ser distinto del correo con el que entrás. Opcional si mostrás tu teléfono."
+                showHint={editing}
+              >
+                <input
+                  name="contactEmail"
+                  type="email"
+                  value={contactEmail}
+                  onChange={(event) => {
+                    setContactEmail(event.target.value);
+                    editField("contactEmail", event.target.value);
+                  }}
+                  onBlur={(event) =>
+                    blurField("contactEmail", event.target.value)
+                  }
+                  aria-invalid={errors.contactEmail ? true : undefined}
+                  aria-describedby={
+                    errors.contactEmail ? "error-contactEmail" : undefined
+                  }
+                  maxLength={254}
+                  autoComplete="email"
+                  className={inputClass(errors.contactEmail)}
+                  placeholder="contacto@ejemplo.uy"
+                />
+              </Field>
 
-          {/*
+              {/*
             BR-024: hasta diez líneas de texto libre. El formato por día no
             servía para "Atención solo con agenda previa" ni para un horario
             cortado, que es como se escribe de verdad.
           */}
-          <Field
-            label="Horarios"
-            error={errors.scheduleEntries}
-            hint="Una línea por horario. Elegí de la lista o escribí el tuyo."
-            counter={`${scheduleEntries.length}/${MAX_SCHEDULE_ENTRIES}`}
-            group
-          >
-            <SearchSelect
-              label="Horarios"
-              name="scheduleEntries"
-              options={scheduleOptions}
-              selected={scheduleEntries.map((text) => ({
-                value: text,
-                label: text,
-              }))}
-              max={MAX_SCHEDULE_ENTRIES}
-              error={errors.scheduleEntries}
-              placeholder="Ej.: Lunes a viernes de 08:00 a 17:00"
-              onQueryChange={setScheduleQuery}
-              externallyFiltered
-              emptyLabel="No está en la lista. Escribilo y agregalo igual."
-              allowCustom
-              customHint="Podés escribir tu propio horario."
-              onSelect={(option) => {
-                if (scheduleEntries.includes(option.label)) return;
-                setScheduleEntries([...scheduleEntries, option.label]);
-              }}
-              onRemove={(value) =>
-                setScheduleEntries(
-                  scheduleEntries.filter((text) => text !== value),
-                )
-              }
-            />
-          </Field>
+              <Field
+                label="Horarios"
+                error={errors.scheduleEntries}
+                hint="Una línea por horario. Elegí de la lista o escribí el tuyo."
+                showHint={editing}
+                counter={`${scheduleEntries.length}/${MAX_SCHEDULE_ENTRIES}`}
+                group
+              >
+                <SearchSelect
+                  label="Horarios"
+                  name="scheduleEntries"
+                  options={scheduleOptions}
+                  selected={scheduleEntries.map((text) => ({
+                    value: text,
+                    label: text,
+                  }))}
+                  max={MAX_SCHEDULE_ENTRIES}
+                  error={errors.scheduleEntries}
+                  placeholder="Ej.: Lunes a viernes de 08:00 a 17:00"
+                  onQueryChange={setScheduleQuery}
+                  externallyFiltered
+                  emptyLabel="No está en la lista. Escribilo y agregalo igual."
+                  allowCustom
+                  customHint="Podés escribir tu propio horario."
+                  onSelect={(option) => {
+                    if (scheduleEntries.includes(option.label)) return;
+                    setScheduleEntries([...scheduleEntries, option.label]);
+                  }}
+                  onRemove={(value) =>
+                    setScheduleEntries(
+                      scheduleEntries.filter((text) => text !== value),
+                    )
+                  }
+                />
+              </Field>
 
-          <Field label="Formas de pago" error={errors.paymentMethods} group>
-            {/*
+              <Field label="Formas de pago" error={errors.paymentMethods} group>
+                {/*
               "Acepto todas" es un atajo, no un valor: marca las cuatro y se
               desmarca solo en cuanto se destilda cualquiera. Se guarda la
               lista completa y no una bandera, así que quien busca por
               "efectivo" encuentra igual a este perfil (TR-001).
             */}
-            <CheckRow
-              name="paymentMethodsAll"
-              value="all"
-              checked={PAYMENT_OPTIONS.every((method) =>
-                paymentMethods.includes(method),
-              )}
-              onChange={(on) =>
-                setPaymentMethods(on ? [...PAYMENT_OPTIONS] : [])
-              }
-              label="Acepto todas"
-            />
+                <CheckRow
+                  name="paymentMethodsAll"
+                  value="all"
+                  checked={PAYMENT_OPTIONS.every((method) =>
+                    paymentMethods.includes(method),
+                  )}
+                  onChange={(on) =>
+                    setPaymentMethods(on ? [...PAYMENT_OPTIONS] : [])
+                  }
+                  label="Acepto todas"
+                />
 
-            {/*
+                {/*
               Dos columnas en el teléfono: las etiquetas son cortas ("Efectivo",
               "Débito") y en una sola columna el paso se estiraba media pantalla
               de más por cinco palabras.
             */}
-            <div className="mt-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
-              {PAYMENT_OPTIONS.map((method) => (
-                <CheckRow
-                  key={method}
-                  name="paymentMethods"
-                  value={method}
-                  checked={paymentMethods.includes(method)}
-                  onChange={(on) =>
-                    setPaymentMethods((current) =>
-                      on
-                        ? [...current, method]
-                        : current.filter((m) => m !== method),
-                    )
-                  }
-                  label={PAYMENT_METHOD_LABELS[method]}
-                  compact
-                />
-              ))}
-            </div>
-          </Field>
-        </Panel>
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-x-5 sm:gap-y-2">
+                  {PAYMENT_OPTIONS.map((method) => (
+                    <CheckRow
+                      key={method}
+                      name="paymentMethods"
+                      value={method}
+                      checked={paymentMethods.includes(method)}
+                      onChange={(on) =>
+                        setPaymentMethods((current) =>
+                          on
+                            ? [...current, method]
+                            : current.filter((m) => m !== method),
+                        )
+                      }
+                      label={PAYMENT_METHOD_LABELS[method]}
+                      compact
+                    />
+                  ))}
+                </div>
+              </Field>
+            </Panel>
 
-
-        <Panel active={step === "imagenes"} editing={editing} title="Imágenes">
-          {/*
+            <Panel
+              active={!showSummary && step === "imagenes"}
+              editing={editing}
+              title="Imágenes"
+            >
+              {/*
             Se dice que es opcional: es el único paso donde no se escribe sino
             que se sube algo, y sin aclararlo parece que hay que conseguir una
             foto antes de poder seguir.
           */}
-          <p className="text-[13.5px] leading-relaxed text-ink-soft">
-            Son opcionales: podés crear el perfil sin imágenes y agregarlas
-            más adelante.
-          </p>
+              <p className="text-[13.5px] leading-relaxed text-ink-soft">
+                Son opcionales: podés crear el perfil sin imágenes y agregarlas
+                más adelante.
+              </p>
 
-          {/*
+              {/*
             Se suben de a una, apenas se eligen: cada una viaja en su propia
             acción y queda guardada aunque el alta siga sin terminar. Por eso
             no hay ningún campo de archivo dentro del envío del formulario.
           */}
-          <ImageField
-            field="avatar"
-            shape="circle"
-            label="Foto de perfil"
-            hint="Se ve en los resultados de búsqueda y arriba de tu perfil. JPG, PNG o WebP, hasta 5 MB."
-            initial={props.images.filter((image) => image.kind === "avatar")}
-            onChange={onImageChange("avatar")}
-          />
+              <ImageField
+                field="avatar"
+                shape="circle"
+                label="Foto de perfil"
+                hint="Se ve en los resultados de búsqueda y arriba de tu perfil. JPG, PNG o WebP, hasta 5 MB."
+                initial={props.images.filter(
+                  (image) => image.kind === "avatar",
+                )}
+                onChange={onImageChange("avatar")}
+              />
 
-          <ImageField
-            field="cover"
-            shape="wide"
-            label="Imagen de portada"
-            hint="La franja ancha del encabezado de tu perfil."
-            initial={props.images.filter((image) => image.kind === "cover")}
-            onChange={onImageChange("cover")}
-          />
+              <ImageField
+                field="cover"
+                shape="wide"
+                label="Imagen de portada"
+                hint="La franja ancha del encabezado de tu perfil."
+                initial={props.images.filter((image) => image.kind === "cover")}
+                onChange={onImageChange("cover")}
+              />
 
-          {/*
+              {/*
             La galería sí depende del plan: los que no la incluyen ven la vía
             para ampliarlo en vez de un campo que no podrían usar (RF-171).
           */}
-          {allowsFeature(plan, "gallery") || props.images.some(image => image.kind === "gallery") ? (
-            <ImageField
-              key={props.images.find(image => image.kind === "gallery")?.galleryRevision ?? "gallery"}
-              field="gallery"
-              shape="grid"
-              label="Galería de trabajos"
-              initial={props.images.filter((image) => image.kind === "gallery")}
-              max={limitFor(plan, "galleryImages")}
-              planName={plan.name}
-              onChange={onImageChange("gallery")}
-            />
-          ) : (
-            <PlanHint
-              planName={plan.name}
-              what="imágenes de galería"
-              limit={0}
-            />
-          )}
-        </Panel>
+              {allowsFeature(plan, "gallery") ||
+              props.images.some((image) => image.kind === "gallery") ? (
+                <ImageField
+                  key={
+                    props.images.find((image) => image.kind === "gallery")
+                      ?.galleryRevision ?? "gallery"
+                  }
+                  field="gallery"
+                  shape="grid"
+                  label="Galería de trabajos"
+                  initial={props.images.filter(
+                    (image) => image.kind === "gallery",
+                  )}
+                  max={limitFor(plan, "galleryImages")}
+                  planName={plan.name}
+                  onChange={onImageChange("gallery")}
+                  onLimitReached={
+                    editing
+                      ? undefined
+                      : () => {
+                          const galleryLimit = limitFor(plan, "galleryImages");
+                          if (galleryLimit !== null) {
+                            showPlanLimits([
+                              {
+                                limit: galleryLimit,
+                                singular: "imagen de galería",
+                                plural: "imágenes de galería",
+                              },
+                            ]);
+                          }
+                        }
+                  }
+                />
+              ) : editing ? (
+                <PlanHint
+                  planName={plan.name}
+                  what="imágenes de galería"
+                  limit={0}
+                />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    showPlanLimits([
+                      {
+                        limit: 0,
+                        singular: "imagen de galería",
+                        plural: "imágenes de galería",
+                      },
+                    ])
+                  }
+                  className={`flex min-h-12 items-center justify-center gap-2 rounded-input px-3 text-sm font-semibold ${SECONDARY_SURFACE}`}
+                >
+                  <Icon name="add_photo_alternate" className="text-lg" />
+                  Agregar imágenes de galería
+                </button>
+              )}
+            </Panel>
 
-        {allowsFeature(plan, "social") ? (
-          <Panel active={step === "redes"} editing={editing} title="Redes">
-            <p className="text-[13.5px] leading-relaxed text-ink-soft">
-              Agregá sólo las que uses. Se muestran en tu perfil público.
-            </p>
-            <SocialLinksEditor
-              platforms={SOCIAL_FIELDS}
-              value={socialLinks}
-              onChange={setSocialLinks}
-              error={(platform) =>
-                errors[`socialLinks.${platform}`] ?? errors.socialLinks
-              }
-            />
-          </Panel>
-        ) : null}
+            {allowsFeature(plan, "social") ? (
+              <Panel
+                active={!showSummary && step === "redes"}
+                editing={editing}
+                title="Redes"
+              >
+                <p className="text-[13.5px] leading-relaxed text-ink-soft">
+                  Agregá sólo las que uses. Se muestran en tu perfil público.
+                </p>
+                <SocialLinksEditor
+                  platforms={SOCIAL_FIELDS}
+                  value={socialLinks}
+                  onChange={(links) => {
+                    setSocialLinks(links);
+                    editField("socialLinks", links);
+                  }}
+                  error={(platform) =>
+                    errors[`socialLinks.${platform}`] ?? errors.socialLinks
+                  }
+                />
+              </Panel>
+            ) : null}
 
-        {/*
+            {/*
           El pago es del alta y del cambio de plan, no de la edición: quien
           entra a corregir un teléfono no viene a tocar la suscripción. En
           edición se muestran todos los paneles a la vez, así que sin esta
           condición el paso aparecía ahí y, peor, se pedía completarlo para
           poder guardar — dejando un perfil de plan pago sin forma de editarse.
         */}
-        {plan.priceCents > 0 && !editing ? (
-          <Panel active={step === "pago"} editing={editing} title="Pago">
-            <div className="flex flex-col items-start gap-3 rounded-card border border-dashed border-line-strong bg-surface-muted p-6">
-              <span className="flex items-center gap-2 text-[15px] font-bold text-ink">
-                <Icon name="credit_card" className="text-[20px] text-brand-800" />
-                Pago del plan {plan.name}
-              </span>
-              <p className="text-[14px] leading-relaxed text-ink-soft">
-                El cobro todavía no está disponible. Mientras tanto podés crear
-                y publicar tu perfil igual: cuando habilitemos los pagos te
-                avisamos para completar la suscripción.
-              </p>
-              <span className="text-[19px] font-bold tracking-[-.4px] text-ink">
-                {formatPrice(plan)}
-              </span>
-            </div>
+            {plan.priceCents > 0 && !editing ? (
+              <Panel
+                active={!showSummary && step === "pago"}
+                editing={editing}
+                title="Pago"
+              >
+                <div className="flex flex-col items-start gap-3 rounded-card border border-dashed border-line-strong bg-surface-muted p-6">
+                  <span className="flex items-center gap-2 text-[15px] font-bold text-ink">
+                    <Icon
+                      name="credit_card"
+                      className="text-[20px] text-brand-800"
+                    />
+                    Pago del plan {plan.name}
+                  </span>
+                  <p className="text-[14px] leading-relaxed text-ink-soft">
+                    El cobro todavía no está disponible. Mientras tanto podés
+                    crear y publicar tu perfil igual: cuando habilitemos los
+                    pagos te avisamos para completar la suscripción.
+                  </p>
+                  <span className="text-[19px] font-bold tracking-[-.4px] text-ink">
+                    {formatPrice(plan)}
+                  </span>
+                </div>
 
-            {/*
+                {/*
               Marcador provisional mientras no exista el cobro: deja constancia
               de que el paso se revisó y da el tilde en la barra de pasos, para
-              que el recorrido pueda verse completo. No condiciona la creación
-              del perfil — el botón de guardar no la mira.
+              que el recorrido pueda verse completo. Es obligatorio cuando el plan tiene precio; no confirma un cobro.
             */}
-            <CheckRow
-              name="paymentAcknowledged"
-              checked={paymentDone}
-              onChange={setPaymentDone}
-              label="Doy por completado este paso. Cuando habilitemos los pagos te avisamos para completar la suscripción."
-              align="start"
-            />
-          </Panel>
-        ) : null}
+                <CheckRow
+                  name="paymentAcknowledged"
+                  checked={paymentDone}
+                  onChange={setPaymentDone}
+                  label="Doy por completado este paso. Cuando habilitemos los pagos te avisamos para completar la suscripción."
+                  align="start"
+                />
+              </Panel>
+            ) : null}
 
-        {editing ? (
-          <EditFooter
-            pending={pending}
-            canSubmit={canSave}
-            dirty={dirty}
-            missing={missing.map((s) => s.label)}
-            invalid={invalidFields.length}
-            onCancel={props.onCancel}
-            error={errors.form}
-          />
-        ) : (
-          <Footer
-            steps={STEPS}
-            step={step}
-            onStep={setStep}
-            pending={pending}
-            // `!imagesBusy` también acá: en el alta el botón es otro, y sin
-            // esto se podía crear el perfil con una imagen a medio subir.
-            canSubmit={canSubmit && invalidFields.length === 0 && !imagesBusy}
-            isNew={profile === null}
-            missing={missing.map((s) => s.label)}
-            invalid={invalidFields.length}
-          />
-        )}
-      </div>
-    </form>
+            {editing ? (
+              <EditFooter
+                pending={pending}
+                canSubmit={canSave}
+                dirty={dirty}
+                missing={missing.map((s) => s.label)}
+                invalid={invalidFields.length}
+                onCancel={props.onCancel}
+                error={errors.form}
+              />
+            ) : (
+              <div className="sticky bottom-0 z-30 border-t border-line-soft bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
+                <p role="status" className="mb-2 text-sm text-ink-soft">
+                  {showSummary
+                    ? unresolved
+                      ? stepProblem[unresolved.id]
+                      : "Podés crear tu perfil con estos datos."
+                    : stepProblem[step]}
+                </p>
+                {showSummary && unresolved && unresolved.id !== "pago" && (
+                  <button
+                    type="button"
+                    onClick={() => setStep(unresolved.id)}
+                    className="mb-2 min-h-12 text-sm font-semibold text-brand-800"
+                  >
+                    Revisar {unresolved.label.toLowerCase()}
+                  </button>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={pending}
+                    onClick={() => {
+                      if (showSummary) {
+                        setSummary(false);
+                        setRequestedStep("contacto");
+                      } else if (step === "pago") setSummary(true);
+                      else {
+                        const index = STEPS.findIndex(
+                          (item) => item.id === step,
+                        );
+                        if (index > 0) setStep(STEPS[index - 1]!.id);
+                        else setStarted(false);
+                      }
+                    }}
+                  >
+                    Volver
+                  </Button>
+                  {showSummary || step === "pago" ? (
+                    showSummary && plan.priceCents > 0 && !paymentDone ? (
+                      <Button
+                        key="go-to-payment"
+                        type="button"
+                        className="min-w-0 flex-1"
+                        disabled={pending || imagesBusy}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          setStep("pago");
+                        }}
+                      >
+                        Continuar al pago
+                      </Button>
+                    ) : (
+                      <Button
+                        key="create-profile"
+                        type="submit"
+                        className="min-w-0 flex-1"
+                        disabled={!canSave || pending}
+                      >
+                        {pending
+                          ? "Guardando…"
+                          : profile
+                            ? "Guardar cambios"
+                            : "Crear perfil"}
+                      </Button>
+                    )
+                  ) : (
+                    <Button
+                      key="next-step"
+                      type="button"
+                      className="min-w-0 flex-1"
+                      disabled={Boolean(stepProblem[step]) || pending}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (!BASIC_STEPS.includes(step) && !completion[step])
+                          setOmitted((current) => new Set(current).add(step));
+                        nextStep();
+                      }}
+                    >
+                      {!BASIC_STEPS.includes(step) && !completion[step]
+                        ? "Omitir por ahora"
+                        : "Continuar"}
+                      <Icon name="arrow_forward" className="text-lg" />
+                    </Button>
+                  )}
+                </div>
+                {!showSummary && (step === "imagenes" || step === "redes") && (
+                  <button
+                    type="button"
+                    disabled={
+                      Boolean(stepProblem[step]) || imagesBusy || pending
+                    }
+                    onClick={() => setSummary(true)}
+                    className="mt-2 min-h-12 w-full text-sm font-semibold text-brand-800 disabled:opacity-50"
+                  >
+                    Revisar y terminar
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </form>
     </>
   );
 }
@@ -2502,7 +3008,11 @@ function DowngradeDialog({
       >
         <div className="flex flex-col gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#FEF3F2]">
-            <Icon name="warning" filled className="text-[22px] text-[#B42318]" />
+            <Icon
+              name="warning"
+              filled
+              className="text-[22px] text-[#B42318]"
+            />
           </span>
 
           <h2
@@ -2565,7 +3075,6 @@ type LocationRow = {
   isPrimary: boolean;
 };
 
-
 /**
  * Barra de pasos: dice dónde estás, qué falta y dónde hay un error.
  *
@@ -2578,348 +3087,6 @@ type LocationRow = {
  * dibuja el avance en una fila de segmentos, que sí entran: son tocables para
  * volver a un paso ya visto, sin pedir precisión de un píxel porque el área
  * sensible es más alta que la línea que se ve.
- */
-function StepBar({
-  steps,
-  current,
-  completion,
-  hasError,
-  onSelect,
-}: {
-  /** Sólo los pasos que habilita el plan. */
-  steps: ReadonlyArray<(typeof ALL_STEPS)[number]>;
-  current: StepId;
-  completion: Record<StepId, boolean>;
-  hasError: Record<StepId, boolean>;
-  onSelect: (id: StepId) => void;
-}) {
-  const index = steps.findIndex((s) => s.id === current);
-  const step = steps[index];
-
-  return (
-    <>
-      {/* Teléfono: título del paso, cuenta y segmentos de avance. */}
-      <div className="flex flex-col gap-2 px-4 sm:hidden">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="flex min-w-0 items-center gap-2">
-            <Icon
-              name={hasError[current] ? "error" : (step?.icon ?? "badge")}
-              className={`text-[20px] ${
-                hasError[current] ? "text-[#B42318]" : "text-brand-800"
-              }`}
-            />
-            <span className="truncate text-[17px] font-bold tracking-[-.2px] text-ink">
-              {step?.label}
-            </span>
-          </span>
-          <span className="flex-none text-[12.5px] font-semibold tabular-nums text-ink-soft">
-            Paso {index + 1} de {steps.length}
-          </span>
-        </div>
-
-        {/*
-         * Un segmento por paso. El área tocable ocupa toda la altura de la
-         * fila aunque la barra sea de 4px: apuntarle a una línea fina con el
-         * pulgar es lo que hace que un control así se sienta roto.
-         */}
-        <div className="flex gap-1">
-          {steps.map((item, position) => {
-            const failed = hasError[item.id];
-            const done = completion[item.id];
-            const active = item.id === current;
-
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => onSelect(item.id)}
-                aria-label={`Ir al paso ${position + 1}: ${item.label}`}
-                aria-current={active ? "step" : undefined}
-                className="group flex h-6 flex-1 items-center"
-              >
-                <span
-                  className={`h-1 w-full rounded-full transition-colors ${
-                    failed
-                      ? "bg-[#D92D20]"
-                      : active
-                        ? "bg-brand-800"
-                        : done
-                          ? "bg-[#7CC9A3]"
-                          : "bg-line-strong"
-                  }`}
-                />
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/*
-       * Escritorio: el recorrido entero. Los pasos van unidos por una línea
-       * para que se lean como un camino y no como pestañas sueltas. La línea
-       * vive detrás de los nodos (`-z-10`) y se recorta a la altura del
-       * círculo.
-       */}
-      <ol className="hidden items-start sm:flex">
-        {steps.map((item, position) => {
-          const active = item.id === current;
-          const done = completion[item.id];
-          const failed = hasError[item.id];
-          const previousDone =
-            position > 0 && completion[steps[position - 1]!.id];
-
-          return (
-            <li
-              key={item.id}
-              className="relative flex min-w-[84px] flex-1 flex-col items-center gap-1.5"
-            >
-              {/* Tramo que llega desde el paso anterior. */}
-              {position > 0 ? (
-                <span
-                  aria-hidden="true"
-                  className={`absolute right-1/2 top-[18px] -z-10 h-0.5 w-full ${
-                    previousDone ? "bg-[#7CC9A3]" : "bg-line-strong"
-                  }`}
-                />
-              ) : null}
-
-              <button
-                type="button"
-                onClick={() => onSelect(item.id)}
-                aria-current={active ? "step" : undefined}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 transition-colors ${
-                  failed
-                    ? "border-[#D92D20] bg-[#FFFBFA] text-[#B42318]"
-                    : active
-                      ? "border-brand-800 bg-brand-800 text-white"
-                      : done
-                        ? "border-[#1E8C56] bg-[#E8F6EF] text-[#1E8C56]"
-                        : "border-line-strong bg-white text-ink-faint hover:border-[#C6CEDC]"
-                }`}
-              >
-                <Icon
-                  name={failed ? "error" : done && !active ? "check" : item.icon}
-                  filled={done && !failed}
-                  className="text-[18px]"
-                />
-              </button>
-
-              <span
-                className={`px-1 text-center text-[12.5px] font-semibold leading-tight ${
-                  failed
-                    ? "text-[#B42318]"
-                    : active
-                      ? "text-ink"
-                      : done
-                        ? "text-[#1E8C56]"
-                        : "text-ink-soft"
-                }`}
-              >
-                {item.label}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </>
-  );
-}
-
-/**
- * Pie con navegación entre pasos y el guardado.
- *
- * En el teléfono queda pegado abajo: los pasos largos —servicios, zonas,
- * imágenes— pasan de una pantalla, y con el pie al final del contenido había
- * que hacer scroll hasta el fondo cada vez para seguir. Pegado, la acción
- * principal está siempre bajo el pulgar.
- *
- * Ahí la jerarquía se invierte respecto de escritorio: "Siguiente" ocupa el
- * ancho y "Atrás" es un botón chico al lado, porque avanzar es lo que se hace
- * en cada paso y volver es la excepción. En el último paso el que ocupa el
- * ancho es el de crear el perfil.
- */
-function Footer({
-  steps,
-  step,
-  onStep,
-  pending,
-  canSubmit,
-  isNew,
-  missing,
-  invalid,
-}: {
-  steps: ReadonlyArray<(typeof ALL_STEPS)[number]>;
-  step: StepId;
-  onStep: (id: StepId) => void;
-  pending: boolean;
-  canSubmit: boolean;
-  isNew: boolean;
-  missing: string[];
-  /** Cuántos campos tienen algo mal escrito. */
-  invalid: number;
-}) {
-  const index = steps.findIndex((s) => s.id === step);
-  const previous = steps[index - 1];
-  const next = steps[index + 1];
-
-  const submitLabel = pending
-    ? "Guardando…"
-    : isNew
-      ? "Crear perfil"
-      : "Guardar cambios";
-
-  return (
-    /*
-     * `sticky bottom-0` y no `fixed`: así el pie pertenece a la caja del
-     * formulario y no tapa el pie del sitio ni se superpone con nada cuando
-     * se llega al final de la página. El `safe-area` es por la barra de
-     * gestos del teléfono, que si no se come el botón.
-     */
-    <div className="sticky bottom-0 z-30 flex flex-col gap-2 border-t border-line-soft bg-surface-muted px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:flex-row sm:flex-wrap sm:items-center sm:gap-2.5 sm:rounded-b-card sm:px-5 sm:py-3.5">
-      {/*
-        El estado va arriba de los botones en el teléfono y no al lado: una
-        lista de pasos que faltan al lado de un botón lo dejaba de dos
-        palabras de ancho.
-      */}
-      <div className="flex items-center justify-between gap-3 sm:order-2 sm:ml-auto sm:justify-end">
-        {invalid > 0 ? (
-          /*
-            Lo mal escrito se dice antes que lo que falta, y antes que
-            "Listo para publicar": con un campo inválido el perfil no está
-            listo, y el botón está apagado por eso.
-          */
-          <span className="text-[12.5px] leading-tight text-[#B42318]">
-            {invalid === 1
-              ? "Hay un campo con datos inválidos."
-              : `Hay ${invalid} campos con datos inválidos.`}
-          </span>
-        ) : missing.length > 0 ? (
-          <span className="text-[12.5px] leading-tight text-ink-soft">
-            Falta completar: {missing.join(", ")}
-          </span>
-        ) : (
-          <span className="flex items-center gap-1.5 text-[12.5px] font-medium text-[#1E8C56]">
-            <Icon name="check_circle" filled className="text-[15px]" />
-            Listo para publicar
-          </span>
-        )}
-
-        {/* En escritorio el envío va acá, junto al estado. */}
-        <Button
-          type="submit"
-          size="sm"
-          disabled={pending || !canSubmit}
-          className="hidden sm:inline-flex"
-        >
-          {submitLabel}
-        </Button>
-      </div>
-
-      <div className="flex items-center gap-2 sm:order-1 sm:gap-2.5">
-        {previous ? (
-          <>
-            {/* Teléfono: sólo la flecha, para dejarle el ancho a "Siguiente". */}
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => onStep(previous.id)}
-              aria-label={`Volver a ${previous.label}`}
-              className="h-11 w-11 flex-none px-0 sm:hidden"
-            >
-              <Icon name="arrow_back" className="text-[20px]" />
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => onStep(previous.id)}
-              className="hidden sm:inline-flex"
-            >
-              <Icon name="arrow_back" className="text-[17px]" />
-              {previous.label}
-            </Button>
-          </>
-        ) : null}
-
-        {next ? (
-          <>
-            {/*
-              Teléfono: la acción del paso, a todo el ancho que sobra.
-
-              Dice "Siguiente" y nada más. Nombrar el destino —"Siguiente:
-              Servicios"— repetía lo que la barra de pasos ya muestra arriba, y
-              con nombres largos el botón se truncaba justo en la parte que
-              venía a informar. La flecha de al lado sigue nombrándolo en su
-              `aria-label`, para quien no ve la barra.
-
-              Con todo lo obligatorio completo el principal pasa a ser crear el
-              perfil, aunque queden pasos por delante: los que faltan son
-              opcionales, y obligar a caminarlos hasta el final para encontrar
-              el botón sería pedir trabajo por nada. Seguir avanzando se puede
-              igual, con el botón que queda al lado.
-            */}
-            {canSubmit ? (
-              <>
-                <Button
-                  type="submit"
-                  disabled={pending}
-                  className="h-11 min-w-0 flex-1 text-[15px] sm:hidden"
-                >
-                  {submitLabel}
-                </Button>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => onStep(next.id)}
-                  aria-label={`Seguir a ${next.label}`}
-                  className="h-11 w-11 flex-none px-0 sm:hidden"
-                >
-                  <Icon name="arrow_forward" className="text-[20px]" />
-                </Button>
-              </>
-            ) : (
-              <Button
-                type="button"
-                onClick={() => onStep(next.id)}
-                className="h-11 min-w-0 flex-1 text-[15px] sm:hidden"
-              >
-                Siguiente
-                <Icon name="arrow_forward" className="flex-none text-[19px]" />
-              </Button>
-            )}
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => onStep(next.id)}
-              className="hidden sm:inline-flex"
-            >
-              {next.label}
-              <Icon name="arrow_forward" className="text-[17px]" />
-            </Button>
-          </>
-        ) : (
-          /* Último paso: el envío es la acción principal del teléfono. */
-          <Button
-            type="submit"
-            disabled={pending || !canSubmit}
-            className="h-11 min-w-0 flex-1 text-[15px] sm:hidden"
-          >
-            {submitLabel}
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-/**
- * Pie del modo edición: salir sin guardar, o guardar lo cambiado.
- *
- * No lleva navegación entre pasos porque no hay pasos: están todos a la
- * vista. Cancelar es un botón y no un enlace — no navega, sólo devuelve el
- * perfil a modo lectura.
  */
 function EditFooter({
   pending,
@@ -3045,9 +3212,7 @@ function Panel({
             {title}
           </h2>
         ) : null}
-        <div className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">
-          {children}
-        </div>
+        <div className="flex min-w-0 flex-col gap-4 p-4 sm:p-5">{children}</div>
       </section>
     );
   }
@@ -3143,6 +3308,7 @@ function Field({
   error,
   errorId,
   hint,
+  showHint = true,
   required = false,
   half = false,
   counter,
@@ -3157,6 +3323,8 @@ function Field({
    */
   errorId?: string;
   hint?: string;
+  /** Permite retirar las notas auxiliares sin ocultar errores ni contadores. */
+  showHint?: boolean;
   required?: boolean;
   half?: boolean;
   counter?: string;
@@ -3204,7 +3372,7 @@ function Field({
       <Icon name="error" className="mt-px flex-none text-[15px]" />
       {error}
     </span>
-  ) : hint ? (
+  ) : hint && showHint ? (
     /*
      * La nota se lee como nota y no como un tercer gris más del formulario.
      *
@@ -3267,50 +3435,6 @@ function Field({
  * Las tres listas del formulario se ven igual: lo agregado se lee de un
  * vistazo y se saca desde el mismo lugar.
  */
-function ItemChip({
-  name,
-  value,
-  label,
-  detail,
-  onRemove,
-}: {
-  /** Cuando se envía con el formulario, el campo que lo transporta. */
-  name?: string;
-  value: string;
-  label: string;
-  /** Dato secundario, como el nivel de una ubicación. */
-  detail?: string;
-  /**
-   * Sin esto el elemento no se puede quitar: la cruz se ve apagada.
-   *
-   * Es para lo que está puesto por omisión y no por elección —la cobertura
-   * nacional de quien no eligió zonas—: no hay nada que sacar, porque sacarlo
-   * lo dejaría igual.
-   */
-  onRemove?: () => void;
-}) {
-  return (
-    <span className="flex items-center gap-1 rounded-full bg-brand-100 py-1.5 pl-3.5 pr-1.5 text-[13.5px] font-semibold text-brand-800 sm:gap-1.5 sm:py-1 sm:pl-3 sm:text-[13px]">
-      {name ? <input type="hidden" name={name} value={value} /> : null}
-      {label}
-      {detail ? (
-        <span className="font-medium text-[#5B6B87]">{detail}</span>
-      ) : null}
-      {/* Igual que en `SearchSelect`: con el dedo, 20px de cruz no se acierta. */}
-      <button
-        type="button"
-        aria-label={`Quitar ${label}`}
-        onClick={onRemove}
-        disabled={!onRemove}
-        className="flex h-7 w-7 items-center justify-center rounded-full transition-colors enabled:hover:bg-brand-800 enabled:hover:text-white disabled:cursor-default disabled:opacity-40 sm:h-5 sm:w-5"
-      >
-        <Icon name="close" className="text-[16px] text-[#5B6B87] sm:text-[15px]" />
-      </button>
-    </span>
-  );
-}
-
-/** Aviso al tocar el techo del plan, con la vía para ampliarlo (RF-171). */
 function PlanHint({
   planName,
   what,
@@ -3333,7 +3457,10 @@ function PlanHint({
       {limit === 0
         ? `Tu plan ${planName} no incluye ${what}.`
         : `Tu plan ${planName} permite hasta ${limit} ${what}.`}
-      <a href="/planes" className="font-semibold text-brand-800 hover:underline">
+      <a
+        href="/planes"
+        className="font-semibold text-brand-800 hover:underline"
+      >
         Ver planes
       </a>
     </p>
