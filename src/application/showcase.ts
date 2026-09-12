@@ -1,6 +1,7 @@
 import snapshot from "@/data/marketplace-showcase.generated.json";
 import { MARKETPLACE_SHOWCASE } from "@/data/marketplace-showcase";
 import { SERVICE_SECTORS } from "@/data/taxonomy";
+import { effectivePlanId } from "@/domain/plan-changes";
 import { matchProfile, matchServiceCard } from "@/lib/search-matching";
 import { rankMixedSearchResults } from "@/lib/search-ranking";
 import { interpretSearchQuery } from "@/lib/search-intent";
@@ -43,22 +44,36 @@ function itemQuality(item: MarketplaceSearchItem): number {
 /** Resultado completo creado sólo con el JSON incluido en el build. */
 export function getPreparedSearchResult(): MarketplaceSearchResult {
   const interpretation = interpretSearchQuery("");
+  const providerPlans = new Map<string, Profile["planId"]>();
+  for (const profile of [
+    ...generated.home.featured,
+    ...generated.home.topRated,
+    ...generated.search.flatMap((item) => item.kind === "profile" ? [item.profile] : []),
+  ]) {
+    providerPlans.set(profile.id, effectivePlanId(profile));
+  }
   const candidates = generated.search.map((item): MarketplaceSearchItem =>
     item.kind === "profile"
       ? {
           kind: "profile",
           providerId: item.profile.id,
+          planId: effectivePlanId(item.profile),
           profile: item.profile,
           match: matchProfile(item.profile, interpretation)!,
         }
       : {
           kind: "service",
           providerId: item.card.profileId,
+          planId: providerPlans.get(item.card.profileId) ?? "cobre",
           card: item.card,
           match: matchServiceCard(item.card, interpretation)!,
         },
   );
-  const results = rankMixedSearchResults(candidates, itemQuality).slice(0, PAGE_SIZE);
+  const results = rankMixedSearchResults(
+    candidates,
+    itemQuality,
+    (item) => item.kind === "profile" ? item.profile.id : item.card.id,
+  ).slice(0, PAGE_SIZE);
   const providerTotal = new Set(results.map((item) => item.providerId)).size;
 
   return {
@@ -79,8 +94,12 @@ export function getPreparedSearchResult(): MarketplaceSearchResult {
       resultSetId: "",
       resultItemIds: results.map((_, index) => `prepared_search:item:${index + 1}`),
       snapshotIds: [],
+      executionIds: [],
     },
-    pagination: { page: 1, pageSize: PAGE_SIZE, hasMore: false, remaining: 0 },
+    pagination: {
+      page: 1, pageSize: PAGE_SIZE, hasMore: false, remaining: 0,
+      returned: results.length, nextCursor: null, reset: false,
+    },
   };
 }
 

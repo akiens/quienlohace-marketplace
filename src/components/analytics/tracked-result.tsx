@@ -60,7 +60,7 @@ export function TrackedResult({ children, resultKind, position, className, ...co
 
   useEffect(() => {
     const element = ref.current;
-    if (!element || !("IntersectionObserver" in window)) return;
+    if (!element || impressionId.current || !("IntersectionObserver" in window)) return;
     return observeImpression(element, () => {
       impressionId.current = analyticsId("impression");
       trackAnalytics({

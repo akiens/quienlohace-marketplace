@@ -1,6 +1,7 @@
 import "server-only";
 
 import { SERVICE_SECTORS, getSpecialty } from "@/data/taxonomy";
+import { effectivePlanId } from "@/domain/plan-changes";
 import { D1ProfileRepository } from "@/infrastructure/d1-profile-repository";
 import { D1ServiceCardRepository } from "@/infrastructure/d1-service-card-repository";
 import { analyticsEnabled, runInBackground } from "@/infrastructure/cloudflare";
@@ -16,19 +17,23 @@ import { rankMixedSearchResults } from "@/lib/search-ranking";
 import { PAGE_SIZE } from "@/types";
 import type {
   Profile,
+  ProfileSearchCandidate,
   SearchFilters,
   SearchQueryPlan,
   SearchSuggestion,
   ServiceCard,
+  ServiceCardSearchCandidate,
 } from "@/types";
 
 const profileRepo = new D1ProfileRepository();
 const cardRepo = new D1ServiceCardRepository();
-const EXPLORATION_CANDIDATES_PER_TYPE = 48;
-
 export type MarketplaceSearchItem =
-  | { kind: "profile"; providerId: string; profile: Profile; match: SearchMatch }
-  | { kind: "service"; providerId: string; card: ServiceCard; match: SearchMatch };
+  | { kind: "profile"; providerId: string; planId: Profile["planId"]; profile: Profile; match: SearchMatch }
+  | { kind: "service"; providerId: string; planId: Profile["planId"]; card: ServiceCard; match: SearchMatch };
+
+type SearchCandidateItem =
+  | { kind: "profile"; providerId: string; planId: Profile["planId"]; candidate: ProfileSearchCandidate; match: SearchMatch }
+  | { kind: "service"; providerId: string; planId: Profile["planId"]; candidate: ServiceCardSearchCandidate; match: SearchMatch };
 
 export type MarketplaceSearchResult = {
   prepared: boolean;
@@ -44,12 +49,25 @@ export type MarketplaceSearchResult = {
     resultSetId: string;
     resultItemIds: string[];
     snapshotIds: string[];
+    executionIds: string[];
+    performance?: {
+      totalDurationMs: number;
+      candidateQueryMs: number;
+      matchingRankingMs: number;
+      hydrationMs: number;
+      snapshotMs: number;
+      candidateCount: number;
+      eligibleCount: number;
+    };
   };
   pagination: {
     page: number;
     pageSize: number;
     hasMore: boolean;
     remaining: number;
+    returned: number;
+    nextCursor: string | null;
+    reset: boolean;
   };
 };
 
@@ -96,24 +114,19 @@ function quality(rating: number | null, reviews: number): number {
   return (reviews * rating + 5 * 3.5) / (reviews + 5);
 }
 
-function itemQuality(item: MarketplaceSearchItem): number {
+function candidateQuality(item: SearchCandidateItem): number {
   return item.kind === "profile"
-    ? quality(item.profile.rating, item.profile.reviewCount)
-    : quality(item.card.providerRating, item.card.providerReviewCount);
+    ? quality(item.candidate.rating, item.candidate.reviewCount)
+    : quality(item.candidate.providerRating, item.candidate.providerReviewCount);
 }
 
 async function candidates(filters: SearchFilters, plan: SearchQueryPlan) {
-  const hasQuery = Boolean(filters.query.trim());
   return Promise.all([
     includeProfiles(filters)
-      ? hasQuery
-        ? profileRepo.searchAll(filters, plan)
-        : profileRepo.search(filters, EXPLORATION_CANDIDATES_PER_TYPE, 0, plan)
+      ? profileRepo.searchCandidates(filters, plan)
       : Promise.resolve([]),
     includeCards(filters)
-      ? hasQuery
-        ? cardRepo.searchAll(filters, plan)
-        : cardRepo.search(filters, EXPLORATION_CANDIDATES_PER_TYPE, plan)
+      ? cardRepo.searchCandidates(filters, plan)
       : Promise.resolve([]),
   ]);
 }
@@ -121,33 +134,87 @@ async function candidates(filters: SearchFilters, plan: SearchQueryPlan) {
 export async function searchMarketplace(
   filters: SearchFilters,
   requestedPage = 1,
+  continuity?: { searchId: string; resultSetId: string },
+  requestedCursor: string | null = null,
 ): Promise<MarketplaceSearchResult> {
   const started = performance.now();
-  const searchId = `search_${crypto.randomUUID()}`;
+  let searchId = continuity?.searchId ?? `search_${crypto.randomUUID()}`;
   const searchExecutionId = `execution_${crypto.randomUUID()}`;
-  const resultSetId = `results_${crypto.randomUUID()}`;
+  let resultSetId = continuity?.resultSetId ?? `results_${crypto.randomUUID()}`;
   const interpretation = interpretSearchQuery(filters.query);
+  const candidateStarted = performance.now();
   const [profiles, cards] = await candidates(filters, interpretation);
-  const eligible: MarketplaceSearchItem[] = [];
+  const candidateQueryMs = Math.max(0, Math.round(performance.now() - candidateStarted));
+  const matchingStarted = performance.now();
+  const eligible: SearchCandidateItem[] = [];
 
   for (const profile of profiles) {
     const match = matchProfile(profile, interpretation);
-    if (match) eligible.push({ kind: "profile", providerId: profile.id, profile, match });
+    if (match) eligible.push({
+      kind: "profile", providerId: profile.id,
+      planId: effectivePlanId(profile), candidate: profile, match,
+    });
   }
   for (const card of cards) {
     const match = matchServiceCard(card, interpretation);
-    if (match) eligible.push({ kind: "service", providerId: card.profileId, card, match });
+    if (match) eligible.push({
+      kind: "service", providerId: card.profileId,
+      planId: effectivePlanId({
+        planId: card.providerPlanId,
+        subscriptionStatus: card.providerSubscriptionStatus,
+        planExpiresAt: card.providerPlanExpiresAt,
+        downgradePlanId: card.providerDowngradePlanId,
+      }),
+      candidate: card, match,
+    });
   }
 
-  const rankedResults = rankMixedSearchResults(eligible, itemQuality);
-  const total = rankedResults.length;
+  const rankedCandidates = rankMixedSearchResults(
+    eligible,
+    candidateQuality,
+    (item) => item.candidate.id,
+  );
+  const matchingRankingMs = Math.max(0, Math.round(performance.now() - matchingStarted));
+  const total = rankedCandidates.length;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const page = Math.min(Math.max(1, requestedPage), totalPages);
-  const results = rankedResults.slice(0, page * PAGE_SIZE);
-  const providerTotal = new Set(rankedResults.map((item) => item.providerId)).size;
-  const searchDurationMs = Math.max(0, Math.round(performance.now() - started));
+  const requestedOffset = (Math.min(Math.max(1, requestedPage), totalPages) - 1) * PAGE_SIZE;
+  const rankingVersion = snapshotId("search-ranking-v2", {
+    filters: filtersToQuery(filters),
+    ids: rankedCandidates.map((item) => `${item.kind}:${item.candidate.id}:${item.planId}`),
+  }).slice("snapshot_".length);
+  const cursorForOffset = (cursorOffset: number) => `v2_${cursorOffset}_${rankingVersion}`;
+  const reset = Boolean(
+    requestedCursor
+    && requestedCursor !== cursorForOffset(requestedOffset),
+  );
+  const page = reset ? 1 : Math.min(Math.max(1, requestedPage), totalPages);
+  if (reset) {
+    searchId = `search_${crypto.randomUUID()}`;
+    resultSetId = `results_${crypto.randomUUID()}`;
+  }
+  const offset = (page - 1) * PAGE_SIZE;
+  const pageCandidates = rankedCandidates.slice(offset, offset + PAGE_SIZE);
+  const hydrationStarted = performance.now();
+  const profileIds = pageCandidates.filter((item) => item.kind === "profile").map((item) => item.candidate.id);
+  const cardIds = pageCandidates.filter((item) => item.kind === "service").map((item) => item.candidate.id);
+  const [hydratedProfiles, hydratedCards] = await Promise.all([
+    profileRepo.findPublicByIds(profileIds),
+    cardRepo.findPublicByIds(cardIds),
+  ]);
+  const profilesById = new Map(hydratedProfiles.map((profile) => [profile.id, profile]));
+  const cardsById = new Map(hydratedCards.map((card) => [card.id, card]));
+  const results = pageCandidates.flatMap((item): MarketplaceSearchItem[] => {
+    if (item.kind === "profile") {
+      const profile = profilesById.get(item.candidate.id);
+      return profile ? [{ kind: "profile", providerId: item.providerId, planId: item.planId, profile, match: item.match }] : [];
+    }
+    const card = cardsById.get(item.candidate.id);
+    return card ? [{ kind: "service", providerId: item.providerId, planId: item.planId, card, match: item.match }] : [];
+  });
+  const hydrationMs = Math.max(0, Math.round(performance.now() - hydrationStarted));
+  const providerTotal = new Set(rankedCandidates.map((item) => item.providerId)).size;
   const suggestedActions: SearchSuggestion[] = [];
-  if (results.length === 0 && interpretation.suggestedQuery) {
+  if (total === 0 && interpretation.suggestedQuery) {
     suggestedActions.push({
       label: `Buscar “${interpretation.suggestedQuery}”`,
       detail: "Posible corrección de escritura",
@@ -155,6 +222,7 @@ export async function searchMarketplace(
     });
   }
 
+  const snapshotStarted = performance.now();
   const snapshots = results.map((item) => {
     const snapshot = item.kind === "profile" ? {
       type: item.profile.type, planId: item.profile.planId, status: item.profile.profileStatus,
@@ -175,7 +243,21 @@ export async function searchMarketplace(
     const entityKey = item.kind === "profile" ? `profile:${item.profile.id}` : `card:${item.card.id}`;
     return { snapshot, snapshotId: snapshotId(entityKey, snapshot) };
   });
-  const resultItemIds = results.map((_, index) => `${resultSetId}:item:${index + 1}`);
+  const resultItemIds = results.map((_, index) => `${resultSetId}:item:${offset + index + 1}`);
+  const snapshotMs = Math.max(0, Math.round(performance.now() - snapshotStarted));
+  const searchDurationMs = Math.max(0, Math.round(performance.now() - started));
+  const searchPerformance = {
+    totalDurationMs: searchDurationMs,
+    candidateQueryMs,
+    matchingRankingMs,
+    hydrationMs,
+    snapshotMs,
+    candidateCount: profiles.length + cards.length,
+    eligibleCount: total,
+  };
+  console.info("marketplace_search_performance", JSON.stringify({
+    searchExecutionId, page, ...searchPerformance,
+  }));
 
   if (analyticsEnabled()) {
     try {
@@ -197,7 +279,7 @@ export async function searchMarketplace(
           },
         },
         items: results.map((item, index) => ({
-          resultItemId: resultItemIds[index]!, position: index + 1, resultKind: item.kind,
+          resultItemId: resultItemIds[index]!, position: offset + index + 1, resultKind: item.kind,
           providerProfileId: item.providerId,
           profileServiceId: item.kind === "service" ? item.card.serviceId : null,
           serviceCardId: item.kind === "service" ? item.card.id : null,
@@ -219,12 +301,22 @@ export async function searchMarketplace(
     providerTotal,
     discoveryLinks: discoveryLinks(filters, interpretation),
     suggestedActions,
-    analytics: { searchId, searchExecutionId, resultSetId, resultItemIds, snapshotIds: snapshots.map((item) => item.snapshotId) },
+    analytics: {
+      searchId, searchExecutionId, resultSetId, resultItemIds,
+      snapshotIds: snapshots.map((item) => item.snapshotId),
+      executionIds: results.map(() => searchExecutionId),
+      performance: searchPerformance,
+    },
     pagination: {
       page,
       pageSize: PAGE_SIZE,
-      hasMore: results.length < total,
-      remaining: Math.max(0, total - results.length),
+      hasMore: offset + pageCandidates.length < total,
+      remaining: Math.max(0, total - offset - pageCandidates.length),
+      returned: results.length,
+      nextCursor: offset + pageCandidates.length < total
+        ? cursorForOffset(offset + PAGE_SIZE)
+        : null,
+      reset,
     },
   };
 }

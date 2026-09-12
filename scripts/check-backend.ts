@@ -36,6 +36,7 @@ import {
   searchPageFromParams,
 } from "../src/lib/query";
 import { EMPTY_FILTERS, type Profile, type ServiceCard } from "../src/types";
+import { effectivePlanId } from "../src/domain/plan-changes";
 
 let failures = 0;
 
@@ -273,17 +274,57 @@ async function main(): Promise<void> {
   );
   const mixed = rankMixedSearchResults(
     [
-      { id: "juan-card", kind: "service" as const, providerId: "juan", match: { level: "explicit" as const, relevance: 120 } },
-      { id: "juan-profile", kind: "profile" as const, providerId: "juan", match: { level: "explicit" as const, relevance: 119 } },
-      { id: "amelia-profile", kind: "profile" as const, providerId: "amelia", match: { level: "explicit" as const, relevance: 118 } },
-      { id: "teresa-profile", kind: "profile" as const, providerId: "teresa", match: { level: "specialty" as const, relevance: 70 } },
+      { id: "juan-card", kind: "service" as const, providerId: "juan", planId: "gold" as const, match: { level: "explicit" as const, relevance: 120 } },
+      { id: "juan-profile", kind: "profile" as const, providerId: "juan", planId: "gold" as const, match: { level: "explicit" as const, relevance: 119 } },
+      { id: "amelia-profile", kind: "profile" as const, providerId: "amelia", planId: "gold" as const, match: { level: "explicit" as const, relevance: 118 } },
+      { id: "teresa-profile", kind: "profile" as const, providerId: "teresa", planId: "gold" as const, match: { level: "specialty" as const, relevance: 70 } },
     ],
     () => 0,
+    (item) => item.id,
   );
   check(
     "mezcla tipos, diversifica proveedores y no cruza niveles de evidencia",
     mixed.map((item) => item.id).join(",") ===
       "juan-card,amelia-profile,juan-profile,teresa-profile",
+  );
+  const byPlan = rankMixedSearchResults(
+    [
+      { id: "free-best", kind: "service" as const, providerId: "free", planId: "cobre" as const, match: { level: "explicit" as const, relevance: 130 } },
+      { id: "gold-card", kind: "service" as const, providerId: "gold-a", planId: "gold" as const, match: { level: "explicit" as const, relevance: 90 } },
+      { id: "platinum-specialty", kind: "profile" as const, providerId: "plat-a", planId: "platinum" as const, match: { level: "specialty" as const, relevance: 60 } },
+      { id: "platinum-card-b", kind: "service" as const, providerId: "plat-b", planId: "platinum" as const, match: { level: "explicit" as const, relevance: 100 } },
+      { id: "platinum-card-a", kind: "service" as const, providerId: "plat-a", planId: "platinum" as const, match: { level: "explicit" as const, relevance: 110 } },
+      { id: "platinum-profile-a", kind: "profile" as const, providerId: "plat-a", planId: "platinum" as const, match: { level: "explicit" as const, relevance: 109 } },
+    ],
+    () => 0,
+    (item) => item.id,
+  );
+  check(
+    "BR-031 — prioriza planes y conserva rondas dentro del plan y evidencia",
+    byPlan.map((item) => item.id).join(",") ===
+      "platinum-card-a,platinum-card-b,platinum-profile-a,platinum-specialty,gold-card,free-best",
+  );
+  const afterEnd = new Date("2026-09-11T12:00:00.000Z");
+  check(
+    "BR-008 — una cancelación conserva el plan hasta el final del período",
+    effectivePlanId({
+      planId: "gold", subscriptionStatus: "cancelled",
+      planExpiresAt: "2026-09-12T00:00:00.000Z",
+    }, afterEnd) === "gold",
+  );
+  check(
+    "BR-008 — una prueba terminada sin baja explícita vuelve a Cobre",
+    effectivePlanId({
+      planId: "platinum", subscriptionStatus: "trial",
+      planExpiresAt: "2026-09-10T00:00:00.000Z",
+    }, afterEnd) === "cobre",
+  );
+  check(
+    "BR-008 — past_due no produce una baja inmediata",
+    effectivePlanId({
+      planId: "platinum", subscriptionStatus: "past_due",
+      planExpiresAt: "2026-09-10T00:00:00.000Z",
+    }, afterEnd) === "platinum",
   );
 
   console.log("\nContraseñas (TR-007)");

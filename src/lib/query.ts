@@ -136,9 +136,14 @@ export function searchPageFromParams(
   return Number.isSafeInteger(page) && page > 0 ? Math.min(page, 100) : 1;
 }
 
-export function paginatedSearchHref(filters: SearchFilters, page: number): string {
+export function paginatedSearchHref(
+  filters: SearchFilters,
+  page: number,
+  cursor?: string | null,
+): string {
   const params = new URLSearchParams(filtersToQuery(filters));
   if (page > 1) params.set("page", String(page));
+  if (page > 1 && cursor) params.set("cursor", cursor);
   if (params.size === 0) params.set(SEARCH_REQUEST_PARAM, "1");
   const query = params.toString();
   return `/buscar?${query}`;

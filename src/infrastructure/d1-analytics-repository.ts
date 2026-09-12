@@ -140,17 +140,25 @@ export async function recordServerSearch(input: {
 }): Promise<void> {
   const db = getOptionalAnalyticsDb();
   if (!db) return;
+  const deliveredThrough = input.items.reduce(
+    (maximum, item) => Math.max(maximum, item.position),
+    0,
+  );
   const statements: D1PreparedStatement[] = [
     db.prepare(`INSERT INTO analytics_search_executions
       (search_execution_id, search_id, result_set_id, executed_at, duration_ms, status, total_results, provider_total, ranking_version, interpretation_json)
-      VALUES (?, ?, ?, ?, ?, 'success', ?, ?, 'mixed-v1', ?)`).bind(
+      VALUES (?, ?, ?, ?, ?, 'success', ?, ?, 'mixed-v2', ?)`).bind(
       input.executionId, input.searchId, input.resultSetId, input.executedAt, input.durationMs,
       input.total, input.providerTotal, JSON.stringify(input.interpretation),
     ),
     db.prepare(`INSERT INTO analytics_result_sets
       (result_set_id, search_execution_id, created_at, total_count, delivered_count, ranking_version)
-      VALUES (?, ?, ?, ?, ?, 'mixed-v1')`).bind(
-      input.resultSetId, input.executionId, input.executedAt, input.total, input.items.length,
+      VALUES (?, ?, ?, ?, ?, 'mixed-v2')
+      ON CONFLICT(result_set_id) DO UPDATE SET
+        total_count = excluded.total_count,
+        delivered_count = MAX(analytics_result_sets.delivered_count, excluded.delivered_count),
+        ranking_version = excluded.ranking_version`).bind(
+      input.resultSetId, input.executionId, input.executedAt, input.total, deliveredThrough,
     ),
   ];
   for (const item of input.items) {
@@ -161,7 +169,7 @@ export async function recordServerSearch(input: {
         item.snapshotId, item.resultKind === "service" ? "service_card" : "provider_profile",
         item.serviceCardId ?? item.providerProfileId, input.executedAt, JSON.stringify(item.snapshot),
       ),
-      db.prepare(`INSERT INTO analytics_result_items
+      db.prepare(`INSERT OR IGNORE INTO analytics_result_items
         (result_item_id, result_set_id, position, result_kind, provider_profile_id, profile_service_id, service_card_id, specialty_id, entity_snapshot_id, placement, match_reason)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'organic', ?)`).bind(
         item.resultItemId, input.resultSetId, item.position, item.resultKind, item.providerProfileId,

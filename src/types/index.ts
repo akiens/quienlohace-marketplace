@@ -348,6 +348,41 @@ export type Profile = {
   images: ProfileImage[];
 };
 
+/** Proyección mínima usada para decidir elegibilidad y orden antes de hidratar. */
+export type ProfileSearchCandidate = Pick<
+  Profile,
+  | "id"
+  | "name"
+  | "description"
+  | "planId"
+  | "planExpiresAt"
+  | "downgradePlanId"
+  | "subscriptionStatus"
+  | "rating"
+  | "reviewCount"
+  | "specialtyIds"
+  | "services"
+>;
+
+/** Proyección mínima de una carta; `tier` no representa el plan del proveedor. */
+export type ServiceCardSearchCandidate = Pick<
+  ServiceCard,
+  | "id"
+  | "profileId"
+  | "providerName"
+  | "providerRating"
+  | "providerReviewCount"
+  | "specialtyId"
+  | "serviceName"
+  | "title"
+  | "description"
+> & {
+  providerPlanId: PlanId;
+  providerPlanExpiresAt: string | null;
+  providerDowngradePlanId: PlanId | null;
+  providerSubscriptionStatus: SubscriptionStatus;
+};
+
 // ---------------------------------------------------------------------------
 // Planes (BR-006 a BR-009)
 // ---------------------------------------------------------------------------

@@ -8,9 +8,11 @@ import { slugify } from "@/lib/slug";
 import { normalizedSearchField, textSearchClause } from "@/infrastructure/search-sql";
 import type {
   PaymentMethod,
+  PlanId,
   SearchFilters,
   SearchQueryPlan,
   ServiceCard,
+  ServiceCardSearchCandidate,
   ServiceCardPriceKind,
   ServiceCardTier,
   ServiceModeCode,
@@ -25,6 +27,10 @@ type CardRow = {
   verification_status: string;
   rating_sum: number;
   review_count: number;
+  plan_id: string;
+  subscription_status: string;
+  plan_expires_at: string | null;
+  downgrade_plan_id: string | null;
   provider_location_id: string | null;
   specialty_id: string;
   service_id: string;
@@ -68,7 +74,8 @@ export type ServiceCardInput = {
 
 const SELECT = `sc.id, sc.profile_id, p.slug AS provider_slug,
   p.name AS provider_name, p.icon AS provider_icon, p.verification_status,
-  p.rating_sum, p.review_count,
+  p.rating_sum, p.review_count, p.plan_id, p.subscription_status,
+  p.plan_expires_at, p.downgrade_plan_id,
   COALESCE(
     (SELECT pl.location_id FROM profile_locations pl
       WHERE pl.profile_id = p.id AND pl.is_active = 1
@@ -326,6 +333,55 @@ export class D1ServiceCardRepository {
        ORDER BY p.review_count DESC, sc.sort_order, sc.id`,
     ).bind(...values).all<CardRow>();
     return hydrateCards(rows.results);
+  }
+
+  /** Candidatos livianos: evita cargar las imágenes antes de paginar. */
+  async searchCandidates(
+    filters: SearchFilters,
+    queryPlan: SearchQueryPlan,
+  ): Promise<ServiceCardSearchCandidate[]> {
+    const { where, values } = buildSearchWhere(filters, queryPlan);
+    const rows = await getDb().prepare(
+      `SELECT sc.id, sc.profile_id, p.name AS provider_name,
+        p.rating_sum, p.review_count, p.plan_id, p.subscription_status, p.plan_expires_at,
+        p.downgrade_plan_id, s.specialty_id, s.name AS service_name,
+        sc.title, sc.description ${FROM} WHERE ${where}`,
+    ).bind(...values).all<Pick<CardRow,
+      "id" | "profile_id" | "provider_name" | "rating_sum" | "review_count" |
+      "plan_id" | "subscription_status" | "plan_expires_at" | "downgrade_plan_id" | "specialty_id" |
+      "service_name" | "title" | "description">>();
+    return rows.results.map((row) => ({
+      id: row.id,
+      profileId: row.profile_id,
+      providerName: row.provider_name,
+      providerRating: row.review_count > 0 ? row.rating_sum / row.review_count : null,
+      providerReviewCount: row.review_count,
+      providerPlanId: row.plan_id as PlanId,
+      providerSubscriptionStatus: row.subscription_status as ServiceCardSearchCandidate["providerSubscriptionStatus"],
+      providerPlanExpiresAt: row.plan_expires_at,
+      providerDowngradePlanId: row.downgrade_plan_id as PlanId | null,
+      specialtyId: row.specialty_id,
+      serviceName: row.service_name,
+      title: row.title,
+      description: row.description,
+    }));
+  }
+
+  /** Hidrata sólo las cartas de la página y conserva el orden solicitado. */
+  async findPublicByIds(ids: string[]): Promise<ServiceCard[]> {
+    if (ids.length === 0) return [];
+    const marks = ids.map(() => "?").join(",");
+    const rows = await getDb().prepare(
+      `SELECT ${SELECT} ${FROM} WHERE sc.id IN (${marks})
+       AND sc.is_active = 1 AND sc.is_published = 1 AND s.is_active = 1
+       AND p.profile_status = 'active'
+       AND EXISTS (SELECT 1 FROM profile_specialties ps
+         WHERE ps.profile_id = p.id AND ps.specialty_id = s.specialty_id
+           AND ps.is_active = 1)`,
+    ).bind(...ids).all<CardRow>();
+    const hydrated = await hydrateCards(rows.results);
+    const byId = new Map(hydrated.map((card) => [card.id, card]));
+    return ids.flatMap((id) => byId.get(id) ? [byId.get(id)!] : []);
   }
 
   async count(filters: SearchFilters, queryPlan?: SearchQueryPlan): Promise<number> {

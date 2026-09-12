@@ -1,5 +1,5 @@
 import { PLAN_RANKS, isUpgrade } from "@/domain/plans";
-import type { PlanId, PlanLimits } from "@/types";
+import type { PlanId, PlanLimits, SubscriptionStatus } from "@/types";
 
 /**
  * Reglas de los cambios de plan.
@@ -43,6 +43,8 @@ export type PlanState = {
   downgradePlanId?: PlanId | null;
   /** Fin del período pago. NULL en Cobre, que no vence. */
   planExpiresAt?: string | null;
+  /** Estado de cobro; `past_due` no corta beneficios por sí solo (BR-008). */
+  subscriptionStatus?: SubscriptionStatus;
 };
 
 /**
@@ -61,6 +63,21 @@ export function effectivePlanId(
   now: Date = new Date(),
 ): PlanId {
   const { planId, downgradePlanId, planExpiresAt } = state;
+
+  if (planId !== "cobre" && state.subscriptionStatus === "expired") {
+    return downgradePlanId ?? "cobre";
+  }
+
+  if (
+    planId !== "cobre"
+    && (state.subscriptionStatus === "trial" || state.subscriptionStatus === "cancelled")
+    && planExpiresAt
+  ) {
+    const benefitEnd = new Date(planExpiresAt);
+    if (!Number.isNaN(benefitEnd.getTime()) && benefitEnd.getTime() <= now.getTime()) {
+      return downgradePlanId ?? "cobre";
+    }
+  }
 
   if (!downgradePlanId || downgradePlanId === planId) return planId;
 

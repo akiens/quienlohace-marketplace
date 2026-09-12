@@ -366,7 +366,7 @@ La purga comprueba de nuevo que el dato continúa excedente. Una mejora o reacti
 - La interpretación textual conserva la consulta original, limita el trabajo interno, elimina diferencias de mayúsculas y diacríticos y usa equivalencias provenientes del catálogo o de una fuente editorial versionada.
 - Los patrones enviados a SQL están parametrizados, escapan `%`, `_` y `\\`, y se acotan para respetar los límites de complejidad de D1. Los filtros de elegibilidad continúan resolviéndose en la base.
 - Los conteos directos y el discovery se consultan por separado. El discovery quita solamente el texto en su consulta y no se suma al total de coincidencias.
-- La diversidad de cartas es estable y suave: sólo reordena candidatos dentro de una ventana de relevancia definida y conserva todos los elementos. Una alternativa fuera de esa ventana no adelanta una carta mejor para cumplir una cuota de proveedor.
+- El ranking mixto debe implementar la precedencia y las rondas de BR-031, con desempates estables y continuidad entre páginas. La antigua ventana de diversidad suave no define el orden de la búsqueda mixta. La transición desde la implementación actual se detalla en [el plan de rendimiento y prioridad](../todo/plan_busqueda_rendimiento_y_planes.md).
 
 ---
 

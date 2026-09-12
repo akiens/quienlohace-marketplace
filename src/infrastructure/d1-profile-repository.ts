@@ -10,6 +10,7 @@ import type {
   PaymentMethod,
   PlanId,
   Profile,
+  ProfileSearchCandidate,
   ProfileStatus,
   ProfileType,
   SearchFilters,
@@ -70,7 +71,11 @@ type RelationScope = "public" | "owner";
  * la galería de Platino. El panel sí lo pide entero, para que su dueño pueda
  * editarlo y sepa que está ahí.
  */
-async function loadRelations(ids: string[], scope: RelationScope = "public") {
+async function loadRelations(
+  ids: string[],
+  scope: RelationScope = "public",
+  synchronizeGallery = true,
+) {
   const empty = {
     specialties: new Map<string, string[]>(),
     services: new Map<string, Profile["services"]>(),
@@ -86,8 +91,10 @@ async function loadRelations(ids: string[], scope: RelationScope = "public") {
 
   const db = getDb();
   const marks = ids.map(() => "?").join(",");
-  const owners = await db.prepare(`SELECT user_id FROM profiles WHERE id IN (${marks})`).bind(...ids).all<{ user_id: string }>();
-  for (const owner of owners.results) await syncGalleryForUser(owner.user_id);
+  if (synchronizeGallery) {
+    const owners = await db.prepare(`SELECT user_id FROM profiles WHERE id IN (${marks})`).bind(...ids).all<{ user_id: string }>();
+    for (const owner of owners.results) await syncGalleryForUser(owner.user_id);
+  }
   const onlyActive = scope === "public" ? "AND is_active = 1" : "";
 
   const [
@@ -295,6 +302,39 @@ async function hydrate(
     scope,
   );
   return rows.map((row) => toProfile(row, relations));
+}
+
+async function loadSearchEvidence(ids: string[]) {
+  const specialties = new Map<string, string[]>();
+  const services = new Map<string, Profile["services"]>();
+  if (ids.length === 0) return { specialties, services };
+  const db = getDb();
+  // D1 limita la cantidad de parámetros por sentencia. El lote mantiene cada
+  // consulta por debajo del límite también con catálogos grandes.
+  for (let start = 0; start < ids.length; start += 80) {
+    const chunk = ids.slice(start, start + 80);
+    const marks = chunk.map(() => "?").join(",");
+    const [specialtyRows, serviceRows] = await db.batch<Record<string, string | number | null>>([
+      db.prepare(`SELECT profile_id, specialty_id FROM profile_specialties
+        WHERE profile_id IN (${marks}) AND is_active = 1 ORDER BY sort_order`).bind(...chunk),
+      db.prepare(`SELECT id, profile_id, specialty_id, name, sort_order FROM services
+        WHERE profile_id IN (${marks}) AND is_active = 1 ORDER BY sort_order, name`).bind(...chunk),
+    ]);
+    for (const row of specialtyRows?.results ?? []) {
+      const list = specialties.get(String(row.profile_id)) ?? [];
+      list.push(String(row.specialty_id));
+      specialties.set(String(row.profile_id), list);
+    }
+    for (const row of serviceRows?.results ?? []) {
+      const list = services.get(String(row.profile_id)) ?? [];
+      list.push({
+        id: String(row.id), specialtyId: String(row.specialty_id), name: String(row.name),
+        isActive: true, sortOrder: Number(row.sort_order),
+      });
+      services.set(String(row.profile_id), list);
+    }
+  }
+  return { specialties, services };
 }
 
 /*
@@ -668,6 +708,55 @@ export class D1ProfileRepository implements ProfileRepository {
       .bind(...params)
       .all<ProfileRow>();
     return hydrate(results);
+  }
+
+  /** Candidatos livianos: sin galería, horarios, redes ni sincronizaciones. */
+  async searchCandidates(
+    filters: SearchFilters,
+    queryPlan: SearchQueryPlan,
+  ): Promise<ProfileSearchCandidate[]> {
+    const { where, params } = buildSearchWhere(filters, queryPlan);
+    const { results } = await getDb().prepare(`SELECT
+      p.id, p.name, p.description, p.plan_id, p.subscription_status, p.plan_expires_at,
+      p.downgrade_plan_id, p.rating_sum, p.review_count
+      FROM profiles p WHERE ${where}`)
+      .bind(...params).all<Pick<ProfileRow,
+        "id" | "name" | "description" | "plan_id" | "subscription_status" | "plan_expires_at" |
+        "downgrade_plan_id" | "rating_sum" | "review_count">>();
+    // La búsqueda general ya filtró en SQL y el matcher no consulta evidencia
+    // textual; evitar miles de filas relacionadas en ese camino frecuente.
+    const evidence = queryPlan.intent === "empty"
+      ? { specialties: new Map<string, string[]>(), services: new Map<string, Profile["services"]>() }
+      : await loadSearchEvidence(results.map((row) => row.id));
+    return results.map((row) => ({
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      planId: row.plan_id as PlanId,
+      subscriptionStatus: row.subscription_status as Profile["subscriptionStatus"],
+      planExpiresAt: row.plan_expires_at,
+      downgradePlanId: row.downgrade_plan_id as PlanId | null,
+      rating: row.review_count > 0 ? row.rating_sum / row.review_count : null,
+      reviewCount: row.review_count,
+      specialtyIds: evidence.specialties.get(row.id) ?? [],
+      services: evidence.services.get(row.id) ?? [],
+    }));
+  }
+
+  /** Hidrata únicamente los perfiles de la página y conserva el orden pedido. */
+  async findPublicByIds(ids: string[]): Promise<Profile[]> {
+    if (ids.length === 0) return [];
+    const marks = ids.map(() => "?").join(",");
+    const { results } = await getDb().prepare(
+      `SELECT ${SELECT_COLUMNS} FROM profiles p
+       WHERE ${PUBLIC_WHERE} AND p.id IN (${marks})`,
+    ).bind(...ids).all<ProfileRow>();
+    const hydrated = await (async () => {
+      const relations = await loadRelations(results.map((row) => row.id), "public", false);
+      return results.map((row) => toProfile(row, relations));
+    })();
+    const byId = new Map(hydrated.map((profile) => [profile.id, profile]));
+    return ids.flatMap((id) => byId.get(id) ? [byId.get(id)!] : []);
   }
 
   async countForSearch(filters: SearchFilters, queryPlan?: SearchQueryPlan): Promise<number> {

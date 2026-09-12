@@ -2,6 +2,8 @@
 
 Fecha: 2026-09-10. Estado: comportamiento principal implementado el 2026-09-10.
 
+Actualización 2026-09-11: las decisiones de orden de este documento quedan sustituidas por BR-031 y el [plan de rendimiento y prioridad por plan](plan_busqueda_rendimiento_y_planes.md). La prioridad comercial aún está pendiente de implementación; la descripción siguiente conserva el contexto de la versión anterior.
+
 Este plan sustituye las decisiones sobre recuperación, orden, diversidad y presentación de [plan_busqueda_discovery.md](plan_busqueda_discovery.md). El documento anterior queda como antecedente del primer buscador.
 
 ## Estado de implementación

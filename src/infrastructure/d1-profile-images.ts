@@ -2,7 +2,7 @@ import "server-only";
 
 import { getDb, getMediaBucket } from "@/infrastructure/cloudflare";
 import { effectivePlanId } from "@/domain/plan-changes";
-import type { PlanId } from "@/types";
+import type { PlanId, SubscriptionStatus } from "@/types";
 import { newId } from "@/lib/id";
 import type { ImageKind, ProfileImage } from "@/types";
 
@@ -370,12 +370,18 @@ export type GalleryState = {
 /** Resuelve el plan vigente incluso si la baja programada todavía no se consolidó. */
 export async function syncGalleryForUser(userId: string): Promise<GalleryState | null> {
   const db = getDb();
-  const profile = await db.prepare(`SELECT plan_id, downgrade_plan_id, plan_expires_at
+  const profile = await db.prepare(`SELECT plan_id, subscription_status, downgrade_plan_id, plan_expires_at
     FROM profiles WHERE user_id = ?`).bind(userId).first<{
-      plan_id: PlanId; downgrade_plan_id: PlanId | null; plan_expires_at: string | null;
+      plan_id: PlanId; subscription_status: SubscriptionStatus;
+      downgrade_plan_id: PlanId | null; plan_expires_at: string | null;
     }>();
   if (!profile) return null;
-  const planId = effectivePlanId({ planId: profile.plan_id, downgradePlanId: profile.downgrade_plan_id, planExpiresAt: profile.plan_expires_at });
+  const planId = effectivePlanId({
+    planId: profile.plan_id,
+    subscriptionStatus: profile.subscription_status,
+    downgradePlanId: profile.downgrade_plan_id,
+    planExpiresAt: profile.plan_expires_at,
+  });
   const plan = await db.prepare('SELECT max_gallery_images FROM plans WHERE id = ?')
     .bind(planId).first<{ max_gallery_images: number | null }>();
   await applyGalleryLimit(userId, plan ? plan.max_gallery_images : 0);

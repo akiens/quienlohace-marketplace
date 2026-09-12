@@ -2,9 +2,11 @@ import { SERVICE_INDEX, normalize } from "@/data/services";
 import { getSpecialty } from "@/data/taxonomy";
 import type {
   Profile,
+  ProfileSearchCandidate,
   SearchMatchReason,
   SearchQueryPlan,
   ServiceCard,
+  ServiceCardSearchCandidate,
 } from "@/types";
 
 export type SearchEvidenceLevel = "explicit" | "specialty" | "discovery";
@@ -15,6 +17,8 @@ export type SearchMatch = {
   relevance: number;
   level: SearchEvidenceLevel;
 };
+
+const SERVICE_BY_ID = new Map(SERVICE_INDEX.map((service) => [service.id, service]));
 
 function containsPhrase(haystack: string, needle: string): boolean {
   return haystack === needle || ` ${haystack} `.includes(` ${needle} `);
@@ -48,10 +52,10 @@ function canonicalServiceStrength(
   specialtyId: string,
   serviceIds: string[],
 ): number {
-  const candidates = SERVICE_INDEX.filter((service) =>
-    service.specialtyId === specialtyId && serviceIds.includes(service.id));
   let best = 0;
-  for (const service of candidates) {
+  for (const serviceId of serviceIds) {
+    const service = SERVICE_BY_ID.get(serviceId);
+    if (!service || service.specialtyId !== specialtyId) continue;
     best = Math.max(best, phraseStrength(value, [service.name, ...service.aliases]));
   }
   return best;
@@ -65,7 +69,10 @@ function providerNameMatch(name: string, plan: SearchQueryPlan): SearchMatch | n
     : null;
 }
 
-export function matchProfile(profile: Profile, plan: SearchQueryPlan): SearchMatch | null {
+export function matchProfile(
+  profile: Profile | ProfileSearchCandidate,
+  plan: SearchQueryPlan,
+): SearchMatch | null {
   if (plan.intent === "empty") {
     return { reason: "discovery", label: "Perfil disponible", relevance: 10, level: "discovery" };
   }
@@ -127,7 +134,10 @@ export function matchProfile(profile: Profile, plan: SearchQueryPlan): SearchMat
   return null;
 }
 
-export function matchServiceCard(card: ServiceCard, plan: SearchQueryPlan): SearchMatch | null {
+export function matchServiceCard(
+  card: ServiceCard | ServiceCardSearchCandidate,
+  plan: SearchQueryPlan,
+): SearchMatch | null {
   if (plan.intent === "empty") {
     return { reason: "discovery", label: card.serviceName, relevance: 11, level: "discovery" };
   }

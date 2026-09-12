@@ -59,7 +59,11 @@ export function SearchExperience({
     setSearchError(null);
     setRepeatedSearchAttempt(0);
 
-    const href = paginatedSearchHref(next, page);
+    const href = paginatedSearchHref(
+      next,
+      page,
+      options.operation === "load-more" ? search.pagination.nextCursor : null,
+    );
     const query = href.includes("?") ? href.slice(href.indexOf("?") + 1) : "";
     if (options.updateUrl) window.history.replaceState(null, "", href);
     if (options.recordPending) {
@@ -73,10 +77,38 @@ export function SearchExperience({
     }
 
     try {
-      const result = await runMarketplaceSearch(query);
+      const result = await runMarketplaceSearch(
+        query,
+        options.operation === "load-more" && !search.prepared
+          ? { searchId: search.analytics.searchId, resultSetId: search.analytics.resultSetId }
+          : undefined,
+      );
       setFilters(result.filters);
       setDraft(result.filters);
-      setSearch(result.search);
+      setSearch((previous) => options.operation === "load-more" && !result.search.pagination.reset
+        ? {
+            ...result.search,
+            results: [...previous.results, ...result.search.results],
+            analytics: {
+              ...result.search.analytics,
+              resultItemIds: [
+                ...previous.analytics.resultItemIds,
+                ...result.search.analytics.resultItemIds,
+              ],
+              snapshotIds: [
+                ...previous.analytics.snapshotIds,
+                ...result.search.analytics.snapshotIds,
+              ],
+              executionIds: [
+                ...previous.analytics.executionIds,
+                ...result.search.analytics.executionIds,
+              ],
+            },
+          }
+        : result.search);
+      if (result.search.pagination.reset) {
+        window.history.replaceState(null, "", paginatedSearchHref(result.filters, 1));
+      }
     } catch {
       setSearchError("No pudimos completar la búsqueda. Intentá nuevamente.");
     } finally {
@@ -191,7 +223,7 @@ function SearchExperienceContent({
   onLoadMore: () => void;
 }) {
   const [filtersOpen, setFiltersOpen] = useState(false);
-  const recordedSearch = useRef<string | null>(null);
+  const recordedExecution = useRef<string | null>(null);
 
   const total = search.total;
 
@@ -199,8 +231,8 @@ function SearchExperienceContent({
     // La portada preparada es discovery, no una búsqueda enviada por alguien.
     // Además sus ids son estáticos y no corresponden a una ejecución en D1.
     if (search.prepared) return;
-    if (recordedSearch.current === search.analytics.searchId) return;
-    recordedSearch.current = search.analytics.searchId;
+    if (recordedExecution.current === search.analytics.searchExecutionId) return;
+    recordedExecution.current = search.analytics.searchExecutionId;
     void initializeAnalytics().then((ready) => {
       if (!ready) return;
       const pendingKey = "qlh:analytics:pending-search:v1";
@@ -230,12 +262,12 @@ function SearchExperienceContent({
         eventName: "search_results_viewed", observationKind: "client_observation", searchId: search.analytics.searchId,
         searchExecutionId: search.analytics.searchExecutionId, resultSetId: search.analytics.resultSetId,
         listViewId: `list_${search.analytics.resultSetId}`, surface: "search_results",
-        properties: { total: search.total, providerTotal: search.providerTotal, presentedCount: search.results.length },
+        properties: { total: search.total, providerTotal: search.providerTotal, presentedCount: search.pagination.returned },
       });
       trackAnalytics({
         eventName: "list_viewed", observationKind: "client_observation", searchId: search.analytics.searchId,
         resultSetId: search.analytics.resultSetId, listViewId: `list_${search.analytics.resultSetId}`,
-        surface: "search_results", properties: { itemCount: search.results.length, listType: "search_results" },
+        surface: "search_results", properties: { itemCount: search.pagination.returned, listType: "search_results" },
       });
     });
   }, [filters, search]);
@@ -321,7 +353,6 @@ function SearchExperienceContent({
             <NoResults filters={filters} search={search} onSearchHref={onSearchHref} />
           ) : (
             <MixedResults
-              key={`${search.interpretation.normalized}:${search.results.map((item) => `${item.kind}:${item.kind === "profile" ? item.profile.id : item.card.id}`).join("|")}`}
               search={search}
               loadingMore={loadingMore}
               onLoadMore={onLoadMore}
@@ -371,7 +402,7 @@ function MixedResults({
             position={index + 1}
             {...(search.prepared ? {} : {
               searchId: search.analytics.searchId,
-              searchExecutionId: search.analytics.searchExecutionId,
+              searchExecutionId: search.analytics.executionIds[index] ?? search.analytics.searchExecutionId,
               resultSetId: search.analytics.resultSetId,
             })}
             listViewId={search.prepared ? "list_prepared_search" : `list_${search.analytics.resultSetId}`}
