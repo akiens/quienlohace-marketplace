@@ -43,6 +43,8 @@ export type ProfileDraft = {
   ownerId?: string;
   /** El paso donde estaba, para volver ahí y no al principio. */
   step?: string;
+  /** Si la persona ya salió de la bienvenida y comenzó el recorrido. */
+  wizardStarted?: boolean;
   wizardSummary?: boolean;
   confirmedSteps?: string[];
   omittedSteps?: string[];
@@ -85,6 +87,43 @@ export type ProfileDraft = {
 };
 
 /**
+ * Decide si un borrador debe abrirse directamente en el asistente.
+ *
+ * Los borradores nuevos guardan la decisión explícita. Para los creados antes
+ * de incorporar `wizardStarted`, se reconoce progreso que sólo puede provenir
+ * de una interacción, sin confundir los valores iniciales del formulario con
+ * trabajo de la persona.
+ */
+export function shouldResumeProfileDraft(
+  draft: ProfileDraft | null,
+): boolean {
+  if (!draft) return false;
+  if (draft.wizardStarted !== undefined) return draft.wizardStarted;
+
+  return Boolean(
+    draft.wizardSummary ||
+      (draft.step && draft.step !== "rubro") ||
+      draft.confirmedSteps?.length ||
+      draft.omittedSteps?.length ||
+      draft.serviceQuery?.trim() ||
+      draft.newLocality?.trim() ||
+      draft.newAddress?.trim() ||
+      draft.scheduleQuery?.trim() ||
+      draft.name?.trim() ||
+      draft.description?.trim() ||
+      draft.phone?.trim() ||
+      draft.specialtyIds?.length ||
+      draft.services?.length ||
+      draft.locations?.length ||
+      draft.scheduleEntries?.length ||
+      Object.keys(draft.socialLinks ?? {}).length ||
+      draft.type === "business" ||
+      draft.phonePublic === false ||
+      draft.whatsappEnabled === false,
+  );
+}
+
+/**
  * Lee el borrador. Cualquier problema —almacenamiento bloqueado, JSON roto,
  * versión vieja— se trata como "no hay borrador": es preferible un formulario
  * vacío que uno a medio rehidratar.
@@ -122,6 +161,7 @@ export function readProfileDraft(ownerId: string): ProfileDraft | null {
  */
 function isEmpty(draft: Omit<ProfileDraft, "version">): boolean {
   return (
+    !draft.wizardStarted &&
     !draft.name?.trim() &&
     !draft.description?.trim() &&
     !draft.phone?.trim() &&

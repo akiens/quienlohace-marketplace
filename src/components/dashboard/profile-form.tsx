@@ -19,6 +19,7 @@ import {
   profileDraftServerSnapshot,
   profileDraftSnapshot,
   serverHydrated,
+  shouldResumeProfileDraft,
   subscribeProfileDraft,
   writeProfileDraft,
   type ProfileDraft,
@@ -346,7 +347,9 @@ function ProfileFormFields(props: {
       : "rubro",
   );
 
-  const [started, setStarted] = useState(Boolean(profile));
+  const [started, setStarted] = useState(
+    Boolean(profile) || shouldResumeProfileDraft(draft),
+  );
   const [summary, setSummary] = useState(draft?.wizardSummary ?? false);
   const [confirmed, setConfirmed] = useState<Set<StepId>>(
     () =>
@@ -1256,6 +1259,7 @@ function ProfileFormFields(props: {
     const saved = writeProfileDraft(
       {
         step,
+        wizardStarted: started,
         name,
         type: profileType,
         wizardSummary: showSummary,
@@ -1289,6 +1293,7 @@ function ProfileFormFields(props: {
     setStorageStatus(saved);
   }, [
     profileType,
+    started,
     showSummary,
     confirmed,
     omitted,

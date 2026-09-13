@@ -37,6 +37,7 @@ import {
 } from "../src/lib/query";
 import { EMPTY_FILTERS, type Profile, type ServiceCard } from "../src/types";
 import { effectivePlanId } from "../src/domain/plan-changes";
+import { shouldResumeProfileDraft } from "../src/lib/profile-draft";
 
 let failures = 0;
 
@@ -377,6 +378,40 @@ async function main(): Promise<void> {
       password: "1234567",
       passwordConfirm: "1234567",
     }).success,
+  );
+
+  console.log("\nBorrador del asistente");
+  check(
+    "reanuda cuando el recorrido quedó iniciado",
+    shouldResumeProfileDraft({ version: 3, wizardStarted: true, step: "zonas" }),
+  );
+  check(
+    "respeta una salida explícita hacia la bienvenida",
+    !shouldResumeProfileDraft({
+      version: 3,
+      wizardStarted: false,
+      step: "zonas",
+      name: "Perfil en pausa",
+    }),
+  );
+  check(
+    "reanuda un borrador anterior con progreso real",
+    shouldResumeProfileDraft({ version: 3, step: "servicios" }),
+  );
+  check(
+    "no confunde los valores iniciales con progreso",
+    !shouldResumeProfileDraft({
+      version: 3,
+      step: "rubro",
+      serviceModes: ["at_customer"],
+      serviceAreaIds: ["uy"],
+      paymentMethods: [
+        "cash",
+        "bank_transfer",
+        "debit_card",
+        "credit_card",
+      ],
+    }),
   );
 
   console.log("\nPerfil (BR-003 a BR-024)");

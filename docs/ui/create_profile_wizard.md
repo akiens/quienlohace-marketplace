@@ -4,7 +4,7 @@ Actualizado el 2026-09-13. Implementación del [diseño mobile y desktop](../tod
 
 ## Recorrido actual
 
-- Bienvenida con Comenzar; si hay datos propios guardados, Retomar.
+- La bienvenida con Comenzar aparece sólo cuando todavía no se inició el recorrido. Si existe un borrador comenzado, una recarga abre automáticamente el último paso guardado; no exige pulsar Retomar.
 - Cinco básicos: Especialidades → Servicios → Identidad → Ubicación → Contacto.
 - Cada Continuar confirma el paso válido y abre el siguiente. El resumen y el lateral no permiten saltar requisitos básicos pendientes. Volver conserva lo escrito.
 - «Revisar y terminar» aparece en la navegación como una etapa diferenciada entre Contacto e Imágenes y se marca En curso al abrir el resumen. Es una parada de revisión, no un requisito adicional ni un dato que completar.
@@ -34,7 +34,7 @@ En mobile hay una columna, Ver pasos y un pie persistente. Antes de completar Co
 
 El borrador sigue en `qlh.profileDraft` y pertenece a una cuenta. El formulario de alta se monta cuando se leyó el almacenamiento del navegador, con una clave estable por cuenta; no se remonta al escribir el primer borrador. La edición usa el perfil del servidor.
 
-Se recuerdan el tipo de perfil controlado, paso, básicos confirmados, opcionales omitidos, resumen y textos pendientes de servicios, horarios y local. Un borrador anterior conserva sus datos y se recupera en el primer básico que requiere revisión. Nunca se borra el borrador al entrar a Crear.
+Se recuerdan el inicio del recorrido, tipo de perfil controlado, paso, básicos confirmados, opcionales omitidos, resumen y textos pendientes de servicios, horarios y local. Un borrador anterior conserva sus datos y se recupera en el primer básico que requiere revisión. Nunca se borra el borrador al entrar a Crear.
 
 «Avance guardado en este navegador» se muestra sólo después de una escritura exitosa. Si el almacenamiento falla, se informa y el formulario sigue funcionando. Las imágenes conservan su ciclo de carga propio en el servidor.
 
