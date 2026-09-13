@@ -425,6 +425,15 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 - Al superar el límite de un plan se conservan primero las cartas por su orden y antigüedad. Las excedentes siguen editables para su recuperación posterior, pero no son públicas.
 - Cada carta pública tiene una URL canónica estable bajo `/profesionales/{proveedor}/servicios/{servicio}` y puede aparecer como resultado independiente de búsqueda y dentro del perfil del proveedor. Las URLs antiguas bajo `/servicios/` redirigen permanentemente a la canónica.
 
+### BR-035 — Momento de validación de formularios
+
+- Escribir en un campo no dispara su validación ni la del formulario completo.
+- Al abandonar un campo se valida ese dato y se muestra su error, si corresponde.
+- Al intentar enviar se valida el formulario completo, se muestran juntos todos los errores y no se aplican cambios si alguno falla.
+- En un asistente por etapas, «Continuar» equivale a confirmar la etapa actual y valida únicamente para permitir avanzar.
+- Un error asociado a un valor anterior se retira al editarlo; el nuevo valor se vuelve a comprobar al abandonar el campo o al enviar.
+- El servidor valida siempre la entrada completa, independientemente de lo comprobado en el navegador.
+
 ---
 
 ## 10. Decisiones comerciales pendientes

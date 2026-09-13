@@ -33,7 +33,11 @@ import {
 } from "@/data/taxonomy";
 import { MAX_SCHEDULE_ENTRIES, searchSchedules } from "@/data/schedules";
 import { COUNTRY_ID, locationLabelById } from "@/data/locations";
-import { profileSchema, profileFieldSchemas } from "@/lib/validation";
+import {
+  profileSchema,
+  profileFieldSchemas,
+  socialLinkSchema,
+} from "@/lib/validation";
 import { fitToPlan } from "@/domain/plan-fit";
 import { allowsFeature, formatPrice, limitFor } from "@/domain/plans";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
@@ -118,6 +122,23 @@ const SERVICE_MODES: ServiceModeCode[] = [
 const ALL_STEPS = PROFILE_STEPS;
 
 type StepId = (typeof ALL_STEPS)[number]["id"];
+
+const PROFILE_FIELDS_BY_STEP: Record<StepId, string[]> = {
+  rubro: ["specialtyIds"],
+  servicios: ["services"],
+  identidad: ["name", "description", "type"],
+  zonas: ["serviceModes", "serviceAreaIds", "locations"],
+  contacto: [
+    "phone",
+    "phonePublic",
+    "contactEmail",
+    "scheduleEntries",
+    "paymentMethods",
+  ],
+  imagenes: [],
+  redes: ["socialLinks"],
+  pago: [],
+};
 
 /** Las redes que ofrece el formulario, en el orden en que se muestran. */
 const SOCIAL_FIELDS: Array<{
@@ -651,6 +672,11 @@ function ProfileFormFields(props: {
    * muestra hasta el próximo envío.
    */
   const [stale, setStale] = useState<Record<string, boolean>>({});
+  const [stepValidationProblems, setStepValidationProblems] = useState<
+    Partial<Record<StepId, { message: string; signature: string }>>
+  >({});
+
+  const fieldsByStep = PROFILE_FIELDS_BY_STEP;
 
   /** Valida un campo contra su regla del schema. Devuelve el error, o "". */
   const validateField = useCallback((field: string, value: unknown): string => {
@@ -662,22 +688,19 @@ function ProfileFormFields(props: {
 
   /*
    * Los errores por campo y cuándo se muestra cada uno (TR-039). El hook pone
-   * el momento —la pausa al escribir, el blur, el envío—; acá sólo se dice
-   * cuál es la regla de cada campo.
+   * el momento —blur o envío—; acá sólo se dice cuál es la regla de cada
+   * campo.
    */
   const fieldErrorState = useFieldErrors(validateField);
   const { shown: shownFieldErrors } = fieldErrorState;
 
-  /** Al salir del campo: el error se muestra ya, sin esperar la pausa. */
+  /** Al salir del campo se ejecuta su schema y se muestra el resultado. */
   const blurField = fieldErrorState.blur;
 
   /**
-   * En cada tecla.
-   *
-   * El error aparece solo tras una pausa corta sin escribir, y desaparece en
-   * el acto al corregirlo. Lo resuelve el hook; acá se anota además que el
-   * campo cambió desde la última respuesta del servidor, para que su error
-   * viejo deje de aplicar.
+   * Editar sólo retira el error del valor anterior. El schema no se ejecuta
+   * hasta abandonar el campo o intentar avanzar/enviar. También se anota que
+   * el valor cambió desde la última respuesta del servidor.
    */
   const editFieldErrors = fieldErrorState.edit;
   const editField = useCallback(
@@ -685,9 +708,19 @@ function ProfileFormFields(props: {
       setStale((current) =>
         current[field] ? current : { ...current, [field]: true },
       );
+      const affectedStep = ALL_STEPS.find((item) =>
+        fieldsByStep[item.id].includes(field),
+      )?.id;
+      if (affectedStep) {
+        setStepValidationProblems((current) =>
+          current[affectedStep]
+            ? { ...current, [affectedStep]: undefined }
+            : current,
+        );
+      }
       editFieldErrors(field, value);
     },
-    [editFieldErrors],
+    [editFieldErrors, fieldsByStep],
   );
 
   const serverErrors = state.errors ?? {};
@@ -980,7 +1013,7 @@ function ProfileFormFields(props: {
     [serviceAreaIds],
   );
 
-  const validation = profileSchema.safeParse({
+  const profileValues = () => ({
     name,
     type: profileType,
     description,
@@ -997,31 +1030,53 @@ function ProfileFormFields(props: {
     paymentMethods,
     socialLinks: allowsFeature(plan, "social") ? socialLinks : [],
   });
-  const fieldsByStep: Record<StepId, string[]> = {
-    rubro: ["specialtyIds"],
-    servicios: ["services"],
-    identidad: ["name", "description", "type"],
-    zonas: ["serviceModes", "serviceAreaIds", "locations"],
-    contacto: [
-      "phone",
-      "phonePublic",
-      "contactEmail",
-      "scheduleEntries",
-      "paymentMethods",
-    ],
-    imagenes: [],
-    redes: ["socialLinks"],
-    pago: [],
+
+  const stepSignature = (id: StepId): string => {
+    const values = profileValues();
+    return JSON.stringify(
+      fieldsByStep[id].map((field) => values[field as keyof typeof values]),
+    );
   };
-  const issues = validation.success ? [] : validation.error.issues;
   const stepProblem = Object.fromEntries(
-    ALL_STEPS.map((item) => [
-      item.id,
-      issues.find((issue) =>
-        fieldsByStep[item.id].includes(String(issue.path[0])),
-      )?.message ?? "",
-    ]),
+    ALL_STEPS.map((item) => {
+      const cached = stepValidationProblems[item.id];
+      const cachedMessage =
+        cached?.signature === stepSignature(item.id) ? cached.message : "";
+      return [
+        item.id,
+          cachedMessage ||
+          fieldsByStep[item.id]
+            .map(
+              (field) =>
+                Object.entries(errors).find(
+                  ([key]) => key === field || key.startsWith(`${field}.`),
+                )?.[1],
+            )
+            .find(Boolean) ||
+          "",
+      ];
+    }),
   ) as Record<StepId, string>;
+  /*
+   * Al validar Redes, cada error se conserva junto a su plataforma. El schema
+   * recibe un array y devuelve rutas como `socialLinks.instagram`; reutilizar
+   * un error agregado de `socialLinks` en todas las filas marcaría también las
+   * redes vacías, que son válidas porque el bloque es opcional.
+   */
+  const socialSubmitErrors = new Map<SocialPlatform, string>();
+  if (
+    stepValidationProblems.redes?.signature === stepSignature("redes")
+  ) {
+    for (const link of socialLinks) {
+      const parsed = socialLinkSchema.safeParse(link);
+      if (!parsed.success) {
+        socialSubmitErrors.set(
+          link.platform,
+          parsed.error.issues[0]?.message ?? "",
+        );
+      }
+    }
+  }
   if (!services.length)
     stepProblem.servicios ||= "Agregá al menos un servicio para continuar.";
   if (serviceQuery.trim() || pendingService)
@@ -1081,14 +1136,53 @@ function ProfileFormFields(props: {
         : (firstPending ?? "contacto");
   const showSummary = summary && !firstPending;
   const unresolved = STEPS.find((item) => stepProblem[item.id]);
+  const socialErrorIsShownInline =
+    step === "redes" &&
+    (socialSubmitErrors.size > 0 ||
+      Object.keys(errors).some((key) => key.startsWith("socialLinks.")));
+  const footerStepProblem = socialErrorIsShownInline ? "" : stepProblem[step];
   const setStep = (id: StepId) => {
     if (!accessible(id) || pending) return;
     setSummary(false);
     setRequestedStep(id);
     setVisited((current) => new Set(current).add(id));
   };
+  /** Valida un paso sólo cuando la persona intenta continuarlo. */
+  const validateStep = (id: StepId): string => {
+    const parsed = profileSchema.safeParse(profileValues());
+    const message = parsed.success
+      ? ""
+      : (parsed.error.issues.find((issue) =>
+          fieldsByStep[id].includes(String(issue.path[0])),
+        )?.message ?? "");
+    setStepValidationProblems((current) => ({
+      ...current,
+      [id]: { message, signature: stepSignature(id) },
+    }));
+
+    const textValues: Record<string, unknown> = {};
+    for (const [field, value] of Object.entries({
+      name,
+      description,
+      phone,
+      contactEmail,
+    })) {
+      if (fieldsByStep[id].includes(field)) textValues[field] = value;
+    }
+    fieldErrorState.submitAll(textValues);
+    return message;
+  };
+  /**
+   * Un extra puede quedar vacío, pero no puede abandonarse hacia adelante con
+   * datos inválidos. Volver sigue permitido para no encerrar a la persona en
+   * el paso.
+   */
+  const currentOptionalStepIsValid = (): boolean =>
+    (step !== "imagenes" && step !== "redes") ||
+    !(stepProblem[step] || validateStep(step));
+
   const nextStep = () => {
-    if (stepProblem[step]) return;
+    if (stepProblem[step] || validateStep(step)) return;
     setConfirmed((current) => new Set(current).add(step));
     if (
       step === "contacto" ||
@@ -1379,36 +1473,21 @@ function ProfileFormFields(props: {
     phone,
   ]);
 
-  /*
-   * Los campos de texto que hoy no pasan su regla.
-   *
-   * Se recalcula sobre el valor actual y no sobre los errores mostrados, que
-   * son sólo los que ya se revelaron: un campo que nunca se tocó puede estar mal
-   * —viene así de la base, o se pegó algo— y el botón no puede ignorarlo.
-   */
-  const invalidFields = (
-    [
-      ["name", name],
-      ["description", description],
-      ["phone", phone],
-      ["contactEmail", contactEmail],
-    ] as const
-  ).filter(([field, value]) => validateField(field, value) !== "");
+  /** Errores ya detectados por blur o por un intento de envío. */
+  const invalidFields = ["name", "description", "phone", "contactEmail"].filter(
+    (field) => Boolean(errors[field]),
+  );
 
   /*
    * En edición el botón pide además que haya algo para guardar: apretarlo sin
    * cambios mandaría el mismo perfil al servidor y respondería «guardado» sin
    * haber guardado nada, que es peor que no poder apretarlo.
    *
-   * Y no se habilita con un campo inválido: el `onSubmit` corta el envío igual,
-   * pero un botón encendido que al apretarlo no hace nada se lee como roto. Si
-   * hay algo mal escrito, el botón lo dice estando apagado.
+   * La validez no se calcula durante el render: el clic en guardar ejecuta la
+   * revisión completa y revela todos los errores (TR-039).
    */
   const canSave =
-    canSubmit &&
-    (editing || STEPS.every((item) => !stepProblem[item.id])) &&
-    invalidFields.length === 0 &&
-    validation.success &&
+    (editing || canSubmit) &&
     // Ninguna imagen a mitad de camino: la selección todavía no está firme.
     !imagesBusy &&
     !Object.values(imageSelection).some((item) => item.failed) &&
@@ -1485,9 +1564,26 @@ function ProfileFormFields(props: {
             contactEmail,
             socialLinks,
           });
+          const parsed = profileSchema.safeParse(profileValues());
+          if (!parsed.success) {
+            const problems: Partial<
+              Record<StepId, { message: string; signature: string }>
+            > = {};
+            for (const item of ALL_STEPS) {
+              problems[item.id] = {
+                message:
+                  parsed.error.issues.find((issue) =>
+                  fieldsByStep[item.id].includes(String(issue.path[0])),
+                  )?.message ?? "",
+                signature: stepSignature(item.id),
+              };
+            }
+            setStepValidationProblems(problems);
+          }
 
           if (
             Object.keys(found).length > 0 ||
+            !parsed.success ||
             !canSave ||
             pending ||
             (!editing && (!started || (!showSummary && step !== "pago")))
@@ -1617,9 +1713,23 @@ function ProfileFormFields(props: {
               visited={visited}
               omitted={omitted}
               accessible={accessible}
-              onSelect={setStep}
+              onSelect={(id) => {
+                const currentIndex = STEPS.findIndex(
+                  (item) => item.id === step,
+                );
+                const targetIndex = STEPS.findIndex((item) => item.id === id);
+                if (
+                  targetIndex > currentIndex &&
+                  !currentOptionalStepIsValid()
+                )
+                  return;
+                setStep(id);
+              }}
               summary={showSummary}
-              onSummary={() => setSummary(true)}
+              onSummary={() => {
+                if (!currentOptionalStepIsValid()) return;
+                setSummary(true);
+              }}
             />
           )}
           {/*
@@ -1712,18 +1822,6 @@ function ProfileFormFields(props: {
                     </div>
                   ))}
                 </dl>
-                <p className="text-sm text-ink-soft">{description}</p>
-                <p className="rounded-input bg-surface-muted p-3 text-sm text-ink-soft">
-                  Al crear el perfil podrás revisar su estado y completar los
-                  requisitos de publicación pendientes.
-                </p>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() => setStep("imagenes")}
-                >
-                  Agregar fotos{allowsFeature(plan, "social") ? " y redes" : ""}
-                </Button>
               </section>
             )}
             {/* Cada panel se oculta con `hidden`, no se desmonta: los valores
@@ -2108,7 +2206,7 @@ function ProfileFormFields(props: {
                 {pendingService && (
                   <fieldset className="space-y-2 rounded-input border border-brand-800/20 bg-brand-100 p-3">
                     <legend className="text-sm font-semibold">
-                      ¿A qué especialidad pertenece {pendingService}?
+                      ¿A qué especialidad pertenece &quot;{pendingService}&quot;?
                     </legend>
                     {specialtyChoices.map((choice) => (
                       <button
@@ -2137,8 +2235,8 @@ function ProfileFormFields(props: {
                     </button>
                   </fieldset>
                 )}
-                <p className="text-sm font-semibold text-ink">
-                  Tus servicios y sugerencias
+                <p className="text-sm font-semibold text-ink-muted mt-4">
+                  O elegi de esta lista de sugerencias:
                 </p>
                 {serviceFeedback && (
                   <p role="status" className="text-sm text-ink-soft">
@@ -2726,6 +2824,7 @@ function ProfileFormFields(props: {
                     (image) => image.kind === "gallery",
                   )}
                   max={limitFor(plan, "galleryImages")}
+                  planId={plan.id}
                   planName={plan.name}
                   onChange={onImageChange("gallery")}
                   onLimitReached={
@@ -2788,7 +2887,8 @@ function ProfileFormFields(props: {
                     editField("socialLinks", links);
                   }}
                   error={(platform) =>
-                    errors[`socialLinks.${platform}`] ?? errors.socialLinks
+                    socialSubmitErrors.get(platform) ??
+                    errors[`socialLinks.${platform}`]
                   }
                 />
               </Panel>
@@ -2851,34 +2951,44 @@ function ProfileFormFields(props: {
                 error={errors.form}
               />
             ) : (
-              <div className="sticky bottom-0 z-30 border-t border-line-soft bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6">
-                <p role="status" className="mb-2 text-sm text-ink-soft">
-                  {showSummary
-                    ? unresolved
-                      ? stepProblem[unresolved.id]
-                      : "Podés crear tu perfil con estos datos."
-                    : stepProblem[step]}
-                </p>
-                {showSummary && unresolved && unresolved.id !== "pago" && (
-                  <button
-                    type="button"
-                    onClick={() => setStep(unresolved.id)}
-                    className="mb-2 min-h-12 text-sm font-semibold text-brand-800"
+              <>
+                {!showSummary && footerStepProblem ? (
+                  <p
+                    role="alert"
+                    className="border-t border-line-soft px-4 py-3 text-sm text-[#B42318] sm:px-6"
                   >
-                    Revisar {unresolved.label.toLowerCase()}
-                  </button>
-                )}
-                <div className="flex flex-wrap gap-2">
+                    {footerStepProblem}
+                  </p>
+                ) : null}
+                <div
+                  className="sticky bottom-0 z-30 flex flex-wrap gap-2 border-t border-line-soft bg-white px-4 py-3 pb-[max(.75rem,env(safe-area-inset-bottom))] sm:px-6"
+                >
+                  {showSummary && unresolved && unresolved.id !== "pago" && (
+                    <button
+                      type="button"
+                      onClick={() => setStep(unresolved.id)}
+                      className="col-span-2 min-h-12 text-sm font-semibold text-brand-800 sm:col-span-1"
+                    >
+                      Revisar {unresolved.label.toLowerCase()}
+                    </button>
+                  )}
                   <Button
                     type="button"
                     variant="secondary"
                     disabled={pending}
+                    aria-label="Volver"
+                    className={
+                      showSummary || !BASIC_STEPS.includes(step)
+                        ? "shrink-0 px-3 sm:px-5"
+                        : ""
+                    }
                     onClick={() => {
                       if (showSummary) {
                         setSummary(false);
                         setRequestedStep("contacto");
-                      } else if (step === "pago") setSummary(true);
-                      else {
+                      } else if (step === "imagenes") {
+                        setSummary(true);
+                      } else {
                         const index = STEPS.findIndex(
                           (item) => item.id === step,
                         );
@@ -2887,21 +2997,37 @@ function ProfileFormFields(props: {
                       }
                     }}
                   >
-                    Volver
+                    {showSummary || !BASIC_STEPS.includes(step) ? (
+                      <>
+                        <Icon name="arrow_back" className="text-lg" />
+                        <span className="hidden sm:inline">Volver</span>
+                      </>
+                    ) : (
+                      "Volver"
+                    )}
                   </Button>
-                  {showSummary || step === "pago" ? (
-                    showSummary && plan.priceCents > 0 && !paymentDone ? (
+                  {showSummary ||
+                  step === "imagenes" ||
+                  step === "redes" ||
+                  step === "pago" ? (
+                    step !== "pago" &&
+                    plan.priceCents > 0 &&
+                    !paymentDone ? (
                       <Button
-                        key="go-to-payment"
+                        key="create-profile-payment-required"
                         type="button"
                         className="min-w-0 flex-1"
-                        disabled={pending || imagesBusy}
+                        disabled={
+                          pending || imagesBusy || Boolean(stepProblem[step])
+                        }
                         onClick={(event) => {
                           event.preventDefault();
+                          if (!showSummary && !currentOptionalStepIsValid())
+                            return;
                           setStep("pago");
                         }}
                       >
-                        Continuar al pago
+                        Crear perfil
                       </Button>
                     ) : (
                       <Button
@@ -2936,20 +3062,48 @@ function ProfileFormFields(props: {
                       <Icon name="arrow_forward" className="text-lg" />
                     </Button>
                   )}
+                  {showSummary ||
+                  (step === "imagenes" && allowsFeature(plan, "social")) ||
+                  (step === "redes" && plan.priceCents > 0) ? (
+                    <Button
+                      key={
+                        showSummary
+                          ? "go-to-images"
+                          : step === "imagenes"
+                            ? "go-to-social"
+                            : "go-to-payment"
+                      }
+                      type="button"
+                      variant="secondary"
+                      aria-label="Continuar"
+                      className="shrink-0 px-3 sm:px-5"
+                      disabled={
+                        pending ||
+                        imagesBusy ||
+                        (!showSummary && Boolean(stepProblem[step]))
+                      }
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (!showSummary && !currentOptionalStepIsValid())
+                          return;
+                        if (!showSummary && !completion[step]) {
+                          setOmitted((current) => new Set(current).add(step));
+                        }
+                        setStep(
+                          showSummary
+                            ? "imagenes"
+                            : step === "imagenes"
+                              ? "redes"
+                              : "pago",
+                        );
+                      }}
+                    >
+                      <span className="hidden sm:inline">Continuar</span>
+                      <Icon name="arrow_forward" className="text-lg" />
+                    </Button>
+                  ) : null}
                 </div>
-                {!showSummary && (step === "imagenes" || step === "redes") && (
-                  <button
-                    type="button"
-                    disabled={
-                      Boolean(stepProblem[step]) || imagesBusy || pending
-                    }
-                    onClick={() => setSummary(true)}
-                    className="mt-2 min-h-12 w-full text-sm font-semibold text-brand-800 disabled:opacity-50"
-                  >
-                    Revisar y terminar
-                  </button>
-                )}
-              </div>
+              </>
             )}
           </div>
         </div>

@@ -63,4 +63,5 @@ En este punto si estamos en plan cobre ya podriamos dar por finalizado la creaci
 
 
 # Correcciones en Asistente Para Crear Perfil
-- Las alertas que se estan mostrando debajo de los inputs cuando los limites del plan se alcanzan la verdad es que pueden pasar inadvertidos. Lo que vamos ha hacer es que vamos a mostrar ese mensaje en un popup que sale en el medio de la pantalla, creo que lo mejor para esto es crear un component general llamado notifcation y se le muestra un button `aceptar` y `ver planes` justo debajo del texto.
+- cuando llenamos el step `Contacto` que se muestra un resumen, en ves de mostrar en la parte de abajo el button `Agregar fotos` quiero que al lado derecho de `Crear perfil` o `Continuar al pago` (dependiendo del plan seleccionado) pongas el siguiente paso, en este caso `Imagenes`.
+- En el  sticky footer donde pones estos buttons, no pongas ningun text. Reservemos esto solo para los buttons.

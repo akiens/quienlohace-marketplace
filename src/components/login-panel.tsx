@@ -4,8 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   useActionState,
-  useEffect,
-  useRef,
   useState,
   useSyncExternalStore,
 } from "react";
@@ -15,7 +13,6 @@ import { GoogleMark } from "@/components/google-mark";
 import { Button, Icon } from "@/components/ui";
 import { credentialsSchema, fieldErrors, signupSchema } from "@/lib/validation";
 import { clearProfileDraft } from "@/lib/profile-draft";
-import { FIELD_ERROR_DELAY_MS } from "@/lib/use-field-errors";
 import { PLAN_BADGES, PLAN_RIBBONS } from "@/domain/plans";
 import {
   selectedPlanServerSnapshot,
@@ -86,34 +83,10 @@ export function LoginPanel({
   const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
 
   /**
-   * Los campos cuyo error ya se puede mostrar: los que se dejaron, los de un
-   * envío fallido, y los que quedaron inválidos tras una pausa escribiendo
-   * (TR-039).
+   * Los campos cuyo error ya se puede mostrar: los que se dejaron o los de un
+   * envío fallido (TR-039).
    */
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-
-  /*
-   * Un temporizador por campo para esa pausa. Cada tecla cancela el suyo, así
-   * que escribiendo de corrido no se marca nada; al detenerse con algo
-   * inválido, el error sale sin tener que abandonar el campo.
-   */
-  const revealTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
-  useEffect(() => {
-    const pending = revealTimers.current;
-    return () => {
-      for (const timer of Object.values(pending)) clearTimeout(timer);
-    };
-  }, []);
-
-  /** Programa que el error de un campo se muestre tras la pausa. */
-  function revealAfterPause(field: string) {
-    clearTimeout(revealTimers.current[field]);
-    revealTimers.current[field] = setTimeout(() => {
-      delete revealTimers.current[field];
-      setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
-    }, FIELD_ERROR_DELAY_MS);
-  }
 
   /**
    * Campos cuyo error del servidor ya no corresponde porque el valor cambió
@@ -146,22 +119,12 @@ export function LoginPanel({
   function handleBlur(event: React.FocusEvent<HTMLFormElement>) {
     const field = event.target.name;
     if (!field) return;
-    // Ya se terminó de escribir: el error se muestra sin esperar la pausa.
-    clearTimeout(revealTimers.current[field]);
-    delete revealTimers.current[field];
     setTouched((prev) => ({ ...prev, [field]: true }));
     const found = validate(new FormData(event.currentTarget));
     setClientErrors((prev) => ({ ...prev, [field]: found[field] ?? "" }));
   }
 
-  /**
-   * Mientras se escribe (TR-039).
-   *
-   * Corregirlo se nota en el acto: apenas el valor pasa a ser válido el aviso
-   * desaparece. Si sigue mal, el error se muestra recién tras una pausa sin
-   * teclas — escribiendo de corrido no marca en rojo un correo a medio
-   * tipear, y al detenerse avisa sin tener que salir del campo.
-   */
+  /** Editar retira errores viejos, pero no ejecuta validación. */
   function handleInput(event: React.FormEvent<HTMLFormElement>) {
     const field = (event.target as HTMLInputElement).name;
     if (!field) return;
@@ -171,31 +134,25 @@ export function LoginPanel({
       prev[field] ? prev : { ...prev, [field]: true },
     );
 
-    const found = validate(new FormData(event.currentTarget));
-    if (!found[field]) {
-      clearTimeout(revealTimers.current[field]);
-      delete revealTimers.current[field];
-      setClientErrors((prev) =>
-        prev[field] ? { ...prev, [field]: "" } : prev,
-      );
-    } else {
-      const message = found[field];
-      setClientErrors((prev) =>
-        prev[field] === message ? prev : { ...prev, [field]: message },
-      );
-      revealAfterPause(field);
-    }
+    setClientErrors((prev) =>
+      prev[field] ? { ...prev, [field]: "" } : prev,
+    );
+    setTouched((prev) =>
+      prev[field] ? { ...prev, [field]: false } : prev,
+    );
 
     /*
      * La repetición no habla de sí misma sino del par: al corregir la
      * contraseña de arriba, "Las contraseñas no coinciden." puede haber
-     * dejado de ser cierto sin que se toque el campo de abajo. Si ya no lo
-     * es, se quita; agregarlo mientras se escribe sería marcar en rojo una
-     * repetición a medio tipear.
+     * dejado de ser cierto sin que se toque el campo de abajo. Se retira el
+     * resultado viejo y el par se comprobará de nuevo en blur o submit.
      */
-    if (field === "password" && !found.passwordConfirm) {
+    if (field === "password") {
       setClientErrors((prev) =>
         prev.passwordConfirm ? { ...prev, passwordConfirm: "" } : prev,
+      );
+      setTouched((prev) =>
+        prev.passwordConfirm ? { ...prev, passwordConfirm: false } : prev,
       );
     }
   }

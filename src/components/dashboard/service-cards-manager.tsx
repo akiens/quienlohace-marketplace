@@ -176,9 +176,6 @@ function EditorDialog({ card, services, action, pending, serverErrors, resetKey,
   const [imageSelection, setImageSelection] = useState({ keepIds: initialImageIds, busy: false });
   const [initialFormState] = useState(() => card ? JSON.stringify(serviceCardFromCard(card)) : "");
   const [dirty, setDirty] = useState(false);
-  const [formValid, setFormValid] = useState(
-    () => card !== null && services.some((service) => service.id === card.serviceId),
-  );
   const [stale, setStale] = useState<Record<string, boolean>>({});
   const [submitErrors, setSubmitErrors] = useState<Record<string, string>>({});
 
@@ -190,9 +187,8 @@ function EditorDialog({ card, services, action, pending, serverErrors, resetKey,
   }, []);
   const fieldErrorState = useFieldErrors(validateField);
   const currentInput = useCallback(() => formRef.current ? serviceCardInput(formRef.current) : null, []);
-  const refreshValidity = useCallback(() => {
+  const refreshDirty = useCallback(() => {
     const input = currentInput();
-    setFormValid(input !== null && serviceCardSchema.safeParse(input).success);
     if (input) {
       const imagesChanged = imageSelection.keepIds.join("|") !== initialImageIds.join("|");
       setDirty(card === null || JSON.stringify(input) !== initialFormState || imagesChanged);
@@ -241,7 +237,7 @@ function EditorDialog({ card, services, action, pending, serverErrors, resetKey,
       return next;
     });
     fieldErrorState.edit(field, normalizeCardField(field, target));
-    requestAnimationFrame(refreshValidity);
+    requestAnimationFrame(refreshDirty);
   }
   function handleBlur(event: React.FocusEvent<HTMLFormElement>) {
     const target = event.target;
@@ -276,7 +272,6 @@ function EditorDialog({ card, services, action, pending, serverErrors, resetKey,
               event.preventDefault();
               setSubmitErrors(validationErrors(parsed.error));
               if (input) fieldErrorState.submitAll(input);
-              setFormValid(false);
             }
           }}
           className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain p-4 sm:p-5"
@@ -302,7 +297,7 @@ function EditorDialog({ card, services, action, pending, serverErrors, resetKey,
                     return next;
                   });
                   fieldErrorState.edit("serviceId", nextServiceId);
-                  requestAnimationFrame(refreshValidity);
+                  requestAnimationFrame(refreshDirty);
                 }}
               />
               <Field label="Título de la carta" error={errors.title} errorId={`${formId}-title-error`} wide>
@@ -383,7 +378,7 @@ function EditorDialog({ card, services, action, pending, serverErrors, resetKey,
             </label>
             <div className="flex flex-wrap justify-end gap-2 border-t border-line-soft pt-4">
               <button type="button" onClick={() => void cancel()} disabled={pending || imageSelection.busy} className={`h-11 rounded-input px-5 text-[14px] font-semibold disabled:opacity-50 ${SECONDARY_SURFACE}`}>Cancelar</button>
-              <Button type="submit" disabled={!dirty || !formValid || pending || imageSelection.busy}>{pending || imageSelection.busy ? "Guardando…" : "Guardar carta"}</Button>
+              <Button type="submit" disabled={!dirty || pending || imageSelection.busy}>{pending || imageSelection.busy ? "Guardando…" : "Guardar carta"}</Button>
             </div>
           </div>
         </form>

@@ -90,27 +90,27 @@ Todo formulario con entrada de la persona usuaria valida **en el cliente y en el
 - El cliente valida para ahorrar el viaje y marcar todos los errores de una vez, no de a uno.
 - Las reglas no se escriben dentro del componente ni se duplican en la acción: dos copias terminan diciendo cosas distintas. El mensaje también vive en el schema, así los dos lados dicen lo mismo.
 - Los errores por campo vuelven como `Record<string, string>` mediante `fieldErrors()`; los que no son de un campo usan la clave `form`.
+- Cada error de campo se muestra una sola vez y junto al control que lo originó. Un resumen o footer sólo presenta problemas que no tengan una ubicación inline equivalente; nunca duplica el mismo mensaje lejos de su fuente.
 
-El error aparece **mientras se escribe**, no recién al abandonar el campo: quien tipea algo inválido tiene que enterarse ahí mismo. Para no marcar en rojo un dato a medio tipear —`ana@gmail.co` está mal hasta la última letra—, la validación al escribir espera una pausa corta sin teclas (600 ms, `FIELD_ERROR_DELAY_MS`) antes de mostrar el error. Cada tecla reinicia esa espera.
+El schema **no se ejecuta mientras se escribe**. La validación del cliente ocurre al abandonar el control (`onBlur`) y al intentar enviar (`onSubmit`). En un asistente, «Continuar» confirma y valida la etapa actual como un envío parcial. Así no se revalida el formulario en cada render ni se marca como inválido un dato todavía incompleto.
 
 | Momento | Qué hace |
 |---|---|
-| Al escribir, si el valor pasó a ser válido | **Quita** el error en el acto, sin esperar. |
-| Al escribir, si sigue inválido | **Muestra** el error tras la pausa. |
-| `onBlur` | **Muestra** el error ya, sin esperar: se terminó de escribir. |
+| Al escribir | Actualiza el valor y retira el error correspondiente al valor anterior; **no valida**. |
+| `onBlur` | Valida y muestra el error del control que se acaba de abandonar. |
 | `onSubmit` | **Muestra** todos los errores y corta el envío. |
 
-Corregir se nota siempre al instante; equivocarse, tras la pausa. La asimetría es deliberada: dejar el rojo puesto mientras se piensa si ya está bien es peor que ponerlo tarde.
+Los errores que devuelve el servidor también dejan de mostrarse cuando cambia el campo al que correspondían; el nuevo valor se comprobará en el siguiente `blur` o envío.
 
 Un campo con error se marca con el borde en rojo, `aria-invalid` y el mensaje debajo, asociado por `aria-describedby`.
 
-El botón de envío está habilitado **sólo si** se cumplen las tres condiciones a la vez:
+El botón de envío se deshabilita únicamente por condiciones que no requieren ejecutar el schema:
 
-1. Hay algo que enviar: en un formulario de edición, algún control cambió respecto de lo guardado. En uno de alta, están los obligatorios.
-2. Ningún campo tiene un valor inválido según su schema.
-3. No hay un envío en curso.
+1. En un formulario de edición no hay cambios respecto de lo guardado.
+2. Hay una operación incompatible en curso, como un envío o una carga de imagen.
+3. Falta un requisito estructural explícito del flujo, como confirmar una etapa del asistente.
 
-Un botón encendido que al apretarlo no hace nada se lee como roto; uno apagado que explica qué falta, no. La consecuencia es que un cambio válido **habilita el botón solo**, sin apretar nada más.
+La validez del contenido no deshabilita el botón: el clic debe poder disparar `onSubmit`, revelar todos los errores juntos y llevar el foco de la persona a lo que debe corregir.
 
 ### TR-040 — Aviso del resultado del envío
 
@@ -165,7 +165,7 @@ Se rechazan SVG —puede traer scripts y se serviría desde el dominio del sitio
 - descarta los metadatos, incluidas las coordenadas GPS de dónde se sacó;
 - convierte a un formato moderno y comprime a la calidad del campo.
 
-La validación del navegador cumple lo mismo por adelantado para avisar al instante (TR-039), y no cuenta como validación: el cliente se puede manipular.
+La validación del navegador aplica los mismos límites en `blur` y `submit` (TR-039), y no cuenta como validación de seguridad: el cliente se puede manipular.
 
 Los límites —cuántas, cuánto pesan, qué formatos, qué dimensiones, qué proporción— son **por campo** y viven en un solo lugar, que leen las dos capas. Un campo de imagen nuevo se declara ahí y no toca nada más.
 

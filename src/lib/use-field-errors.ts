@@ -1,17 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-
-/**
- * Cuánto se espera sin teclas antes de marcar un campo en rojo, en ms.
- *
- * El error tiene que aparecer mientras se escribe (TR-039), pero validar en
- * cada tecla marcaría en rojo todo correo a medio tipear: `ana@gmail.co` está
- * mal hasta la última letra. Esperar una pausa corta resuelve las dos cosas —
- * escribiendo de corrido no molesta, y al detenerse con algo inválido el
- * error sale solo, sin tener que abandonar el campo.
- */
-export const FIELD_ERROR_DELAY_MS = 600;
+import { useCallback, useState } from "react";
 
 /**
  * Los errores por campo de un formulario, con el momento correcto para cada
@@ -23,8 +12,8 @@ export const FIELD_ERROR_DELAY_MS = 600;
  *
  * El reparto de responsabilidades:
  *
- * - `edit` se llama en cada tecla. Saca el error al instante si el valor pasó
- *   a ser válido, y lo pone tras la pausa si sigue mal.
+ * - `edit` se llama al cambiar el valor, pero no lo valida: sólo retira el
+ *   error anterior porque ya correspondía a otro valor.
  * - `blur` se llama al salir del campo. Muestra el error ya, sin esperar.
  * - `submitAll` se llama al enviar. Muestra todo lo que esté mal.
  */
@@ -35,68 +24,27 @@ export function useFieldErrors(
   /** Los campos cuyo error ya se puede mostrar. */
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
 
-  /*
-   * Un temporizador por campo: dos campos escribiéndose no se pisan el turno,
-   * y cada uno cancela sólo el suyo al recibir otra tecla.
-   */
-  const timers = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
-
-  const cancel = useCallback((field: string) => {
-    const timer = timers.current[field];
-    if (timer !== undefined) {
-      clearTimeout(timer);
-      delete timers.current[field];
-    }
-  }, []);
-
-  // Al desmontar no queda ningún temporizador escribiendo en un estado muerto.
-  useEffect(() => {
-    const pending = timers.current;
-    return () => {
-      for (const timer of Object.values(pending)) clearTimeout(timer);
-    };
-  }, []);
-
-  /** En cada tecla. */
+  /** Al editar: descarta el resultado viejo sin ejecutar el schema. */
   const edit = useCallback(
     (field: string, value: unknown) => {
-      cancel(field);
-      const message = validate(field, value);
-
-      /*
-       * Corregirlo se nota en el acto: dejar el rojo puesto mientras se piensa
-       * si ya está bien es peor que ponerlo tarde.
-       */
-      if (message === "") {
-        setErrors((current) =>
-          current[field] ? { ...current, [field]: "" } : current,
-        );
-        return;
-      }
-
-      // Sigue mal: se anota, y se muestra si la pausa se cumple.
+      void value;
       setErrors((current) =>
-        current[field] === message ? current : { ...current, [field]: message },
+        current[field] ? { ...current, [field]: "" } : current,
       );
-
-      timers.current[field] = setTimeout(() => {
-        delete timers.current[field];
-        setRevealed((current) =>
-          current[field] ? current : { ...current, [field]: true },
-        );
-      }, FIELD_ERROR_DELAY_MS);
+      setRevealed((current) =>
+        current[field] ? { ...current, [field]: false } : current,
+      );
     },
-    [cancel, validate],
+    [],
   );
 
   /** Al salir del campo: sin espera, ya se terminó de escribir. */
   const blur = useCallback(
     (field: string, value: unknown) => {
-      cancel(field);
       setErrors((current) => ({ ...current, [field]: validate(field, value) }));
       setRevealed((current) => ({ ...current, [field]: true }));
     },
-    [cancel, validate],
+    [validate],
   );
 
   /**
@@ -107,7 +55,6 @@ export function useFieldErrors(
     (values: Record<string, unknown>) => {
       const found: Record<string, string> = {};
       for (const [field, value] of Object.entries(values)) {
-        cancel(field);
         const message = validate(field, value);
         if (message) found[field] = message;
       }
@@ -121,7 +68,7 @@ export function useFieldErrors(
 
       return found;
     },
-    [cancel, validate],
+    [validate],
   );
 
   /** Los errores que se ven: los que tienen mensaje y ya se pueden mostrar. */

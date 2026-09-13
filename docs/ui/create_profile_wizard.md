@@ -7,12 +7,14 @@ Actualizado el 2026-09-12. Implementación del [diseño mobile y desktop](../tod
 - Bienvenida con Comenzar; si hay datos propios guardados, Retomar.
 - Cinco básicos: Especialidades → Servicios → Identidad → Ubicación → Contacto.
 - Cada Continuar confirma el paso válido y abre el siguiente. El resumen y el lateral no permiten saltar requisitos básicos pendientes. Volver conserva lo escrito.
-- Después de Contacto aparece un resumen editable. Cobre puede crear directamente; un plan con precio debe revisar Pago. Las imágenes y redes compatibles con el plan son opcionales.
-- Desde los extras se puede volver al resumen. Un campo opcional inválido o una imagen fallida se corrige o se quita; no se descarta silenciosamente al crear.
+- «Revisar y terminar» aparece en la navegación como una etapa diferenciada entre Contacto e Imágenes y se marca En curso al abrir el resumen. Es una parada de revisión, no un requisito adicional ni un dato que completar.
+- Después de Contacto aparece un resumen editable cuya acción principal siempre dice «Crear perfil». En Cobre guarda directamente; con un plan de pago lleva primero a Pago y sólo guarda después de completar ese requisito final.
+- Desde el resumen y durante los extras se mantiene el mismo patrón de cierre: Volver, Crear perfil y Continuar. El destino de Continuar es Imágenes desde el resumen, Redes desde Imágenes cuando el plan las incluye y Pago desde Redes en los planes pagos, aunque Crear perfil también lleve allí. En desktop Volver y Continuar muestran texto y flecha; en mobile muestran sólo la flecha, con nombre accesible. El footer no vuelve a mostrar una acción separada Revisar y terminar una vez completado Contacto. Opcional significa que el campo puede quedar vacío: si se escribe un valor, debe ser válido. Crear perfil y Continuar validan el extra actual y no navegan hasta corregir o quitar un valor inválido o una imagen fallida.
+- Volver recorre esa misma secuencia en sentido inverso: Pago → Redes → Imágenes → resumen → Contacto, omitiendo solamente los pasos que el plan no incluya. El estado completado u omitido de un extra no cambia ese destino.
 - La creación es una acción explícita, separada de Continuar. Lleva a `/dashboard?creado=1`, con confirmación de guardado y el estado real de publicación.
 - Un fallo de conexión al guardar muestra un mensaje para reintentar y conserva los campos. El servidor sigue siendo la autoridad de validación.
 
-En mobile hay una columna, Ver pasos y un pie persistente con Volver/Continuar. En desktop el progreso ocupa una columna lateral. Se reutilizan los colores, tipografía, botones y tratamiento de planes del sitio.
+En mobile hay una columna, Ver pasos y un pie persistente. Antes de completar Contacto contiene Volver/Continuar; desde el resumen contiene las acciones de cierre y el siguiente extra. El pie persistente se reserva exclusivamente para botones; cualquier error o indicación se muestra dentro del contenido del paso. En desktop el progreso ocupa una columna lateral. Se reutilizan los colores, tipografía, botones y tratamiento de planes del sitio.
 
 ## Campos y componentes
 
@@ -23,7 +25,7 @@ En mobile hay una columna, Ver pasos y un pie persistente con Volver/Continuar. 
 - Identidad: radios para independiente/empresa y ejemplo de descripción editable basado sólo en servicios confirmados. Usar el ejemplo es una acción explícita que reemplaza el texto actual.
 - `wizard-location-picker.tsx`: localidad en diálogo con búsqueda, selección provisional y Confirmar; cobertura con checkboxes por departamento/localidad, conservando la normalización existente.
 - `wizard-dialog.tsx`: diálogo nativo, fondo inactivo, foco contenido/restaurado y cierre con Escape o Atrás del navegador para el selector de localidad.
-- `social-links-fields.tsx`: una fila por plataforma, nombre visible e input; los vacíos se ignoran y cada URL escrita se valida.
+- `social-links-fields.tsx`: una fila por plataforma, nombre visible e input; los vacíos se ignoran y cada URL escrita se valida. Un error se muestra una sola vez y únicamente junto a la plataforma cuyo valor falló, nunca duplicado en el footer ni compartido por las filas vacías.
 - `image-field.tsx`: tocar foto o portada permite subir/reemplazar; se conservan la galería, selección, progreso, reintento y eliminación existentes.
 
 ## Borrador e hidratación

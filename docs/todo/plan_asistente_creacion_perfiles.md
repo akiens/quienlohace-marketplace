@@ -22,21 +22,24 @@ En desktop, el mismo recorrido usa una columna lateral de progreso y un formular
 
 1. Bienvenida, sin número de paso.
 2. Cinco pasos básicos: Especialidades → Servicios → Identidad → Ubicación → Contacto.
-3. Resumen de lo cargado con dos caminos: terminar con lo básico o agregar contenido opcional.
-4. Imágenes y, si el plan lo admite, Redes. Cada paso permite «Omitir por ahora» si está vacío.
+3. Revisar y terminar, mostrado como una etapa diferenciada de navegación entre Contacto e Imágenes. Es un resumen de lo cargado con dos caminos: terminar con lo básico o agregar contenido opcional; no suma un requisito.
+4. Imágenes y, si el plan lo admite, Redes. En estos extras el pie mantiene Volver, Crear perfil y Continuar; este último abre el siguiente paso disponible, incluido Pago desde Redes en un plan pago. En desktop las acciones de navegación muestran texto y flecha; en mobile, sólo las flechas.
+   Volver recorre la misma secuencia al revés: Pago → Redes → Imágenes → resumen → Contacto, sin saltar extras por estar vacíos u omitidos.
 5. Pago cuando corresponda por la configuración vigente del plan, conservando el checkbox provisional.
 6. Confirmación de creación y estado real del perfil.
 
-El acceso a terminar con lo básico debe estar disponible también al recorrer los extras: no obligar a completar o visitar todos para encontrar la salida.
+El acceso a terminar con lo básico debe estar disponible también al recorrer los extras: no obligar a completar o visitar todos para encontrar la salida. En un plan pago, Crear perfil lleva a Pago desde cualquiera de esos pasos.
+
+Que un extra sea opcional significa que puede dejarse vacío, no que admita datos incorrectos. Si se empezó a completar, Crear perfil y Continuar validan el paso actual y no permiten salir hasta corregir o quitar el valor inválido.
 
 | Situación                                    | Acción principal del resumen | Alternativa           |
 | -------------------------------------------- | ---------------------------- | --------------------- |
 | Cobre, básicos válidos                       | Crear perfil                 | Agregar fotos         |
-| Plan con pago pendiente en el asistente      | Continuar al pago            | Agregar fotos y redes |
-| Extras terminados y pago requerido pendiente | Continuar al pago            | Revisar datos         |
+| Plan con pago pendiente en el asistente      | Crear perfil → Pago          | Agregar fotos y redes |
+| Extras terminados y pago requerido pendiente | Crear perfil → Pago          | Revisar datos         |
 | Todo lo requerido resuelto                   | Crear perfil                 | Revisar datos         |
 
-El resumen es una pantalla breve de revisión, sin campos nuevos. No cuenta como otro requisito. En el pago, la confirmación del checkbox habilita Crear perfil si el resto sigue válido. No se presenta ese checkbox como un cobro exitoso.
+El resumen es una pantalla breve de revisión, sin campos nuevos. No cuenta como otro requisito. La acción dice «Crear perfil» también en los planes pagos para dejar claro que los datos ya están listos; en ese caso abre Pago antes de guardar. En el pago, la confirmación del checkbox habilita la creación si el resto sigue válido. No se presenta ese checkbox como un cobro exitoso.
 
 Después de guardar, distinguir «Perfil creado» de «Perfil publicado». Si faltan verificaciones u otros requisitos de BR-003/020, explicar el siguiente paso con una acción concreta. No prometer visibilidad pública sólo por terminar el asistente.
 

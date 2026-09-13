@@ -16,7 +16,7 @@ import {
   useImageUpload,
   type UploadItem,
 } from "@/lib/use-image-upload";
-import type { ProfileImage } from "@/types";
+import type { PlanId, ProfileImage } from "@/types";
 
 /**
  * Un campo de imagen, para cualquier formulario (TR-042, TR-043).
@@ -35,6 +35,7 @@ export function ImageField({
   shape,
   initial,
   max,
+  planId,
   planName,
   endpoint,
   onChange,
@@ -48,6 +49,8 @@ export function ImageField({
   initial: ProfileImage[];
   /** Tope efectivo cuando lo pone el plan y no la política. */
   max?: number | null;
+  /** Plan elegido durante el alta, para validar la subida en el servidor. */
+  planId?: PlanId;
   /** Para el aviso de cupo lleno. */
   planName?: string;
   /** Ruta de subida. Las cartas usan su almacenamiento propio. */
@@ -75,7 +78,7 @@ export function ImageField({
   const inputId = useId();
   const [rejected, setRejected] = useState<string[]>([]);
 
-  const upload = useImageUpload({ field, initial, max, endpoint });
+  const upload = useImageUpload({ field, initial, max, planId, endpoint });
   const galleryRevision = initial[0]?.galleryRevision ?? null;
   const selectionPending =
     field === "gallery" &&

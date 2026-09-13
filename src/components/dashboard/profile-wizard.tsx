@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { Button, Icon } from "@/components/ui";
 import { normalize } from "@/data/services";
 import type { SearchOption } from "./search-select";
@@ -149,50 +149,71 @@ export function WizardNavigation({
                   ? "Para revisar"
                   : "Pendiente";
           return (
-            <li key={item.id}>
+            <Fragment key={item.id}>
               {i === 5 && (
-                <p className="mb-2 mt-5 text-xs font-bold uppercase tracking-wide text-ink-soft">
-                  Para completar tu perfil
-                </p>
+                <>
+                  <li>
+                    <button
+                      type="button"
+                      disabled={!BASIC_STEPS.every((id) => completion[id])}
+                      aria-current={summary ? "step" : undefined}
+                      onClick={() => {
+                        onSummary();
+                        setExpanded(false);
+                      }}
+                      className={`flex min-h-12 w-full items-center gap-3 rounded-input px-3 py-2 text-left disabled:opacity-50 ${summary ? "bg-brand-100 text-brand-800" : "text-ink hover:bg-surface-muted"}`}
+                    >
+                      <Icon name="fact_check" className="text-xl" />
+                      <span className="min-w-0">
+                        <span className="block text-sm font-semibold">
+                          Revisar y terminar
+                        </span>
+                        <span className="block text-xs text-ink-soft">
+                          {summary
+                            ? "En curso"
+                            : BASIC_STEPS.every((id) => completion[id])
+                              ? "Disponible"
+                              : "Pendiente"}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                  <li aria-hidden="true">
+                    <p className="mb-2 mt-5 text-xs font-bold uppercase tracking-wide text-ink-soft">
+                      Para completar tu perfil
+                    </p>
+                  </li>
+                </>
               )}
-              <button
-                type="button"
-                disabled={!accessible(item.id)}
-                aria-current={active ? "step" : undefined}
-                onClick={() => {
-                  onSelect(item.id);
-                  setExpanded(false);
-                }}
-                className={`flex min-h-12 w-full items-center gap-3 rounded-input px-3 py-2 text-left disabled:opacity-50 ${active ? "bg-brand-100 text-brand-800" : "text-ink hover:bg-surface-muted"}`}
-              >
-                <Icon
-                  name={completion[item.id] ? "check_circle" : item.icon}
-                  filled={completion[item.id]}
-                  className={`text-xl ${completion[item.id] ? "text-success" : ""}`}
-                />
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold">
-                    {item.label}
+              <li>
+                <button
+                  type="button"
+                  disabled={!accessible(item.id)}
+                  aria-current={active ? "step" : undefined}
+                  onClick={() => {
+                    onSelect(item.id);
+                    setExpanded(false);
+                  }}
+                  className={`flex min-h-12 w-full items-center gap-3 rounded-input px-3 py-2 text-left disabled:opacity-50 ${active ? "bg-brand-100 text-brand-800" : "text-ink hover:bg-surface-muted"}`}
+                >
+                  <Icon
+                    name={completion[item.id] ? "check_circle" : item.icon}
+                    filled={completion[item.id]}
+                    className={`text-xl ${completion[item.id] ? "text-success" : ""}`}
+                  />
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold">
+                      {item.label}
+                    </span>
+                    <span className="block text-xs text-ink-soft">
+                      {status}
+                    </span>
                   </span>
-                  <span className="block text-xs text-ink-soft">{status}</span>
-                </span>
-              </button>
-            </li>
+                </button>
+              </li>
+            </Fragment>
           );
         })}
-        <li>
-          <button
-            type="button"
-            disabled={!BASIC_STEPS.every((id) => completion[id])}
-            onClick={() => {
-              onSummary();
-              setExpanded(false);
-            }}
-            className="mt-3 min-h-12 w-full rounded-input border border-line px-3 text-sm font-semibold text-brand-800 disabled:opacity-50"
-          >
-            Revisar y terminar
-          </button>
-        </li>
       </ol>
     </nav>
   );

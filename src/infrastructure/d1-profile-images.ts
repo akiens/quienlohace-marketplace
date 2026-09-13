@@ -134,6 +134,8 @@ export async function putProfileImage(input: {
   userId: string;
   /** Null durante el alta: la fila se reclama al crear el perfil. */
   profileId: string | null;
+  /** Cupo ya validado durante el alta, cuando aún no hay perfil que consultarlo. */
+  galleryPlanLimit?: number | null;
   kind: ImageKind;
   body: ArrayBuffer;
   contentType: string;
@@ -143,7 +145,13 @@ export async function putProfileImage(input: {
   alt?: string;
 }): Promise<ProfileImage> {
   const db = getDb();
-  if (input.kind === "gallery") await syncGalleryForUser(input.userId);
+  if (input.kind === "gallery") {
+    if (input.profileId === null && input.galleryPlanLimit !== undefined) {
+      await applyGalleryLimit(input.userId, input.galleryPlanLimit);
+    } else {
+      await syncGalleryForUser(input.userId);
+    }
+  }
   const id = newId();
   const key = `providers/${input.userId}/${input.kind}-${id}.${input.extension}`;
 

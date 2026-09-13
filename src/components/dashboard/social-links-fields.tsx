@@ -18,18 +18,14 @@ export function SocialLinksFields({
   error?: (platform: SocialPlatform) => string | undefined;
 }) {
   const prefix = useId();
-  const [touched, setTouched] = useState<string[]>([]);
+  const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  const [staleServerFields, setStaleServerFields] = useState<Record<string, boolean>>({});
   return (
     <div className="space-y-4">
       {platforms.map(({ platform, label, icon }) => {
         const url = value.find((link) => link.platform === platform)?.url ?? "";
-        const parsed = url.trim()
-          ? socialLinkSchema.safeParse({ platform, url })
-          : null;
-        const message =
-          touched.includes(platform) && parsed && !parsed.success
-            ? parsed.error.issues[0]?.message
-            : error?.(platform);
+        const message = clientErrors[platform] ||
+          (!staleServerFields[platform] ? error?.(platform) : undefined);
         const id = `${prefix}-${platform}`;
         return (
           <div
@@ -57,6 +53,14 @@ export function SocialLinksFields({
                 aria-invalid={Boolean(message)}
                 aria-describedby={message ? `${id}-error` : undefined}
                 onChange={(event) => {
+                  setClientErrors((current) =>
+                    current[platform] ? { ...current, [platform]: "" } : current,
+                  );
+                  setStaleServerFields((current) =>
+                    current[platform]
+                      ? current
+                      : { ...current, [platform]: true },
+                  );
                   const rest = value.filter(
                     (link) => link.platform !== platform,
                   );
@@ -66,13 +70,18 @@ export function SocialLinksFields({
                       : rest,
                   );
                 }}
-                onBlur={() =>
-                  setTouched((current) =>
-                    current.includes(platform)
-                      ? current
-                      : [...current, platform],
-                  )
-                }
+                onBlur={(event) => {
+                  const candidate = event.target.value.trim();
+                  const parsed = candidate
+                    ? socialLinkSchema.safeParse({ platform, url: candidate })
+                    : null;
+                  setClientErrors((current) => ({
+                    ...current,
+                    [platform]: parsed && !parsed.success
+                      ? (parsed.error.issues[0]?.message ?? "")
+                      : "",
+                  }));
+                }}
                 className={`h-12 w-full rounded-input border px-3 text-base outline-none focus:border-brand-800 ${message ? "border-[#D92D20]" : "border-line-strong"}`}
               />
               {message && (

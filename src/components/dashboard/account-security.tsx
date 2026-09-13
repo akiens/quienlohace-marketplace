@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { updatePassword, type FormState } from "@/app/actions/auth";
 import { GoogleMark } from "@/components/google-mark";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
+import { fieldErrors, passwordUpdateSchema } from "@/lib/validation";
 
 export function AccountSecurity({
   email,
@@ -22,6 +23,49 @@ export function AccountSecurity({
     updatePassword,
     {},
   );
+  const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  const [staleServerFields, setStaleServerFields] = useState<Record<string, boolean>>({});
+
+  function validate(formData: FormData): Record<string, string> {
+    const parsed = passwordUpdateSchema.safeParse({
+      currentPassword: formData.get("currentPassword") ?? "",
+      newPassword: formData.get("newPassword"),
+      passwordConfirm: formData.get("passwordConfirm"),
+    });
+    return parsed.success ? {} : fieldErrors(parsed.error);
+  }
+
+  function handleInput(event: React.FormEvent<HTMLFormElement>) {
+    const field = (event.target as HTMLInputElement).name;
+    if (!field) return;
+    setClientErrors((current) =>
+      current[field] ? { ...current, [field]: "" } : current,
+    );
+    setStaleServerFields((current) =>
+      current[field] ? current : { ...current, [field]: true },
+    );
+    if (field === "newPassword") {
+      setClientErrors((current) =>
+        current.passwordConfirm ? { ...current, passwordConfirm: "" } : current,
+      );
+      setStaleServerFields((current) =>
+        current.passwordConfirm
+          ? current
+          : { ...current, passwordConfirm: true },
+      );
+    }
+  }
+
+  function handleBlur(event: React.FocusEvent<HTMLFormElement>) {
+    const field = event.target.name;
+    if (!field) return;
+    const found = validate(new FormData(event.currentTarget));
+    setClientErrors((current) => ({ ...current, [field]: found[field] ?? "" }));
+  }
+
+  const errors = { ...(state.errors ?? {}) };
+  for (const field of Object.keys(staleServerFields)) delete errors[field];
+  Object.assign(errors, clientErrors);
 
   const googleMessage =
     authStatus === "google-linked"
@@ -97,7 +141,19 @@ export function AccountSecurity({
       </div>
 
       {editingPassword ? (
-        <form action={action} noValidate className="flex flex-col gap-4 border-t border-line-soft pt-5">
+        <form
+          action={action}
+          noValidate
+          onInput={handleInput}
+          onBlur={handleBlur}
+          onSubmit={(event) => {
+            const found = validate(new FormData(event.currentTarget));
+            if (Object.keys(found).length === 0) return;
+            event.preventDefault();
+            setClientErrors(found);
+          }}
+          className="flex flex-col gap-4 border-t border-line-soft pt-5"
+        >
           <div>
             <h3 className="text-[15px] font-bold text-ink">
               {hasPassword ? "Cambiar contraseña" : "Crear una contraseña"}
@@ -114,7 +170,7 @@ export function AccountSecurity({
               name="currentPassword"
               label="Contraseña actual"
               autoComplete="current-password"
-              error={state.errors?.currentPassword}
+              error={errors.currentPassword}
             />
           ) : null}
 
@@ -123,19 +179,19 @@ export function AccountSecurity({
               name="newPassword"
               label="Nueva contraseña"
               autoComplete="new-password"
-              error={state.errors?.newPassword}
+              error={errors.newPassword}
               hint="Mínimo 8 caracteres."
             />
             <PasswordField
               name="passwordConfirm"
               label="Repetir contraseña"
               autoComplete="new-password"
-              error={state.errors?.passwordConfirm}
+              error={errors.passwordConfirm}
             />
           </div>
 
-          {state.errors?.form ? (
-            <StatusMessage message={state.errors.form} success={false} />
+          {errors.form ? (
+            <StatusMessage message={errors.form} success={false} />
           ) : null}
           {state.message ? (
             <StatusMessage message={state.message} success />
@@ -264,4 +320,3 @@ function StatusMessage({
     </p>
   );
 }
-

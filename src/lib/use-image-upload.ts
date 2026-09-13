@@ -9,7 +9,7 @@ import {
   sniffFormat,
   type ImageField,
 } from "@/domain/image-policy";
-import type { ProfileImage } from "@/types";
+import type { PlanId, ProfileImage } from "@/types";
 
 /**
  * El ciclo de vida de las imágenes de un campo, del lado del navegador
@@ -235,11 +235,14 @@ export function useImageUpload({
   field,
   initial,
   max,
+  planId,
   endpoint = "/api/profile-images",
 }: {
   field: ImageField;
   initial: ProfileImage[];
   max?: number | null;
+  /** Plan elegido durante el alta, cuando todavía no existe un perfil. */
+  planId?: PlanId;
   endpoint?: string;
 }) {
   const policy = policyFor(field);
@@ -314,6 +317,7 @@ export function useImageUpload({
         const body = new FormData();
         body.set("field", field);
         body.set("file", optimized);
+        if (planId) body.set("planId", planId);
 
         const response = await fetch(endpoint, {
           method: "POST",
@@ -349,7 +353,7 @@ export function useImageUpload({
         controllers.current.delete(key);
       }
     },
-    [endpoint, field, patch],
+    [endpoint, field, patch, planId],
   );
 
   /**

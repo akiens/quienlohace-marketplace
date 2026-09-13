@@ -1,13 +1,12 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { deleteReview, submitReview } from "@/app/actions/reviews";
 import type { FormState } from "@/app/actions/auth";
 import { GoogleMark } from "@/components/google-mark";
 import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
-import { reviewSchema } from "@/lib/validation";
-import { FIELD_ERROR_DELAY_MS } from "@/lib/use-field-errors";
+import { fieldErrors, reviewSchema } from "@/lib/validation";
 import type { ConsumerUser, Review } from "@/types";
 
 /**
@@ -44,17 +43,8 @@ export function ReviewForm({
    * distinto del que devolvía el servidor para la misma regla.
    */
   const [comment, setComment] = useState("");
-  const [commentTouched, setCommentTouched] = useState(false);
-
-  /*
-   * La pausa tras la que se muestra el error escribiendo (TR-039). Cada tecla
-   * la reinicia: de corrido no marca en rojo un comentario a medio escribir, y
-   * al detenerse con algo inválido avisa sin salir del campo.
-   */
-  const revealTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined,
-  );
-  useEffect(() => () => clearTimeout(revealTimer.current), []);
+  const [clientErrors, setClientErrors] = useState<Record<string, string>>({});
+  const [staleServerFields, setStaleServerFields] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let active = true;
@@ -105,22 +95,10 @@ export function ReviewForm({
   >(deleteReview, {});
 
   const message = state.message ?? deleteState.message;
-  const errors = state.errors ?? {};
-
-  /** El comentario contra su regla del schema. */
-  const commentCheck = reviewSchema.shape.comment.safeParse(comment);
-  const commentError = commentCheck.success
-    ? ""
-    : (commentCheck.error.issues[0]?.message ?? "");
-
-  /*
-   * El error se muestra al salir del campo o cuando el servidor lo devolvió,
-   * no mientras se escribe: tipeando el comentario está corto casi todo el
-   * tiempo y marcarlo en rojo desde la primera letra no ayuda (TR-039).
-   */
-  const shownCommentError = errors.comment ?? (commentTouched ? commentError : "");
-
-  const canSubmit = rating > 0 && commentError === "";
+  const errors = { ...(state.errors ?? {}) };
+  for (const field of Object.keys(staleServerFields)) delete errors[field];
+  Object.assign(errors, clientErrors);
+  const shownCommentError = errors.comment ?? "";
   const consumer = context?.consumer ?? null;
   const existing = context?.existing ?? null;
   const googleEnabled = context?.googleEnabled ?? false;
@@ -193,6 +171,17 @@ export function ReviewForm({
        * y contradicen a los del schema, que son los que se muestran acá.
        */
       noValidate
+      onSubmit={(event) => {
+        if ((event.nativeEvent.submitter as HTMLButtonElement | null)?.formNoValidate) return;
+        const parsed = reviewSchema.safeParse({
+          rating,
+          comment,
+          authorName: consumer.displayName || "Usuario de Google",
+        });
+        if (parsed.success) return;
+        event.preventDefault();
+        setClientErrors(fieldErrors(parsed.error));
+      }}
       className="flex flex-col gap-4 rounded-input border border-line bg-white p-4"
     >
       <input type="hidden" name="profileId" value={profileId} />
@@ -222,7 +211,15 @@ export function ReviewForm({
             <button
               key={value}
               type="button"
-              onClick={() => setRating(value)}
+              onClick={() => {
+                setRating(value);
+                setClientErrors((current) =>
+                  current.rating ? { ...current, rating: "" } : current,
+                );
+                setStaleServerFields((current) =>
+                  current.rating ? current : { ...current, rating: true },
+                );
+              }}
               onMouseEnter={() => setHovered(value)}
               aria-label={`${value} ${value === 1 ? "estrella" : "estrellas"}`}
               aria-pressed={rating === value}
@@ -259,23 +256,22 @@ export function ReviewForm({
           maxLength={1000}
           value={comment}
           onChange={(event) => {
-            const value = event.target.value;
-            setComment(value);
-
-            clearTimeout(revealTimer.current);
-            // Válido: el rojo se va en el acto. Inválido: aparece tras la pausa.
-            if (reviewSchema.shape.comment.safeParse(value).success) {
-              setCommentTouched(false);
-            } else {
-              revealTimer.current = setTimeout(
-                () => setCommentTouched(true),
-                FIELD_ERROR_DELAY_MS,
-              );
-            }
+            setComment(event.target.value);
+            setClientErrors((current) =>
+              current.comment ? { ...current, comment: "" } : current,
+            );
+            setStaleServerFields((current) =>
+              current.comment ? current : { ...current, comment: true },
+            );
           }}
           onBlur={() => {
-            clearTimeout(revealTimer.current);
-            setCommentTouched(true);
+            const parsed = reviewSchema.shape.comment.safeParse(comment);
+            setClientErrors((current) => ({
+              ...current,
+              comment: parsed.success
+                ? ""
+                : (parsed.error.issues[0]?.message ?? ""),
+            }));
           }}
           aria-invalid={shownCommentError ? true : undefined}
           aria-describedby={shownCommentError ? "review-comment-error" : undefined}
@@ -290,12 +286,8 @@ export function ReviewForm({
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5">
-        {/*
-          El botón se enciende sólo con la opinión entera válida (TR-039): con
-          sólo la puntuación puesta, apretarlo devolvía un error del servidor
-          por algo que ya se sabía acá.
-        */}
-        <Button type="submit" size="sm" disabled={pending || !canSubmit}>
+        {/* El clic valida la opinión completa y revela todos los errores. */}
+        <Button type="submit" size="sm" disabled={pending}>
           {pending ? "Publicando…" : existing ? "Guardar cambios" : "Publicar"}
         </Button>
         <Button

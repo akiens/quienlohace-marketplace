@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 import { Button, Icon } from "@/components/ui";
 import { CONTACT_REASONS, contactSchema } from "@/lib/validation";
-import { FIELD_ERROR_DELAY_MS } from "@/lib/use-field-errors";
 
 type Fields = {
   nombre: string;
@@ -55,64 +54,27 @@ export function ContactForm() {
   );
   const [sent, setSent] = useState(false);
 
-  /*
-   * Un temporizador por campo para la pausa: cada tecla cancela el suyo, y
-   * dos campos escribiéndose no se pisan el turno.
-   */
-  const revealTimers = useRef<
-    Partial<Record<keyof Fields, ReturnType<typeof setTimeout>>>
-  >({});
-
-  useEffect(() => {
-    const pending = revealTimers.current;
-    return () => {
-      for (const timer of Object.values(pending)) clearTimeout(timer);
-    };
-  }, []);
-
-  /*
-   * Mientras se escribe (TR-039).
-   *
-   * Corregirlo se nota en el acto; si sigue mal, el error aparece recién tras
-   * una pausa sin teclas. Escribiendo de corrido no marca en rojo un correo a
-   * medio tipear (`ana@`), y al detenerse avisa sin tener que salir del campo.
-   */
+  /** Editar no valida: descarta el error del valor anterior. */
   function update<K extends keyof Fields>(key: K, value: Fields[K]) {
     setFields((current) => ({ ...current, [key]: value }));
-
-    const message = validateField(key, value);
-    setErrors((current) => ({ ...current, [key]: message || undefined }));
-
-    clearTimeout(revealTimers.current[key]);
-    if (message) {
-      revealTimers.current[key] = setTimeout(() => {
-        delete revealTimers.current[key];
-        setTouched((current) =>
-          current[key] ? current : { ...current, [key]: true },
-        );
-      }, FIELD_ERROR_DELAY_MS);
-    }
+    setErrors((current) =>
+      current[key] ? { ...current, [key]: undefined } : current,
+    );
+    setTouched((current) =>
+      current[key] ? { ...current, [key]: false } : current,
+    );
   }
 
   /** Al salir del campo: el error se muestra ya, sin esperar la pausa. */
   function blur<K extends keyof Fields>(key: K) {
-    clearTimeout(revealTimers.current[key]);
-    delete revealTimers.current[key];
     setTouched((current) => ({ ...current, [key]: true }));
     const message = validateField(key, fields[key]);
     setErrors((current) => ({ ...current, [key]: message || undefined }));
   }
 
-  const parsed = contactSchema.safeParse(fields);
-
-  /*
-   * El botón se enciende sólo con todo válido (TR-039): uno encendido que al
-   * apretarlo no hace nada se lee como roto.
-   */
-  const canSubmit = parsed.success;
-
   function onSubmit(event: React.FormEvent) {
     event.preventDefault();
+    const parsed = contactSchema.safeParse(fields);
 
     if (!parsed.success) {
       // Enviar es pedir que se revise todo: se muestran todos los errores.
@@ -225,7 +187,7 @@ export function ContactForm() {
         />
       </Field>
 
-      <Button type="submit" className="self-start" disabled={!canSubmit}>
+      <Button type="submit" className="self-start">
         Enviar mensaje
       </Button>
     </form>

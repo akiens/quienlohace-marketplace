@@ -58,17 +58,31 @@ async function main() {
   schema.close();
 
   sql.exec(`CREATE TABLE users(id TEXT PRIMARY KEY);
-    CREATE TABLE profiles(id TEXT PRIMARY KEY, user_id TEXT, plan_id TEXT, downgrade_plan_id TEXT, plan_expires_at TEXT);
+    CREATE TABLE profiles(id TEXT PRIMARY KEY, user_id TEXT, plan_id TEXT,
+      subscription_status TEXT DEFAULT 'active', downgrade_plan_id TEXT, plan_expires_at TEXT);
     CREATE TABLE plans(id TEXT PRIMARY KEY, max_gallery_images INTEGER);
     CREATE TABLE profile_images(id TEXT PRIMARY KEY, owner_user_id TEXT, profile_id TEXT,
       storage_key TEXT, alt TEXT DEFAULT '', kind TEXT DEFAULT 'gallery', sort_order INTEGER,
       is_active INTEGER DEFAULT 1, lifecycle TEXT DEFAULT 'confirmed', width INTEGER DEFAULT 10,
       height INTEGER DEFAULT 10, created_at TEXT DEFAULT '2026-01-01', updated_at TEXT, expires_at TEXT);
+    CREATE TABLE service_card_images(storage_key TEXT);
     INSERT INTO users VALUES ('u'), ('other');
-    INSERT INTO profiles VALUES ('p', 'u', 'platino', NULL, NULL);
-    INSERT INTO plans VALUES ('cobre', 0), ('oro', 5), ('platino', 20);`);
+    INSERT INTO profiles(id, user_id, plan_id, downgrade_plan_id, plan_expires_at)
+      VALUES ('p', 'u', 'platinum', NULL, NULL);
+    INSERT INTO plans VALUES ('cobre', 0), ('gold', 5), ('platinum', 20);`);
   sql.exec(readFileSync("migrations/0015_image_visibility_reason.sql", "utf8"));
   sql.exec(readFileSync("migrations/0016_gallery_plan_state.sql", "utf8"));
+
+  const pendingDuringSignup = await putProfileImage({
+    userId: "other", profileId: null, galleryPlanLimit: 5, kind: "gallery",
+    body: new ArrayBuffer(1), contentType: "image/webp", extension: "webp",
+    width: 10, height: 10,
+  });
+  assert.equal(
+    pendingDuringSignup.lifecycle,
+    "pending",
+    "Oro permite subir galería antes de que exista el perfil",
+  );
   for (let i = 0; i < 8; i++) sql.prepare(`INSERT INTO profile_images
     (id, owner_user_id, profile_id, storage_key, sort_order) VALUES (?, 'u', 'p', ?, ?)`).run(`i${i}`, `key${i}`, i);
 
@@ -83,7 +97,7 @@ async function main() {
   assert.equal(images.at(-1)?.id, "i1", "ocultar pasa al final");
   assert.equal(images.find(image => image.id === "i1")?.galleryState, "available", "ocultar sigue ocupando cupo");
 
-  sql.exec("UPDATE profiles SET downgrade_plan_id = 'oro', plan_expires_at = '2999-01-01'");
+  sql.exec("UPDATE profiles SET downgrade_plan_id = 'gold', plan_expires_at = '2999-01-01'");
   await syncGalleryForUser("u");
   assert.equal((await listImagesForUser("u")).filter(image => image.galleryState === "available").length, 8);
   sql.exec("UPDATE profiles SET plan_expires_at = '2020-01-01'");
@@ -115,10 +129,10 @@ async function main() {
   images = await listImagesForUser("u");
   assert.ok(images.every(image => image.galleryState === "frozen" && !image.isActive));
   assert.equal(images[0]?.gallerySelectionPending, false);
-  sql.exec("UPDATE profiles SET plan_id = 'oro'");
+  sql.exec("UPDATE profiles SET plan_id = 'gold'");
   images = await listImagesForUser("u");
   assert.equal(images.filter(image => image.galleryState === "semi").length, 3, "mejora parcial abre selección");
-  sql.exec("UPDATE profiles SET plan_id = 'platino'");
+  sql.exec("UPDATE profiles SET plan_id = 'platinum'");
   images = await listImagesForUser("u");
   assert.ok(images.every(image => image.galleryState === "available" && image.hiddenAt === null));
   assert.equal(images.find(image => image.id === "i1")?.isActive, false);
@@ -132,7 +146,7 @@ async function main() {
   const old = new Date(Date.now() - 181 * 86400000).toISOString();
   sql.prepare("UPDATE profile_images SET hidden_at = ?").run(old);
   // Recuperación antes de purgar, aunque nadie haya abierto el panel.
-  sql.exec("UPDATE profiles SET plan_id = 'platino'");
+  sql.exec("UPDATE profiles SET plan_id = 'platinum'");
   assert.equal((await cleanupExpiredImages()).removed, 0);
   sql.exec("UPDATE profiles SET plan_id = 'cobre'");
   await syncGalleryForUser("u");
@@ -140,7 +154,7 @@ async function main() {
   assert.equal((await cleanupExpiredImages()).removed, 8);
   assert.equal(deleted.length, 8);
   assert.equal((await listImagesForUser("u")).length, 0);
-  sql.exec("UPDATE profiles SET plan_id = 'oro'");
+  sql.exec("UPDATE profiles SET plan_id = 'gold'");
   await syncGalleryForUser("u");
   const upload = () => putProfileImage({
     userId: "u", profileId: "p", kind: "gallery", body: new ArrayBuffer(1),

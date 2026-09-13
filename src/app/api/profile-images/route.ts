@@ -4,7 +4,8 @@ import {
   policyFor,
   type ImageField,
 } from "@/domain/image-policy";
-import { limitFor } from "@/domain/plans";
+import { effectivePlanId } from "@/domain/plan-changes";
+import { limitFor, PLAN_IDS } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
 import {
   discardPendingImage,
@@ -113,7 +114,23 @@ export async function POST(request: Request) {
   }
 
   const profile = await providers.findByUserId(user.id);
-  const planId: PlanId = profile?.planId ?? "cobre";
+  const requestedPlan = String(formData.get("planId") ?? "");
+  /*
+   * Durante el alta todavía no existe un perfil: la galería tiene que usar
+   * el mismo plan elegido que después recibe `saveProfile`. Una vez creado el
+   * perfil, el valor del navegador deja de tener autoridad y manda siempre el
+   * plan efectivo de la base (incluida una baja ya vencida).
+   */
+  const planId: PlanId = profile
+    ? effectivePlanId({
+        planId: profile.planId,
+        subscriptionStatus: profile.subscriptionStatus,
+        downgradePlanId: profile.downgradePlanId,
+        planExpiresAt: profile.planExpiresAt,
+      })
+    : PLAN_IDS.includes(requestedPlan as PlanId)
+      ? (requestedPlan as PlanId)
+      : "cobre";
 
   /*
    * El cupo se cuenta sobre lo que el usuario tiene vigente —confirmado más
@@ -171,6 +188,7 @@ export async function POST(request: Request) {
     const image = await putProfileImage({
       userId: user.id,
       profileId: profile?.id ?? null,
+      galleryPlanLimit: field === "gallery" ? max : undefined,
       kind: field,
       body: processed.image.body,
       contentType: processed.image.contentType,
