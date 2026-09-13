@@ -1,6 +1,6 @@
 # Asistente de creación de perfiles
 
-Actualizado el 2026-09-12. Implementación del [diseño mobile y desktop](../todo/plan_asistente_creacion_perfiles.md).
+Actualizado el 2026-09-13. Implementación del [diseño mobile y desktop](../todo/plan_asistente_creacion_perfiles.md).
 
 ## Recorrido actual
 
@@ -23,6 +23,8 @@ En mobile hay una columna, Ver pasos y un pie persistente. Antes de completar Co
 - Especialidades: checkboxes agrupados por rubro; cupos visibles. Ningún rubro ni especialidad se oculta al llenar el cupo: intentar agregar otro abre la notificación del límite. Quitar una especialidad con servicios asociados pide confirmar ese efecto.
 - Servicios: texto + Agregar y sugerencias de las especialidades seleccionadas. Con varias especialidades la vinculación se elige inline; con una se informa la asignación. Los nombres y sus especialidades viajan en listas paralelas, como antes.
 - Identidad: radios para independiente/empresa y ejemplo de descripción editable basado sólo en servicios confirmados. Usar el ejemplo es una acción explícita que reemplaza el texto actual.
+- Horarios: input de texto + `Agregar`, sin sugerencias ni catálogo. Los horarios confirmados aparecen sobre el input y se pueden quitar; escribir Enter también los agrega.
+- Formas de pago: en un alta nueva `Acepto todas` comienza marcado y selecciona efectivo, transferencia, débito y crédito. Un borrador o perfil existente conserva exactamente su selección.
 - `wizard-location-picker.tsx`: localidad en diálogo con búsqueda, selección provisional y Confirmar; cobertura con checkboxes por departamento/localidad, conservando la normalización existente.
 - `wizard-dialog.tsx`: diálogo nativo, fondo inactivo, foco contenido/restaurado y cierre con Escape o Atrás del navegador para el selector de localidad.
 - `social-links-fields.tsx`: una fila por plataforma, nombre visible e input; los vacíos se ignoran y cada URL escrita se valida. Un error se muestra una sola vez y únicamente junto a la plataforma cuyo valor falló, nunca duplicado en el footer ni compartido por las filas vacías.

@@ -359,7 +359,7 @@ export const signupSchema = credentialsSchema
  * y colar ahí un contacto sortea las reglas de BR-004 sobre qué canal es
  * público.
  */
-const scheduleEntrySchema = z
+export const scheduleEntrySchema = z
   .string()
   .trim()
   .min(MIN_SCHEDULE_LENGTH, `Mínimo ${MIN_SCHEDULE_LENGTH} caracteres.`)

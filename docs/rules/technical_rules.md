@@ -10,7 +10,7 @@ Este documento define **cómo implementar y validar** las reglas de negocio de Q
 - `planes.md`: presentación comercial derivada de BR-006 a BR-009.
 - `locations.md`: datos geográficos canónicos consumidos según TR-032 y TR-033.
 - `rubros_especialidades_servicios.md`: datos canónicos de taxonomía consumidos según TR-020 a TR-022.
-- `sugerencias_horarios.md`: strings canónicos consumidos según TR-024.
+- `sugerencias_horarios.md`: catálogo histórico generado según TR-024; el asistente de perfiles no lo consume.
 - Los JSON generados son artefactos derivados y nunca se editan como segunda fuente de verdad.
 
 ### Política contra la redundancia
@@ -422,14 +422,14 @@ El resultado esperado es un array de objetos con este contrato:
 - Las instalaciones que todavía usen el esquema anterior deben migrar de 0–6 y 1–100 a 0–9 y 3–120 antes de implementar BR-024.
 - Reordenar mediante lote transaccional o posiciones temporales que no violen unicidad.
 
-### TR-024 — Generador y búsqueda
+### TR-024 — Catálogo histórico de horarios
 
 - Solo las viñetas de secciones de sugerencias generan strings.
 - Se toma el texto anterior a `— alias:`; encabezados y aliases no entran al JSON.
 - El resultado es `string[]`, conserva el orden y no incluye IDs, grupos u objetos.
 - Falla ante duplicados normalizados.
-- La búsqueda prioriza exacta, inicio y parcial.
-- La UI muestra inicialmente 6–8 resultados, permite texto libre y edición antes de confirmar.
+- La búsqueda del catálogo prioriza exacta, inicio y parcial para cualquier consumidor que todavía la utilice.
+- El asistente de perfiles no consulta ni muestra este catálogo: usa un input libre y agrega una entrada únicamente después de la acción explícita de la persona.
 
 El resultado esperado es un `string[]` sin IDs, grupos ni aliases:
 

@@ -31,11 +31,15 @@ import {
   listSpecialties,
   sectorOfSpecialty,
 } from "@/data/taxonomy";
-import { MAX_SCHEDULE_ENTRIES, searchSchedules } from "@/data/schedules";
+import {
+  MAX_SCHEDULE_ENTRIES,
+  MAX_SCHEDULE_LENGTH,
+} from "@/data/schedules";
 import { COUNTRY_ID, locationLabelById } from "@/data/locations";
 import {
   profileSchema,
   profileFieldSchemas,
+  scheduleEntrySchema,
   serviceNameSchema,
   socialLinkSchema,
 } from "@/lib/validation";
@@ -45,10 +49,7 @@ import { Button, Icon, SECONDARY_SURFACE } from "@/components/ui";
 import { FormAlert } from "@/components/form-alert";
 import { Notification } from "@/components/notification";
 import { useFieldErrors } from "@/lib/use-field-errors";
-import {
-  SearchSelect,
-  type SearchOption,
-} from "@/components/dashboard/search-select";
+import type { SearchOption } from "@/components/dashboard/search-select";
 import {
   BASIC_STEPS,
   PROFILE_STEPS,
@@ -433,6 +434,7 @@ function ProfileFormFields(props: {
   const [scheduleQuery, setScheduleQuery] = useState(
     draft?.scheduleQuery ?? "",
   );
+  const [scheduleFeedback, setScheduleFeedback] = useState("");
   /*
    * El correo de contacto arranca con el de la cuenta.
    *
@@ -543,7 +545,7 @@ function ProfileFormFields(props: {
    * nada— y se desmarcaban solas después de apretar "Crear perfil".
    */
   const [paymentMethods, setPaymentMethods] = useState<string[]>(
-    draft?.paymentMethods ?? profile?.paymentMethods ?? [],
+    draft?.paymentMethods ?? profile?.paymentMethods ?? [...PAYMENT_OPTIONS],
   );
 
   // Por defecto sí: en el rubro casi todos atienden por WhatsApp.
@@ -745,6 +747,43 @@ function ProfileFormFields(props: {
   for (const [field, message] of Object.entries(shownFieldErrors)) {
     errors[field] = message;
   }
+
+  /** Valida y confirma un horario escrito, sin catálogo ni autocompletado. */
+  const addScheduleEntry = useCallback(() => {
+    const parsed = scheduleEntrySchema.safeParse(scheduleQuery);
+    if (!parsed.success) {
+      setScheduleFeedback(
+        parsed.error.issues[0]?.message ?? "El horario no es válido.",
+      );
+      return;
+    }
+
+    if (scheduleEntries.length >= MAX_SCHEDULE_ENTRIES) {
+      setScheduleFeedback(
+        `Podés agregar hasta ${MAX_SCHEDULE_ENTRIES} horarios.`,
+      );
+      return;
+    }
+
+    const cleanSchedule = parsed.data;
+    if (
+      scheduleEntries.some(
+        (entry) =>
+          entry.toLocaleLowerCase("es-UY") ===
+          cleanSchedule.toLocaleLowerCase("es-UY"),
+      )
+    ) {
+      setScheduleFeedback("Ese horario ya está agregado.");
+      return;
+    }
+
+    const nextEntries = [...scheduleEntries, cleanSchedule];
+    setScheduleEntries(nextEntries);
+    setScheduleQuery("");
+    setScheduleFeedback("");
+    editField("scheduleEntries", nextEntries);
+  }, [editField, scheduleEntries, scheduleQuery]);
+
   /*
    * Los topes del plan. `null` es "sin límite" (TR-002), y por eso las ayudas
    * de más abajo lo comprueban antes de comparar contra un número.
@@ -981,19 +1020,6 @@ function ProfileFormFields(props: {
         context: service.context,
       }));
   }, [serviceQuery, services, specialtyIds]);
-
-  /**
-   * Sugerencias de horario, filtradas por lo tipeado (TR-024). Se muestran
-   * pocas de entrada: son un punto de partida, y el texto final se puede
-   * editar antes de confirmarlo (BR-024).
-   */
-  const scheduleOptions: SearchOption[] = useMemo(
-    () =>
-      searchSchedules(scheduleQuery, 8)
-        .filter((text) => !scheduleEntries.includes(text))
-        .map((text) => ({ value: text, label: text })),
-    [scheduleQuery, scheduleEntries],
-  );
 
   /**
    * Las zonas que se van a guardar.
@@ -2727,37 +2753,92 @@ function ProfileFormFields(props: {
               <Field
                 label="Horarios"
                 error={errors.scheduleEntries}
-                hint="Una línea por horario. Elegí de la lista o escribí el tuyo."
+                errorId="error-scheduleEntries"
+                hint="Escribí un horario y presioná Agregar."
                 showHint={editing}
                 counter={`${scheduleEntries.length}/${MAX_SCHEDULE_ENTRIES}`}
                 group
               >
-                <SearchSelect
-                  label="Horarios"
-                  name="scheduleEntries"
-                  options={scheduleOptions}
+                {scheduleEntries.map((text, index) => (
+                  <input
+                    key={`${text}-${index}`}
+                    type="hidden"
+                    name="scheduleEntries"
+                    value={text}
+                  />
+                ))}
+                <SelectedChoices
                   selected={scheduleEntries.map((text) => ({
                     value: text,
                     label: text,
                   }))}
-                  max={MAX_SCHEDULE_ENTRIES}
-                  error={errors.scheduleEntries}
-                  placeholder="Ej.: Lunes a viernes de 08:00 a 17:00"
-                  onQueryChange={setScheduleQuery}
-                  externallyFiltered
-                  emptyLabel="No está en la lista. Escribilo y agregalo igual."
-                  allowCustom
-                  customHint="Podés escribir tu propio horario."
-                  onSelect={(option) => {
-                    if (scheduleEntries.includes(option.label)) return;
-                    setScheduleEntries([...scheduleEntries, option.label]);
+                  onRemove={(value) => {
+                    const nextEntries = scheduleEntries.filter(
+                      (text) => text !== value,
+                    );
+                    setScheduleEntries(nextEntries);
+                    setScheduleFeedback("");
+                    editField("scheduleEntries", nextEntries);
                   }}
-                  onRemove={(value) =>
-                    setScheduleEntries(
-                      scheduleEntries.filter((text) => text !== value),
-                    )
-                  }
                 />
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <input
+                    aria-label="Escribí un horario"
+                    aria-invalid={
+                      Boolean(scheduleFeedback || errors.scheduleEntries) ||
+                      undefined
+                    }
+                    aria-describedby={
+                      scheduleFeedback
+                        ? "schedule-entry-error"
+                        : errors.scheduleEntries
+                          ? "error-scheduleEntries"
+                          : undefined
+                    }
+                    placeholder="Ej.: Lunes a viernes de 08:00 a 17:00"
+                    value={scheduleQuery}
+                    maxLength={MAX_SCHEDULE_LENGTH}
+                    onChange={(event) => {
+                      setScheduleQuery(event.target.value);
+                      setScheduleFeedback("");
+                    }}
+                    onBlur={() => {
+                      if (!scheduleQuery.trim()) return;
+                      const parsed = scheduleEntrySchema.safeParse(scheduleQuery);
+                      setScheduleFeedback(
+                        parsed.success
+                          ? ""
+                          : (parsed.error.issues[0]?.message ??
+                              "El horario no es válido."),
+                      );
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      addScheduleEntry();
+                    }}
+                    className={`${inputClass(
+                      scheduleFeedback || errors.scheduleEntries,
+                    )} min-w-0 sm:flex-1`}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="!h-[38px]"
+                    onClick={addScheduleEntry}
+                  >
+                    Agregar
+                  </Button>
+                </div>
+                {scheduleFeedback ? (
+                  <p
+                    id="schedule-entry-error"
+                    role="alert"
+                    className="text-[13px] font-medium text-[#B42318] sm:text-[12.5px]"
+                  >
+                    {scheduleFeedback}
+                  </p>
+                ) : null}
               </Field>
 
               <Field label="Formas de pago" error={errors.paymentMethods} group>

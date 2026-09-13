@@ -317,6 +317,7 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 ### BR-023 — Medios de pago
 
 - Se pueden declarar varios: efectivo, transferencia, débito y crédito.
+- Al crear un perfil, `Acepto todas` comienza marcado y selecciona esos cuatro medios; la persona puede desmarcarlos en conjunto o individualmente.
 - `otros` sigue siendo un valor válido y se muestra en los perfiles que lo tengan guardado, pero ya no se ofrece al cargar el perfil: no es filtrable y elegirlo era una forma de no contestar.
 - Son visibles y pueden utilizarse como filtro.
 - No dependen del plan.
@@ -325,10 +326,10 @@ La congelación depende del cupo del plan y es independiente de la visibilidad e
 
 - Un perfil puede guardar, ordenar, editar y eliminar hasta 10 entradas.
 - Cada entrada es texto libre de 3 a 120 caracteres.
-- Las sugerencias usan preferentemente 24 horas, pero no limitan el texto permitido.
+- En el formulario cada horario se escribe y se confirma con `Agregar`; no se muestran catálogos ni sugerencias.
 - Se admiten horarios semanales, días cerrados, horarios cortados, agenda, emergencias y condiciones especiales.
 - No se admiten teléfonos, correos, URLs ni HTML.
-- Una sugerencia puede editarse; solo se guarda el texto final confirmado.
+- Solo se guarda el texto final confirmado.
 
 ---
 
