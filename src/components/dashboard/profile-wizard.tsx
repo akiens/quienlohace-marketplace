@@ -107,7 +107,7 @@ export function WizardNavigation({
   return (
     <nav
       aria-label="Pasos para crear tu perfil"
-      className="min-w-0 rounded-card border border-line bg-white p-4 lg:sticky lg:top-24 lg:self-start"
+      className="min-w-0 rounded-card border border-line bg-white px-3 py-2 lg:sticky lg:top-24 lg:self-start lg:p-4"
     >
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-semibold text-ink">
@@ -123,12 +123,16 @@ export function WizardNavigation({
           type="button"
           onClick={() => setExpanded(!expanded)}
           aria-expanded={expanded}
-          className="min-h-12 text-sm font-semibold text-brand-800 lg:hidden"
+          className="flex h-[38px] items-center gap-1 rounded-input px-2 text-sm font-semibold text-brand-800 hover:bg-brand-100 lg:hidden"
         >
           {expanded ? "Ocultar pasos" : "Ver pasos"}
+          <Icon
+            name={expanded ? "expand_less" : "expand_more"}
+            className="text-xl"
+          />
         </button>
       </div>
-      <div className="my-3 flex gap-1" aria-hidden="true">
+      <div className="mb-1 mt-2 flex gap-1 lg:my-3" aria-hidden="true">
         {BASIC_STEPS.map((id) => (
           <span
             key={id}
@@ -230,6 +234,7 @@ export function ChoiceList({
   max,
   name,
   searchable = true,
+  showSelected = true,
 }: {
   label: string;
   options: SearchOption[];
@@ -241,6 +246,8 @@ export function ChoiceList({
   max?: number;
   name?: string;
   searchable?: boolean;
+  /** Permite rendir las etiquetas antes de otro control del mismo campo. */
+  showSelected?: boolean;
 }) {
   const [query, setQuery] = useState("");
   const filtered = options.filter((option) =>
@@ -264,26 +271,8 @@ export function ChoiceList({
             value={option.value}
           />
         ))}
-      {selected.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {selected.map((option) => (
-            <button
-              key={option.value}
-              type="button"
-              onClick={() => onRemove(option.value)}
-              aria-label={`Quitar ${option.label}, ${option.context ?? ""}`}
-              className="flex min-h-12 max-w-full items-center gap-2 rounded-input border border-brand-800/20 bg-brand-100 px-3 py-2 text-left text-brand-800"
-            >
-              <span className="min-w-0 break-words text-sm font-semibold">
-                {option.label}
-                <span className="block text-xs font-normal">
-                  {option.context}
-                </span>
-              </span>
-              <Icon name="close" className="shrink-0 text-lg" />
-            </button>
-          ))}
-        </div>
+      {showSelected && (
+        <SelectedChoices selected={selected} onRemove={onRemove} />
       )}
       {searchable && (
         <input
@@ -291,7 +280,7 @@ export function ChoiceList({
           placeholder={`Buscar ${label.toLowerCase()}…`}
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          className="h-12 w-full rounded-input border border-line-strong px-3 text-base outline-none focus:border-brand-800"
+          className="h-[38px] w-full rounded-input border border-line-strong px-3 text-base outline-none focus:border-brand-800"
         />
       )}
       {filtered.length === 0 && (
@@ -341,6 +330,39 @@ export function ChoiceList({
             })}
           </div>
         </details>
+      ))}
+    </div>
+  );
+}
+
+/** Etiquetas removibles compartidas por todas las selecciones del asistente. */
+export function SelectedChoices({
+  selected,
+  onRemove,
+}: {
+  selected: SearchOption[];
+  onRemove: (id: string) => void;
+}) {
+  if (selected.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {selected.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onRemove(option.value)}
+          aria-label={`Quitar ${option.label}${option.context ? `, ${option.context}` : ""}`}
+          className="flex min-h-11 max-w-full items-center gap-2 rounded-input border border-brand-800/20 bg-brand-100 px-3 py-1.5 text-left text-brand-800"
+        >
+          <span className="min-w-0 break-words text-sm font-semibold">
+            {option.label}
+            {option.context ? (
+              <span className="block text-xs font-normal">{option.context}</span>
+            ) : null}
+          </span>
+          <Icon name="close" className="shrink-0 text-lg" />
+        </button>
       ))}
     </div>
   );

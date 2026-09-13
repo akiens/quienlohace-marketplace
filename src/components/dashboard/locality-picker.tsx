@@ -216,7 +216,7 @@ export function LocalityPicker({
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className={`flex h-12 w-full items-center justify-between gap-2 rounded-input border bg-white px-3 text-left text-[16px] outline-none transition-colors sm:h-11 sm:text-[15px] ${
+        className={`flex h-[38px] w-full items-center justify-between gap-2 rounded-input border bg-white px-3 text-left text-[16px] outline-none transition-colors sm:text-[15px] ${
           invalid
             ? "border-[#D92D20]"
             : "border-line-strong focus:border-brand-800"
@@ -248,7 +248,7 @@ export function LocalityPicker({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar localidad..."
               /* 16px en el teléfono: por debajo, iOS hace zoom al enfocar. */
-              className="h-10 w-full rounded-[8px] border border-line-strong px-2.5 text-[16px] text-ink outline-none focus:border-brand-800 sm:text-[14px]"
+              className="h-[38px] w-full rounded-[8px] border border-line-strong px-2.5 text-[16px] text-ink outline-none focus:border-brand-800 sm:text-[14px]"
             />
           </div>
 

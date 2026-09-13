@@ -26,7 +26,7 @@ export function WizardLocationPicker({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="min-h-12 w-full rounded-input border border-line-strong px-3 py-3 text-left text-base text-ink"
+        className="h-[38px] w-full rounded-input border border-line-strong px-3 text-left text-base text-ink"
       >
         {value ? locationLabelById(value) : "Elegí la localidad del local"}
       </button>
@@ -74,7 +74,7 @@ function LocalityDialog({
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Ej.: Las Piedras"
-          className="mt-2 h-12 w-full rounded-input border border-line-strong px-3 text-base font-normal"
+          className="mt-2 h-[38px] w-full rounded-input border border-line-strong px-3 text-base font-normal"
         />
       </label>
       {department && !query && (
@@ -201,7 +201,7 @@ export function CoverageChoices({
         placeholder="Buscar departamento o localidad…"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        className="h-12 w-full rounded-input border border-line-strong px-3 text-base"
+        className="h-[38px] w-full rounded-input border border-line-strong px-3 text-base"
       />
       {listDepartments().map((department) => {
         const matchesDepartment = normalize(department.name).includes(

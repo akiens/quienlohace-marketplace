@@ -87,17 +87,6 @@ export default async function CreateProfilePage() {
      * 40px de los 360 que suele haber. Vuelve desde `sm`, donde ya sobra.
      */
     <div className="mx-auto flex w-full max-w-[1120px] flex-col gap-4 px-0 pb-8 pt-4 sm:gap-7 sm:px-6 sm:py-8">
-      <header className="flex flex-col gap-1 px-4 sm:gap-1.5 sm:px-0">
-        <h1 className="text-[22px] font-bold tracking-[-.4px] text-ink sm:text-[30px]">
-          {settlingUpgrade ? `Completá tu plan ${plan.name}` : "Creá tu perfil"}
-        </h1>
-        <p className="text-[14px] text-ink-soft sm:text-[15px]">
-          {settlingUpgrade
-            ? "Tu plan ya está activo. Completá los pasos que habilita y el pago para terminar."
-            : "Primero lo básico. Los demás detalles podés agregarlos después."}
-        </p>
-      </header>
-
       {/*
        * Antes que nada: si el navegador trae el plan de otra cuenta —una
        * máquina compartida, o una segunda cuenta propia— se descarta, para

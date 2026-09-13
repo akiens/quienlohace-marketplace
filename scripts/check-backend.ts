@@ -577,6 +577,49 @@ async function main(): Promise<void> {
     !profileSchema.safeParse({ ...VALID_PROFILE, description: "corta" }).success,
   );
   check(
+    "rechaza HTML en el texto libre del perfil",
+    !profileSchema.safeParse({
+      ...VALID_PROFILE,
+      description: "Realizamos trabajos seguros <script>alert(1)</script>",
+    }).success,
+  );
+  check(
+    "rechaza HTML en un servicio escrito a mano",
+    !profileSchema.safeParse({
+      ...VALID_PROFILE,
+      services: [
+        {
+          specialtyId: VALID_PROFILE.specialtyIds[0]!,
+          name: "<script>alert(1)</script>",
+        },
+      ],
+    }).success,
+  );
+  check(
+    "rechaza caracteres de sentencias en un servicio escrito a mano",
+    !profileSchema.safeParse({
+      ...VALID_PROFILE,
+      services: [
+        {
+          specialtyId: VALID_PROFILE.specialtyIds[0]!,
+          name: "Pintura'; DROP TABLE services;--",
+        },
+      ],
+    }).success,
+  );
+  check(
+    "acepta puntuación legítima en un servicio escrito a mano",
+    profileSchema.safeParse({
+      ...VALID_PROFILE,
+      services: [
+        {
+          specialtyId: VALID_PROFILE.specialtyIds[0]!,
+          name: "Service 24/7 (hogar & oficina)",
+        },
+      ],
+    }).success,
+  );
+  check(
     "acepta crear una contraseña sin contraseña anterior",
     passwordUpdateSchema.safeParse({
       currentPassword: "",

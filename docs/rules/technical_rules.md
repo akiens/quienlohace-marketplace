@@ -64,11 +64,14 @@ Si dos fuentes se contradicen en el futuro, el cambio se detiene hasta establece
 
 - Se recortan extremos y se normalizan espacios repetidos cuando no sean significativos.
 - Se guarda como texto, se escapa al renderizar y nunca se interpreta como HTML.
+- Todo texto libre visible rechaza etiquetas HTML y caracteres de control en su schema compartido. Los campos multilínea conservan saltos y tabulaciones; los de una línea también los rechazan.
 - Servicios: 3–80 caracteres.
+- Los nombres de servicio se validan con una lista positiva: empiezan con una letra o número y sólo admiten letras Unicode, números, espacios y la puntuación `. , - ' ’ & / ( )`. Se rechazan, no se recortan silenciosamente, caracteres de HTML, plantillas, sentencias o control.
 - Horarios: 3–120 caracteres; máximo 10.
 - Horarios rechazan teléfonos, correos, URLs y etiquetas HTML.
 - Servicios duplicados se comparan sin distinguir mayúsculas dentro de perfil y especialidad.
 - Frontend, API y base aplican el mismo criterio de longitud para Unicode.
+- Cada texto libre define según su contexto qué caracteres admite. No existe una “sanitización SQL” que vuelva confiable una cadena: la UI y el servidor comparten el schema para dar feedback y rechazar datos inválidos; toda consulta usa parámetros (TR-036), y todo texto se escapa al renderizar. Contraseñas, correos y URLs conservan sus reglas específicas y no usan la allowlist de nombres.
 
 ### TR-006 — Reglas derivadas
 

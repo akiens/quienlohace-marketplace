@@ -36,6 +36,7 @@ import { COUNTRY_ID, locationLabelById } from "@/data/locations";
 import {
   profileSchema,
   profileFieldSchemas,
+  serviceNameSchema,
   socialLinkSchema,
 } from "@/lib/validation";
 import { fitToPlan } from "@/domain/plan-fit";
@@ -52,6 +53,7 @@ import {
   BASIC_STEPS,
   PROFILE_STEPS,
   ChoiceList,
+  SelectedChoices,
   WizardNavigation,
   WizardWelcome,
 } from "@/components/dashboard/profile-wizard";
@@ -875,17 +877,18 @@ function ProfileFormFields(props: {
    */
   const addService = useCallback(
     (specialtyId: string, name: string): boolean => {
-      const trimmed = name.trim();
-      if (
-        !specialtyIds.includes(specialtyId) ||
-        trimmed.length < 3 ||
-        trimmed.length > 80
-      ) {
+      const parsedName = serviceNameSchema.safeParse(name);
+      if (!specialtyIds.includes(specialtyId)) {
+        setServiceFeedback("Elegí una especialidad válida.");
+        return false;
+      }
+      if (!parsedName.success) {
         setServiceFeedback(
-          "Elegí una especialidad válida y escribí entre 3 y 80 caracteres.",
+          parsedName.error.issues[0]?.message ?? "El servicio no es válido.",
         );
         return false;
       }
+      const cleanName = parsedName.data;
       if (maxServices !== null && services.length >= maxServices) {
         showPlanLimits([
           { limit: maxServices, singular: "servicio", plural: "servicios" },
@@ -896,7 +899,7 @@ function ProfileFormFields(props: {
         services.some(
           (service) =>
             service.specialtyId === specialtyId &&
-            service.name.toLowerCase() === trimmed.toLowerCase(),
+            service.name.toLowerCase() === cleanName.toLowerCase(),
         )
       ) {
         setServiceFeedback(
@@ -905,7 +908,7 @@ function ProfileFormFields(props: {
         return false;
       }
       setServiceFeedback("");
-      setServices([...services, { specialtyId, name: trimmed }]);
+      setServices([...services, { specialtyId, name: cleanName }]);
       return true;
     },
     [services, specialtyIds, maxServices, showPlanLimits],
@@ -2140,9 +2143,24 @@ function ProfileFormFields(props: {
                     value={service.name}
                   />
                 ))}
+                <SelectedChoices
+                  selected={selectedServices}
+                  onRemove={(value) =>
+                    setServices(
+                      services.filter(
+                        (service) =>
+                          `${service.specialtyId}|${service.name}` !== value,
+                      ),
+                    )
+                  }
+                />
                 <div className="flex flex-col gap-2 sm:flex-row">
                   <input
                     aria-label="Escribí un servicio"
+                    aria-invalid={Boolean(serviceFeedback) || undefined}
+                    aria-describedby={
+                      serviceFeedback ? "service-name-error" : undefined
+                    }
                     placeholder="Ej.: Instalación de luminarias"
                     value={serviceQuery}
                     maxLength={80}
@@ -2150,16 +2168,25 @@ function ProfileFormFields(props: {
                     onChange={(event) => {
                       setServiceQuery(event.target.value);
                       setPendingService(null);
+                      setServiceFeedback("");
                     }}
-                    className={`${inputClass()} min-w-0 flex-1`}
+                    onBlur={() => {
+                      if (!serviceQuery.trim()) return;
+                      const parsed = serviceNameSchema.safeParse(serviceQuery);
+                      setServiceFeedback(
+                        parsed.success
+                          ? ""
+                          : (parsed.error.issues[0]?.message ??
+                              "El servicio no es válido."),
+                      );
+                    }}
+                    className={`${inputClass(serviceFeedback)} min-w-0 sm:flex-1`}
                   />
                   <Button
                     type="button"
                     variant="secondary"
-                    disabled={
-                      serviceQuery.trim().length < 3 ||
-                      !specialtyIds.length
-                    }
+                    className="!h-[38px]"
+                    disabled={!specialtyIds.length}
                     onClick={() => {
                       if (
                         maxServices !== null &&
@@ -2174,24 +2201,41 @@ function ProfileFormFields(props: {
                         ]);
                         return;
                       }
+                      const parsedName =
+                        serviceNameSchema.safeParse(serviceQuery);
+                      if (!parsedName.success) {
+                        setServiceFeedback(
+                          parsedName.error.issues[0]?.message ??
+                            "El servicio no es válido.",
+                        );
+                        return;
+                      }
                       if (specialtyIds.length === 1) {
-                        if (
-                          addService(specialtyIds[0]!, serviceQuery.trim())
-                        ) {
+                        if (addService(specialtyIds[0]!, parsedName.data)) {
                           setServiceQuery("");
                         }
-                      } else setPendingService(serviceQuery.trim());
+                      } else setPendingService(parsedName.data);
                     }}
                   >
                     Agregar
                   </Button>
                 </div>
+                {serviceFeedback && (
+                  <p
+                    id="service-name-error"
+                    role="alert"
+                    className="text-sm font-medium text-[#B42318]"
+                  >
+                    {serviceFeedback}
+                  </p>
+                )}
                 {serviceQuery && (
                   <button
                     type="button"
                     onClick={() => {
                       setServiceQuery("");
                       setPendingService(null);
+                      setServiceFeedback("");
                     }}
                     className="min-h-12 self-start text-sm font-semibold text-brand-800"
                   >
@@ -2235,14 +2279,9 @@ function ProfileFormFields(props: {
                     </button>
                   </fieldset>
                 )}
-                <p className="text-sm font-semibold text-ink-muted mt-4">
-                  O elegi de esta lista de sugerencias:
+                <p className="mt-4 text-sm font-semibold text-ink-muted">
+                  O elegí de esta lista de sugerencias:
                 </p>
-                {serviceFeedback && (
-                  <p role="status" className="text-sm text-ink-soft">
-                    {serviceFeedback}
-                  </p>
-                )}
                 <ChoiceList
                   label="Servicios sugeridos"
                   searchable={false}
@@ -2251,6 +2290,7 @@ function ProfileFormFields(props: {
                     value: `${SERVICE_SUGGESTION_SPECIALTY.get(option.value)}|${option.label}`,
                   }))}
                   selected={selectedServices}
+                  showSelected={false}
                   max={maxServices ?? undefined}
                   onLimitReached={
                     editing
@@ -2530,7 +2570,7 @@ function ProfileFormFields(props: {
                             setNewAddress("");
                             setNewIsPrimary(false);
                           }}
-                          className={`flex h-11 items-center justify-center gap-1.5 rounded-input px-3.5 text-[14px] font-semibold disabled:opacity-45 sm:h-9 sm:self-start sm:text-[13.5px] ${SECONDARY_SURFACE}`}
+                          className={`flex h-[38px] items-center justify-center gap-1.5 rounded-input px-3.5 text-[14px] font-semibold disabled:opacity-45 sm:self-start sm:text-[13.5px] ${SECONDARY_SURFACE}`}
                         >
                           <Icon name="add" className="text-[18px]" />
                           Agregar dirección de local
@@ -3627,12 +3667,12 @@ function PlanHint({
  * corrida y hay que pellizcar para volver. Desde `sm` vale el tamaño del
  * sistema visual.
  *
- * 44px de alto en todas las pantallas: es el mínimo que se toca cómodo con el
- * pulgar y no hace falta más. Los 48 que llevaba el teléfono no se tocaban
- * mejor y sumaban media pantalla cada seis campos.
+ * Los controles de una sola línea usan 38px en todas las pantallas. Las filas
+ * seleccionables y los botones principales conservan un blanco táctil mayor:
+ * compactar un campo no obliga a achicar todas las acciones del asistente.
  */
 function inputClass(error?: string): string {
-  return `h-11 w-full rounded-input border bg-white px-3.5 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-800 sm:text-[14.5px] ${
+  return `h-[38px] w-full rounded-input border bg-white px-3.5 text-[16px] text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand-800 sm:text-[14.5px] ${
     error ? "border-[#FDA29B]" : "border-line-strong"
   }`;
 }

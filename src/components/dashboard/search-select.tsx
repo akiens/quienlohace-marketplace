@@ -423,7 +423,7 @@ export function SearchSelect({
         <div className="relative">
           <div
             data-search-field
-            className={`flex h-11 items-center gap-2 rounded-input border bg-white px-3 transition-colors focus-within:border-brand-800 ${
+            className={`flex h-[38px] items-center gap-2 rounded-input border bg-white px-3 transition-colors focus-within:border-brand-800 ${
               error ? "border-[#B42318]" : "border-line-strong"
             }`}
           >

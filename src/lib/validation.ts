@@ -22,6 +22,19 @@ import { toE164 } from "@/domain/phone";
  */
 const ABSOLUTE_MAX_ITEMS = 60;
 
+/**
+ * Texto que se muestra como texto: nunca debe contener etiquetas HTML ni
+ * controles invisibles. Se permiten saltos de línea y tabulaciones en campos
+ * multilínea; los campos de una sola línea los rechazan también.
+ */
+const UNSAFE_PLAIN_TEXT = /<[^>]*>|[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
+const UNSAFE_SINGLE_LINE_TEXT = /<[^>]*>|[\u0000-\u001F\u007F]/u;
+const isSafePlainText = (value: string) => !UNSAFE_PLAIN_TEXT.test(value);
+const isSafeSingleLineText = (value: string) =>
+  !UNSAFE_SINGLE_LINE_TEXT.test(value);
+const SAFE_TEXT_MESSAGE =
+  "No se admiten etiquetas HTML ni caracteres de control.";
+
 /** Una especialidad sólo es válida si existe en el catálogo (BR-011). */
 const specialtyId = z
   .string()
@@ -250,6 +263,32 @@ const PHONE_ALLOWED = /^\+?[\d .\-()]+$/;
 const PROFILE_NAME_ALLOWED =
   /^[\p{L}\p{N}][\p{L}\p{M}\p{N} .,\-'’&/()]*$/u;
 
+/**
+ * Un servicio es un nombre visible, no una porción de HTML, una consulta ni
+ * una expresión. Acepta la puntuación que se usa en nombres reales (por
+ * ejemplo, "Pintura interior/exterior" o "Service 24/7") y rechaza símbolos
+ * de marcado, plantillas y sentencias.
+ *
+ * Esta allowlist mejora la calidad del dato. La defensa contra SQL injection
+ * sigue siendo usar parámetros al persistir; validar texto nunca la sustituye.
+ */
+const SERVICE_NAME_ALLOWED = PROFILE_NAME_ALLOWED;
+
+export const serviceNameSchema = z
+  .string({ error: "Escribí un servicio." })
+  .trim()
+  .transform((value) => value.replace(/ {2,}/g, " "))
+  .pipe(
+    z
+      .string()
+      .min(3, "El servicio necesita al menos 3 caracteres.")
+      .max(80, "Máximo 80 caracteres.")
+      .refine(
+        (value) => SERVICE_NAME_ALLOWED.test(value),
+        "Usá sólo letras, números y . , - ' & / ( )",
+      ),
+  );
+
 export const nameSchema = z
   .string({ error: "Debe entrar un nombre." })
   .trim()
@@ -325,7 +364,7 @@ const scheduleEntrySchema = z
   .trim()
   .min(MIN_SCHEDULE_LENGTH, `Mínimo ${MIN_SCHEDULE_LENGTH} caracteres.`)
   .max(MAX_SCHEDULE_LENGTH, `Máximo ${MAX_SCHEDULE_LENGTH} caracteres.`)
-  .refine((value) => !/<[^>]*>/.test(value), "No se admiten etiquetas HTML.")
+  .refine(isSafeSingleLineText, SAFE_TEXT_MESSAGE)
   .refine(
     (value) => !/https?:\/\/|www\./i.test(value),
     "No se admiten direcciones web en el horario.",
@@ -356,7 +395,8 @@ export const profileSchema = z
       .string()
       .trim()
       .min(20, "Contá en pocas líneas qué hacés (mínimo 20 caracteres).")
-      .max(600, "Máximo 600 caracteres."),
+      .max(600, "Máximo 600 caracteres.")
+      .refine(isSafePlainText, SAFE_TEXT_MESSAGE),
     icon: z.string().trim().max(60).default("work"),
 
     /*
@@ -415,11 +455,7 @@ export const profileSchema = z
       .array(
         z.object({
           specialtyId,
-          name: z
-            .string()
-            .trim()
-            .min(3, "El servicio necesita al menos 3 caracteres.")
-            .max(80, "Máximo 80 caracteres."),
+          name: serviceNameSchema,
         }),
       )
       .max(ABSOLUTE_MAX_ITEMS, "Demasiados servicios.")
@@ -452,12 +488,19 @@ export const profileSchema = z
             (id) => getLocation(id)?.type === "locality",
             "Elegí la localidad de tu local.",
           ),
-          name: z.string().trim().max(80).nullable().default(null),
+          name: z
+            .string()
+            .trim()
+            .max(80)
+            .refine(isSafeSingleLineText, SAFE_TEXT_MESSAGE)
+            .nullable()
+            .default(null),
           address: z
             .string()
             .trim()
             .min(1, "Escribí la dirección de tu local.")
-            .max(160),
+            .max(160)
+            .refine(isSafeSingleLineText, SAFE_TEXT_MESSAGE),
           isPrimary: z.coerce.boolean().default(false),
         }),
       )
@@ -542,7 +585,8 @@ export const contactSchema = z.object({
     .string({ error: "Escribí tu mensaje." })
     .trim()
     .min(10, "Contanos un poco más (al menos 10 caracteres).")
-    .max(2000, "El mensaje es demasiado largo."),
+    .max(2000, "El mensaje es demasiado largo.")
+    .refine(isSafePlainText, SAFE_TEXT_MESSAGE),
 });
 
 export const reviewSchema = z.object({
@@ -556,16 +600,22 @@ export const reviewSchema = z.object({
     .trim()
     .min(10, "Contá un poco más sobre tu experiencia.")
     // RF-180: un tope de longitud acota el texto masivo automatizado.
-    .max(1000, "Máximo 1000 caracteres."),
-  authorName: z.string().trim().min(2, "Escribí tu nombre.").max(60),
+    .max(1000, "Máximo 1000 caracteres.")
+    .refine(isSafePlainText, SAFE_TEXT_MESSAGE),
+  authorName: z
+    .string()
+    .trim()
+    .min(2, "Escribí tu nombre.")
+    .max(60)
+    .refine(isSafeSingleLineText, SAFE_TEXT_MESSAGE),
 });
 
 /** Datos editables de una carta de servicio. Los importes llegan en pesos. */
 export const serviceCardSchema = z
   .object({
     serviceId: z.string().trim().min(1, "Elegí uno de los servicios de tu perfil."),
-    title: z.string().trim().min(3, "Escribí un nombre de al menos 3 caracteres.").max(90, "Máximo 90 caracteres."),
-    description: z.string().trim().min(20, "Contá qué incluye el servicio (mínimo 20 caracteres).").max(800, "Máximo 800 caracteres."),
+    title: z.string().trim().min(3, "Escribí un nombre de al menos 3 caracteres.").max(90, "Máximo 90 caracteres.").refine(isSafeSingleLineText, SAFE_TEXT_MESSAGE),
+    description: z.string().trim().min(20, "Contá qué incluye el servicio (mínimo 20 caracteres).").max(800, "Máximo 800 caracteres.").refine(isSafePlainText, SAFE_TEXT_MESSAGE),
     priceKind: z.enum(["quote", "fixed", "from", "range"]),
     priceMin: z.coerce.number().nonnegative("El precio no puede ser negativo.").nullable(),
     priceMax: z.coerce.number().nonnegative("El precio no puede ser negativo.").nullable(),
@@ -574,7 +624,7 @@ export const serviceCardSchema = z
     durationMaxMinutes: z.coerce.number().int().positive().nullable(),
     serviceMode: z.enum(SERVICE_MODES),
     paymentMethod: z.enum(PAYMENT_METHODS).nullable(),
-    schedule: z.string().trim().max(160, "Máximo 160 caracteres."),
+    schedule: z.string().trim().max(160, "Máximo 160 caracteres.").refine(isSafeSingleLineText, SAFE_TEXT_MESSAGE),
     imageId: z.string().trim().nullable(),
     isPublished: z.boolean(),
   })
@@ -622,7 +672,7 @@ export const reviewReportSchema = z.object({
     ["spam", "offensive", "false_info", "personal_info", "conflict", "other"],
     "Elegí un motivo.",
   ),
-  detail: z.string().trim().max(500, "Máximo 500 caracteres.").default(""),
+  detail: z.string().trim().max(500, "Máximo 500 caracteres.").refine(isSafePlainText, SAFE_TEXT_MESSAGE).default(""),
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;

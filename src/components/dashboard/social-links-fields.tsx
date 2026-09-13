@@ -82,7 +82,7 @@ export function SocialLinksFields({
                       : "",
                   }));
                 }}
-                className={`h-12 w-full rounded-input border px-3 text-base outline-none focus:border-brand-800 ${message ? "border-[#D92D20]" : "border-line-strong"}`}
+                className={`h-[38px] w-full rounded-input border px-3 text-base outline-none focus:border-brand-800 ${message ? "border-[#D92D20]" : "border-line-strong"}`}
               />
               {message && (
                 <p id={`${id}-error`} className="mt-1 text-sm text-[#B42318]">
