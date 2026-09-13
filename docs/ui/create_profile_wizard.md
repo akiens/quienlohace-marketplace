@@ -445,3 +445,8 @@ En el paso ubicacion tendremos 3 campos importantes:
    quita; con perfil, que se sigue con el plan actual hasta que venza y
    después lo que no entre deja de mostrarse. Un texto único le mentiría a uno
    de los dos.
+
+6. El diálogo para cambiar de plan reutiliza la cinta metálica, insignia,
+   nivel y precio de las tarjetas de `/planes`. Es una selección compacta: cada
+   plan muestra un único resumen y su acción, sin repetir la comparación
+   completa ni prestaciones no incluidas tachadas.

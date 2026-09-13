@@ -6,6 +6,7 @@ import { useActionState, useEffect, useState } from "react";
 
 import { changePlan } from "@/app/actions/plan";
 import type { FormState } from "@/app/actions/auth";
+import { PlanRibbonName } from "@/components/plan-ribbon-name";
 import { Icon } from "@/components/ui";
 import { FormAlert } from "@/components/form-alert";
 import {
@@ -15,7 +16,15 @@ import {
   formatPrice,
   isUpgrade,
 } from "@/domain/plans";
-import type { PlanLimits } from "@/types";
+import type { PlanId, PlanLimits } from "@/types";
+
+/** Una sola idea por plan; la comparación detallada sigue viviendo en `/planes`. */
+const PLAN_OPTION_SUMMARIES: Record<PlanId, string> = {
+  cobre: "Lo esencial para publicar tu perfil y empezar a recibir contactos.",
+  gold: "Más servicios, cartas, galería y redes sociales para hacer crecer tu perfil.",
+  platinum:
+    "La propuesta completa, con máxima capacidad y todas las herramientas disponibles.",
+};
 
 /**
  * Bloque del plan contratado, con el mismo lenguaje visual que `/planes`:
@@ -168,11 +177,6 @@ export function PlanSwitcher({
   );
 }
 
-/** Un tope del plan en palabras. `null` es "sin límite" (TR-002). */
-function cap(limit: number | null, plural: string): string {
-  return limit === null ? `${plural} sin límite` : `${limit} ${plural}`;
-}
-
 function PlanDialog({
   plans,
   current,
@@ -194,7 +198,7 @@ function PlanDialog({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Cambiar de plan"
+      aria-labelledby="plan-dialog-title"
       /*
        * En el teléfono se apoya abajo y ocupa todo el ancho: un recuadro
        * centrado con margen deja las tres tarjetas de plan en una columna
@@ -206,40 +210,45 @@ function PlanDialog({
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-card bg-white p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-h-[85vh] sm:rounded-card sm:p-6"
+        className="max-h-[94dvh] w-full max-w-4xl overflow-y-auto rounded-t-[20px] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-pop sm:max-h-[88vh] sm:rounded-[20px] sm:px-6 sm:pb-6"
       >
-        <div className="mb-4 flex items-start justify-between gap-4 sm:mb-5">
-          <div className="flex flex-col gap-1">
-            <h2 className="text-[18px] font-bold text-ink sm:text-[20px]">
-              Cambiar de plan
-            </h2>
-            {/*
-              Bajar de plan no significa lo mismo en los dos caminos, y decir
-              lo mismo en ambos es mentirle a uno de los dos.
+        <header className="relative -mx-4 overflow-hidden rounded-t-[20px] bg-brand-gradient px-5 pb-10 pt-3 sm:-mx-6 sm:px-7 sm:pb-12 sm:pt-6">
+          <div className="pointer-events-none absolute inset-0 bg-hatch" />
+          <div className="pointer-events-none absolute -right-12 -top-20 h-52 w-52 rounded-full border border-white/10 bg-white/[.04]" />
+          <div className="pointer-events-none absolute -right-4 -top-8 h-28 w-28 rounded-full border border-white/10" />
 
-              Con perfil creado la baja se agenda: el período pago corre hasta
-              su vencimiento y recién ahí lo que excede se esconde, sin
-              borrarse (BR-009). Creando el perfil por primera vez no hay
-              período pago ni perfil que conservar, y lo que no entra se quita
-              — el aviso previo lo confirma antes de que pase.
-            */}
-            <p className="text-[13.5px] text-ink-soft sm:text-[14px]">
-              {persist
-                ? "Si bajás de plan no perdés nada: seguís con el plan actual hasta que venza, y después lo que no entre deja de mostrarse."
-                : "Si bajás de plan, lo que no entre en el nuevo se quita. Te avisamos antes de hacerlo."}
-            </p>
+          <span
+            aria-hidden="true"
+            className="relative mx-auto mb-3 block h-1 w-10 rounded-full bg-white/35 sm:hidden"
+          />
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <p className="text-[11px] font-bold uppercase tracking-[.12em] text-accent">
+                Tu perfil, a tu medida
+              </p>
+              <h2
+                id="plan-dialog-title"
+                className="text-[22px] font-extrabold tracking-[-.4px] text-white sm:text-[26px]"
+              >
+                Elegí tu plan
+              </h2>
+              <p className="max-w-xl text-[13.5px] leading-relaxed text-[#D5DEEC] sm:text-[14px]">
+                Podés cambiarlo cuando quieras. Elegí el que mejor acompaña tu
+                trabajo hoy.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Cerrar"
+              className="-mr-2 flex h-10 w-10 flex-none items-center justify-center rounded-full text-white/80 transition-colors hover:bg-white/10 hover:text-white sm:mr-0"
+            >
+              <Icon name="close" className="text-[21px]" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="-mr-1 flex h-10 w-10 flex-none items-center justify-center rounded-input text-ink-soft hover:bg-surface-muted sm:mr-0 sm:h-auto sm:w-auto sm:p-1.5"
-          >
-            <Icon name="close" className="text-[20px]" />
-          </button>
-        </div>
+        </header>
 
-        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+        <div className="relative -mt-7 grid gap-5 px-3 pt-8 md:grid-cols-3 md:gap-5">
           {plans.map((option) => (
             <PlanOption
               key={option.id}
@@ -251,6 +260,21 @@ function PlanDialog({
               onChoose={onChoose}
             />
           ))}
+        </div>
+
+        {/*
+          La advertencia cambia según haya o no un perfil persistido. Va al
+          final para no competir con la decisión principal ni cargar cada card.
+        */}
+        <div className="mt-5 flex items-start gap-2.5 rounded-input bg-surface-muted px-3.5 py-3 text-[12.5px] leading-relaxed text-ink-soft sm:mx-3 sm:text-[13px]">
+          <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-brand-100 text-brand-800">
+            <Icon name="info" className="text-[15px]" />
+          </span>
+          <p className="pt-0.5">
+            {persist
+              ? "Si bajás de plan, seguís con el actual hasta que venza. Después, lo que exceda el nuevo plan deja de mostrarse, pero no se borra."
+              : "Si bajás de plan, lo que no entre en el nuevo se quita. Te avisamos antes de aplicar el cambio."}
+          </p>
         </div>
       </div>
     </div>
@@ -272,10 +296,21 @@ function PlanOption({
   action: (formData: FormData) => void;
   onChoose?: (planId: PlanLimits["id"]) => void;
 }) {
+  const ribbon = PLAN_RIBBONS[option.id];
   const card = {
-    style: { borderColor: PLAN_RIBBONS[option.id].edge },
-    className: `relative flex flex-col gap-3 rounded-card border-2 bg-white p-4 pt-8 ${
-      current ? "" : "border-opacity-40"
+    style: {
+      backgroundImage: `linear-gradient(180deg,${ribbon.edge}12 0%,#FFFFFF 42%)`,
+      ...(current
+        ? {
+            borderColor: ribbon.edge,
+            boxShadow: `0 0 0 2px ${ribbon.edge}24, 0 16px 34px -20px rgba(23,32,51,.42)`,
+          }
+        : {}),
+    },
+    className: `relative flex min-h-[238px] flex-col gap-4 rounded-card border bg-white p-5 pt-[72px] shadow-panel transition-[transform,box-shadow,border-color] ${
+      current
+        ? ""
+        : "border-line hover:-translate-y-1 hover:border-[#C6CEDC] hover:shadow-card-hover"
     }`,
   };
 
@@ -299,41 +334,39 @@ function PlanOption({
     >
       {persist ? <input type="hidden" name="planId" value={option.id} /> : null}
 
+      <PlanRibbonName plan={option} headingLevel="h3" />
+
       <Image
         src={PLAN_BADGES[option.id]}
         alt=""
-        width={80}
-        height={80}
-        className="pointer-events-none absolute -right-2 -top-4 h-14 w-14 object-contain drop-shadow-[0_3px_8px_rgba(16,24,40,.22)]"
+        width={96}
+        height={96}
+        className={`pointer-events-none absolute -top-5 z-20 h-20 w-20 object-contain drop-shadow-[0_4px_10px_rgba(16,24,40,.22)] ${
+          option.id === "cobre" ? "-right-3" : "-right-2"
+        }`}
       />
 
-      <div className="flex flex-col gap-0.5 pr-12">
-        <span className="text-[16px] font-bold text-ink">{option.name}</span>
-        <span className="text-[19px] font-bold tracking-[-.4px] text-ink">
+      <div className="flex items-end gap-2 pr-16">
+        <span className="text-[24px] font-extrabold tracking-[-.6px] text-ink">
           {formatPrice(option)}
         </span>
       </div>
 
-      {/*
-        Un tope en `null` es "sin límite" y no un número (TR-002): se dice con
-        palabras, porque mostrarlo vacío o como 0 diría lo contrario.
-      */}
-      <ul className="flex flex-col gap-1 text-[13px] leading-relaxed text-ink-muted">
-        <li>{cap(option.maxServiceSectors, "rubros")}</li>
-        <li>{cap(option.maxSpecialties, "especialidades")}</li>
-        <li>{cap(option.maxServices, "servicios")}</li>
-        <li>{cap(option.maxServiceCards, "cartas de servicio")}</li>
-        <li>{cap(option.maxLocations, "ubicaciones")}</li>
-        <li>
-          {option.maxGalleryImages === 0
-            ? "Sin galería"
-            : cap(option.maxGalleryImages, "imágenes")}
-        </li>
-      </ul>
+      <div className="flex items-start gap-2.5">
+        <span
+          className="mt-0.5 flex h-7 w-7 flex-none items-center justify-center rounded-full text-white shadow-sm"
+          style={{ background: ribbon.face }}
+        >
+          <Icon name="auto_awesome" className="text-[15px]" />
+        </span>
+        <p className="text-[13.5px] leading-relaxed text-ink-muted">
+          {PLAN_OPTION_SUMMARIES[option.id]}
+        </p>
+      </div>
 
       {current ? (
-        <span className="mt-auto flex h-10 items-center justify-center gap-1.5 rounded-input bg-surface-muted text-[13.5px] font-semibold text-ink-soft">
-          <Icon name="check_circle" filled className="text-[17px]" />
+        <span className="mt-auto flex h-10 items-center justify-center gap-1.5 rounded-input border border-success-line bg-success-soft text-[13.5px] font-semibold text-success-ink">
+          <Icon name="check_circle" filled className="text-[18px]" />
           Tu plan actual
         </span>
       ) : (
@@ -341,9 +374,15 @@ function PlanOption({
           type={persist ? "submit" : "button"}
           disabled={persist && pending}
           onClick={persist ? undefined : () => onChoose?.(option.id)}
-          className="mt-auto flex h-10 items-center justify-center rounded-input bg-brand-800 text-[13.5px] font-semibold text-white transition-colors hover:bg-brand-900 disabled:opacity-60"
+          className="group mt-auto flex h-10 items-center justify-center gap-1.5 rounded-input bg-brand-800 px-3 text-[13.5px] font-semibold text-white shadow-[0_4px_12px_-6px_rgba(32,55,95,.65)] transition-colors hover:bg-brand-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-800 disabled:opacity-60"
         >
           {persist && pending ? "Un momento…" : `Cambiar a ${option.name}`}
+          {!persist || !pending ? (
+            <Icon
+              name="arrow_forward"
+              className="text-[16px] transition-transform group-hover:translate-x-0.5"
+            />
+          ) : null}
         </button>
       )}
     </Card>

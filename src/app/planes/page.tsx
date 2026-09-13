@@ -2,11 +2,10 @@ import type { Metadata } from "next";
 import Image from "next/image";
 
 import { PlanCta } from "@/components/plan-cta";
+import { PlanRibbonName } from "@/components/plan-ribbon-name";
 import { Icon, SECONDARY_SURFACE } from "@/components/ui";
 import {
   PLAN_BADGES,
-  PLAN_RIBBONS,
-  PLAN_TIERS,
   formatPrice,
 } from "@/domain/plans";
 import { D1PlanRepository } from "@/infrastructure/d1-plan-repository";
@@ -193,61 +192,6 @@ function PlanCard({ plan }: { plan: PlanLimits }) {
         </p>
       ) : null}
     </article>
-  );
-}
-
-/**
- * Banderín con el nombre del plan.
- *
- * Sale del borde izquierdo de la tarjeta y baja un pliegue por detrás, para
- * que se lea como una cinta que envuelve la tarjeta. Por la derecha termina
- * al ras: la última tarjeta de la grilla queda contra el padding de `.shell`
- * y un desborde de ese lado se recortaría contra el viewport.
- */
-function PlanRibbonName({ plan }: { plan: PlanLimits }) {
-  const ribbon = PLAN_RIBBONS[plan.id];
-
-  return (
-    // `-left-3` es el desborde, que el contenedor no recorta. Por la derecha
-    // llega al ras del borde (`right-0`): ahí no desborda, porque la última
-    // tarjeta de la grilla ya está contra el padding de `.shell`. El sello
-    // tiene un z-index mayor, así que le pasa por encima al banderín.
-    <div className="pointer-events-none absolute -left-3 right-0 top-5 z-10">
-      {/*
-        El pliegue: un triángulo bajo el extremo izquierdo que simula la cara
-        posterior de la cinta doblada. Va detrás del frente (`-z-10`) y pegado
-        a su base para que parezca el mismo trozo de tela.
-      */}
-      <span
-        aria-hidden="true"
-        className="absolute left-0 top-full -z-10 h-3 w-3"
-        style={{
-          background: ribbon.fold,
-          clipPath: "polygon(0 0, 100% 0, 100% 100%)",
-        }}
-      />
-
-      {/*
-        El texto es blanco en los tres planes: el degradado arranca oscuro por
-        izquierda justamente para que así sea. La sombra combina una línea
-        oscura abajo y una clara arriba, que es lo que da el efecto de letra
-        grabada en la cinta.
-      */}
-      <h2
-        className="flex min-h-[34px] items-center gap-2.5 rounded-r-sm py-1.5 pl-4 pr-5 text-[17px] font-bold tracking-[.2px] text-white shadow-[0_2px_6px_rgba(16,24,40,.18)] [text-shadow:0_1px_1px_rgba(0,0,0,.55),0_-1px_0_rgba(255,255,255,.18)]"
-        style={{ background: ribbon.face }}
-      >
-        {plan.name}
-        {/*
-          La pastilla oscurece en vez de aclarar: sobre el degradado de Oro,
-          que es el más claro de los tres, un velo blanco dejaba el texto en
-          4.3:1. Con el velo oscuro los tres superan 4.5:1.
-        */}
-        <span className="rounded-full bg-black/25 px-2 py-0.5 text-[10.5px] font-bold uppercase tracking-wide text-white [text-shadow:none]">
-          {PLAN_TIERS[plan.id]}
-        </span>
-      </h2>
-    </div>
   );
 }
 
